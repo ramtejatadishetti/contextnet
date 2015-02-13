@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE log SYSTEM "logger.dtd">
+<log>
+<record>
+  <date>2014-11-06T20:16:49</date>
+  <millis>1415323009647</millis>
+  <sequence>1</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>INFO</level>
+  <class>edu.umass.cs.gns.protocoltask.ProtocolExecutor</class>
+  <method>insert</method>
+  <thread>9</thread>
+  <message>Node1 inserting key 1438528729 for task class edu.umass.cs.gns.protocoltask.ProtocolTaskWrapper</message>
+</record>
+<record>
+  <date>2014-11-06T20:16:49</date>
+  <millis>1415323009647</millis>
+  <sequence>3</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>INFO</level>
+  <class>edu.umass.cs.gns.protocoltask.ProtocolExecutor</class>
+  <method>insert</method>
+  <thread>10</thread>
+  <message>Node2 inserting key 21049567870 for task class edu.umass.cs.gns.protocoltask.ProtocolTaskWrapper</message>
+</record>
+<record>
+  <date>2014-11-06T20:16:49</date>
+  <millis>1415323009647</millis>
+  <sequence>2</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>INFO</level>
+  <class>edu.umass.cs.gns.protocoltask.ProtocolExecutor</class>
+  <method>insert</method>
+  <thread>8</thread>
+  <message>Node0 inserting key 0938974953 for task class edu.umass.cs.gns.protocoltask.ProtocolTaskWrapper</message>
+</record>
+<record>
+  <date>2014-11-06T20:16:49</date>
+  <millis>1415323009705</millis>
+  <sequence>23</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>WARNING</level>
+  <class>edu.umass.cs.gns.nio.AbstractPacketDemultiplexer</class>
+  <method>handleJSONObjectSuper</method>
+  <thread>17</thread>
+  <message>!!!!!!!!!!!!! Ignoring packet type: 1</message>
+</record>
+<record>
+  <date>2014-11-06T20:16:49</date>
+  <millis>1415323009705</millis>
+  <sequence>25</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>WARNING</level>
+  <class>edu.umass.cs.gns.nio.AbstractPacketDemultiplexer</class>
+  <method>handleJSONObjectSuper</method>
+  <thread>10</thread>
+  <message>!!!!!!!!!!!!! Ignoring packet type: 1</message>
+</record>
+<record>
+  <date>2014-11-06T20:16:49</date>
+  <millis>1415323009709</millis>
+  <sequence>27</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>WARNING</level>
+  <class>edu.umass.cs.gns.nio.AbstractPacketDemultiplexer</class>
+  <method>handleJSONObjectSuper</method>
+  <thread>8</thread>
+  <message>!!!!!!!!!!!!! Ignoring packet type: 1</message>
+</record>
+<record>
+  <date>2014-11-06T20:16:49</date>
+  <millis>1415323009705</millis>
+  <sequence>24</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>WARNING</level>
+  <class>edu.umass.cs.gns.nio.AbstractPacketDemultiplexer</class>
+  <method>handleJSONObjectSuper</method>
+  <thread>16</thread>
+  <message>!!!!!!!!!!!!! Ignoring packet type: 1</message>
+</record>
+<record>
+  <date>2014-11-06T20:16:49</date>
+  <millis>1415323009712</millis>
+  <sequence>29</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>WARNING</level>
+  <class>edu.umass.cs.gns.nio.AbstractPacketDemultiplexer</class>
+  <method>handleJSONObjectSuper</method>
+  <thread>18</thread>
+  <message>!!!!!!!!!!!!! Ignoring packet type: 1</message>
+</record>
+<record>
+  <date>2014-11-06T20:16:49</date>
+  <millis>1415323009712</millis>
+  <sequence>30</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>INFO</level>
+  <class>edu.umass.cs.gns.nio.AbstractPacketDemultiplexer</class>
+  <method>register</method>
+  <thread>8</thread>
+  <message>Registering types [QUERY_MSG_FROM_USER, VALUE_UPDATE_MSG_TO_VALUENODE, QUERY_MSG_TO_VALUENODE_REPLY, VALUE_UPDATE_MSG_TO_METADATANODE, METADATA_MSG_TO_VALUENODE, QUERY_MSG_TO_VALUENODE, QUERY_MSG_TO_METADATANODE] for edu.umass.cs.contextservice.ContextService@1990d6e</message>
+</record>
+<record>
+  <date>2014-11-06T20:16:49</date>
+  <millis>1415323009713</millis>
+  <sequence>31</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>WARNING</level>
+  <class>edu.umass.cs.gns.nio.AbstractPacketDemultiplexer</class>
+  <method>handleJSONObjectSuper</method>
+  <thread>10</thread>
+  <message>!!!!!!!!!!!!! Ignoring packet type: 1</message>
+</record>
+<record>
+  <date>2014-11-06T20:16:49</date>
+  <millis>1415323009711</millis>
+  <sequence>28</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>WARNING</level>
+  <class>edu.umass.cs.gns.nio.AbstractPacketDemultiplexer</class>
+  <method>handleJSONObjectSuper</method>
+  <thread>9</thread>
+  <message>!!!!!!!!!!!!! Ignoring packet type: 1</message>
+</record>
+<record>
+  <date>2014-11-06T20:16:49</date>
+  <millis>1415323009720</millis>
+  <sequence>32</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>INFO</level>
+  <class>edu.umass.cs.gns.nio.AbstractPacketDemultiplexer</class>
+  <method>register</method>
+  <thread>10</thread>
+  <message>Registering types [QUERY_MSG_FROM_USER, VALUE_UPDATE_MSG_TO_VALUENODE, QUERY_MSG_TO_VALUENODE_REPLY, VALUE_UPDATE_MSG_TO_METADATANODE, METADATA_MSG_TO_VALUENODE, QUERY_MSG_TO_VALUENODE, QUERY_MSG_TO_METADATANODE] for edu.umass.cs.contextservice.ContextService@1437a6d</message>
+</record>
+<record>
+  <date>2014-11-06T20:16:49</date>
+  <millis>1415323009722</millis>
+  <sequence>33</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>WARNING</level>
+  <class>edu.umass.cs.gns.nio.AbstractPacketDemultiplexer</class>
+  <method>handleJSONObjectSuper</method>
+  <thread>16</thread>
+  <message>!!!!!!!!!!!!! Ignoring packet type: 1</message>
+</record>
+<record>
+  <date>2014-11-06T20:16:49</date>
+  <millis>1415323009725</millis>
+  <sequence>35</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>WARNING</level>
+  <class>edu.umass.cs.gns.nio.AbstractPacketDemultiplexer</class>
+  <method>handleJSONObjectSuper</method>
+  <thread>16</thread>
+  <message>!!!!!!!!!!!!! Ignoring packet type: 1</message>
+</record>
+<record>
+  <date>2014-11-06T20:16:49</date>
+  <millis>1415323009729</millis>
+  <sequence>40</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>WARNING</level>
+  <class>edu.umass.cs.gns.nio.AbstractPacketDemultiplexer</class>
+  <method>handleJSONObjectSuper</method>
+  <thread>9</thread>
+  <message>!!!!!!!!!!!!! Ignoring packet type: 1</message>
+</record>
+<record>
+  <date>2014-11-06T20:16:49</date>
+  <millis>1415323009731</millis>
+  <sequence>41</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>INFO</level>
+  <class>edu.umass.cs.gns.nio.AbstractPacketDemultiplexer</class>
+  <method>register</method>
+  <thread>9</thread>
+  <message>Registering types [QUERY_MSG_FROM_USER, VALUE_UPDATE_MSG_TO_VALUENODE, QUERY_MSG_TO_VALUENODE_REPLY, VALUE_UPDATE_MSG_TO_METADATANODE, METADATA_MSG_TO_VALUENODE, QUERY_MSG_TO_VALUENODE, QUERY_MSG_TO_METADATANODE] for edu.umass.cs.contextservice.ContextService@6288ed</message>
+</record>
+</log>

@@ -1,0 +1,1117 @@
+package edu.umass.cs.contextservice;
+
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Logger;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.google.common.hash.Hashing;
+
+import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.database.AbstractContextServiceDB;
+import edu.umass.cs.contextservice.database.InMemoryContextServiceDB;
+import edu.umass.cs.contextservice.database.MongoContextServiceDB;
+import edu.umass.cs.contextservice.database.records.AttributeMetaObjectRecord;
+import edu.umass.cs.contextservice.database.records.AttributeMetadataInfoRecord;
+import edu.umass.cs.contextservice.database.records.GroupGUIDRecord;
+import edu.umass.cs.contextservice.database.records.NodeGUIDInfoRecord;
+import edu.umass.cs.contextservice.database.records.ValueInfoObjectRecord;
+import edu.umass.cs.contextservice.gns.GNSCalls;
+import edu.umass.cs.contextservice.logging.ContextServiceLogger;
+import edu.umass.cs.contextservice.messages.BasicContextServicePacket;
+import edu.umass.cs.contextservice.messages.ContextServicePacket;
+import edu.umass.cs.contextservice.messages.MetadataMsgToValuenode;
+import edu.umass.cs.contextservice.messages.QueryMsgFromUser;
+import edu.umass.cs.contextservice.messages.QueryMsgToMetadataNode;
+import edu.umass.cs.contextservice.messages.QueryMsgToValuenode;
+import edu.umass.cs.contextservice.messages.QueryMsgToValuenodeReply;
+import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
+import edu.umass.cs.contextservice.messages.ValueUpdateMsgToMetadataNode;
+import edu.umass.cs.contextservice.messages.ValueUpdateMsgToValuenode;
+import edu.umass.cs.contextservice.processing.QueryComponent;
+import edu.umass.cs.contextservice.processing.QueryProcessing;
+import edu.umass.cs.contextservice.utils.Utils;
+import edu.umass.cs.gns.main.GNS;
+import edu.umass.cs.gns.nio.GenericMessagingTask;
+import edu.umass.cs.gns.nio.InterfacePacketDemultiplexer;
+import edu.umass.cs.gns.nio.JSONMessenger;
+import edu.umass.cs.gns.nio.NIOTransport;
+import edu.umass.cs.gns.nsdesign.nodeconfig.InterfaceNodeConfig;
+import edu.umass.cs.gns.protocoltask.ProtocolEvent;
+import edu.umass.cs.gns.protocoltask.ProtocolExecutor;
+import edu.umass.cs.gns.protocoltask.ProtocolTask;
+
+
+public class ContextService<NodeIDType> implements InterfacePacketDemultiplexer
+{
+	private final JSONMessenger<NodeIDType> messenger;
+	private final ProtocolExecutor<NodeIDType, ContextServicePacket.PacketType, String> protocolExecutor;
+	private final ContextServiceProtocolTask<NodeIDType> protocolTask;
+	private final QueryProcessing<NodeIDType> qprocessing;
+	
+	private final AbstractContextServiceDB<NodeIDType> contextserviceDB;
+	
+	//private final List<AttributeMetadataInformation<NodeIDType>> attrMetaList;
+	//private final List<AttributeValueInformation<NodeIDType>> attrValueList;
+	private final Set<NodeIDType> allNodeIDs;
+	
+	// for sending notifications, will be changed later
+	private  DatagramSocket client_socket;
+	//private final AbstractReconfiguratorDB<NodeIDType> DB;
+	
+	public static final Logger log =
+			NIOTransport.LOCAL_LOGGER ? Logger.getLogger(NIOTransport.class.getName())
+					: GNS.getLogger();
+	
+	//FIXME: sourceID is not properly set, it is currently set to sourceID of each node,
+	// it needs to be set to the origin sourceID.
+	// Any id-based communication requires NodeConfig and Messenger
+	public ContextService(InterfaceNodeConfig<NodeIDType> nc, JSONMessenger<NodeIDType> m)
+	{
+		this.allNodeIDs = nc.getNodeIDs();
+		
+		this.qprocessing = new QueryProcessing<NodeIDType>(this);
+		
+		switch(ContextServiceConfig.DATABASE_TYPE)
+		{
+			case INMEMORY:
+			{
+				this.contextserviceDB = new InMemoryContextServiceDB<NodeIDType>(m.getMyID());
+				break;
+			}
+			case MONGODB:
+			{
+				this.contextserviceDB = new MongoContextServiceDB<NodeIDType>(m.getMyID());
+				break;
+			}
+			default:
+				this.contextserviceDB = null;
+		}
+		
+		/*if(ContextServiceConfig.CACHE_ON)
+		{
+			this.attrMetaList = new LinkedList<AttributeMetadataInformation<NodeIDType>>();
+			this.attrValueList = new LinkedList<AttributeValueInformation<NodeIDType>>();
+		}
+		else
+		{
+			this.attrMetaList = null;
+			this.attrValueList = null;
+		}*/
+		
+		//this.DB = new DerbyReconfiguratorDB<NodeIDType>(this.messenger.getMyID(), nc);
+		
+		// initialize attribute types
+		AttributeTypes.initialize();
+		
+		this.messenger = m;
+		this.protocolExecutor = new ProtocolExecutor<NodeIDType, ContextServicePacket.PacketType, String>(messenger);
+		this.protocolTask = new ContextServiceProtocolTask<NodeIDType>(getMyID(), this);
+		this.protocolExecutor.register(this.protocolTask.getEventTypes(), this.protocolTask);
+		
+		
+		
+		
+		try {
+			client_socket = new DatagramSocket();
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		// just to check if NIO doesn't retransmit in the beginning.
+		/*try
+		{
+			Thread.sleep(5000);
+		} catch (InterruptedException e)
+		{
+			e.printStackTrace();
+		}*/
+	}
+	
+	/**
+	 * spawns the protocol associated 
+	 * spawning starts the start[] method 
+	 * of the protocol task
+	 */
+	public void spawnTheTask()
+	{
+		this.protocolExecutor.spawn(this.protocolTask);
+	}
+	
+	@Override
+	public boolean handleJSONObject(JSONObject jsonObject) 
+	{
+		//System.out.println("\n\n\n handleJSONObject contextService json "+jsonObject+"\n\n\n ");
+		BasicContextServicePacket<NodeIDType> csPacket = null;
+		//if(DEBUG) Reconfigurator.log.finest("Reconfigurator received " + jsonObject);
+		try 
+		{
+			// try handling as reconfiguration packet through protocol task 
+			if((csPacket = this.protocolTask.getContextServicePacket(jsonObject))!=null) 
+			{
+				this.protocolExecutor.handleEvent(csPacket);
+			} /*else if(isExternalRequest(jsonObject)) 
+			{
+				assert(false);
+			}*/
+		} catch(JSONException je) 
+		{
+			je.printStackTrace();
+		}
+		return true; // neither reconfiguration packet nor app request
+	}
+	
+	public Set<ContextServicePacket.PacketType> getPacketTypes() 
+	{
+		return this.protocolTask.getEventTypes();
+	}
+	
+	/*private boolean isExternalRequest(JSONObject json) throws JSONException
+	{
+		ContextServicePacket.PacketType csType = 
+				ContextServicePacket.getContextServicePacketType(json);
+		
+		// trigger from GNS
+		if(csType == ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS)
+		{
+			return true;
+		} else 
+		{
+			return false;
+		}
+	}*/
+	
+	public GenericMessagingTask<NodeIDType,?>[] handleMetadataMsgToValuenode(
+		ProtocolEvent<ContextServicePacket.PacketType, String> event,
+		ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks)
+	{
+		/* Actions:
+		 * - Just store the metadata info recvd in the local storage
+		 */
+		@SuppressWarnings("unchecked")
+		MetadataMsgToValuenode<NodeIDType> metaMsgToValnode = (MetadataMsgToValuenode<NodeIDType>) event;
+		// just need to store the val node info in the local storage
+		
+		String attrName = metaMsgToValnode.getAttrName();
+		double rangeStart = metaMsgToValnode.getRangeStart();
+		double rangeEnd = metaMsgToValnode.getRangeEnd();
+		
+		ContextServiceLogger.getLogger().info("METADATA_MSG recvd at node " + 
+				this.getMyID()+" attriName "+attrName + 
+				" rangeStart "+rangeStart+" rangeEnd "+rangeEnd);
+		
+		//AttributeValueInformation<NodeIDType> attrValueInfo = 
+		//		new AttributeValueInformation<NodeIDType>(attrName, rangeStart, rangeEnd);
+		
+		
+		//this.addValueList(attrValueInfo);
+		
+		ValueInfoObjectRecord<Double> valInfoObjRec = new ValueInfoObjectRecord<Double>
+												(rangeStart, rangeEnd, new JSONArray());
+		
+		this.contextserviceDB.putValueObjectRecord(valInfoObjRec, attrName);
+		/*CreateServiceName create = (CreateServiceName)event;
+		System.out.println("RC"+getMyID()+" received " + event.getType() + ": " + create);
+
+		if(!amIResponsible(create.getServiceName())) return getForwardedRequest(create).toArray();
+		// else 
+		WaitAckStartEpoch<NodeIDType> startTask = new WaitAckStartEpoch<NodeIDType>(
+				new StartEpoch<NodeIDType>(getMyID(), create.getServiceName(), 0, 
+						this.DB.getDefaultActiveReplicas(create.getServiceName()), null), 
+						this.DB, create);
+		ptasks[0] = startTask;*/
+		return null;
+	}
+	
+	public GenericMessagingTask<NodeIDType,?>[] handleQueryMsgFromUser(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks)
+	{
+		/* Actions:
+		 * - send it to query processing system, where it parses it
+		 * and sends it to corresponding metadata nodes
+		 */
+		@SuppressWarnings("unchecked")
+		QueryMsgFromUser<NodeIDType> queryMsgFromUser = (QueryMsgFromUser<NodeIDType>)event;
+		return qprocessing.processQueryMsgFromUser(queryMsgFromUser);
+	}
+	
+	public GenericMessagingTask<NodeIDType,?>[] handleQueryMsgToMetadataNode(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks) 
+	{
+		/* Actions:
+		 * - parse the Query and send QueryMsgToValuenode to all value nodes
+		 * involved for the query
+		 */
+		@SuppressWarnings("unchecked")
+		QueryMsgToMetadataNode<NodeIDType> queryMsgToMetaNode = 
+				(QueryMsgToMetadataNode<NodeIDType>) event;
+		
+		System.out.println("CS"+getMyID()+" received " + event.getType() + ": " + event);
+		
+		return this.processQueryMsgToMetadataNode(queryMsgToMetaNode);
+	}
+	
+	public GenericMessagingTask<NodeIDType,?>[] handleQueryMsgToValuenode(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks) 
+	{
+			/* Actions:
+			 * - contacts the local information and sends back the 
+			 * QueryMsgToValuenodeReply
+			 */
+			@SuppressWarnings("unchecked")
+			QueryMsgToValuenode<NodeIDType> queryMsgToValnode = 
+					(QueryMsgToValuenode<NodeIDType>)event;
+			
+			System.out.println("CS"+getMyID()+" received " + event.getType() + ": " + queryMsgToValnode);
+			
+			return this.processQueryMsgToValuenode(queryMsgToValnode);
+	}
+	
+	public GenericMessagingTask<NodeIDType,?>[] handleQueryMsgToValuenodeReply(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks)
+	{
+		/* Actions:
+		 * - gets the QueryMsgToValuenodeReply and stores that.
+		 */
+		
+		@SuppressWarnings("unchecked")
+		QueryMsgToValuenodeReply<NodeIDType> queryMsgToValnodeReply = 
+				(QueryMsgToValuenodeReply<NodeIDType>)event;
+		
+		ContextServiceLogger.getLogger().info("Recvd QueryMsgToValuenodeReply at " 
+				+ this.getMyID() +" reply "+queryMsgToValnodeReply.toString());
+		
+		try 
+		{
+			qprocessing.addQueryReply(queryMsgToValnodeReply);
+		} catch (JSONException e) 
+		{
+			e.printStackTrace();
+		}
+		
+		return null;
+	}
+	
+	public GenericMessagingTask<NodeIDType,?>[] handleValueUpdateMsgToMetadataNode(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks)
+	{
+		/* Actions:
+		 * - send the update message to the responsible value node
+		 */
+		
+		@SuppressWarnings("unchecked")
+		ValueUpdateMsgToMetadataNode<NodeIDType> valUpdateMsgToMetaNode 
+					= (ValueUpdateMsgToMetadataNode<NodeIDType>)event;
+		System.out.println("CS"+getMyID()+" received " + event.getType() + ": " + valUpdateMsgToMetaNode);
+		return this.processValueUpdateMsgToMetadataNode(valUpdateMsgToMetaNode);
+	}
+	
+	public GenericMessagingTask<NodeIDType,?>[] handleValueUpdateMsgToValuenode(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks)
+	{
+		/* Actions:
+		 * just update / add or remove the entry
+		 */
+		@SuppressWarnings("unchecked")
+		ValueUpdateMsgToValuenode<NodeIDType> valUpdMsgToValnode = (ValueUpdateMsgToValuenode<NodeIDType>)event;
+		System.out.println("CS"+getMyID()+" received " + event.getType() + ": " + valUpdMsgToValnode);
+		this.processValueUpdateMsgToValuenode(valUpdMsgToValnode);
+		return null;
+	}
+	
+	
+	public GenericMessagingTask<NodeIDType,?>[] handleValueUpdateFromGNS(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks)
+	{
+		/* Actions:
+		 * just update / add or remove the entry
+		 */
+		@SuppressWarnings("unchecked")
+		ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS = (ValueUpdateFromGNS<NodeIDType>)event;
+		System.out.println("CS"+getMyID()+" received " + event.getType() + ": " + valUpdMsgFromGNS);
+		return this.processValueUpdateFromGNS(valUpdMsgFromGNS);
+	}
+	
+	
+	public AbstractContextServiceDB<NodeIDType> getContextServiceDB()
+	{
+		return contextserviceDB;
+	}
+	
+	
+	/**
+	 * adds element to the metadata list
+	 */
+	public synchronized void addMetadataInfoRec
+						(AttributeMetadataInfoRecord<NodeIDType, Double> newMetadataInfoRec)
+	{
+		this.contextserviceDB.putAttributeMetaInfoRecord(newMetadataInfoRec);
+	}
+	
+	
+	/*public synchronized void addValueList(AttributeValueInformation<NodeIDType> newValInfo)
+	{
+		this.attrValueList.add(newValInfo);
+	}*/
+	
+	public NodeIDType getMyID() 
+	{
+		return this.messenger.getMyID();
+	}
+	
+	/**
+	 * Takes the attribute name as input and returns the node id 
+	 * that is responsible for metadata of that attribute.
+	 * @param AttrName
+	 * @return
+	 */
+	public NodeIDType getResponsibleNodeId(String AttrName)
+	{	
+		int numNodes = this.allNodeIDs.size();
+		
+		//String attributeHash = Utils.getSHA1(attributeName);
+		int mapIndex = Hashing.consistentHash(AttrName.hashCode(), numNodes);
+		@SuppressWarnings("unchecked")
+		NodeIDType[] allNodeIDArr = (NodeIDType[]) this.allNodeIDs.toArray();
+		return allNodeIDArr[mapIndex];
+	}
+	
+	/**
+	 * returns all nodeIDs
+	 * @return
+	 */
+	public Set<NodeIDType> getAllNodeIDs()
+	{
+		return this.allNodeIDs;
+	}
+	
+	
+	/****************************** End of protocol task handler methods *********************/
+
+	/*********************** Private methods below **************************/
+	/**
+	 * Processes QueryMsgToMetadataNode node and 
+	 * sends back reply in GenericMessaging tasks
+	 * QueryMsgToValuenode
+	 * @throws JSONException
+	 * @throws IOException
+	 */
+	@SuppressWarnings("unchecked")
+	private GenericMessagingTask<NodeIDType, QueryMsgToValuenode<NodeIDType>>[]
+			processQueryMsgToMetadataNode(QueryMsgToMetadataNode<NodeIDType> queryMsgToMetaNode)
+	{
+		LinkedList<GenericMessagingTask<NodeIDType,QueryMsgToValuenode<NodeIDType>>> msgList
+		 = new LinkedList<GenericMessagingTask<NodeIDType,QueryMsgToValuenode<NodeIDType>>>();
+		
+		System.out.println("processQueryMsgToMetadataNode: " +
+				"predicate recvd string form "+queryMsgToMetaNode.getQueryComponent());
+		
+		QueryComponent qc= queryMsgToMetaNode.getQueryComponent();
+		String attrName = qc.getAttributeName();
+		
+		ContextServiceLogger.getLogger().info("Predicate mesg recvd at" 
+				+ this.getMyID() +" from node "+queryMsgToMetaNode.getSourceId() +
+				" predicate "+qc.toString());
+		
+		//FIXME: concurrent addition to metaList and 
+		// looping here will cause concurrent Excp.
+		/*for(int i=0;i<attrMetaList.size();i++)
+		{
+			AttributeMetadataInformation<NodeIDType> metaObj = attrMetaList.get(i);
+			if(attrName.equals(metaObj.getAttributeName()))
+			{
+				LinkedList<AttributeMetadataObject<NodeIDType>>	resultList = 
+						(LinkedList<AttributeMetadataObject<NodeIDType>>) metaObj.checkForPredicate(qc);
+				
+				for(int j=0;j<resultList.size();j++)
+				{
+					AttributeMetadataObject<NodeIDType> currObj = resultList.get(j);
+					
+					GroupGUIDInfo grpGUIDInfo = new GroupGUIDInfo(queryMsgToMetaNode.getGroupGUID(),
+							queryMsgToMetaNode.getQuery());
+					
+					currObj.addGroupGUIDInfo(grpGUIDInfo);
+					
+					
+					QueryMsgToValuenode<NodeIDType> queryMsgToValnode 
+					= new QueryMsgToValuenode<NodeIDType>( queryMsgToMetaNode.getSourceId(), qc,
+							queryMsgToMetaNode.getRequestId(), queryMsgToMetaNode.getSourceId(),
+							queryMsgToMetaNode.getQuery(), queryMsgToMetaNode.getGroupGUID() );
+					
+					ContextServiceLogger.getLogger().info("Sending ValueNodeMessage from" 
+							+ this.getMyID() +" to node "+currObj.getNodeId()+
+							" predicate "+qc.toString());
+					
+					GenericMessagingTask<NodeIDType, QueryMsgToValuenode<NodeIDType>> mtask = 
+					new GenericMessagingTask<NodeIDType, QueryMsgToValuenode<NodeIDType>>(currObj.getNodeId(), queryMsgToValnode);
+					//relaying the query to the value nodes of the attribute
+					msgList.add(mtask);
+					//StartContextServiceNode.sendToNIOTransport(currObj.getNodeId(), vnodeMesg.getJSONMessage());
+				}
+			}
+		}*/
+		
+		List<AttributeMetaObjectRecord<NodeIDType, Double>> attrMetaObjRecList = 
+		this.contextserviceDB.getAttributeMetaObjectRecord(attrName, qc.getLeftValue(), qc.getRightValue());
+		
+		for( int i=0; i<attrMetaObjRecList.size(); i++ )
+		{
+			//AttributeMetadataObject<NodeIDType> currObj = resultList.get(j);
+			AttributeMetaObjectRecord<NodeIDType, Double> currObj = 
+													attrMetaObjRecList.get(i);
+			
+			// update groupGUID in the relevant value partitions
+			this.contextserviceDB.updateAttributeMetaObjectRecord(currObj, attrName, 
+					queryMsgToMetaNode.getGroupGUID(), AttributeMetaObjectRecord.Operations.APPEND, 
+					AttributeMetaObjectRecord.Keys.GROUP_GUID_LIST);
+			
+			// add groupGUID in the GroupGUID table
+			GroupGUIDRecord groupGUIDRec = new GroupGUIDRecord(queryMsgToMetaNode.getGroupGUID(),
+					queryMsgToMetaNode.getQuery());
+			this.contextserviceDB.putGroupGUIDRecord(groupGUIDRec);
+			
+			//GroupGUIDInfo grpGUIDInfo = new GroupGUIDInfo(queryMsgToMetaNode.getGroupGUID(),
+			//		queryMsgToMetaNode.getQuery());
+			
+			
+			//currObj.addGroupGUIDInfo(grpGUIDInfo);
+			
+			
+			QueryMsgToValuenode<NodeIDType> queryMsgToValnode 
+			= new QueryMsgToValuenode<NodeIDType>( queryMsgToMetaNode.getSourceId(), qc,
+					queryMsgToMetaNode.getRequestId(), queryMsgToMetaNode.getSourceId(),
+					queryMsgToMetaNode.getQuery(), queryMsgToMetaNode.getGroupGUID() );
+			
+			ContextServiceLogger.getLogger().info("Sending ValueNodeMessage from" 
+					+ this.getMyID() +" to node "+currObj.getNodeID() + 
+					" predicate "+qc.toString());
+			
+			GenericMessagingTask<NodeIDType, QueryMsgToValuenode<NodeIDType>> mtask = 
+			new GenericMessagingTask<NodeIDType, QueryMsgToValuenode<NodeIDType>>(currObj.getNodeID(), queryMsgToValnode);
+			//relaying the query to the value nodes of the attribute
+			msgList.add(mtask);
+			//StartContextServiceNode.sendToNIOTransport(currObj.getNodeId(), vnodeMesg.getJSONMessage());
+		}
+		
+		return (GenericMessagingTask<NodeIDType, QueryMsgToValuenode<NodeIDType>>[]) this.convertLinkedListToArray(msgList);
+		//return (GenericMessagingTask<NodeIDType, QueryMsgToValuenode<NodeIDType>>[]) msgList.toArray();
+	}
+	
+	/**
+	 * Processes the QueryMsgToValuenode and replies with 
+	 * QueryMsgToValuenodeReply, which contains the GUIDs
+	 */
+	@SuppressWarnings("unchecked")
+	private GenericMessagingTask<NodeIDType, QueryMsgToValuenodeReply<NodeIDType>>[]
+			processQueryMsgToValuenode(QueryMsgToValuenode<NodeIDType> queryMsgToValnode)
+	{
+		LinkedList<GenericMessagingTask<NodeIDType, QueryMsgToValuenodeReply<NodeIDType>>> msgList
+		 = new LinkedList<GenericMessagingTask<NodeIDType, QueryMsgToValuenodeReply<NodeIDType>>>();
+		
+		QueryComponent predicate = queryMsgToValnode.getQueryComponent();
+		long requestID = queryMsgToValnode.getRequestId();
+		int componentID = predicate.getComponentID();
+		
+		ContextServiceLogger.getLogger().info("QueryMsgToValuenode recvd at " 
+				+ this.getMyID() +" from node "+queryMsgToValnode.getSourceId() +
+				" predicate "+predicate.toString());
+		
+	    LinkedList<String> resultGUIDs = new LinkedList<String>();
+		
+		/*for(int i=0;i<attrValueList.size();i++)
+		{
+			AttributeValueInformation<NodeIDType> valueObj = attrValueList.get(i);
+			
+			// add group even if there are no GUIDs satisfying now,
+			// so that on later stage, a GUID update can cause it to 
+			// be added to the group and we send the appropriate trigger.
+			
+			//GroupGUIDInfo grpGUIDInfo = new GroupGUIDInfo(queryMsgToValnode.getGropGUID(),
+			//		queryMsgToValnode.getQuery());
+			
+			//valueObj.addGroupGUIDInfo(grpGUIDInfo);
+			
+			
+			// if it is the same attribute name and the value range overlaps
+			if( ( valueObj.getAttrName().equals(predicate.getAttributeName()) ) && 
+					( valueObj.checkForOverlapInPredicate(predicate) ) )
+			{	
+				LinkedList<NodeGUIDInfo> listGUIDs = valueObj.getNodeGUIDs();
+				
+				for(int j=0;j<listGUIDs.size();j++)
+				{
+					NodeGUIDInfo currNodeInfo = listGUIDs.get(j);
+					double GUIDAttrVal = currNodeInfo.getAttrValue();
+					
+					// GUID satisfying the query
+					if( GUIDAttrVal >= predicate.getLeftValue() && 
+							GUIDAttrVal < predicate.getRightValue() )
+					{
+						resultGUIDs.add(currNodeInfo.getGUID());
+					}
+				}
+			}
+			
+		}*/
+		
+		//List<ValueInfoObjectRecord<Double>> attrValInfRecList = 
+		//		this.contextserviceDB.getAttributeMetaObjectRecord(attrName, qc.getLeftValue(), qc.getRightValue());
+		
+		//List<NodeGUIDInfoRecord<Double>> nodeGUIDRecList = 
+		//		this.contextserviceDB.getNodeGUIDInfoRecord(double queryMin, double queryMax)
+		
+		List<NodeGUIDInfoRecord<Double>> nodeGUIDRecList =
+				this.contextserviceDB.getNodeGUIDInfoRecord
+				(predicate.getAttributeName(), predicate.getLeftValue(), predicate.getRightValue());
+		
+		for(int i=0;i<nodeGUIDRecList.size();i++)
+		{
+			resultGUIDs.add(nodeGUIDRecList.get(i).getNodeGUID());
+		}
+		
+		
+		QueryMsgToValuenodeReply<NodeIDType> queryMsgToValReply 
+				= new QueryMsgToValuenodeReply<NodeIDType>(getMyID(), resultGUIDs, requestID, componentID, getMyID());
+		
+		GenericMessagingTask<NodeIDType, QueryMsgToValuenodeReply<NodeIDType>> mtask = 
+				new GenericMessagingTask<NodeIDType, QueryMsgToValuenodeReply<NodeIDType>>
+				(queryMsgToValnode.getSourceId(), queryMsgToValReply);
+				//relaying the query to the value nodes of the attribute
+		
+		msgList.add(mtask);
+		ContextServiceLogger.getLogger().info("Sending QueryMsgToValuenodeReply from " 
+						+ this.getMyID() +" to node "+queryMsgToValnode.getSourceId()+
+						" reply "+queryMsgToValReply.toString());
+		
+		return (GenericMessagingTask<NodeIDType, QueryMsgToValuenodeReply<NodeIDType>>[]) this.convertLinkedListToArray(msgList);
+		//return (GenericMessagingTask<NodeIDType, QueryMsgToValuenodeReply<NodeIDType>>[]) msgList.toArray();
+	}
+	
+	
+	@SuppressWarnings("unchecked")
+	public synchronized GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>[] 
+			processValueUpdateMsgToMetadataNode(ValueUpdateMsgToMetadataNode<NodeIDType> valUpdateMsgToMetaNode)
+	{
+		LinkedList<GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>> msgList
+		 = new LinkedList<GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>>();
+		
+		long versionNum = valUpdateMsgToMetaNode.getVersionNum();
+		String attrName = valUpdateMsgToMetaNode.getAttrName();
+		String GUID = valUpdateMsgToMetaNode.getGUID();
+		double oldValue = valUpdateMsgToMetaNode.getOldValue();
+		double newValue = valUpdateMsgToMetaNode.getNewValue();
+		JSONObject allAttrs = valUpdateMsgToMetaNode.getAllAttrs();
+		
+		ContextServiceLogger.getLogger().info("ValueUpdateToMetadataMesg recvd at" 
+				+ this.getMyID() +" from node "+GUID+
+				" "+attrName + " "+oldValue+" "+newValue);
+		
+		/*for(int i=0;i<attrMetaList.size();i++)
+		{
+			AttributeMetadataInformation<NodeIDType> metaObj = attrMetaList.get(i);
+			if( attrName.equals(metaObj.getAttributeName()) )
+			{	
+				// update groupGUIDs
+				metaObj.updateGroupGUIDs(GUID, allAttrs, attrName, oldValue, newValue);
+				
+				// for the new value
+				NodeIDType newValueNodeId = metaObj.getValueNodeIdResp(newValue);
+				
+				// for the old value
+				NodeIDType oldValueNodeId = newValueNodeId;
+				if(oldValue != AttributeTypes.NOT_SET)
+				{
+					oldValueNodeId = metaObj.getValueNodeIdResp(oldValue);
+				}
+				
+				
+				if( oldValueNodeId.equals(newValueNodeId) )
+				{
+					ValueUpdateMsgToValuenode<NodeIDType> valueUpdateMsgToValnode = new ValueUpdateMsgToValuenode<NodeIDType>
+					(this.getMyID(), versionNum, GUID, attrName, oldValue, newValue, 
+							ValueUpdateMsgToValuenode.REMOVE_ADD_BOTH);
+					
+					GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>> mtask = 
+							new GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>
+							(newValueNodeId, valueUpdateMsgToValnode);
+							//relaying the query to the value nodes of the attribute
+					msgList.add(mtask);
+					
+					ContextServiceLogger.getLogger().info("Sending ValueUpdateMsgToValuenode from" 
+							+ this.getMyID() + " to node "+oldValueNodeId +
+							" mesg "+valueUpdateMsgToValnode);
+				} else
+				{
+					ValueUpdateMsgToValuenode<NodeIDType> oldValueUpdateMsgToValnode = new ValueUpdateMsgToValuenode<NodeIDType>
+					(this.getMyID(), versionNum, GUID, attrName, oldValue, newValue, 
+							ValueUpdateMsgToValuenode.REMOVE_ENTRY);
+					
+					GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>> oldmtask = 
+							new GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>
+							(oldValueNodeId, oldValueUpdateMsgToValnode);
+					
+					
+					ValueUpdateMsgToValuenode<NodeIDType> newValueUpdateMsgToValnode = new ValueUpdateMsgToValuenode<NodeIDType>
+					(this.getMyID(), versionNum, GUID, attrName, oldValue, newValue, 
+							ValueUpdateMsgToValuenode.ADD_ENTRY);
+					
+					GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>> newmtask = 
+						new GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>
+						(newValueNodeId, newValueUpdateMsgToValnode);
+					
+					msgList.add(oldmtask);
+					msgList.add(newmtask);
+					
+					ContextServiceLogger.getLogger().info("Sending ValueUpdateMsgToValuenode from" 
+							+ this.getMyID() + " to node "+oldValueNodeId+" "+ newValueNodeId+
+							" mesg "+oldValueUpdateMsgToValnode);
+				}
+				
+				//relaying the query to the value nodes of the attribute
+				//StartContextServiceNode.sendToNIOTransport(valueNodeId, vnodeMesgTV.getJSONMessage());
+				// update groupGUID triggers
+			}
+		}*/
+		
+		//LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>> 
+		// there should be just one element in the list, or definitely at least one.
+		AttributeMetaObjectRecord<NodeIDType, Double> oldMetaObjRec = 
+		this.getContextServiceDB().getAttributeMetaObjectRecord(attrName, oldValue, oldValue).get(0);
+		//oldMetaObj = new AttributeMetadataObject<NodeIDType>();
+		
+		// same thing for the newValue
+		AttributeMetaObjectRecord<NodeIDType, Double> newMetaObjRec = 
+				this.getContextServiceDB().getAttributeMetaObjectRecord(attrName, newValue, newValue).get(0);
+		
+		
+		// do group updates for the old value
+		try
+		{
+			if(oldMetaObjRec!=null)
+			{
+				LinkedList<GroupGUIDRecord> oldValueGroups = getGroupsAffectedUsingDatabase
+						(oldMetaObjRec, allAttrs, attrName, oldValue);
+				
+				//oldMetaObj.getGroupsAffected(allAttr, updateAttrName, oldVal);
+				
+				GNSCalls.userGUIDAndGroupGUIDOperations
+				(GUID, oldValueGroups, GNSCalls.UserGUIDOperations.REMOVE_USER_GUID_FROM_GROUP);
+			} else
+			{
+				assert(false);
+			}
+		} catch (JSONException e)
+		{
+			e.printStackTrace();
+		}
+		
+		// do group  updates for the new value
+		
+		try
+		{
+			if(newMetaObjRec!=null)
+			{
+				LinkedList<GroupGUIDRecord> newValueGroups = getGroupsAffectedUsingDatabase
+						(newMetaObjRec, allAttrs, attrName, newValue);
+						
+						//newMetaObj.getGroupsAffected(allAttr, updateAttrName, newVal);
+				GNSCalls.userGUIDAndGroupGUIDOperations
+				(GUID, newValueGroups, GNSCalls.UserGUIDOperations.ADD_USER_GUID_TO_GROUP);
+			} else
+			{
+				assert(false);
+			}
+		} catch (JSONException e)
+		{
+			e.printStackTrace();
+		}
+		
+		
+		
+		// for the new value
+		NodeIDType newValueNodeId = newMetaObjRec.getNodeID();
+		
+		// for the old value
+		NodeIDType oldValueNodeId = newValueNodeId;
+		if(oldValue != AttributeTypes.NOT_SET)
+		{
+			oldValueNodeId = oldMetaObjRec.getNodeID();
+		}
+		
+		
+		if( oldValueNodeId.equals(newValueNodeId) )
+		{
+			ValueUpdateMsgToValuenode<NodeIDType> valueUpdateMsgToValnode = new ValueUpdateMsgToValuenode<NodeIDType>
+			(this.getMyID(), versionNum, GUID, attrName, oldValue, newValue, 
+					ValueUpdateMsgToValuenode.REMOVE_ADD_BOTH);
+			
+			GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>> mtask = 
+					new GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>
+					(newValueNodeId, valueUpdateMsgToValnode);
+					//relaying the query to the value nodes of the attribute
+			msgList.add(mtask);
+			
+			ContextServiceLogger.getLogger().info("Sending ValueUpdateMsgToValuenode from" 
+					+ this.getMyID() + " to node "+oldValueNodeId +
+					" mesg "+valueUpdateMsgToValnode);
+		} else
+		{
+			ValueUpdateMsgToValuenode<NodeIDType> oldValueUpdateMsgToValnode = new ValueUpdateMsgToValuenode<NodeIDType>
+			(this.getMyID(), versionNum, GUID, attrName, oldValue, newValue, 
+					ValueUpdateMsgToValuenode.REMOVE_ENTRY);
+			
+			GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>> oldmtask = 
+					new GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>
+					(oldValueNodeId, oldValueUpdateMsgToValnode);
+			
+			
+			ValueUpdateMsgToValuenode<NodeIDType> newValueUpdateMsgToValnode = new ValueUpdateMsgToValuenode<NodeIDType>
+			(this.getMyID(), versionNum, GUID, attrName, oldValue, newValue, 
+					ValueUpdateMsgToValuenode.ADD_ENTRY);
+			
+			GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>> newmtask = 
+				new GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>
+				(newValueNodeId, newValueUpdateMsgToValnode);
+			
+			msgList.add(oldmtask);
+			msgList.add(newmtask);
+			
+			ContextServiceLogger.getLogger().info("Sending ValueUpdateMsgToValuenode from" 
+					+ this.getMyID() + " to node "+oldValueNodeId+" "+ newValueNodeId+
+					" mesg "+oldValueUpdateMsgToValnode);
+		}
+		
+		
+		return (GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>[]) this.convertLinkedListToArray(msgList);
+		//return (GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>[]) msgList.toArray();
+	}
+	
+	
+	
+	private LinkedList<GroupGUIDRecord> getGroupsAffectedUsingDatabase
+								(AttributeMetaObjectRecord<NodeIDType, Double> metaObjRec, JSONObject allAttr, 
+										String updateAttrName, double attrVal) throws JSONException
+	{
+		LinkedList<GroupGUIDRecord> satisfyingGroups = new LinkedList<GroupGUIDRecord>();
+		JSONArray groupGUIDList = metaObjRec.getGroupGUIDList();
+		
+		for(int i=0;i<groupGUIDList.length();i++)
+		{
+			String groupGUID = groupGUIDList.getString(i);
+			GroupGUIDRecord groupGUIDRec = this.getContextServiceDB().getGroupGUIDRecord(groupGUID);
+			
+			boolean groupCheck = Utils.groupMemberCheck(allAttr, updateAttrName, 
+				attrVal, groupGUIDRec.getGroupQuery());
+			
+			if(groupCheck)
+			{
+				//GroupGUIDInfo guidInfo = new GroupGUIDInfo(groupGUID, groupGUIDRec.getGroupQuery());
+				satisfyingGroups.add(groupGUIDRec);
+			}
+			
+		}
+		return satisfyingGroups;
+	}
+	
+	
+	/**
+	 * adds the reply of the queryComponent
+	 * @throws JSONException
+	 */
+	private synchronized void processValueUpdateMsgToValuenode(
+			ValueUpdateMsgToValuenode<NodeIDType> valUpdateMsgToValnode)
+	{
+		ContextServiceLogger.getLogger().info("\n\n Recvd ValueUpdateMsgToValuenode at " 
+				+ this.getMyID() +" reply "+valUpdateMsgToValnode);
+		
+		String attrName = valUpdateMsgToValnode.getAttrName();
+		String GUID = valUpdateMsgToValnode.getGUID();
+		double oldValue = valUpdateMsgToValnode.getOldValue();
+		double newValue = valUpdateMsgToValnode.getNewValue();
+		long versionNum = valUpdateMsgToValnode.getVersionNum();
+		
+		for (int i=0;i<attrValueList.size();i++)
+		{
+			AttributeValueInformation<NodeIDType> valueObj = attrValueList.get(i);
+			if( valueObj.getAttrName().equals(attrName) )
+			{
+				boolean doOperation = false;
+				NodeGUIDInfo currNodeInfo = valueObj.getNodeGUIDInfo(GUID);
+				if(currNodeInfo != null)
+				{
+					if(currNodeInfo.getVersionNum() < versionNum)
+					{
+						doOperation = true;
+					}
+				} else
+				{
+					doOperation = true;
+				}
+				
+				if(doOperation)
+				{
+					switch(valUpdateMsgToValnode.getOperType())
+					{
+						case ValueUpdateMsgToValuenode.ADD_ENTRY:
+						{
+							NodeGUIDInfo nodeGUIDObj = new NodeGUIDInfo(GUID, newValue, versionNum);
+							valueObj.addNodeGUID(nodeGUIDObj);
+							
+							break;
+						}
+						case ValueUpdateMsgToValuenode.REMOVE_ENTRY:
+						{
+							
+							valueObj.removeNodeGUID(GUID);
+							
+							break;
+						}
+						case ValueUpdateMsgToValuenode.REMOVE_ADD_BOTH:
+						{	
+							//remove
+							valueObj.removeNodeGUID(GUID);
+							
+							// and add
+							NodeGUIDInfo nodeGUIDObj = new NodeGUIDInfo(GUID, newValue, versionNum);
+							valueObj.addNodeGUID(nodeGUIDObj);
+							break;
+						}
+					}
+				}
+				
+			}
+		}
+		
+		
+		
+		
+		
+		
+		
+		for (int i=0;i<attrValueList.size();i++)
+		{
+			AttributeValueInformation<NodeIDType> valueObj = attrValueList.get(i);
+			if( valueObj.getAttrName().equals(attrName) )
+			{
+				boolean doOperation = false;
+				NodeGUIDInfo currNodeInfo = valueObj.getNodeGUIDInfo(GUID);
+				if(currNodeInfo != null)
+				{
+					if(currNodeInfo.getVersionNum() < versionNum)
+					{
+						doOperation = true;
+					}
+				} else
+				{
+					doOperation = true;
+				}
+				
+				if(doOperation)
+				{
+					switch(valUpdateMsgToValnode.getOperType())
+					{
+						case ValueUpdateMsgToValuenode.ADD_ENTRY:
+						{
+							NodeGUIDInfo nodeGUIDObj = new NodeGUIDInfo(GUID, newValue, versionNum);
+							valueObj.addNodeGUID(nodeGUIDObj);
+							
+							break;
+						}
+						case ValueUpdateMsgToValuenode.REMOVE_ENTRY:
+						{
+							
+							valueObj.removeNodeGUID(GUID);
+							
+							break;
+						}
+						case ValueUpdateMsgToValuenode.REMOVE_ADD_BOTH:
+						{	
+							//remove
+							valueObj.removeNodeGUID(GUID);
+							
+							// and add
+							NodeGUIDInfo nodeGUIDObj = new NodeGUIDInfo(GUID, newValue, versionNum);
+							valueObj.addNodeGUID(nodeGUIDObj);
+							break;
+						}
+					}
+				}
+				
+			}
+		}
+		
+	}
+	
+	/**
+	 * adds the reply of the queryComponent
+	 * @throws JSONException
+	 */
+	private synchronized GenericMessagingTask<NodeIDType, ValueUpdateMsgToMetadataNode<NodeIDType>> []
+	                   processValueUpdateFromGNS(ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS)
+	{
+		ContextServiceLogger.getLogger().info("\n\n Recvd ValueUpdateFromGNS at " 
+				+ this.getMyID() +" reply "+valUpdMsgFromGNS);
+		
+		long versionNum = valUpdMsgFromGNS.getVersionNum();
+		String GUID = valUpdMsgFromGNS.getGUID();
+		String attrName = valUpdMsgFromGNS.getAttrName();
+		String oldVal = valUpdMsgFromGNS.getOldVal();
+		String newVal = valUpdMsgFromGNS.getNewVal();
+		JSONObject allAttrs = valUpdMsgFromGNS.getAllAttrs();
+		
+		double oldValD, newValD;
+		
+		if(oldVal.equals(""))
+		{
+			oldValD = AttributeTypes.NOT_SET;
+		} else
+		{
+			oldValD = Double.parseDouble(oldVal);
+		}
+		newValD = Double.parseDouble(newVal );
+		
+		
+		ValueUpdateMsgToMetadataNode<NodeIDType> valueUpdMsgToMetanode = 
+			new ValueUpdateMsgToMetadataNode<NodeIDType>(this.getMyID(), versionNum, GUID, attrName, oldValD, 
+					newValD, allAttrs);
+	
+		NodeIDType respMetadataNodeId = this.getResponsibleNodeId(attrName);
+		//nioTransport.sendToID(respMetadataNodeId, valueMeta.getJSONMessage());
+	
+		GenericMessagingTask<NodeIDType, ValueUpdateMsgToMetadataNode<NodeIDType>> mtask = 
+			new GenericMessagingTask<NodeIDType, ValueUpdateMsgToMetadataNode<NodeIDType>>(respMetadataNodeId, 
+					valueUpdMsgToMetanode);
+		
+		GenericMessagingTask<NodeIDType, ValueUpdateMsgToMetadataNode<NodeIDType>> [] returnTaskArr = 
+			new GenericMessagingTask[1];
+		
+		returnTaskArr[0] = mtask;
+		return returnTaskArr;
+		
+		// send the message 
+		/*try
+		{
+			this.getContextService().getJSONMessenger().send(mtask);
+		} catch (JSONException e) 
+		{
+			e.printStackTrace();
+		}*/
+		
+		/*String attrName = valUpdateMsgToValnode.getAttrName();
+		String GUID = valUpdateMsgToValnode.getGUID();
+		double oldValue = valUpdateMsgToValnode.getOldValue();
+		double newValue = valUpdateMsgToValnode.getNewValue();
+		
+		for (int i=0;i<attrValueList.size();i++)
+		{
+			AttributeValueInformation<NodeIDType> valueObj = attrValueList.get(i);
+			if(valueObj.getAttrName().equals(attrName))
+			{
+				NodeGUIDInfo nodeGUIDObj = new NodeGUIDInfo(GUID, newValue);
+				valueObj.addNodeGUID(nodeGUIDObj);
+			}
+		}*/
+	}
+	
+	
+	/**
+	 * prints the state stored at the machine, 
+	 * meta data information and the value node information
+	 * Just for debugging purposes
+	 */
+	public void printTheStateAtNode()
+	{	
+		System.out.println("\n\n\n######################################" +
+				"#########################################\n\n");
+		System.out.println("Attribute value information "+ getMyID());
+		
+		for(int i=0;i<attrValueList.size();i++)
+		{
+			@SuppressWarnings("unchecked")
+			AttributeValueInformation<NodeIDType> valueObj = 
+					(AttributeValueInformation<NodeIDType>) attrValueList.get(i);
+			System.out.println("NodeID "+getMyID()+" "+valueObj.toString());
+		}
+		
+		System.out.println("\n\n\n######################################" +
+				"#########################################\n\n");
+		
+		System.out.println("\n\n\n######################################" +
+				"#########################################\n\n");
+		System.out.println("Attribute metadata information "+getMyID());
+		
+		for(int i=0;i<attrMetaList.size();i++)
+		{
+			@SuppressWarnings("unchecked")
+			AttributeMetadataInformation<NodeIDType> metadataObj = 
+					(AttributeMetadataInformation<NodeIDType>) attrMetaList.get(i);
+			System.out.println("NodeID "+getMyID()+" "+metadataObj.toString());
+		}
+		
+		System.out.println("\n\n\n######################################" +
+				"#########################################\n\n");
+	}
+	
+	
+	/**
+	 * returns the messenger for sending message
+	 * from outside.
+	 * @return
+	 */
+	public JSONMessenger<NodeIDType> getJSONMessenger()
+	{
+		return this.messenger;
+	}
+	
+	/**
+	 * java has issues converting LisnkedList.toArray(), that's why this function
+	 * @return
+	 */
+	public GenericMessagingTask<NodeIDType, ?>[] convertLinkedListToArray(LinkedList<?> givenList)
+	{
+		GenericMessagingTask<NodeIDType, ?>[] array = new GenericMessagingTask[givenList.size()];
+		for(int i=0;i<givenList.size();i++)
+		{
+			array[i] = (GenericMessagingTask<NodeIDType, ?>) givenList.get(i);
+		}
+		return array;
+	}
+	
+	
+	/*private StartEpoch<NodeIDType> formStartEpoch(DemandReport<NodeIDType> report)
+	{
+		ReconfigurationRecord<NodeIDType> record = this.DB.getReconfigurationRecord(
+			report.getServiceName(), report.getEpochNumber());
+		Set<NodeIDType> curActives = record.getActiveReplicas(
+			record.getName(), record.getEpoch());
+		Set<NodeIDType> newActives = selectNewActives(record);
+		return new StartEpoch<NodeIDType>(getMyID(), 
+				record.getName(), record.getEpoch()+1, newActives, curActives);
+	}
+	
+	private Set<NodeIDType> selectNewActives(ReconfigurationRecord<NodeIDType> record) 
+	{
+		Set<NodeIDType> curActives = record.getActiveReplicas(
+			record.getName(), record.getEpoch());
+		Set<NodeIDType> newActives = curActives; // FIXME: simply returns same set
+		return newActives;
+	}*/
+}

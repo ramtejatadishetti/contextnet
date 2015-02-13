@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE log SYSTEM "logger.dtd">
+<log>
+<record>
+  <date>2014-11-06T21:34:25</date>
+  <millis>1415327665932</millis>
+  <sequence>1</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>INFO</level>
+  <class>edu.umass.cs.gns.nio.AbstractPacketDemultiplexer</class>
+  <method>register</method>
+  <thread>1</thread>
+  <message>Registering types [QUERY_MSG_TO_VALUENODE_REPLY, VALUE_UPDATE_MSG_TO_METADATANODE, QUERY_MSG_TO_VALUENODE, QUERY_MSG_FROM_USER, METADATA_MSG_TO_VALUENODE, VALUE_UPDATE_MSG_TO_VALUENODE, QUERY_MSG_TO_METADATANODE] for edu.umass.cs.contextservice.ContextService@1662429</message>
+</record>
+<record>
+  <date>2014-11-06T21:34:25</date>
+  <millis>1415327665934</millis>
+  <sequence>2</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>INFO</level>
+  <class>edu.umass.cs.gns.protocoltask.ProtocolExecutor</class>
+  <method>insert</method>
+  <thread>1</thread>
+  <message>Node0 inserting key 0449375585 for task class edu.umass.cs.gns.protocoltask.ProtocolTaskWrapper</message>
+</record>
+<record>
+  <date>2014-11-06T21:34:25</date>
+  <millis>1415327665965</millis>
+  <sequence>7</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>WARNING</level>
+  <class>edu.umass.cs.gns.nio.NIOTransport</class>
+  <method>finishConnection</method>
+  <thread>10</thread>
+  <message>Node 0 failed to connect to /127.0.0.1:5001</message>
+</record>
+<record>
+  <date>2014-11-06T21:34:25</date>
+  <millis>1415327665965</millis>
+  <sequence>8</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>WARNING</level>
+  <class>edu.umass.cs.gns.nio.NIOTransport</class>
+  <method>finishConnection</method>
+  <thread>10</thread>
+  <message>Node 0 failed to connect to /127.0.0.1:5002</message>
+</record>
+<record>
+  <date>2014-11-06T21:34:25</date>
+  <millis>1415327665968</millis>
+  <sequence>10</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>INFO</level>
+  <class>edu.umass.cs.gns.nio.AbstractPacketDemultiplexer</class>
+  <method>register</method>
+  <thread>1</thread>
+  <message>Registering types [QUERY_MSG_TO_VALUENODE_REPLY, VALUE_UPDATE_MSG_TO_METADATANODE, QUERY_MSG_TO_VALUENODE, QUERY_MSG_FROM_USER, METADATA_MSG_TO_VALUENODE, VALUE_UPDATE_MSG_TO_VALUENODE, QUERY_MSG_TO_METADATANODE] for edu.umass.cs.contextservice.ContextService@74cc70</message>
+</record>
+<record>
+  <date>2014-11-06T21:34:25</date>
+  <millis>1415327665969</millis>
+  <sequence>11</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>INFO</level>
+  <class>edu.umass.cs.gns.protocoltask.ProtocolExecutor</class>
+  <method>insert</method>
+  <thread>1</thread>
+  <message>Node1 inserting key 1755620643 for task class edu.umass.cs.gns.protocoltask.ProtocolTaskWrapper</message>
+</record>
+<record>
+  <date>2014-11-06T21:34:25</date>
+  <millis>1415327665976</millis>
+  <sequence>20</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>WARNING</level>
+  <class>edu.umass.cs.gns.nio.NIOTransport</class>
+  <method>finishConnection</method>
+  <thread>16</thread>
+  <message>Node 1 failed to connect to /127.0.0.1:5002</message>
+</record>
+<record>
+  <date>2014-11-06T21:34:25</date>
+  <millis>1415327665982</millis>
+  <sequence>23</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>INFO</level>
+  <class>edu.umass.cs.gns.nio.AbstractPacketDemultiplexer</class>
+  <method>register</method>
+  <thread>1</thread>
+  <message>Registering types [QUERY_MSG_TO_VALUENODE_REPLY, VALUE_UPDATE_MSG_TO_METADATANODE, QUERY_MSG_TO_VALUENODE, QUERY_MSG_FROM_USER, METADATA_MSG_TO_VALUENODE, VALUE_UPDATE_MSG_TO_VALUENODE, QUERY_MSG_TO_METADATANODE] for edu.umass.cs.contextservice.ContextService@a2470c</message>
+</record>
+<record>
+  <date>2014-11-06T21:34:25</date>
+  <millis>1415327665982</millis>
+  <sequence>24</sequence>
+  <logger>edu.umass.cs.gns.main.GNS</logger>
+  <level>INFO</level>
+  <class>edu.umass.cs.gns.protocoltask.ProtocolExecutor</class>
+  <method>insert</method>
+  <thread>1</thread>
+  <message>Node2 inserting key 21883366096 for task class edu.umass.cs.gns.protocoltask.ProtocolTaskWrapper</message>
+</record>
+</log>

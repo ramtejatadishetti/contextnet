@@ -1,0 +1,66 @@
+<?xml version="1.0" ?>
+<project name="context service " basedir="." default="jar">
+
+  <!-- Directories -->
+  <property name="build.dir" value="build" />
+  <property name="src.dir" value="src" />
+  <property name="lib.dir" value="libs" />
+  <property name="release.dir" value="release" />
+
+  <!-- Properties -->
+  <property file="build.properties" />
+
+  <!-- Classpath definitions -->
+  <path id="classpath.base">
+    <fileset dir="${lib.dir}" includes="**/*.jar" />
+  </path>
+
+  <!-- Init -->
+  <target name="init">
+    <mkdir dir="${build.dir}" />
+    <mkdir dir="${release.dir}" />
+  </target>
+
+  <!-- Clean -->
+  <target name="clean">
+    <delete dir="${build.dir}" />
+    <delete dir="${release.dir}" failonerror="false" />
+  </target>
+
+  <!-- Compile -->
+  <target name="compile" depends="init" description="Compile the context service code">
+
+    <!-- Compile the lib and tools but not the tests -->
+    <javac srcdir="${src.dir}"
+           destdir="${build.dir}"
+           debug="on"
+           source="1.7"
+           target="1.7">
+      <classpath refid="classpath.base" />
+    </javac>
+  </target>
+
+<!-- Release -->
+
+<target name="context-nodoc-jar"
+        depends="clean,compile"
+        description="Builds the context Jar">
+<jar jarfile="${release.dir}/context-nodoc-${VERSION}-${RELEASE}.jar">
+  <fileset dir="${build.dir}/">
+  </fileset>
+  <fileset dir="${basedir}">
+  	<include name="nodesInfo.txt" />
+  </fileset>
+  <zipgroupfileset dir="${lib.dir}/" includes="gns-lib*.jar,GNS.jar"/>
+  <manifest>
+    <attribute name="Built-By" value="Aditya Yadav" />
+    <!-- Information about the program itself -->
+    <attribute name="Implementation-Vendor"
+               value="University of Massachusetts" />
+    <attribute name="Implementation-Title" value="context" />
+    <attribute name="Implementation-Version" value="${VERSION}-${RELEASE}" />
+  </manifest>
+</jar>
+</target>
+
+</project>
