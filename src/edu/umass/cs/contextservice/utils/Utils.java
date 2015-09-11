@@ -28,12 +28,16 @@ import edu.umass.cs.contextservice.processing.QueryParser;
  * @author ayadav
  *
  */
+
 public class Utils
 {
-	private static final Logger LOGGER = ContextServiceLogger.getLogger();
+	private static final Logger LOGGER 				= ContextServiceLogger.getLogger();
+	
+	public static final String UDPServer				= "ananas.cs.umass.edu";
+	public static final int UDPPort					= 54321;
 	
 	public static Vector<String> getActiveInterfaceStringAddresses()
-	  {
+	{
 	    Vector<String> CurrentInterfaceIPs = new Vector<String>();
 	    try
 	    {
@@ -53,7 +57,6 @@ public class Utils
 	            }
 	            else
 	            {
-
 	              CurrentInterfaceIPs.add(IP);
 	            }
 	          }
@@ -65,7 +68,7 @@ public class Utils
 	      ex.printStackTrace();
 	    }
 	    return CurrentInterfaceIPs;
-	  }
+	}
 
 	  public static Vector<InetAddress> getActiveInterfaceInetAddresses()
 	  {
@@ -113,7 +116,7 @@ public class Utils
 
 	    for (byte b : a)
 	      sb.append(String.format("%02x", b & 0xff));
-
+	    
 	    String toBeReturned = sb.toString();
 	    toBeReturned = toBeReturned.toUpperCase();
 	    return toBeReturned;
@@ -254,7 +257,6 @@ public class Utils
 		}
 	}
 	
-	
 	/**
 	 * Takes all the context attributes, new and the old values, 
 	 * checks if the group query is still satisfied or not.
@@ -263,7 +265,7 @@ public class Utils
 	 * @throws NumberFormatException 
 	 */
 	public static boolean groupMemberCheck(JSONObject allAttr, String updateAttrName
-			, double attrVal, String groupQuery) 
+			, double attrVal, String groupQuery)
 			throws JSONException
 	{
 		boolean satisfiesGroup = true;
@@ -273,7 +275,7 @@ public class Utils
 		{
 			QueryComponent qc = groupQC.get(j);
 			String attrName = qc.getAttributeName();
-				
+			
 			// if this is the case, don't use the given val
 			if(attrName.equals(updateAttrName))
 			{
@@ -287,7 +289,6 @@ public class Utils
 					satisfiesGroup = false;
 					break;
 				}
-					
 			} else
 			{
 				// values are indexed by attr names
@@ -305,11 +306,80 @@ public class Utils
 		return satisfiesGroup;
 	}
 	
-	public static String getSHA1(String stringToHash) 
+	/**
+	 * Takes all the context attributes, new and the old values, 
+	 * checks if the group query is still satisfied or not.
+	 * @return
+	 * @throws JSONException 
+	 * @throws NumberFormatException 
+	 */
+	public static boolean groupMemberCheck(Map<String, Object> hyperdexMap, String updateAttrName
+			, double attrVal, String groupQuery)
+			throws JSONException
+	{
+		boolean satisfiesGroup = true;
+		Vector<QueryComponent> groupQC = QueryParser.parseQuery(groupQuery);
+		
+		for(int j=0;j<groupQC.size();j++)
+		{
+			QueryComponent qc = groupQC.get(j);
+			String attrName = qc.getAttributeName();
+			
+			// if this is the case, don't use the given val
+			if( attrName.equals(updateAttrName) )
+			{
+				// values are indexed by attr names
+				double recValue = attrVal;
+				boolean checkRes = Utils.checkQCForOverlapWithValue(recValue, qc);
+				
+				// if not satisfies, then group not satisfied
+				if(!checkRes)
+				{
+					satisfiesGroup = false;
+					break;
+				}
+			} else
+			{
+				if(hyperdexMap != null)
+				{
+					// values are indexed by attr names
+					Object retObj = hyperdexMap.get(attrName);
+					if( retObj != null )
+					{
+						double recValue =  (Double)retObj;
+						boolean checkRes = Utils.checkQCForOverlapWithValue(recValue, qc);
+						
+						// if not satisfies, then group not satisfied
+						if(!checkRes)
+						{
+							satisfiesGroup = false;
+							break;
+						}
+					}
+				}
+			}
+		}
+		return satisfiesGroup;
+	}
+	
+	public static List<String> getAttributesInQuery(String query)
+	{
+		Vector<QueryComponent> groupQC = QueryParser.parseQuery(query);
+		List<String> attrList = new LinkedList<String>();
+		
+		for(int i=0;i<groupQC.size();i++)
+		{
+			attrList.add(groupQC.get(i).getAttributeName());
+		}
+		return attrList;
+	}
+	
+	public static String getSHA1( String stringToHash )
 	{
 	   //Hashing.consistentHash(input, buckets);
 	   MessageDigest md=null;
-	   try {
+	   try 
+	   {
 		   md = MessageDigest.getInstance("SHA-256");
 	   } catch (NoSuchAlgorithmException e) {
 		   e.printStackTrace();
@@ -337,7 +407,7 @@ public class Utils
 	public static boolean isMyMachineAddress(InetAddress givenAddress)
 	{
 		Vector<InetAddress> currIPs = getActiveInterfaceInetAddresses();
-		for(int i=0;i<currIPs.size();i++)
+		for( int i=0;i<currIPs.size();i++ )
 		{
 			System.out.println("givenAddress "+givenAddress+
 					" currIPs.get(i) "+currIPs.get(i));
@@ -349,11 +419,36 @@ public class Utils
 		return false;
 	}
 	
+	//public static void sendUDP( String mesg )
+	//{
+		/*try
+		{
+			DatagramSocket client_socket = new DatagramSocket();
+			
+			byte[] send_data = new byte[1024];	
+			//BufferedReader infromuser = 
+	        //                new BufferedReader(new InputStreamReader(System.in));
+			
+			InetAddress IPAddress =  InetAddress.getByName(Utils.UDPServer);
+			
+			//String data = infromuser.readLine();
+			send_data = mesg.getBytes();
+			DatagramPacket send_packet = new DatagramPacket(send_data,
+	                                                        send_data.length, 
+	                                                        IPAddress, UDPPort);
+			client_socket.send(send_packet);
+			
+			client_socket.close();
+		} catch(Exception ex)
+		{
+			ex.printStackTrace();
+		}*/
+	//}
+	
 	public static void main(String[] args)
 	{
 		//  open up standard input
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		
 		String query = null;
 		//  read the username from the command-line; need to use try/catch with the
 		//  readLine() method
@@ -365,7 +460,7 @@ public class Utils
 			System.out.println("Query entered "+query);
 			
 			System.out.println("Query hash "+getSHA1(query));
-		} catch (IOException e1) 
+		} catch (IOException e1)
 		{
 			e1.printStackTrace();
 		}

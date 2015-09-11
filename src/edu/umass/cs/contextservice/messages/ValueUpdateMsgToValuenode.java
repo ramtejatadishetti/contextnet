@@ -16,7 +16,8 @@ public class ValueUpdateMsgToValuenode<NodeIDType> extends BasicContextServicePa
 	public static final int UPDATE_ENTRY			= 4;
 	
 	
-	private enum Keys {VERSION_NUM, GUIDs, ATTR_NAME, OLD_VAL, NEW_VAL, OPER_TYPE, ALL_ATTRS, SOURCE_ID, REQUEST_ID};
+	private enum Keys {VERSION_NUM, GUIDs, ATTR_NAME, OLD_VAL, NEW_VAL, 
+		OPER_TYPE, ALL_ATTRS, SOURCE_ID, REQUEST_ID};
 	
 	private final long versionNum;
 	//GUID of the update

@@ -3,6 +3,7 @@ package edu.umass.cs.contextservice.processing;
 import java.util.Vector;
 
 import edu.umass.cs.contextservice.AttributeTypes;
+import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 
 /**
  * 
@@ -37,6 +38,7 @@ public class QueryParser
 	
 	private static QueryComponent getComponent(String predicate)
 	{
+		ContextServiceLogger.getLogger().fine("getComponent "+predicate);
 		String[] predicateParts = predicate.split(" ");
 		int attrIndex = -1;
 		for(int i=0;i<predicateParts.length;i++)

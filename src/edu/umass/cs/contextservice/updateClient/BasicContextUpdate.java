@@ -99,7 +99,7 @@ public class BasicContextUpdate
 		    				(KeyPairUtils.getDefaultGnsFromPreferences(), guidAlias);
 		    		
 		    		gnsClient.fieldCreateList
-		    		(guidString, ContextServiceConfig.CONTEXT_ATTR_PREFIX+"ATT"+i, new JSONArray().put("100"), guidEntry);
+		    		(guidString, ContextServiceConfig.CONTEXT_ATTR_PREFIX+i, new JSONArray().put("100"), guidEntry);
 		    	}
 		    }
 		} catch(Exception ex)
@@ -119,7 +119,7 @@ public class BasicContextUpdate
 		
 		for(int i=0;i<ContextServiceConfig.NUM_ATTRIBUTES;i++)
 		{
-			String attName = ContextServiceConfig.CONTEXT_ATTR_PREFIX+"ATT"+i;
+			String attName = ContextServiceConfig.CONTEXT_ATTR_PREFIX+i;
 			double nextVal = 1+rand.nextInt((int)(AttributeTypes.MAX_VALUE-AttributeTypes.MIN_VALUE));
 			try
 			{

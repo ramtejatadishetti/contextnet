@@ -18,12 +18,12 @@ import edu.umass.cs.contextservice.database.records.GroupGUIDRecord;
 import edu.umass.cs.contextservice.database.records.NodeGUIDInfoRecord;
 import edu.umass.cs.contextservice.database.records.ValueInfoObjectRecord;
 import edu.umass.cs.contextservice.gns.GNSCalls;
+import edu.umass.cs.contextservice.gns.GNSCallsOriginal;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ContextServicePacket;
 import edu.umass.cs.contextservice.messages.ContextServicePacket.PacketType;
 import edu.umass.cs.contextservice.messages.MetadataMsgToValuenode;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUser;
-import edu.umass.cs.contextservice.messages.QueryMsgToMetadataNode;
 import edu.umass.cs.contextservice.messages.QueryMsgToValuenode;
 import edu.umass.cs.contextservice.messages.QueryMsgToValuenodeReply;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
@@ -33,20 +33,17 @@ import edu.umass.cs.contextservice.processing.QueryInfo;
 import edu.umass.cs.contextservice.processing.QueryParser;
 import edu.umass.cs.contextservice.processing.UpdateInfo;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.gns.main.GNS;
-import edu.umass.cs.gns.nio.GenericMessagingTask;
-import edu.umass.cs.gns.nio.InterfaceNodeConfig;
-import edu.umass.cs.gns.nio.InterfacePacketDemultiplexer;
-import edu.umass.cs.gns.nio.JSONMessenger;
-import edu.umass.cs.gns.nio.NIOTransport;
-import edu.umass.cs.gns.protocoltask.ProtocolEvent;
-import edu.umass.cs.gns.protocoltask.ProtocolTask;
+import edu.umass.cs.nio.GenericMessagingTask;
+import edu.umass.cs.nio.InterfaceNodeConfig;
+import edu.umass.cs.nio.JSONMessenger;
+import edu.umass.cs.protocoltask.ProtocolEvent;
+import edu.umass.cs.protocoltask.ProtocolTask;
 
-public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> implements InterfacePacketDemultiplexer
+public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 {
-	public static final Logger log =
-			NIOTransport.LOCAL_LOGGER ? Logger.getLogger(NIOTransport.class.getName())
-					: GNS.getLogger();
+	public static final Logger log =Logger.getLogger(QueryAllScheme.class.getName());
+	
+	private final Object valueNodeReplyLock = new Object();
 	
 	//FIXME: sourceID is not properly set, it is currently set to sourceID of each node,
 	// it needs to be set to the origin sourceID.
@@ -74,7 +71,6 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 			}
 		}
 		return retMsgs;
-		//return processQueryMsgFromUser(queryMsgFromUser);
 	}
 	
 	public GenericMessagingTask<NodeIDType,?>[] handleValueUpdateFromGNS(
@@ -83,7 +79,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 	{
 		@SuppressWarnings("unchecked")
 		ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS = (ValueUpdateFromGNS<NodeIDType>)event;
-		System.out.println("CS"+getMyID()+" received " + event.getType() + ": " + valUpdMsgFromGNS);
+		//System.out.println("CS"+getMyID()+" received " + event.getType() + ": " + valUpdMsgFromGNS);
 		
 		GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>[] retMsgs 
 			= this.processValueUpdateFromGNS(valUpdMsgFromGNS);
@@ -135,7 +131,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 		QueryMsgToValuenode<NodeIDType> queryMsgToValnode = 
 				(QueryMsgToValuenode<NodeIDType>)event;
 		
-		System.out.println("CS"+getMyID()+" received " + event.getType() + ": " + queryMsgToValnode);
+		//System.out.println("CS"+getMyID()+" received " + event.getType() + ": " + queryMsgToValnode);
 		
 		
 		GenericMessagingTask<NodeIDType, QueryMsgToValuenodeReply<NodeIDType>>[] retMsgs
@@ -203,6 +199,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 		return null;
 	}
 	
+	
 	/**
 	 * Takes the attribute name as input and returns the node id 
 	 * that is responsible for metadata of that attribute.
@@ -210,7 +207,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 	 * @return
 	 */
 	public NodeIDType getResponsibleNodeId(String AttrName)
-	{	
+	{
 //		int numNodes = this.allNodeIDs.size();
 //		
 //		//String attributeHash = Utils.getSHA1(attributeName);
@@ -227,51 +224,47 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 		// in query all, replies from all nodes recvd
 		if( qinfo.componentReplies.size() == this.allNodeIDs.size() )
 		{
-			System.out.println("\n\n replies recvd from all nodes\n\n");
+			//System.out.println("\n\n replies recvd from all nodes\n\n");
 			LinkedList<LinkedList<String>> doConjuc = new LinkedList<LinkedList<String>>();
 			doConjuc.addAll(qinfo.componentReplies.values());
 			JSONArray queryAnswer = Utils.doDisjuction(doConjuc);
-			System.out.println("\n\nQuery Answer "+queryAnswer);
-				
-			long qprocessingTime = System.currentTimeMillis();
-				
+			//System.out.println("\n\nQuery Answer "+queryAnswer);
+			
 			//FIXME: uncomment this, just for debugging
-			GNSCalls.addGUIDsToGroup(queryAnswer, qinfo.getQuery());
+			GNSCalls.addGUIDsToGroup(queryAnswer, qinfo.getQuery(), qinfo.getGroupGUID());
 				
-			long queryEndTime = System.currentTimeMillis();
-				
-			if(ContextServiceConfig.EXP_PRINT_ON)
+			/*if(ContextServiceConfig.EXP_PRINT_ON)
 			{
 				System.out.println("CONTEXTSERVICE EXPERIMENT: QUERYFROMUSERREPLY REQUEST ID "
 					+qinfo.getRequestId()+" NUMATTR "+qinfo.queryComponents.size()+" AT "+qprocessingTime+" EndTime "
 					+queryEndTime+ " QUERY ANSWER "+queryAnswer);
-			}
-			sendReplyBackToUser(qinfo, (LinkedList<String>) Utils.JSONArayToList(queryAnswer));
+			}*/
+			sendReplyBackToUser(qinfo, queryAnswer);
 			
 			synchronized(this.pendingQueryLock)
 			{
 				this.pendingQueryRequests.remove(qinfo.getRequestId());
 			}
-		}
+		}	
 	}
 	
 	public GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>[] initializeScheme()
 	{
-		System.out.println("\n\n\n" +
-				"In initializeMetadataObjects NodeId "+getMyID()+"\n\n\n");
+		//System.out.println("\n\n\n" +
+		//		"In initializeMetadataObjects NodeId "+getMyID()+"\n\n\n");
 		
-		LinkedList<GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>> messageList = 
-				new  LinkedList<GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>>();
+		//LinkedList<GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>> messageList = 
+		//		new  LinkedList<GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>>();
 		
 		Vector<String> attributes = AttributeTypes.getAllAttributes();
 		for(int i=0;i<attributes.size(); i++)
 		{
 			String currAttName = attributes.get(i);
-			System.out.println("initializeMetadataObjects currAttName "+currAttName);
+			//System.out.println("initializeMetadataObjects currAttName "+currAttName);
 			//String attributeHash = Utils.getSHA1(attributeName);
 			NodeIDType respNodeId = getResponsibleNodeId(currAttName);
-			System.out.println("InitializeMetadataObjects currAttName "+currAttName
-					+" respNodeID "+respNodeId);
+			//System.out.println("InitializeMetadataObjects currAttName "+currAttName
+			//		+" respNodeID "+respNodeId);
 			// This node is responsible(meta data)for this Att.
 			if(respNodeId == getMyID() )
 			{
@@ -293,8 +286,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 				//GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>[] messageTasks = 
 				//		attrMeta.assignValueRanges(csNode.getMyID());
 				
-				GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>[] messageTasks 
-						= assignValueRanges(getMyID(), attrMetaRec);
+				assignValueRanges(getMyID(), attrMetaRec);
 				
 //				// add all the messaging tasks at different value nodes
 //				for(int j=0;j<messageTasks.length;j++)
@@ -312,7 +304,6 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 //		System.out.println("\n\n csNode.getMyID() "+getMyID()+" returnArr size "+returnArr.length +" messageList.size() "+messageList.size()+"\n\n");
 		return null;
 	}
-	
 	
 	/****************************** End of protocol task handler methods *********************/
 	/*********************** Private methods below **************************/
@@ -333,35 +324,32 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 		String userIP = queryMsgFromUser.getSourceIP();
 		int userPort = queryMsgFromUser.getSourcePort();
 		
-		ContextServiceLogger.getLogger().info("QUERY_MSG recvd query recvd "+query);
+		System.out.println("QUERY RECVD QUERY_MSG recvd query recvd "+query);
 		
-		long queryStart = System.currentTimeMillis();
 		// create the empty group in GNS
 		String grpGUID = GNSCalls.createQueryGroup(query);
 		
-		QueryInfo<NodeIDType> currReq = null;
-		Vector<QueryComponent> qcomponents = null;
+		Vector<QueryComponent> qcomponents = QueryParser.parseQuery(query);
+		
+		QueryInfo<NodeIDType> currReq = new QueryInfo<NodeIDType>(query, getMyID(),
+				grpGUID, userReqID, userIP, userPort, qcomponents);
 		
 		synchronized(this.pendingQueryLock)
-		{
-			currReq = new QueryInfo<NodeIDType>(query, getMyID(),
-					queryIdCounter++, grpGUID, this, userReqID, userIP, userPort);
-			
+		{	
 			//StartContextServiceNode.sendQueryForProcessing(qinfo);
 			//currReq.setRequestId(requestIdCounter);
 			//requestIdCounter++;
 			
-			qcomponents = QueryParser.parseQuery(currReq.getQuery());
-			currReq.setQueryComponents(qcomponents);
+			currReq.setQueryRequestID(queryIdCounter++);
 			pendingQueryRequests.put(currReq.getRequestId(), currReq);
 		}
 		
-		if(ContextServiceConfig.EXP_PRINT_ON)
+		/*if(ContextServiceConfig.EXP_PRINT_ON)
 		{
 			System.out.println("CONTEXTSERVICE EXPERIMENT: QUERYFROMUSER REQUEST ID "
 						+currReq.getRequestId()+" NUMATTR "+qcomponents.size()+" AT "+System.currentTimeMillis()
 						+" "+qcomponents.get(0).getAttributeName()+" QueryStart "+queryStart);
-		}
+		}*/
 		
 		
 		Iterator<NodeIDType> iter = this.allNodeIDs.iterator();
@@ -387,7 +375,6 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 		return 
 		(GenericMessagingTask<NodeIDType, QueryMsgToValuenode<NodeIDType>>[]) this.convertLinkedListToArray(msgList);
 	}
-	
 	
 	/**
 	 * adds the reply of the queryComponent
@@ -421,9 +408,11 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 		
 		long currReqID = -1;
 		
+		UpdateInfo<NodeIDType> currReq = null;
+		
 		synchronized(this.pendingUpdateLock)
 		{
-			UpdateInfo<NodeIDType> currReq 
+			currReq 
 				= new UpdateInfo<NodeIDType>(valUpdMsgFromGNS, updateIdCounter++);
 			currReqID = currReq.getRequestId();
 			pendingUpdateRequests.put(currReqID, currReq);
@@ -443,7 +432,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 	
 		AttributeMetaObjectRecord<NodeIDType, Double> oldMetaObjRec = null;
 	
-		if(oldMetaObjRecList.size()>0)
+		if( oldMetaObjRecList.size() > 0 )
 		{
 			oldMetaObjRec = this.getContextServiceDB().getAttributeMetaObjectRecord(attrName, oldValD, newValD).get(0);
 		}
@@ -453,44 +442,46 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 		AttributeMetaObjectRecord<NodeIDType, Double> newMetaObjRec = 
 				this.getContextServiceDB().getAttributeMetaObjectRecord(attrName, newValD, newValD).get(0);
 			
-		// do group updates for the old value
-		try
+		if(ContextServiceConfig.GROUP_UPDATE_TRIGGER)
 		{
-			if(oldMetaObjRec!=null)
+			// do group updates for the old value
+			try
 			{
-				LinkedList<GroupGUIDRecord> oldValueGroups = getGroupsAffectedUsingDatabase
-						(oldMetaObjRec, allAttrs, attrName, oldValD);
-				
-				//oldMetaObj.getGroupsAffected(allAttr, updateAttrName, oldVal);
-				
-				GNSCalls.userGUIDAndGroupGUIDOperations
-				(GUID, oldValueGroups, GNSCalls.UserGUIDOperations.REMOVE_USER_GUID_FROM_GROUP);
+				if( oldMetaObjRec != null )
+				{
+					LinkedList<GroupGUIDRecord> oldValueGroups = getGroupsAffectedUsingDatabase
+							(oldMetaObjRec, allAttrs, attrName, oldValD);
+					
+					//oldMetaObj.getGroupsAffected(allAttr, updateAttrName, oldVal);
+					
+					GNSCalls.userGUIDAndGroupGUIDOperations
+					(GUID, oldValueGroups, GNSCallsOriginal.UserGUIDOperations.REMOVE_USER_GUID_FROM_GROUP);
+				}
+			} catch (JSONException e)
+			{
+				e.printStackTrace();
 			}
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-	
-		// do group  updates for the new value
-		try
-		{
-			if(newMetaObjRec!=null)
-			{
-				LinkedList<GroupGUIDRecord> newValueGroups = getGroupsAffectedUsingDatabase
-						(newMetaObjRec, allAttrs, attrName, newValD);
-						
-						//newMetaObj.getGroupsAffected(allAttr, updateAttrName, newVal);
-				GNSCalls.userGUIDAndGroupGUIDOperations
-				(GUID, newValueGroups, GNSCalls.UserGUIDOperations.ADD_USER_GUID_TO_GROUP);
-			} else
-			{
-				assert(false);
-			}
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
 		
+			// do group  updates for the new value
+			try
+			{
+				if(newMetaObjRec!=null)
+				{
+					LinkedList<GroupGUIDRecord> newValueGroups = getGroupsAffectedUsingDatabase
+							(newMetaObjRec, allAttrs, attrName, newValD);
+							
+							//newMetaObj.getGroupsAffected(allAttr, updateAttrName, newVal);
+					GNSCalls.userGUIDAndGroupGUIDOperations
+					(GUID, newValueGroups, GNSCallsOriginal.UserGUIDOperations.ADD_USER_GUID_TO_GROUP);
+				} else
+				{
+					assert(false);
+				}
+			} catch (JSONException e)
+			{
+				e.printStackTrace();
+			}
+		}
 		
 		//FIXME: may need atomicity here
 		// just a value update, but goes to the same node
@@ -504,7 +495,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 		List<ValueInfoObjectRecord<Double>> valueInfoObjRecList = 
 				this.contextserviceDB.getValueInfoObjectRecord(attrName, newValD, newValD);
 		
-		if(valueInfoObjRecList.size() != 1)
+		if( valueInfoObjRecList.size() != 1 )
 		{
 			assert false;
 		}
@@ -532,7 +523,8 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 		}
 		
 		//send reply back
-		sendUpdateReplyBackToUser(sourceIP, sourcePort, versionNum);
+		sendUpdateReplyBackToUser(sourceIP, sourcePort, versionNum, 
+				currReq.getUpdateStartTime(), currReq.getContextStartTime());
 		
 		synchronized(this.pendingUpdateLock)
 		{
@@ -632,11 +624,11 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 		
 		JSONArray queryAnswer = Utils.doConjuction(predicateReplies);
 		
-		System.out.println("\n\nQuery Answer "+queryAnswer);
+		//System.out.println("\n\nQuery Answer "+queryAnswer);
 		
 		
 		QueryMsgToValuenodeReply<NodeIDType> queryMsgToValReply 
-			= new QueryMsgToValuenodeReply<NodeIDType>(getMyID(), (LinkedList<String>) Utils.JSONArayToList(queryAnswer), 
+			= new QueryMsgToValuenodeReply<NodeIDType>(getMyID(), queryAnswer, 
 					queryMsgToValnode.getRequestId(), 0, getMyID(), queryMsgToValnode.getNumValNodesContacted());
 	
 		GenericMessagingTask<NodeIDType, QueryMsgToValuenodeReply<NodeIDType>> mtask = 
@@ -665,10 +657,13 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 			throws JSONException
 	{
 		long requestId =  queryMsgToValnodeRep.getRequestID();
-		QueryInfo<NodeIDType> queryInfo = pendingQueryRequests.get(requestId);
-		if(queryInfo != null)
+		synchronized(valueNodeReplyLock)
 		{
-			processReplyInternally(queryMsgToValnodeRep, queryInfo);
+			QueryInfo<NodeIDType> queryInfo = pendingQueryRequests.get(requestId);
+			if(queryInfo != null)
+			{
+				processReplyInternally(queryMsgToValnodeRep, queryInfo);
+			}
 		}
 	}
 	
@@ -679,9 +674,9 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 			assignValueRanges(NodeIDType initiator, AttributeMetadataInfoRecord<NodeIDType, Double> attrMetaRec)
 	{
 		int numValueNodes = 1;
-		@SuppressWarnings("unchecked")
-		GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>[] mesgArray 
-								= new GenericMessagingTask[numValueNodes];
+		//@SuppressWarnings("unchecked")
+		//GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>[] mesgArray 
+		//						= new GenericMessagingTask[numValueNodes];
 		
 		double attributeMin = attrMetaRec.getAttrMin();
 		double attributeMax = attrMetaRec.getAttrMax();
@@ -852,5 +847,4 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> imple
 			return false;
 		}
 	}*/
-	
 }

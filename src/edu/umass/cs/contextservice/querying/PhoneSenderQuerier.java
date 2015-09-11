@@ -21,12 +21,13 @@ import edu.umass.cs.contextservice.messages.ContextServicePacket;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUser;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.gns.nio.AbstractPacketDemultiplexer;
-import edu.umass.cs.gns.nio.InterfacePacketDemultiplexer;
-import edu.umass.cs.gns.nio.JSONMessenger;
-import edu.umass.cs.gns.nio.JSONNIOTransport;
+import edu.umass.cs.nio.AbstractJSONPacketDemultiplexer;
+import edu.umass.cs.nio.InterfacePacketDemultiplexer;
+import edu.umass.cs.nio.JSONMessenger;
+import edu.umass.cs.nio.JSONNIOTransport;
 
-public class PhoneSenderQuerier<NodeIDType> implements InterfacePacketDemultiplexer
+
+public class PhoneSenderQuerier<NodeIDType> implements InterfacePacketDemultiplexer<JSONObject>
 {
 	public static final String configFileName						= "nodesInfo.txt";
 	
@@ -68,7 +69,7 @@ public class PhoneSenderQuerier<NodeIDType> implements InterfacePacketDemultiple
 		
 		csNodeConfig.add(myID, new InetSocketAddress(sourceIP, listenPort));
         
-        AbstractPacketDemultiplexer pd = new ContextServiceDemultiplexer();
+        AbstractJSONPacketDemultiplexer pd = new ContextServiceDemultiplexer();
 		//ContextServicePacketDemultiplexer pd;
 		
 		System.out.println("\n\n node IP "+csNodeConfig.getNodeAddress(this.myID)+
@@ -77,7 +78,7 @@ public class PhoneSenderQuerier<NodeIDType> implements InterfacePacketDemultiple
 		niot = new JSONNIOTransport<NodeIDType>(this.myID,  csNodeConfig, pd , true);
 		
 		JSONMessenger<NodeIDType> messenger = 
-			new JSONMessenger<NodeIDType>(niot.enableStampSenderInfo());
+			new JSONMessenger<NodeIDType>(niot);
 		
 		pd.register(ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY, this);
 		messenger.addPacketDemultiplexer(pd);
@@ -210,9 +211,24 @@ public class PhoneSenderQuerier<NodeIDType> implements InterfacePacketDemultiple
 	    return query;
 	}
 	
-	
+	private void readNodeInfo() throws NumberFormatException, UnknownHostException, IOException
+	{		
+		BufferedReader reader = new BufferedReader(new FileReader(configFileName));
+		String line = null;
+		while ((line = reader.readLine()) != null)
+		{
+			String [] parsed = line.split(" ");
+			int readNodeId = Integer.parseInt(parsed[0])+CSTestConfig.startNodeID;
+			InetAddress readIPAddress = InetAddress.getByName(parsed[1]);
+			int readPort = Integer.parseInt(parsed[2]);
+			
+			nodeMap.put(readNodeId, new InetSocketAddress(readIPAddress, readPort));
+		}
+		reader.close();
+	}
+
 	@Override
-	public boolean handleJSONObject(JSONObject jsonObject) 
+	public boolean handleMessage(JSONObject jsonObject) 
 	{
 		System.out.println("QuerySourceDemux JSON packet recvd "+jsonObject);
 		try
@@ -228,21 +244,6 @@ public class PhoneSenderQuerier<NodeIDType> implements InterfacePacketDemultiple
 			e.printStackTrace();
 		}
 		return true;
-	}
-	
-	private void readNodeInfo() throws NumberFormatException, UnknownHostException, IOException
-	{		
-		BufferedReader reader = new BufferedReader(new FileReader(configFileName));
-		String line = null;
-		while ((line = reader.readLine()) != null)
-		{
-			String [] parsed = line.split(" ");
-			int readNodeId = Integer.parseInt(parsed[0])+CSTestConfig.startNodeID;
-			InetAddress readIPAddress = InetAddress.getByName(parsed[1]);
-			int readPort = Integer.parseInt(parsed[2]);
-			
-			nodeMap.put(readNodeId, new InetSocketAddress(readIPAddress, readPort));
-		}
 	}
 	
 	/**

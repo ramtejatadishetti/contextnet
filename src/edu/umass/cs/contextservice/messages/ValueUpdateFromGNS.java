@@ -11,7 +11,7 @@ import org.json.JSONObject;
 public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 {
 	private enum Keys {VERSION_NUM, GUID, ATTRNAME, OLDVALUE, NEWVALUE, 
-		ALL_OTHER_ATTRs, SOURCE_IP, SOURCE_PORT};
+		ALL_OTHER_ATTRs, SOURCE_IP, SOURCE_PORT, UPDATE_START_TIME};
 	
 	private final long versionNum;
 	private final String GUID;
@@ -21,9 +21,10 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 	private final JSONObject allAttributes; // contains all context attributes for the group update trigger.
 	private final String sourceIP;
 	private final int sourcePort;
+	private final long updateStartTime;
 	
 	public ValueUpdateFromGNS(NodeIDType initiator, long versionNum, String GUID, String attrName, 
-			String oldVal, String newVal, JSONObject allAttributes, String sourceIP, int sourcePort)
+			String oldVal, String newVal, JSONObject allAttributes, String sourceIP, int sourcePort, long updateStartTime)
 	{
 		super(initiator, ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS);
 		this.versionNum = versionNum;
@@ -34,6 +35,7 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 		this.allAttributes = allAttributes;
 		this.sourceIP = sourceIP;
 		this.sourcePort = sourcePort;
+		this.updateStartTime = updateStartTime;
 	}
 	
 	public ValueUpdateFromGNS(JSONObject json) throws JSONException
@@ -49,6 +51,7 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 		this.allAttributes = json.getJSONObject(Keys.ALL_OTHER_ATTRs.toString());
 		this.sourceIP = json.getString(Keys.SOURCE_IP.toString());
 		this.sourcePort = json.getInt(Keys.SOURCE_PORT.toString());
+		this.updateStartTime = json.getLong(Keys.UPDATE_START_TIME.toString());
 		//System.out.println("\n\n ValueUpdateFromGNS constructor");
 	}
 	
@@ -63,6 +66,7 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 		json.put(Keys.ALL_OTHER_ATTRs.toString(), this.allAttributes);
 		json.put(Keys.SOURCE_IP.toString(), this.sourceIP);
 		json.put(Keys.SOURCE_PORT.toString(), this.sourcePort);
+		json.put(Keys.UPDATE_START_TIME.toString(), this.updateStartTime);
 		return json;
 	}
 	
@@ -104,6 +108,11 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 	public int getSourcePort()
 	{
 		return this.sourcePort;
+	}
+	
+	public long getUpdateStartTime()
+	{
+		return this.updateStartTime;
 	}
 	
 	public static void main(String[] args)

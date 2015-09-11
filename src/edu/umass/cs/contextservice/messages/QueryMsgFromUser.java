@@ -28,6 +28,10 @@ public class QueryMsgFromUser<NodeIDType> extends BasicContextServicePacket<Node
 		this.query = json.getString(Keys.QUERY.toString());
 		this.sourceIP = json.getString(Keys.SOURCE_IP.toString());
 		this.sourcePort = json.getInt(Keys.SOURCE_PORT.toString());
+		
+		//this.sourceIP = json.getString(ContextServicePacket.SENDERADDRESS);
+		//this.sourcePort = json.getInt(ContextServicePacket.SENDERPORT);
+		
 		this.userReqNum = json.getInt(Keys.USER_REQ_NUM.toString());
 	}
 	

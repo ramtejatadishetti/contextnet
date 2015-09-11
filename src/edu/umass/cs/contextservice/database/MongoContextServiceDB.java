@@ -22,6 +22,7 @@ import edu.umass.cs.contextservice.database.records.AttributeMetaObjectRecord;
 import edu.umass.cs.contextservice.database.records.AttributeMetadataInfoRecord;
 import edu.umass.cs.contextservice.database.records.NodeGUIDInfoRecord;
 import edu.umass.cs.contextservice.database.records.ValueInfoObjectRecord;
+import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 
 /**
  * Class implements context service DB in mongo DB.
@@ -246,7 +247,6 @@ public class MongoContextServiceDB<NodeIDType> extends AbstractContextServiceDB<
 			}
 			//System.out.println(cursor.next());
 		}
-		
 		return resultList;
 	}
 	
@@ -326,7 +326,7 @@ public class MongoContextServiceDB<NodeIDType> extends AbstractContextServiceDB<
 						BasicDBObject newDocument = new BasicDBObject();
 						newDocument.put(fieldType.toString(), currValue.toString());
 						
-						System.out.println("fieldType "+fieldType.toString() +
+						ContextServiceLogger.getLogger().fine("fieldType "+fieldType.toString() +
 								" currValue.toString() "+currValue.toString() );
 						
 						//DBObject dbObject = (DBObject) JSON.parse(putRec.toJSONObject().toString());
@@ -485,11 +485,23 @@ public class MongoContextServiceDB<NodeIDType> extends AbstractContextServiceDB<
 	{
 		
 	}
-
+	
 	@Override
 	public long getDatabaseSize() 
 	{
 		return 0;
+	}
+
+	@Override
+	public boolean updateGUIDRecord(String GUID, String attrName, double value) 
+	{
+		return false;
+	}
+
+	@Override
+	public JSONObject getGUIDRecord(String GUID) 
+	{
+		return new JSONObject();
 	}
 	
 	
@@ -540,7 +552,6 @@ public class MongoContextServiceDB<NodeIDType> extends AbstractContextServiceDB<
 		(Double rangeStart, Double rangeEnd, String attrName, Object updateValue, 
 			AttributeMetaObjectRecord.Operations operType, AttributeMetaObjectRecord.Keys fieldType)
 	{
-	
 	}*/
 	
 	/*@Override
@@ -582,9 +593,7 @@ public class MongoContextServiceDB<NodeIDType> extends AbstractContextServiceDB<
 		BasicDBObject searchQuery = new BasicDBObject();
 		searchQuery.put(GroupGUIDRecord.Keys.GROUP_GUID.toString(), groupGUID);
 		
-		
 		DBCursor cursor = table.find(searchQuery);
-		
 		// there should be only one entry, describing the table name
 		// and ranges of this attribute
 		if(cursor.count() == 1)
@@ -633,7 +642,6 @@ public class MongoContextServiceDB<NodeIDType> extends AbstractContextServiceDB<
 		List<NodeGUIDInfoRecord<Double>> resultList 
 											= new LinkedList<NodeGUIDInfoRecord<Double>>();
 		
-		
 		//DBCursor cursor = table.find(searchQuery);
 		// there should be only one entry, describing the table name
 		// and ranges of this attribute
@@ -664,7 +672,6 @@ public class MongoContextServiceDB<NodeIDType> extends AbstractContextServiceDB<
 		
 		BasicDBObject searchQuery = new BasicDBObject();
 		searchQuery.put(NodeGUIDInfoRecord.Keys.NODE_GUID.toString(), nodeGUID);
-		
 		
 		DBCursor cursor = table.find(searchQuery);
 		

@@ -77,7 +77,7 @@ public class QueryComponent
 		this.totalCompReply = totalCompReply;
 	}
 	
-	public void updateNumCompReplyRecvd()
+	public synchronized void updateNumCompReplyRecvd()
 	{
 		this.numCompReplyRecvd++;
 	}

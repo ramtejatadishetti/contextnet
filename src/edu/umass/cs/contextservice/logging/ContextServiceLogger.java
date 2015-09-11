@@ -1,5 +1,6 @@
 package edu.umass.cs.contextservice.logging;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ContextServiceLogger
@@ -8,7 +9,7 @@ public class ContextServiceLogger
 	
 	public static Logger getLogger()
 	{
-		//LOGGER.setLevel(Level.INFO);
+		LOGGER.setLevel(Level.INFO);
 		return LOGGER;
 		
 		// set the LogLevel to Severe, only severe Messages will be written

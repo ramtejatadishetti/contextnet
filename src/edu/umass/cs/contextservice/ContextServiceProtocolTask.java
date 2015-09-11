@@ -2,28 +2,18 @@ package edu.umass.cs.contextservice;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.Vector;
-
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.google.common.hash.Hashing;
 
-
-import edu.umass.cs.contextservice.database.records.AttributeMetaObjectRecord;
-import edu.umass.cs.contextservice.database.records.AttributeMetadataInfoRecord;
-import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.BasicContextServicePacket;
 import edu.umass.cs.contextservice.messages.ContextServicePacket;
-import edu.umass.cs.contextservice.messages.MetadataMsgToValuenode;
 import edu.umass.cs.contextservice.schemes.AbstractScheme;
-import edu.umass.cs.gns.nio.GenericMessagingTask;
-import edu.umass.cs.gns.protocoltask.ProtocolEvent;
-import edu.umass.cs.gns.protocoltask.ProtocolTask;
+import edu.umass.cs.nio.GenericMessagingTask;
+import edu.umass.cs.protocoltask.ProtocolEvent;
+import edu.umass.cs.protocoltask.ProtocolTask;
 
 /**
  * Protocol task for the whole context service
@@ -36,35 +26,14 @@ ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>
 {
 	private static final String HANDLER_METHOD_PREFIX = ContextServicePacket.HANDLER_METHOD_PREFIX; // could be any String as scope is local
 	
-	/*private static final ContextServicePacket.PacketType[] localTypes = {
-		ContextServicePacket.PacketType.DEMAND_REPORT,
-		ContextServicePacket.PacketType.CREATE_SERVICE_NAME,
-		ContextServicePacket.PacketType.DELETE_SERVICE_NAME,
-	};*/
-	
-	//private static final ContextServicePacket.PacketType[] types =
-	//	ContextServicePacket.PacketType.getPacketTypes();
 	private static final List<ContextServicePacket.PacketType> types =
 				ContextServicePacket.PacketType.getPacketTypes();
-		//(ContextServicePacket.PacketType[]) ContextServicePacket.PacketType.intToType.values().toArray();
-		/*ReconfigurationPacket.concatenate(localTypes, 
-		WaitAckStopEpoch.types, 
-		WaitAckStartEpoch.types, 
-		WaitAckDropEpoch.type
-		);*/
-
-	//static 
-	//{ // all but DEMAND_REPORT are handled by temporary protocol tasks
-	//	ReconfigurationPacket.assertPacketTypeChecks(localTypes, Reconfigurator.class, HANDLER_METHOD_PREFIX); 
-	//}
-
-	private String key = null;
-	private final NodeIDType myID;
+	
+	private String key = "contextserviceKey";
 	private final AbstractScheme<NodeIDType> csNode;
 
 	public ContextServiceProtocolTask(NodeIDType id, AbstractScheme<NodeIDType> csNode)
 	{
-		this.myID = id;
 		this.csNode = csNode;
 	}
 
@@ -73,24 +42,13 @@ ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>
 	{
 		return this.key;
 	}
-
-	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] start()
-	{
-		/**
-		 * In the beginning of the protocol, each node finds for what 
-		 * attributes it is a meta data node and sends the MetadataMsgToValueNode.
-		 * assignValueRanges() returns the messaging tasks that need to run.
-		 */
-		return csNode.initializeScheme();
-	}
 	
-	@Override
-	public String refreshKey() 
+	/*@Override
+	public String refreshKey()
 	{
 		return (this.key =
 				(this.myID.toString() + (int) (Math.random() * Integer.MAX_VALUE)));
-	}
+	}*/
 	
 	@Override
 	public Set<ContextServicePacket.PacketType> getEventTypes()
@@ -114,6 +72,7 @@ ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>
 		Object returnValue = null;
 		try
 		{
+			//System.out.println("ContextServicePacket.getPacketTypeClassName(type) "+ContextServicePacket.getPacketTypeClassName(type));
 			returnValue = this.csNode.getClass().getMethod(HANDLER_METHOD_PREFIX+
 				ContextServicePacket.getPacketTypeClassName(type), ProtocolEvent.class, 
 				ProtocolTask[].class).invoke(this.csNode, 
@@ -139,6 +98,16 @@ ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>
 	
 	public static void main(String[] args)
 	{
-		
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] start() 
+	{
+		/**
+		 * In the beginning of the protocol, each node finds for what 
+		 * attributes it is a meta data node and sends the MetadataMsgToValueNode.
+		 * assignValueRanges() returns the messaging tasks that need to run.
+		 */
+		return csNode.initializeScheme();
 	}
 }

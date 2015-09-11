@@ -9,7 +9,7 @@ import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import edu.umass.cs.gns.nio.InterfaceNodeConfig;
+import edu.umass.cs.nio.InterfaceNodeConfig;
 
 
 /**
@@ -18,10 +18,10 @@ import edu.umass.cs.gns.nio.InterfaceNodeConfig;
  *
  * @param <NodeIDType>
  */
-public class CSNodeConfig<NodeIDType> implements InterfaceNodeConfig<NodeIDType> {
-
+public class CSNodeConfig<NodeIDType> implements InterfaceNodeConfig<NodeIDType> 
+{
 	private boolean local = false;
-	HashMap<NodeIDType,InetSocketAddress> nmap=new HashMap<NodeIDType,InetSocketAddress>();;
+	HashMap<NodeIDType,InetSocketAddress> nmap=new HashMap<NodeIDType,InetSocketAddress>();
 	int defaultPort=2000;
 
 	public CSNodeConfig(int dp)
@@ -30,10 +30,10 @@ public class CSNodeConfig<NodeIDType> implements InterfaceNodeConfig<NodeIDType>
 	}
 	public CSNodeConfig() {}
 
-	public void localSetup(Set<NodeIDType> members) 
+	public void localSetup(Set<NodeIDType> members)
 	{
 		local = true;
-		for(NodeIDType i : members) 
+		for(NodeIDType i : members)
 		{
 			this.add(i, getLocalAddress());
 		}
@@ -53,7 +53,7 @@ public class CSNodeConfig<NodeIDType> implements InterfaceNodeConfig<NodeIDType>
 		}
 	}
 	
-	private InetAddress getLocalAddress() 
+	private InetAddress getLocalAddress()
 	{
 		InetAddress localAddr=null;
 		try 
@@ -146,6 +146,7 @@ public class CSNodeConfig<NodeIDType> implements InterfaceNodeConfig<NodeIDType>
 		System.out.println("0 : " + snc.getNodeAddress(0) + ":" + snc.getNodePort(0));
 		System.out.println("1 : " + snc.getNodeAddress(1) + ":" + snc.getNodePort(1));
 	}
+	
 	@Override
 	public Set<NodeIDType> getValuesFromJSONArray(JSONArray arg0)
 			throws JSONException 

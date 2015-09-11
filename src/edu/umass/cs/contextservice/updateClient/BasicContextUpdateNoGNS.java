@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
@@ -18,8 +17,8 @@ import edu.umass.cs.contextservice.ContextServiceDemultiplexer;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.gns.nio.JSONMessageExtractor;
-import edu.umass.cs.gns.nio.JSONNIOTransport;
+import edu.umass.cs.nio.AbstractJSONPacketDemultiplexer;
+import edu.umass.cs.nio.JSONNIOTransport;
 
 public class BasicContextUpdateNoGNS
 {
@@ -55,7 +54,7 @@ public class BasicContextUpdateNoGNS
 		
 		for(int i=0;i<ContextServiceConfig.NUM_ATTRIBUTES;i++)
     	{
-    		attrValueMap.put(ContextServiceConfig.CONTEXT_ATTR_PREFIX+"ATT"+i, (double) 100);
+    		attrValueMap.put(ContextServiceConfig.CONTEXT_ATTR_PREFIX+i, (double) 100);
     	}
 		return guidString;
 	}
@@ -70,7 +69,7 @@ public class BasicContextUpdateNoGNS
 	{
 		for(int i=0;i<ContextServiceConfig.NUM_ATTRIBUTES;i++)
 		{
-			String attName = ContextServiceConfig.CONTEXT_ATTR_PREFIX+"ATT"+i;
+			String attName = ContextServiceConfig.CONTEXT_ATTR_PREFIX+i;
 			double nextVal = 1+rand.nextInt((int)(AttributeTypes.MAX_VALUE-AttributeTypes.MIN_VALUE));
 			
 			double oldValue = attrValueMap.get(attName);
@@ -84,7 +83,7 @@ public class BasicContextUpdateNoGNS
 			}
 			
 			ValueUpdateFromGNS<Integer> valMsg = new ValueUpdateFromGNS<Integer>(myID, versionNum++, guidString, attName, 
-					oldValue+"", nextVal+"", allAttr, myIP.getHostAddress(), myPort);
+					oldValue+"", nextVal+"", allAttr, myIP.getHostAddress(), myPort, System.currentTimeMillis());
 			
 			niot.sendToAddress(new InetSocketAddress(InetAddress.getByName(csServerName), csPort)
 			, valMsg.toJSONObject());
@@ -109,9 +108,10 @@ public class BasicContextUpdateNoGNS
 		
 		csNodeConfig.add(myID, new InetSocketAddress(myIP, myPort));
 		
-		JSONMessageExtractor worker = new JSONMessageExtractor(new ContextServiceDemultiplexer());
+		AbstractJSONPacketDemultiplexer pd = new ContextServiceDemultiplexer();
+		//MessageExtractor worker = new MessageExtractor(pd);
 		
-		niot = new JSONNIOTransport<Integer>(myID, csNodeConfig, worker);
+		niot = new JSONNIOTransport<Integer>(myID, csNodeConfig, pd, true);
         new Thread(niot).start();
         
 		

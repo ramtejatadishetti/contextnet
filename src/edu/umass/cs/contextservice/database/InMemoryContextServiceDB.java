@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -16,6 +17,7 @@ import edu.umass.cs.contextservice.database.records.AttributeMetaObjectRecord.Op
 import edu.umass.cs.contextservice.database.records.AttributeMetadataInfoRecord;
 import edu.umass.cs.contextservice.database.records.NodeGUIDInfoRecord;
 import edu.umass.cs.contextservice.database.records.ValueInfoObjectRecord;
+import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 
 /**
  * maintains inmemory database for the context service
@@ -24,24 +26,47 @@ import edu.umass.cs.contextservice.database.records.ValueInfoObjectRecord;
  */
 public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextServiceDB<NodeIDType>
 {
+	//private final ConcurrentHashMap<String, AttributeMetadataInfoRecord<NodeIDType, Double>>
+	//																attrMetaInfoTable;
+	
+	//private final ConcurrentHashMap<String, LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>>>
+	//																metaObjTable;
+	
+	//private final ConcurrentHashMap<String, LinkedList<ValueInfoObjectRecord<Double>>>
+	//																valObjTable;
+	
+	
 	private final HashMap<String, AttributeMetadataInfoRecord<NodeIDType, Double>>
-																	attrMetaInfoTable;
-	
+	attrMetaInfoTable;
+
 	private final HashMap<String, LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>>>
-																	metaObjTable;
-	
+	metaObjTable;
+
 	private final HashMap<String, LinkedList<ValueInfoObjectRecord<Double>>>
-																	valObjTable;
+	valObjTable;
+	
+	// no need for concurrency, there are no removals or iterator
+	// used to store GUID record
+	private final HashMap<String, JSONObject>  GUIDStorageTable;
 	
 	private final Object updValInfoObjRecMonitor;
+	
+	private final Object updateGUIDRecMonitor										= new Object();
 	
 	
 	public InMemoryContextServiceDB(NodeIDType myID)
 	{
 		super(myID);
+		//attrMetaInfoTable 	= new ConcurrentHashMap<String, AttributeMetadataInfoRecord<NodeIDType, Double>>();
+		//metaObjTable 		= new ConcurrentHashMap<String, LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>>>();
+		//valObjTable 		= new ConcurrentHashMap<String, LinkedList<ValueInfoObjectRecord<Double>>>();
+		
 		attrMetaInfoTable 	= new HashMap<String, AttributeMetadataInfoRecord<NodeIDType, Double>>();
 		metaObjTable 		= new HashMap<String, LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>>>();
 		valObjTable 		= new HashMap<String, LinkedList<ValueInfoObjectRecord<Double>>>();
+		
+		// separately synchronized
+		GUIDStorageTable = new HashMap<String, JSONObject>();
 		
 		// sync monintors
 		updValInfoObjRecMonitor = new Object();
@@ -84,8 +109,13 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 			boolean queryMaxInBetween = (queryMax > attrMetaObjRec.getRangeStart()) 
 					&& (queryMax <= attrMetaObjRec.getRangeEnd());
 			
+			// or the range lies in between the queryMin and queryMax
+			
+			boolean rangeInBetween = (queryMin <= attrMetaObjRec.getRangeStart()) 
+					&& (queryMax > attrMetaObjRec.getRangeEnd());
+			
 			// or on the two conditions
-			if(queryMinInBetween || queryMaxInBetween)
+			if(queryMinInBetween || queryMaxInBetween || rangeInBetween)
 			{
 				resultList.add(attrMetaObjRec);
 			}
@@ -97,8 +127,12 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 	public List<ValueInfoObjectRecord<Double>> getValueInfoObjectRecord(
 			String attrName, double queryMin, double queryMax)
 	{
+		ContextServiceLogger.getLogger().fine("getValueInfoObjectRecord attrName "+attrName+" queryMin "+queryMin
+				+" queryMax "+queryMax);
+		
 		LinkedList<ValueInfoObjectRecord<Double>> attrValObjList = 
 				valObjTable.get(attrName);
+		
 		
 		LinkedList<ValueInfoObjectRecord<Double>> resultList = 
 				new LinkedList<ValueInfoObjectRecord<Double>>();
@@ -123,8 +157,11 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 			boolean queryMaxInBetween = (queryMax > attrValObjRec.getRangeStart()) 
 					&& (queryMax <= attrValObjRec.getRangeEnd());
 			
+			boolean rangeInBetween = (queryMin <= attrValObjRec.getRangeStart()) 
+					&& (queryMax > attrValObjRec.getRangeEnd());
+			
 			// or on the two conditions
-			if(queryMinInBetween || queryMaxInBetween)
+			if(queryMinInBetween || queryMaxInBetween || rangeInBetween)
 			{
 				resultList.add(attrValObjRec);
 			}
@@ -178,6 +215,7 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 		}
 	}
 	
+	//FIXME: need to get groupGUID from JSON object
 	@Override
 	public void updateAttributeMetaObjectRecord(
 			AttributeMetaObjectRecord<NodeIDType, Double> dbRec,
@@ -195,6 +233,8 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 						// update by reference
 						JSONArray currValue = dbRec.getGroupGUIDList();
 						currValue.put(updateValue);
+						ContextServiceLogger.getLogger().fine(InMemoryContextServiceDB.class.getName()
+								+": Groups GUID list size after inserting "+currValue.length());
 					}
 				}
 				break;
@@ -229,6 +269,8 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 						//update by reference
 						JSONArray currValue = dbRec.getNodeGUIDList();
 						currValue.put(updateValue);
+						ContextServiceLogger.getLogger().fine("updateValueInfoObjectRecord APPEND updateValue "+updateValue
+								+" updated "+currValue);
 					}
 					break;
 				}
@@ -245,6 +287,9 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 						// by reference entry should have been removed in this list
 						removeEntryFromNodeGUIDList(currValue, updateValue);
 						
+						ContextServiceLogger.getLogger().fine("updateValueInfoObjectRecord REMOVE updateValue "+updateValue
+								+" updated "+currValue);
+						
 						//currValue.put(updateValue);
 					}
 					break;
@@ -255,31 +300,32 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 	
 	private void removeEntryFromNodeGUIDList(JSONArray nodeGUIDList, JSONObject entryToBeRemoved)
 	{
-			try
+		try
+		{
+			NodeGUIDInfoRecord<Double> nodeRec = new NodeGUIDInfoRecord<Double>(entryToBeRemoved);
+			int removeIndex = -1;
+			for(int i=0;i<nodeGUIDList.length();i++)
 			{
-				NodeGUIDInfoRecord<Double> nodeRec = new NodeGUIDInfoRecord<Double>(entryToBeRemoved);
-				int removeIndex = -1;
-				for(int i=0;i<nodeGUIDList.length();i++)
+				NodeGUIDInfoRecord<Double> currItem = 
+						new NodeGUIDInfoRecord<Double>(nodeGUIDList.getJSONObject(i));
+				
+				if(nodeRec.getNodeGUID().equals(currItem.getNodeGUID()))
 				{
-					NodeGUIDInfoRecord<Double> currItem = 
-							new NodeGUIDInfoRecord<Double>(nodeGUIDList.getJSONObject(i));
-					
-					if(nodeRec.getNodeGUID().equals(currItem.getNodeGUID()))
-					{
-						removeIndex = i;
-						break;
-					}
+					removeIndex = i;
+					break;
 				}
-				if(removeIndex!=-1)
-				{
-					nodeGUIDList.remove(removeIndex);
-				}
-			} catch (JSONException e) 
-			{
-				e.printStackTrace();
 			}
-			//return nodeGUIDList;
+			if(removeIndex!=-1)
+			{
+				nodeGUIDList.remove(removeIndex);
+			}
+		} catch (JSONException e) 
+		{
+			e.printStackTrace();
+		}
+		//return nodeGUIDList;
 	}
+	
 	
 	public void printDatabase()
 	{
@@ -334,24 +380,16 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 	public long getDatabaseSize()
 	{
 		long sizeDB = 0;
-		//private final HashMap<String, AttributeMetadataInfoRecord<NodeIDType, Double>>
-		//attrMetaInfoTable;
-
-		//private final HashMap<String, LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>>>
-		//metaObjTable;
-
-		//private final HashMap<String, LinkedList<ValueInfoObjectRecord<Double>>>
-		//valObjTable;
 		
 		long attrMetaInfoTableSize = 0;
 		for (String key : attrMetaInfoTable.keySet())
 		{
 			AttributeMetadataInfoRecord<NodeIDType, Double> obj = attrMetaInfoTable.get(key);
 			
-			try 
+			try
 			{
 				attrMetaInfoTableSize+=obj.toJSONObject().toString().length();
-			} catch (JSONException e) 
+			} catch (JSONException e)
 			{
 				e.printStackTrace();
 			}
@@ -387,29 +425,60 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 			for(int i=0;i<valObjList.size();i++)
 			{
 				ValueInfoObjectRecord<Double> valObj = valObjList.get(i);
-				try 
+				try
 				{
 					valObjTableSize+=valObj.toJSONObject().toString().length();
-				} catch (JSONException e) 
+				} catch (JSONException e)
 				{
 					e.printStackTrace();
 				}
 			}
 		}
+		
 		sizeDB = attrMetaInfoTableSize+metaObjTableSize+valObjTableSize;
-		System.out.println("DB SIZE attrMetaInfoTableSize "+attrMetaInfoTableSize+" metaObjTableSize "+metaObjTableSize
+		ContextServiceLogger.getLogger().fine("DB SIZE attrMetaInfoTableSize "+attrMetaInfoTableSize+" metaObjTableSize "+metaObjTableSize
 				+" valObjTableSize "+valObjTableSize +" sizeDB "+sizeDB+" complete");
 		return sizeDB;
 	}
 	
-	/*@Override
-	public void putAttributeValueInfoRecord(AttributeValueInfoRecord putRec)
+	@Override
+	public boolean updateGUIDRecord(String GUID, String attrName, double value)
 	{
-	}*/
+		synchronized(this.updateGUIDRecMonitor)
+		{
+			JSONObject guidRec = this.GUIDStorageTable.get(GUID);
+			
+			if( guidRec == null )
+			{
+				guidRec = new JSONObject();
+				try 
+				{
+					guidRec.put(attrName, value);
+					this.GUIDStorageTable.put(GUID, guidRec);
+				} catch (JSONException e) 
+				{
+					e.printStackTrace();
+					return false;
+				}
+			}
+			else
+			{
+				try 
+				{
+					guidRec.put(attrName, value);
+				} catch (JSONException e) 
+				{
+					e.printStackTrace();
+					return false;
+				}
+			}
+		}
+		return true;
+	}
 	
-	/*@Override
-	public AttributeValueInfoRecord getAttributeValueInfoRecord(String attrName)
+	@Override
+	public JSONObject getGUIDRecord(String GUID)
 	{
-		return null;
-	}*/
+		return this.GUIDStorageTable.get(GUID);
+	}
 }

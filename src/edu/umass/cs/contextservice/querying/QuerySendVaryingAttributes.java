@@ -21,12 +21,12 @@ import edu.umass.cs.contextservice.messages.ContextServicePacket;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUser;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.gns.nio.AbstractPacketDemultiplexer;
-import edu.umass.cs.gns.nio.InterfacePacketDemultiplexer;
-import edu.umass.cs.gns.nio.JSONMessenger;
-import edu.umass.cs.gns.nio.JSONNIOTransport;
+import edu.umass.cs.nio.AbstractJSONPacketDemultiplexer;
+import edu.umass.cs.nio.InterfacePacketDemultiplexer;
+import edu.umass.cs.nio.JSONMessenger;
+import edu.umass.cs.nio.JSONNIOTransport;
 
-public class QuerySendVaryingAttributes<NodeIDType> implements InterfacePacketDemultiplexer
+public class QuerySendVaryingAttributes<NodeIDType> implements InterfacePacketDemultiplexer<JSONObject>
 {
 	public static final String configFileName						= "100nodesSetup.txt";
 	
@@ -47,11 +47,11 @@ public class QuerySendVaryingAttributes<NodeIDType> implements InterfacePacketDe
 	private final String sourceIP;
 	private final int listenPort;
 	
-	private int requestCounter									= 0;
+	private int requestCounter											= 0;
 	
-	public static int QUERY_RATE								= 5000;
+	public static int QUERY_RATE										= 5000;
 	
-	public static int NUM_ATTRs								= 100;
+	public static int NUM_ATTRs										= 100;
 	
 	public QuerySendVaryingAttributes(NodeIDType id) throws IOException
 	{
@@ -68,7 +68,7 @@ public class QuerySendVaryingAttributes<NodeIDType> implements InterfacePacketDe
 		
 		csNodeConfig.add(myID, new InetSocketAddress(sourceIP, listenPort));
         
-        AbstractPacketDemultiplexer pd = new ContextServiceDemultiplexer();
+        AbstractJSONPacketDemultiplexer pd = new ContextServiceDemultiplexer();
 		//ContextServicePacketDemultiplexer pd;
 		
 		System.out.println("\n\n node IP "+csNodeConfig.getNodeAddress(this.myID)+
@@ -76,8 +76,7 @@ public class QuerySendVaryingAttributes<NodeIDType> implements InterfacePacketDe
 		
 		niot = new JSONNIOTransport<NodeIDType>(this.myID,  csNodeConfig, pd , true);
 		
-		JSONMessenger<NodeIDType> messenger = 
-			new JSONMessenger<NodeIDType>(niot.enableStampSenderInfo());
+		JSONMessenger<NodeIDType> messenger = new JSONMessenger<NodeIDType>(niot);
 		
 		pd.register(ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY, this);
 		messenger.addPacketDemultiplexer(pd);
@@ -152,9 +151,7 @@ public class QuerySendVaryingAttributes<NodeIDType> implements InterfacePacketDe
 		/*while(true)
 		{
 			String query = getQueryOfSize(NUM_ATTRs);
-			
-			basicObj.sendQueryToContextService(query, NUM_ATTRs);
-			
+			basicObj.sendQueryToContextService(query, NUM_ATTRs);			
 	    	try
 	    	{
 	    		Thread.sleep(1000/QUERY_RATE);
@@ -210,9 +207,24 @@ public class QuerySendVaryingAttributes<NodeIDType> implements InterfacePacketDe
 	    return query;
 	}
 	
-	
+	private void readNodeInfo() throws NumberFormatException, UnknownHostException, IOException
+	{		
+		BufferedReader reader = new BufferedReader(new FileReader(configFileName));
+		String line = null;
+		while ((line = reader.readLine()) != null)
+		{
+			String [] parsed = line.split(" ");
+			int readNodeId = Integer.parseInt(parsed[0])+CSTestConfig.startNodeID;
+			InetAddress readIPAddress = InetAddress.getByName(parsed[1]);
+			int readPort = Integer.parseInt(parsed[2]);
+			
+			nodeMap.put(readNodeId, new InetSocketAddress(readIPAddress, readPort));
+		}
+		reader.close();
+	}
+
 	@Override
-	public boolean handleJSONObject(JSONObject jsonObject) 
+	public boolean handleMessage(JSONObject jsonObject)
 	{
 		System.out.println("QuerySourceDemux JSON packet recvd "+jsonObject);
 		try
@@ -228,21 +240,6 @@ public class QuerySendVaryingAttributes<NodeIDType> implements InterfacePacketDe
 			e.printStackTrace();
 		}
 		return true;
-	}
-	
-	private void readNodeInfo() throws NumberFormatException, UnknownHostException, IOException
-	{		
-		BufferedReader reader = new BufferedReader(new FileReader(configFileName));
-		String line = null;
-		while ((line = reader.readLine()) != null)
-		{
-			String [] parsed = line.split(" ");
-			int readNodeId = Integer.parseInt(parsed[0])+CSTestConfig.startNodeID;
-			InetAddress readIPAddress = InetAddress.getByName(parsed[1]);
-			int readPort = Integer.parseInt(parsed[2]);
-			
-			nodeMap.put(readNodeId, new InetSocketAddress(readIPAddress, readPort));
-		}
 	}
 	
 	/**

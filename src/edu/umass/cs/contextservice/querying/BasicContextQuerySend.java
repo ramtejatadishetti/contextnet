@@ -18,10 +18,10 @@ import edu.umass.cs.contextservice.messages.ContextServicePacket;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUser;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.gns.nio.AbstractPacketDemultiplexer;
-import edu.umass.cs.gns.nio.InterfacePacketDemultiplexer;
-import edu.umass.cs.gns.nio.JSONMessenger;
-import edu.umass.cs.gns.nio.JSONNIOTransport;
+import edu.umass.cs.nio.AbstractJSONPacketDemultiplexer;
+import edu.umass.cs.nio.InterfacePacketDemultiplexer;
+import edu.umass.cs.nio.JSONMessenger;
+import edu.umass.cs.nio.JSONNIOTransport;
 
 /**
  * Class is used to send queries to context service.
@@ -31,7 +31,7 @@ import edu.umass.cs.gns.nio.JSONNIOTransport;
  * @author adipc
  *
  */
-public class BasicContextQuerySend<NodeIDType> implements InterfacePacketDemultiplexer
+public class BasicContextQuerySend<NodeIDType> implements InterfacePacketDemultiplexer<JSONObject>
 {
 	public static String csServerName 					= "ananas.cs.umass.edu";
 	public static int csPort 							= 5000;
@@ -63,7 +63,7 @@ public class BasicContextQuerySend<NodeIDType> implements InterfacePacketDemulti
 		
 		csNodeConfig.add(myID, new InetSocketAddress(sourceIP, LISTEN_PORT));
         
-        AbstractPacketDemultiplexer pd = new ContextServiceDemultiplexer();
+        AbstractJSONPacketDemultiplexer pd = new ContextServiceDemultiplexer();
 		//ContextServicePacketDemultiplexer pd;
 		
 		System.out.println("\n\n node IP "+csNodeConfig.getNodeAddress(this.myID)+
@@ -72,11 +72,10 @@ public class BasicContextQuerySend<NodeIDType> implements InterfacePacketDemulti
 		niot = new JSONNIOTransport<NodeIDType>(this.myID,  csNodeConfig, pd , true);
 		
 		JSONMessenger<NodeIDType> messenger = 
-			new JSONMessenger<NodeIDType>(niot.enableStampSenderInfo());
+			new JSONMessenger<NodeIDType>(niot);
 		
 		pd.register(ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY, this);
-		messenger.addPacketDemultiplexer(pd);
-		
+		messenger.addPacketDemultiplexer(pd);	
 	}
 	
 	public void stopThis()
@@ -300,19 +299,18 @@ public class BasicContextQuerySend<NodeIDType> implements InterfacePacketDemulti
 	}
 
 	@Override
-	public boolean handleJSONObject(JSONObject jsonObject) 
+	public boolean handleMessage(JSONObject jsonObject) 
 	{
 		System.out.println("QuerySourceDemux JSON packet recvd "+jsonObject);
-		try 
+		try
 		{
 			if(jsonObject.getInt(ContextServicePacket.PACKET_TYPE) 
 					== ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY.getInt())
 			{
 				System.out.println("JSON packet recvd "+jsonObject);
 				handleQueryReply(jsonObject);
-			
 			}
-		} catch (JSONException e) 
+		} catch (JSONException e)
 		{
 			e.printStackTrace();
 		}

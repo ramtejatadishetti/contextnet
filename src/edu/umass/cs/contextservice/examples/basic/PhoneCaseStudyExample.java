@@ -10,7 +10,7 @@ import java.net.UnknownHostException;
 import edu.umass.cs.contextservice.CSNodeConfig;
 import edu.umass.cs.contextservice.ContextServiceNode;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.gns.nio.InterfaceNodeConfig;
+import edu.umass.cs.nio.InterfaceNodeConfig;
 
 /**
  * Planetlab context service example with 10 nodes, with simple
@@ -19,20 +19,20 @@ import edu.umass.cs.gns.nio.InterfaceNodeConfig;
  */
 public class PhoneCaseStudyExample extends ContextServiceNode<Integer>
 {
-	public static final int CONTEXTNET								= 1;
-	public static final int REPLICATE_ALL							= 2;
-	public static final int QUERY_ALL								= 3;
-	public static final int MERCURY									= 4;
-	public static final int HYPERDEX									= 5;
+	public static final int CONTEXTNET									= 1;
+	public static final int REPLICATE_ALL								= 2;
+	public static final int QUERY_ALL									= 3;
+	public static final int MERCURY										= 4;
+	public static final int HYPERDEX										= 5;
 	
 	
-	private static CSNodeConfig<Integer> csNodeConfig					= null;
+	private static CSNodeConfig<Integer> csNodeConfig						= null;
 	
 	//private static DatagramSocket server_socket;
 	
-	private static PhoneCaseStudyExample[] nodes						= null;
+	private static PhoneCaseStudyExample[] nodes							= null;
 	
-	public static final String configFileName						= "nodesInfo.txt";
+	public static final String configFileName							= "nodesInfo.txt";
 	
 	public PhoneCaseStudyExample(Integer id, InterfaceNodeConfig<Integer> nc)
 			throws IOException
@@ -165,6 +165,7 @@ public class PhoneCaseStudyExample extends ContextServiceNode<Integer>
 			
 			csNodeConfig.add(readNodeId, new InetSocketAddress(readIPAddress, readPort));
 		}
+		reader.close();
 	}
 	
 	private static class StartNode implements Runnable

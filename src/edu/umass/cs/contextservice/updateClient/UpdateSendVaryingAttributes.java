@@ -22,27 +22,27 @@ import edu.umass.cs.contextservice.messages.ContextServicePacket;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.gns.nio.AbstractPacketDemultiplexer;
-import edu.umass.cs.gns.nio.InterfacePacketDemultiplexer;
-import edu.umass.cs.gns.nio.JSONMessenger;
-import edu.umass.cs.gns.nio.JSONNIOTransport;
+import edu.umass.cs.nio.AbstractJSONPacketDemultiplexer;
+import edu.umass.cs.nio.InterfacePacketDemultiplexer;
+import edu.umass.cs.nio.JSONMessenger;
+import edu.umass.cs.nio.JSONNIOTransport;
 
-public class UpdateSendVaryingAttributes<NodeIDType> implements InterfacePacketDemultiplexer
+public class UpdateSendVaryingAttributes<NodeIDType> implements InterfacePacketDemultiplexer<JSONObject>
 {
 	//public static String csServerName 										= "ananas.cs.umass.edu";
 	//public static int csPort 													= 5000;
-		
-	public static final String configFileName								= "100nodesSetup.txt";
-		
+	
+	public static final String configFileName								= "contextServiceNodeSetup.txt";
+	
 	private static final Random rand 										= new Random();
-		
+	
 	public static final String CLIENT_GUID_PREFIX							= "clientGUID";
-		
+	
 	private static final HashMap<String, Double> attrValueMap				= new HashMap<String, Double>();
 	
 	private static final HashMap<Integer, InetSocketAddress> nodeMap			= new HashMap<Integer, InetSocketAddress>();
-		
-	private static final int START_PORT										= 9189;
+	
+	//private static final int START_PORT										= 9189;
 	
 	// per 1000msec
 	
@@ -68,7 +68,8 @@ public class UpdateSendVaryingAttributes<NodeIDType> implements InterfacePacketD
 		
 		myID = id;
 		
-		listenPort = START_PORT+Integer.parseInt(myID.toString());
+		listenPort = rand.nextInt(50000);
+		//START_PORT+Integer.parseInt(myID.toString());
 		
 		csNodeConfig = new CSNodeConfig<NodeIDType>();
 		
@@ -78,7 +79,7 @@ public class UpdateSendVaryingAttributes<NodeIDType> implements InterfacePacketD
 		
 		csNodeConfig.add(myID, new InetSocketAddress(sourceIP, listenPort));
         
-        AbstractPacketDemultiplexer pd = new ContextServiceDemultiplexer();
+        AbstractJSONPacketDemultiplexer pd = new ContextServiceDemultiplexer();
 		
 		System.out.println("\n\n node IP "+csNodeConfig.getNodeAddress(this.myID)+
 				" node Port "+csNodeConfig.getNodePort(this.myID)+" nodeID "+this.myID);
@@ -86,7 +87,7 @@ public class UpdateSendVaryingAttributes<NodeIDType> implements InterfacePacketD
 		niot = new JSONNIOTransport<NodeIDType>(this.myID,  csNodeConfig, pd , true);
 		
 		JSONMessenger<NodeIDType> messenger = 
-			new JSONMessenger<NodeIDType>(niot.enableStampSenderInfo());
+			new JSONMessenger<NodeIDType>(niot);
 		
 		pd.register(ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY, this);
 		messenger.addPacketDemultiplexer(pd);
@@ -113,25 +114,6 @@ public class UpdateSendVaryingAttributes<NodeIDType> implements InterfacePacketD
 		}
 	}
 	
-	@Override
-	public boolean handleJSONObject(JSONObject jsonObject) 
-	{
-		System.out.println("QuerySourceDemux JSON packet recvd "+jsonObject);
-		try
-		{
-			if(jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-					== ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY.getInt())
-			{
-				System.out.println("JSON packet recvd "+jsonObject);
-				handleUpdateReply(jsonObject);
-			}
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-		return true;
-	}
-	
 	/**
 	 * creates GUID and adds all attributes
 	 */
@@ -142,7 +124,7 @@ public class UpdateSendVaryingAttributes<NodeIDType> implements InterfacePacketD
 		
 		for(int i=0;i<ContextServiceConfig.NUM_ATTRIBUTES;i++)
     	{
-    		attrValueMap.put(ContextServiceConfig.CONTEXT_ATTR_PREFIX+"ATT"+i, (double) 100);
+    		attrValueMap.put(ContextServiceConfig.CONTEXT_ATTR_PREFIX+i, (double) 100);
     	}
 		return guidString;
 	}
@@ -158,7 +140,7 @@ public class UpdateSendVaryingAttributes<NodeIDType> implements InterfacePacketD
 		for(int i=0;i<ContextServiceConfig.NUM_ATTRIBUTES;i++)
 		{
 			//System.out.println("doAttributeUpdates called "+i);
-			String attName = ContextServiceConfig.CONTEXT_ATTR_PREFIX+"ATT"+i;
+			String attName = ContextServiceConfig.CONTEXT_ATTR_PREFIX+i;
 			double nextVal = 1+rand.nextInt((int)(AttributeTypes.MAX_VALUE-AttributeTypes.MIN_VALUE));
 			
 			double oldValue = attrValueMap.get(attName);
@@ -172,7 +154,7 @@ public class UpdateSendVaryingAttributes<NodeIDType> implements InterfacePacketD
 			}
 			
 			ValueUpdateFromGNS<NodeIDType> valMsg = new ValueUpdateFromGNS<NodeIDType>(myID, versionNum++, guidString, attName, 
-					oldValue+"", nextVal+"", allAttr, sourceIP, listenPort);
+					oldValue+"", nextVal+"", allAttr, sourceIP, listenPort, System.currentTimeMillis());
 			
 			System.out.println("CONTEXTSERVICE EXPERIMENT: UPDATEFROMUSER REQUEST ID "
 					+ valMsg.getVersionNum() +" AT "+System.currentTimeMillis());
@@ -235,5 +217,23 @@ public class UpdateSendVaryingAttributes<NodeIDType> implements InterfacePacketD
 			}
 		}
 	}
-	
+
+	@Override
+	public boolean handleMessage(JSONObject jsonObject) 
+	{
+		System.out.println("QuerySourceDemux JSON packet recvd "+jsonObject);
+		try
+		{
+			if(jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
+					== ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY.getInt())
+			{
+				System.out.println("JSON packet recvd "+jsonObject);
+				handleUpdateReply(jsonObject);
+			}
+		} catch (JSONException e)
+		{
+			e.printStackTrace();
+		}
+		return true;
+	}
 }

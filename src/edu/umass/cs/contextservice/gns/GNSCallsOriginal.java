@@ -16,15 +16,16 @@ import edu.umass.cs.gns.client.GnsProtocol;
 import edu.umass.cs.gns.client.GuidEntry;
 import edu.umass.cs.gns.client.UniversalTcpClient;
 import edu.umass.cs.gns.client.util.KeyPairUtils;
+import edu.umass.cs.gns.exceptions.GnsDuplicateNameException;
 import edu.umass.cs.gns.exceptions.GnsException;
+
 
 /**
  * GNS Calls required for context service. The group calls
  * supported don't require keys for update. They have all write permissions
  * @author adipc
- *
  */
-public class GNSCalls
+public class GNSCallsOriginal
 {
 		//public static String gnsHost = "ananas.cs.umass.edu";
 		//NIO LNS port
@@ -40,28 +41,23 @@ public class GNSCalls
 		private final static Logger log = ContextServiceLogger.getLogger();
 		
 		/**
-		 * takes alias of group, which is query and reads groupmembers
+		 * Takes alias of group, which is query and reads groupmembers.
+		 * Doesn't need to be optimized as it is not called from context service code.
 		 * @param query
 		 * @return guids of group members
 		 */
-		public static JSONArray readGroupMembers(String query)
+		public static JSONArray readGroupMembers(String query, String groupGUID)
 		{
-			/*String defaultGns = KeyPairUtils.getDefaultGnsFromPreferences();
-			String[] parsed = defaultGns.split(":");
-			String gnsHost = parsed[0];
-			int gnsPort = Integer.parseInt(parsed[1]);
-			UniversalTcpClient gnsClient = new UniversalTcpClient(gnsHost, gnsPort);*/
-			
 			JSONArray grpMem = null;
 			
 			try
 			{
-				String queryHash = Utils.getSHA1(query);	
+				//String queryHash = Utils.getSHA1(query);	
 				//GuidEntry myGuidEntry = KeyPairUtils.getDefaultGuidEntryFromPreferences(defaultGns);
 				
-				String guidString = gnsClient.lookupGuid(queryHash);
+				//String guidString = gnsClient.lookupGuid(queryHash);
 				// group should be read by all, atleast for now
-				grpMem = gnsClient.groupGetMembers(guidString, myGuidEntry);
+				grpMem = gnsClient.groupGetMembers(groupGUID, myGuidEntry);
 			} catch (UnsupportedEncodingException e)
 			{
 				e.printStackTrace();
@@ -85,7 +81,7 @@ public class GNSCalls
 		 * @return groupGUID if successful otherwise empty string
 		 */
 		public static String createQueryGroup(String queryString)
-		{	
+		{
 			String groupGUIDString = "";
 			try
 			{
@@ -107,8 +103,8 @@ public class GNSCalls
 			     * the GNS on the same connection as the library is not thread-safe from
 			     * that standpoint.
 			     */
-			    synchronized (gnsClient)
-			    {
+			    //synchronized (gnsClient)
+			    //{
 			    	boolean groupFound = false;
 			    	try
 			    	{
@@ -116,7 +112,11 @@ public class GNSCalls
 			    		// just reset it. If lookup doesn't succeed then 
 			    		// create the group.
 			    		groupGUIDString = gnsClient.lookupGuid(queryHash);
-			    		groupFound = true;
+			    		
+			    		if( groupGUIDString.length() > 0 )
+			    		{
+			    			groupFound = true;
+			    		}
 			    	} catch(Exception ex)
 			    	{
 			    		// lookup failed, create the group.
@@ -126,12 +126,12 @@ public class GNSCalls
 			    	//create the group
 			    	if(!groupFound)
 			    	{
-			    		log.info("No group exisits " + queryString + " and hash "+queryHash+". Generating new GUID and keys");
+			    		log.fine("No group exisits " + queryString + " and hash "+queryHash+". Generating new GUID and keys");
 			    		// Create a new GUID
 			    		GuidEntry groupGuid = gnsClient.guidCreate(myGuidEntry, queryHash);
 			    		
 			    		// save keys in the preference
-			    		System.out.println("saving keys to local");
+			    		//System.out.println("saving keys to local");
 			    		KeyPairUtils.saveKeyPairToPreferences(KeyPairUtils.getDefaultGnsFromPreferences(), 
 			    			  groupGuid.getEntityName() , groupGuid.getGuid(), 
 			    			  new KeyPair(groupGuid.getPublicKey(), groupGuid.getPrivateKey()));
@@ -149,12 +149,12 @@ public class GNSCalls
 			    		//gnsClient.fieldCreate(groupGuid.getGuid(), ALIAS_FIELD, new JSONArray().put(name), myGuid);
 			    	} else // reset the group
 			    	{
-			    		log.info("group already exists, just reseting the group "+groupGUIDString);
+			    		log.fine("group already exists, just reseting the group "+groupGUIDString);
 			    		//FIXME: need one command to reset the group.
 			    		JSONArray jsonMem = gnsClient.groupGetMembers(groupGUIDString, myGuidEntry);
 			    		if(jsonMem.length() > 0)
 			    		{
-			    			log.info("number of members already in group "+jsonMem.length());
+			    			log.fine("number of members already in group "+jsonMem.length());
 			    			gnsClient.groupRemoveGuids(groupGUIDString, jsonMem, myGuidEntry);
 			    		}
 			    	}
@@ -165,12 +165,29 @@ public class GNSCalls
 			    	//gnsClient
 			    	//.fieldReplaceOrCreate(myGuid.getGuid(), GnsConstants.SERVER_REG_ADDR, 
 			    	//new JSONArray().put(ipPort), myGuid);
-			    }
-			} catch(Exception ex)
+			    //}
+			}
+			catch(GnsDuplicateNameException gdnex)
+			{
+				System.out.println("Duplicate name exception");
+				
+				try
+		    	{
+		    		// if lookup succeeds then there is a group that exists,
+		    		// just reset it. If lookup doesn't succeed then 
+		    		// create the group.
+					String queryHash = Utils.getSHA1(queryString);
+		    		groupGUIDString = gnsClient.lookupGuid(queryHash);
+		    	} catch(Exception ex)
+		    	{
+		    		// lookup failed, create the group.
+		    	}
+			}
+			catch(Exception ex)
 			{
 				ex.printStackTrace();
 			}
-			System.out.println("createQueryGroup groupGUID returned "+groupGUIDString);
+			//System.out.println("createQueryGroup groupGUID returned "+groupGUIDString);
 			return groupGUIDString;
 		}
 		
@@ -179,19 +196,16 @@ public class GNSCalls
 		 * @param guidsList
 		 * @param queryString
 		 */
-		public static void addGUIDsToGroup(JSONArray guidsList, String queryString)
+		public static void addGUIDsToGroup(JSONArray guidsList, String queryString, String groupGUID)
 		{
 			try
-			{
-				String queryHash = Utils.getSHA1(queryString);
-				
+			{	
 				/*String defaultGns = KeyPairUtils.getDefaultGnsFromPreferences();
 				String[] parsed = defaultGns.split(":");
 				String gnsHost = parsed[0];
 				int gnsPort = Integer.parseInt(parsed[1]);
 				GuidEntry myGuidEntry = KeyPairUtils.getDefaultGuidEntryFromPreferences(defaultGns);
 				UniversalTcpClient gnsClient = new UniversalTcpClient(gnsHost, gnsPort);*/
-				
 			    // GuidEntry groupGuid = KeyPairUtils.getGuidEntryFromPreferences(defaultGns, queryHash);
 			    
 			    /*
@@ -199,20 +213,16 @@ public class GNSCalls
 			     * the GNS on the same connection as the library is not thread-safe from
 			     * that standpoint.
 			     */
-			    synchronized (gnsClient)
+			    //synchronized (gnsClient)
 			    {
-			      //if(groupGuid!=null)
+			      if( guidsList != null )
 			      {
-			    	  String groupGUIDString = gnsClient.lookupGuid(queryHash);
-			    	  gnsClient.groupAddGuids(groupGUIDString, guidsList, myGuidEntry);
+			    	  gnsClient.groupAddGuids(groupGUID, guidsList, myGuidEntry);
 			      }
-			      /*else
-			      {
-			    	  assert(false);
-			      }*/
 			    }
 			} catch(Exception ex)
 			{
+				System.out.println("groupGUID "+groupGUID+" guidsList "+guidsList);
 				ex.printStackTrace();
 			}
 		}
@@ -229,7 +239,6 @@ public class GNSCalls
 			try
 			{
 				/*String defaultGns = KeyPairUtils.getDefaultGnsFromPreferences();
-				
 				String[] parsed = defaultGns.split(":");
 				String gnsHost = parsed[0];
 				int gnsPort = Integer.parseInt(parsed[1]);
@@ -239,9 +248,7 @@ public class GNSCalls
 				for(int i=0;i<groupGUIDList.size();i++)
 				{
 					GroupGUIDRecord grpGUIDInfo = groupGUIDList.get(i);
-					String queryString = grpGUIDInfo.getGroupQuery();
-					
-					String queryHash = Utils.getSHA1(queryString);
+					String grpGUID = grpGUIDInfo.getGroupGUID();
 					
 					//GuidEntry groupGuid = KeyPairUtils.getGuidEntryFromPreferences(defaultGns, queryHash);
 				    
@@ -250,34 +257,28 @@ public class GNSCalls
 				     * the GNS on the same connection as the library is not thread-safe from
 				     * that standpoint.
 				     */
-				    synchronized (gnsClient)
+				    //synchronized (gnsClient)
 				    {
-				      String groupGUIDString = gnsClient.lookupGuid(queryHash);
 				      //if(groupGuid!=null)
 				      //{
 				    	  switch(oper)
 				    	  {
 				    	  	case ADD_USER_GUID_TO_GROUP:
 				    	  	{
-				    	  		System.out.println("ADD_USER_GUID_TO_GROUP "+" groupGUIDString "+
-				    	  				groupGUIDString+" userGUID "+userGUID);
+				    	  		log.fine("ADD_USER_GUID_TO_GROUP "+" groupGUIDString "+
+				    	  				grpGUID+" userGUID "+userGUID);
 				    	  		
-				    	  		gnsClient.groupAddGuid(groupGUIDString, userGUID, myGuidEntry);
+				    	  		gnsClient.groupAddGuid(grpGUID, userGUID, myGuidEntry);
 				    	  		break;
 				    	  	}
 				    	  	case REMOVE_USER_GUID_FROM_GROUP:
 				    	  	{
-				    	  		System.out.println("REMOVE_USER_GUID_FROM_GROUP "+" groupGUIDString "+
-				    	  				groupGUIDString+" userGUID "+userGUID);
-				    	  		gnsClient.groupRemoveGuid(groupGUIDString, userGUID, myGuidEntry);
+				    	  		log.fine("REMOVE_USER_GUID_FROM_GROUP "+" groupGUIDString "+
+				    	  				grpGUID+" userGUID "+userGUID);
+				    	  		gnsClient.groupRemoveGuid(grpGUID, userGUID, myGuidEntry);
 				    	  		break;
 				    	  	}
 				    	  }
-				      //}
-				      /*else
-				      {
-				    	  assert(false);
-				      }*/
 				    }
 				}
 			} catch(Exception ex)
@@ -296,8 +297,7 @@ public class GNSCalls
 		{
 			try
 			{
-				/*String defaultGns = KeyPairUtils.getDefaultGnsFromPreferences();
-				
+				/*String defaultGns = KeyPairUtils.getDefaultGnsFromPreferences();		
 				String[] parsed = defaultGns.split(":");
 				String gnsHost = parsed[0];
 				int gnsPort = Integer.parseInt(parsed[1]);
@@ -307,13 +307,12 @@ public class GNSCalls
 				String queryHash = Utils.getSHA1(groupQuery);
 				
 				//GuidEntry groupGuid = KeyPairUtils.getGuidEntryFromPreferences(defaultGns, queryHash);
-				  
 			    /*
 			     * Take a lock on the GNS connection object to prevent concurrent queries to
 			     * the GNS on the same connection as the library is not thread-safe from
 			     * that standpoint.
 			     */
-			    synchronized (gnsClient)
+			    //synchronized (gnsClient)
 			    {
 			      //if(groupGuid!=null)
 			      {
@@ -321,12 +320,31 @@ public class GNSCalls
 			    	  String addrString = socketAddress.getAddress().getHostAddress()+":"+socketAddress.getPort();
 			    	  JSONArray arr = new JSONArray();
 			    	  arr.put(addrString);
-			    	  gnsClient.fieldAppend(groupGUIDString, GnsConstants.NOTIFICATION_SET, arr, myGuidEntry);
+			    	  boolean alreadyThere = false;
+			    	  
+			    	  // separate try because if notification set field is not there then it will throw 
+			    	  // exception. Exception shoudl be caught and notifiaction set updated.
+			    	  try{
+				    	  JSONArray notSet = gnsClient.fieldReadArray(groupGUIDString, GnsConstants.NOTIFICATION_SET, myGuidEntry);
+				    	  log.fine("\n\n notSet size "+notSet.length());
+				    	  for(int i=0;i < notSet.length();i++)
+				    	  {
+				    		  log.fine(" addStr "+addrString+" from set "+notSet.getString(i));
+				    		  if( addrString.equals(notSet.getString(i)) )
+				    		  {
+				    			  alreadyThere = true;
+				    			  break;
+				    		  }
+				    	  }
+			    	  } catch(Exception ex)
+			    	  {
+			    		  ex.printStackTrace();
+			    	  }
+			    	  if(!alreadyThere)
+			    	  {
+			    		  gnsClient.fieldAppend(groupGUIDString, GnsConstants.NOTIFICATION_SET, arr, myGuidEntry);
+			    	  }
 			      }
-			      /*else
-			      {
-			    	  assert(false);
-			      }*/
 			    }
 			} catch(Exception ex)
 			{
@@ -335,39 +353,22 @@ public class GNSCalls
 		}
 		
 		
-		public static JSONArray getNotificationSetOfAGroup(String groupQuery)
+		public static JSONArray getNotificationSetOfAGroup(String groupQuery, String grpGUID)
 		{
 			JSONArray result = new JSONArray();
 			try
-			{
-				/*String defaultGns = KeyPairUtils.getDefaultGnsFromPreferences();
-				
-				String[] parsed = defaultGns.split(":");
-				String gnsHost = parsed[0];
-				int gnsPort = Integer.parseInt(parsed[1]);
-				GuidEntry myGuidEntry = KeyPairUtils.getDefaultGuidEntryFromPreferences(defaultGns);
-				UniversalTcpClient gnsClient = new UniversalTcpClient(gnsHost, gnsPort);*/
-				
-				String queryHash = Utils.getSHA1(groupQuery);
-				
-				//GuidEntry groupGuid = KeyPairUtils.getGuidEntryFromPreferences(defaultGns, queryHash);
-				
+			{	
 			    /*
 			     * Take a lock on the GNS connection object to prevent concurrent queries to
 			     * the GNS on the same connection as the library is not thread-safe from
 			     * that standpoint.
 			     */
-			    synchronized (gnsClient)
+			    //synchronized (gnsClient)
 			    {
 			      //if(groupGuid!=null)
 			      {
-			    	  String groupGUIDString = gnsClient.lookupGuid(queryHash);
-			    	  result = gnsClient.fieldReadArray(groupGUIDString, GnsConstants.NOTIFICATION_SET, myGuidEntry);
+			    	  result = gnsClient.fieldReadArray(grpGUID, GnsConstants.NOTIFICATION_SET, myGuidEntry);
 			      }
-			      /*else
-			      {
-			    	  assert(false);
-			      }*/
 			    }
 			} catch(Exception ex)
 			{
@@ -377,38 +378,21 @@ public class GNSCalls
 		}
 		
 		
-		public static void clearNotificationSetOfAGroup(String groupQuery)
+		public static void clearNotificationSetOfAGroup(String groupQuery, String grpGUID)
 		{
 			try
-			{
-				/*String defaultGns = KeyPairUtils.getDefaultGnsFromPreferences();
-				
-				String[] parsed = defaultGns.split(":");
-				String gnsHost = parsed[0];
-				int gnsPort = Integer.parseInt(parsed[1]);
-				GuidEntry myGuidEntry = KeyPairUtils.getDefaultGuidEntryFromPreferences(defaultGns);
-				UniversalTcpClient gnsClient = new UniversalTcpClient(gnsHost, gnsPort);*/
-				
-				String queryHash = Utils.getSHA1(groupQuery);
-				
-				//GuidEntry groupGuid = KeyPairUtils.getGuidEntryFromPreferences(defaultGns, queryHash);
-				    
+			{	    
 			    /*
 			     * Take a lock on the GNS connection object to prevent concurrent queries to
 			     * the GNS on the same connection as the library is not thread-safe from
 			     * that standpoint.
 			     */
-			    synchronized (gnsClient)
+			    //synchronized (gnsClient)
 			    {
 			      //if(groupGuid!=null)
 			      {
-			    	  String groupGUIDString = gnsClient.lookupGuid(queryHash);
-			    	  gnsClient.fieldClear(groupGUIDString, GnsConstants.NOTIFICATION_SET, myGuidEntry);
+			    	  gnsClient.fieldClear(grpGUID, GnsConstants.NOTIFICATION_SET, myGuidEntry);
 			      }
-			      /*else
-			      {
-			    	  assert(false);
-			      }*/
 			    }
 			} catch(Exception ex)
 			{
@@ -447,6 +431,7 @@ public class GNSCalls
 			 }
 		}*/
 		
+		
 		/**
 		 * Checks if the group for the given query already 
 		 * exists. Query is used as an alias to look for the
@@ -469,7 +454,7 @@ public class GNSCalls
 			try
 			{
 				guidString = gnsClient.lookupGuid(query);
-				
+					
 			} catch (UnsupportedEncodingException e)
 			{
 				e.printStackTrace();

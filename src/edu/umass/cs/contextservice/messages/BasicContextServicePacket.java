@@ -9,17 +9,18 @@ import org.json.JSONObject;
  *
  * @param <NodeIDType>
  */
-public abstract class BasicContextServicePacket<NodeIDType> extends ContextServicePacket<NodeIDType> 
+public abstract class BasicContextServicePacket<NodeIDType> extends ContextServicePacket<NodeIDType>
 {
-	public BasicContextServicePacket(NodeIDType initiator, PacketType t) {
+	public BasicContextServicePacket(NodeIDType initiator, PacketType t) 
+	{
 		super(initiator);
-		this.setType(t);
-		
+		this.setType(t);	
 		//this.serviceName = name;
 		//this.epochNumber = epochNumber;
 	}
 	
-	public BasicContextServicePacket(JSONObject json) throws JSONException {
+	public BasicContextServicePacket(JSONObject json) throws JSONException 
+	{
 		super(json);
 		
 		//this.serviceName = json.getString(Keys.SERVICE_NAME.toString());
@@ -34,7 +35,8 @@ public abstract class BasicContextServicePacket<NodeIDType> extends ContextServi
 		return json;
 	}
 	
-	/*public String getServiceName() {
+	/*public String getServiceName() 
+	{
 		return this.serviceName;
 	}
 	public int getEpochNumber() {
@@ -42,8 +44,10 @@ public abstract class BasicContextServicePacket<NodeIDType> extends ContextServi
 	}*/
 	
 
-	public static void main(String[] args) {
-		/*class BRP extends BasicContextServicePacket<Integer> {
+	public static void main(String[] args) 
+	{
+		/*class BRP extends BasicContextServicePacket<Integer> 
+		{
 			BRP(Integer initiator, PacketType t, String name, int epochNumber) {
 				super(initiator, t, name, epochNumber);
 			}
@@ -53,9 +57,11 @@ public abstract class BasicContextServicePacket<NodeIDType> extends ContextServi
 		}
 		BRP brc = new BRP(3, ContextServicePacket.PacketType.DEMAND_REPORT, "name1", 4);
 		System.out.println(brc);
-		try {
+		try 
+		{
 			System.out.println(new BRP(brc.toJSONObject()));
-		} catch(JSONException je) {
+		} catch(JSONException je) 
+		{
 			je.printStackTrace();
 		}*/
 	}

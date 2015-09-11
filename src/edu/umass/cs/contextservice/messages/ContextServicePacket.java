@@ -10,24 +10,28 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
-import edu.umass.cs.gns.nio.IntegerPacketType;
-import edu.umass.cs.gns.nio.JSONPacket;
-import edu.umass.cs.gns.protocoltask.ProtocolEvent;
-import edu.umass.cs.gns.protocoltask.ProtocolTask;
-import edu.umass.cs.gns.protocoltask.json.ProtocolPacket;
-import edu.umass.cs.gns.util.IntegerPacketTypeMap;
+import edu.umass.cs.nio.IntegerPacketType;
+import edu.umass.cs.nio.JSONNIOTransport;
+import edu.umass.cs.nio.JSONPacket;
+import edu.umass.cs.protocoltask.ProtocolEvent;
+import edu.umass.cs.protocoltask.ProtocolTask;
+import edu.umass.cs.protocoltask.json.ProtocolPacket;
+import edu.umass.cs.utils.IntegerPacketTypeMap;
+
 
 /**
- * 
  * @author adipc
- * 
  * @param <NodeIDType>
  */
-public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<NodeIDType, ContextServicePacket.PacketType> { 
-
+public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<NodeIDType, ContextServicePacket.PacketType>
+{
 	public static final String PACKET_TYPE = JSONPacket.PACKET_TYPE;
+	
+	//public final static String SENDERADDRESS = JSONNIOTransport.DEFAULT_IP_FIELD;
+	//public final static String SENDERPORT = JSONNIOTransport.DEFAULT_PORT_FIELD;
+	
 	public static final String HANDLER_METHOD_PREFIX = "handle";
-
+	
 	/********************************* End of ContextServicePacket ***********************/
 	public enum PacketType implements IntegerPacketType
 	{
@@ -47,7 +51,16 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		QUERY_MSG_FROM_USER_REPLY(9),     // reply to the query mesg from user, reply goes back to the original querier
 		VALUE_UPDATE_MSG_FROM_GNS_REPLY(10),  // reply that goes back to GNS or whoever issues this message.
 		VALUE_UPDATE_MSG_TO_VALUENODE_REPLY(11),  // valuenode reply to ?
-		REFRESH_TRIGGER(12);   // trigger sent to the querier to refresh
+		REFRESH_TRIGGER(12),   // trigger sent to the querier to refresh
+		BULK_GET(13),   // used to get bulk guid records stored by consistent hashing
+		BULK_PUT(14),   // used to put bulk guid records if needed, usually puts are single
+		BULK_GET_REPLY(15),
+		BULK_PUT_REPLY(16),
+		QUERIER_TO_RELAYSERVICE(17), // queries sends this message to relay service, for relay service to communicate with users.
+		RELAY_TO_RELAY_MSG(18),      // message sent between relay service nodes.
+		ECHO_MESSAGE(19),
+		ECHOREPLY_MESSAGE(20);
+		
 		
 		private final int number;
 
@@ -76,11 +89,10 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 	}
 	
 	/********************************* End of ContextServicePacketType ***********************/
-
 	/**************************** Start of ContextServicePacketType class map **************/
 	private static final HashMap<ContextServicePacket.PacketType, Class<?>> typeMap = 
 			new HashMap<ContextServicePacket.PacketType, Class<?>>();
-	static 
+	static
 	{
 		/* This map prevents the need for laborious switch/case sequences as it automatically
 		 * handles both json-to-ContextServicePacket conversion and invocation of the 
@@ -100,9 +112,12 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		typeMap.put(ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY, ValueUpdateFromGNSReply.class);
 		typeMap.put(ContextServicePacket.PacketType.VALUE_UPDATE_MSG_TO_VALUENODE_REPLY, ValueUpdateMsgToValuenodeReply.class);
 		typeMap.put(ContextServicePacket.PacketType.REFRESH_TRIGGER, ValueUpdateMsgToValuenodeReply.class);
+		typeMap.put(ContextServicePacket.PacketType.BULK_GET, BulkGet.class);
+		typeMap.put(ContextServicePacket.PacketType.BULK_PUT, BulkPut.class);
+		typeMap.put(ContextServicePacket.PacketType.BULK_GET_REPLY, BulkGetReply.class);
+		typeMap.put(ContextServicePacket.PacketType.ECHO_MESSAGE, EchoMessage.class);
 		
-		
-		for(ContextServicePacket.PacketType type : ContextServicePacket.PacketType.intToType.values())
+		for( ContextServicePacket.PacketType type : ContextServicePacket.PacketType.intToType.values() )
 		{
 			assert(getPacketTypeClassName(type)!=null) : type;
 		}
@@ -128,7 +143,7 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		JSONObject json = new JSONObject();
 		return json;
 	}
-
+	
 	@Override
 	public Object getMessage() 
 	{
@@ -151,9 +166,11 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 	
 	public String toString() 
 	{
-		try {
+		try 
+		{
 			return this.toJSONObject().toString();
-		} catch(JSONException je) {
+		} catch(JSONException je) 
+		{
 			je.printStackTrace();
 		}
 		return null;
@@ -161,7 +178,7 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 	
 	public static final ContextServicePacket.PacketType getContextServicePacketType(JSONObject json) throws JSONException
 	{
-		if(json.has(ContextServicePacket.PACKET_TYPE))
+		if( json.has(ContextServicePacket.PACKET_TYPE) )
 			return ContextServicePacket.PacketType.intToType.get(json.getInt(PACKET_TYPE));
 		else return null;
 	}
@@ -175,12 +192,12 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		Map<ContextServicePacket.PacketType,Class<?>> typeMap) throws JSONException 
 	{
 		BasicContextServicePacket<?> csPacket = null;
-		try 
+		
+		try
 		{
-			
 			ContextServicePacket.PacketType csType = 
 					ContextServicePacket.PacketType.intToType.get(JSONPacket.getPacketType(json)); 
-			//System.out.println("\n\n\n packet type recvd "+csType+" json "+json);
+			
 			if(csType!=null && getPacketTypeClassName(csType)!=null) 
 			{
 				csPacket = (BasicContextServicePacket<?>)(Class.forName(
@@ -235,13 +252,15 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 	{
 		String errMsg = "Method " + handlerMethodPrefix+packetName +
 				" does not exist in ReconfiguratorProtocolTask";
-		try {
+		try
+		{
 			System.out.println(type + " : " + packetName);
 			if(packetName!=null)
 				assert(target.getMethod(handlerMethodPrefix+packetName, 
 					ProtocolEvent.class, ProtocolTask[].class)!=null) : 
 						errMsg;
-		} catch(NoSuchMethodException nsme) {
+		} catch(NoSuchMethodException nsme) 
+		{
 			System.err.println(errMsg);
 			nsme.printStackTrace();
 		}
@@ -252,7 +271,7 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		assertPacketTypeChecks(typeMap, target, HANDLER_METHOD_PREFIX);
 	}
 	
-	public static ContextServicePacket.PacketType[] concatenate(ContextServicePacket.PacketType[]... types) 
+	public static ContextServicePacket.PacketType[] concatenate(ContextServicePacket.PacketType[]... types)
 	{
 		int size=0;
 		for(ContextServicePacket.PacketType[] tarray : types) size += tarray.length;
@@ -267,7 +286,7 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 	}
 	/************************* End of assertion methods **************************************************/ 
 
-	public static void main(String[] args) 
+	public static void main(String[] args)
 	{
 		System.out.println(ContextServicePacket.PacketType.intToType.get(225));
 	}

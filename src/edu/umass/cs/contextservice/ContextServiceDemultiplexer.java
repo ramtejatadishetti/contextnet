@@ -2,19 +2,20 @@ package edu.umass.cs.contextservice;
 
 import org.json.JSONObject;
 
-import edu.umass.cs.gns.nio.AbstractPacketDemultiplexer;
+import edu.umass.cs.nio.AbstractJSONPacketDemultiplexer;
+import edu.umass.cs.nio.nioutils.NIOInstrumenter;
+
 
 /**
  * Just a dummy multiplexer
  * @author ayadav
- *
  */
-public class ContextServiceDemultiplexer extends AbstractPacketDemultiplexer 
+public class ContextServiceDemultiplexer extends AbstractJSONPacketDemultiplexer
 {
 	@Override
-	public boolean handleJSONObject(JSONObject jsonObject) 
+	public final boolean handleMessage(JSONObject jsonObject) 
 	{
-		incrPktsRcvd();
-	    return false; // WARNING: Do not change this to true. It could break the GNS by not trying any other PDs.
+		NIOInstrumenter.incrPktsRcvd();
+		return false; // must remain false;
 	}
 }

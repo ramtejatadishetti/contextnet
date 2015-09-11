@@ -10,7 +10,6 @@ import org.json.JSONObject;
  * Reply of the value node, consisting of the list of GUIDs back to
  * the source of the query. 
  * @author adipc
- *
  */
 public class QueryMsgToValuenodeReply<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 {
@@ -26,13 +25,14 @@ public class QueryMsgToValuenodeReply<NodeIDType> extends BasicContextServicePac
 	private final int numValNodesCont;
 	
 	
-	public QueryMsgToValuenodeReply(NodeIDType initiator, LinkedList<String> resultGUIDs, 
+	public QueryMsgToValuenodeReply(NodeIDType initiator, JSONArray resultGUIDs, 
 			long requestID, int componentID, NodeIDType sourceID, int numValNodesCont)
 	{
 		super(initiator, ContextServicePacket.PacketType.QUERY_MSG_TO_VALUENODE_REPLY);
 		
-		this.resultGUIDs = new JSONArray();
-		for(int i=0;i<resultGUIDs.size();i++)
+		this.resultGUIDs = resultGUIDs;
+		
+		/*for(int i=0;i<resultGUIDs.size();i++)
 		{
 			try
 			{
@@ -41,7 +41,7 @@ public class QueryMsgToValuenodeReply<NodeIDType> extends BasicContextServicePac
 			{
 				e.printStackTrace();
 			}
-		}
+		}*/
 		this.sourceNodeId = sourceID;
 		this.requestID = requestID;
 		this.componentID = componentID;
@@ -116,5 +116,4 @@ public class QueryMsgToValuenodeReply<NodeIDType> extends BasicContextServicePac
 			je.printStackTrace();
 		}*/
 	}
-	
 }

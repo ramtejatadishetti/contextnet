@@ -10,7 +10,7 @@ import java.net.UnknownHostException;
 import edu.umass.cs.contextservice.CSNodeConfig;
 import edu.umass.cs.contextservice.ContextServiceNode;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.gns.nio.InterfaceNodeConfig;
+import edu.umass.cs.nio.InterfaceNodeConfig;
 
 /**
  * Planetlab context service example with 10 nodes, with simple
@@ -19,11 +19,13 @@ import edu.umass.cs.gns.nio.InterfaceNodeConfig;
  */
 public class PlanetLabContextServiceExample extends ContextServiceNode<Integer>
 {
-	public static final int CONTEXTNET								= 1;
-	public static final int REPLICATE_ALL							= 2;
-	public static final int QUERY_ALL								= 3;
-	public static final int MERCURY									= 4;
+	public static final int CONTEXTNET									= 1;
+	public static final int REPLICATE_ALL								= 2;
+	public static final int QUERY_ALL									= 3;
+	public static final int MERCURY										= 4;
 	public static final int HYPERDEX									= 5;
+	public static final int MERCURYNEW									= 6;
+	public static final int MERCURYCONSISTENT							= 7;
 	
 	
 	private static CSNodeConfig<Integer> csNodeConfig					= null;
@@ -32,7 +34,7 @@ public class PlanetLabContextServiceExample extends ContextServiceNode<Integer>
 	
 	private static PlanetLabContextServiceExample[] nodes				= null;
 	
-	public static final String configFileName						= "100nodesSetup.txt";
+	public static final String configFileName							= "contextServiceNodeSetup.txt";
 	
 	public PlanetLabContextServiceExample(Integer id, InterfaceNodeConfig<Integer> nc)
 			throws IOException
@@ -74,6 +76,16 @@ public class PlanetLabContextServiceExample extends ContextServiceNode<Integer>
 				ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERDEX;
 				break;
 			}
+			case MERCURYNEW:
+			{
+				ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.MERCURYNEW;
+				break;
+			}
+			case MERCURYCONSISTENT:
+			{
+				ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.MERCURYCONSISTENT;
+				break;
+			}
 		}
 		
 		//server_socket = new DatagramSocket(12345, InetAddress.getByName("ananas.cs.umass.edu"));
@@ -106,9 +118,10 @@ public class PlanetLabContextServiceExample extends ContextServiceNode<Integer>
 		new Thread(new StartNode(myID, myID-CSTestConfig.startNodeID)).start();
 		
 		// print state after 10 seconds
+		//FIXME: remove this sleep. After ContextServiceNode sleep is removed.
 		try
 		{
-			Thread.sleep(70000);
+			Thread.sleep(120000);
 		} catch (InterruptedException e)
 		{
 			e.printStackTrace();
@@ -165,6 +178,7 @@ public class PlanetLabContextServiceExample extends ContextServiceNode<Integer>
 			
 			csNodeConfig.add(readNodeId, new InetSocketAddress(readIPAddress, readPort));
 		}
+		reader.close();
 	}
 	
 	private static class StartNode implements Runnable
@@ -288,6 +302,7 @@ public class PlanetLabContextServiceExample extends ContextServiceNode<Integer>
 	      {
 			e1.printStackTrace();
 	      }
+	      
 	      QueryMsgFromUser<Integer> queryMsgFromUser = 
 	        	new QueryMsgFromUser<Integer>(this.getContextService().getMyID(), query);
 	      // nioTransport.sendToID(0, queryMesg.getJSONMessage());

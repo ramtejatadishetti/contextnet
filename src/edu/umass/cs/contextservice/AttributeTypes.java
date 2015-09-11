@@ -10,18 +10,16 @@ import edu.umass.cs.contextservice.config.ContextServiceConfig;
  * Defines the attribute types on which context based 
  * communication is supported.
  * @author ayadav
- *
  */
 public class AttributeTypes
 {
-	//public static String [] attributeNames						= null;
-	
+	//public static String [] attributeNames					= null;
 	public static final double MIN_VALUE						= 1.0;
 	public static final double MAX_VALUE						= 1500.0;
 	
 	public static final double NOT_SET							= Double.MIN_VALUE;
 	
-	private static Map<String, String> attributeMap 				= null;
+	private static Map<String, String> attributeMap 			= null;
 	
 	
 	/**
@@ -43,8 +41,8 @@ public class AttributeTypes
 		attributeMap = new HashMap<String, String>();
 		for(int i=0;i<ContextServiceConfig.NUM_ATTRIBUTES;i++)
 		{
-			attributeMap.put(ContextServiceConfig.CONTEXT_ATTR_PREFIX+"ATT"+i,
-					ContextServiceConfig.CONTEXT_ATTR_PREFIX+"ATT"+i);
+			attributeMap.put(ContextServiceConfig.CONTEXT_ATTR_PREFIX+i,
+					ContextServiceConfig.CONTEXT_ATTR_PREFIX+i);
 		}
 	}
 	

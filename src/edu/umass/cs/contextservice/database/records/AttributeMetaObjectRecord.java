@@ -1,5 +1,6 @@
 package edu.umass.cs.contextservice.database.records;
 
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -61,7 +62,7 @@ public class AttributeMetaObjectRecord<NodeIDType, AttributeIDType> /*extends JS
 		try
 		{
 			this.primaryKeyJSON = json.getJSONObject(MongoContextServiceDB.PRIMARY_KEY);
-			System.out.println("AttributeMetaObjectRecord primaryKeyJSON "+primaryKeyJSON);
+			//System.out.println("AttributeMetaObjectRecord primaryKeyJSON "+primaryKeyJSON);
 		} catch(JSONException jso)
 		{
 			jso.printStackTrace();
@@ -160,5 +161,4 @@ public class AttributeMetaObjectRecord<NodeIDType, AttributeIDType> /*extends JS
 			je.printStackTrace();
 		}*/
 	}
-	
 }

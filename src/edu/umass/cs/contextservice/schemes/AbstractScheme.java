@@ -1,15 +1,15 @@
 package edu.umass.cs.contextservice.schemes;
 
 import java.io.IOException;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -19,23 +19,29 @@ import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.AbstractContextServiceDB;
 import edu.umass.cs.contextservice.database.InMemoryContextServiceDB;
 import edu.umass.cs.contextservice.database.MongoContextServiceDB;
+import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.BasicContextServicePacket;
 import edu.umass.cs.contextservice.messages.ContextServicePacket;
+import edu.umass.cs.contextservice.messages.EchoMessage;
+import edu.umass.cs.contextservice.messages.EchoReplyMessage;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
 import edu.umass.cs.contextservice.messages.QueryMsgToValuenodeReply;
 import edu.umass.cs.contextservice.messages.RefreshTrigger;
+import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
+import edu.umass.cs.contextservice.messages.ContextServicePacket.PacketType;
 import edu.umass.cs.contextservice.processing.QueryInfo;
 import edu.umass.cs.contextservice.processing.UpdateInfo;
-import edu.umass.cs.gns.nio.GenericMessagingTask;
-import edu.umass.cs.gns.nio.InterfaceNodeConfig;
-import edu.umass.cs.gns.nio.InterfacePacketDemultiplexer;
-import edu.umass.cs.gns.nio.JSONMessenger;
-import edu.umass.cs.gns.protocoltask.ProtocolEvent;
-import edu.umass.cs.gns.protocoltask.ProtocolExecutor;
-import edu.umass.cs.gns.protocoltask.ProtocolTask;
+import edu.umass.cs.nio.GenericMessagingTask;
+import edu.umass.cs.nio.InterfaceNodeConfig;
+import edu.umass.cs.nio.InterfacePacketDemultiplexer;
+import edu.umass.cs.nio.JSONMessenger;
+import edu.umass.cs.protocoltask.ProtocolEvent;
+import edu.umass.cs.protocoltask.ProtocolExecutor;
+import edu.umass.cs.protocoltask.ProtocolTask;
 
-public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemultiplexer
+
+public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemultiplexer<JSONObject>
 {
 	protected final JSONMessenger<NodeIDType> messenger;
 	protected final ProtocolExecutor<NodeIDType, ContextServicePacket.PacketType, String> protocolExecutor;
@@ -50,13 +56,13 @@ public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemul
 	protected final Set<NodeIDType> allNodeIDs;
 	
 	// stores the pending queries
-	protected HashMap<Long, QueryInfo<NodeIDType>> pendingQueryRequests				= null;
+	protected ConcurrentHashMap<Long, QueryInfo<NodeIDType>> pendingQueryRequests		= null;
 	
 	protected long queryIdCounter														= 0;
 	
-	protected final Object pendingQueryLock											= new Object();
+	protected final Object pendingQueryLock												= new Object();
 	
-	protected HashMap<Long, UpdateInfo<NodeIDType>> pendingUpdateRequests				= null;
+	protected ConcurrentHashMap<Long, UpdateInfo<NodeIDType>> pendingUpdateRequests		= null;
 	
 	protected long updateIdCounter														= 0;
 	
@@ -65,7 +71,9 @@ public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemul
 	// lock for synchronizing number of msg update
 	protected long numMessagesInSystem													= 0;
 	
-	protected  DatagramSocket client_socket;
+	//protected  DatagramSocket client_socket;
+	
+	public static final Logger log = ContextServiceLogger.getLogger();
 	
 	
 	public AbstractScheme(InterfaceNodeConfig<NodeIDType> nc, JSONMessenger<NodeIDType> m)
@@ -74,9 +82,9 @@ public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemul
 		
 		this.allNodeIDs = nc.getNodeIDs();
 		
-		pendingQueryRequests  = new HashMap<Long, QueryInfo<NodeIDType>>();
+		pendingQueryRequests  = new ConcurrentHashMap<Long, QueryInfo<NodeIDType>>();
 		
-		pendingUpdateRequests = new HashMap<Long, UpdateInfo<NodeIDType>>();
+		pendingUpdateRequests = new ConcurrentHashMap<Long, UpdateInfo<NodeIDType>>();
 		
 		
 		switch(ContextServiceConfig.DATABASE_TYPE)
@@ -102,24 +110,16 @@ public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemul
 		this.protocolExecutor = new ProtocolExecutor<NodeIDType, ContextServicePacket.PacketType, String>(messenger);
 		this.protocolTask = new ContextServiceProtocolTask<NodeIDType>(getMyID(), this);
 		this.protocolExecutor.register(this.protocolTask.getEventTypes(), this.protocolTask);
-		
-		try
-		{
-			client_socket = new DatagramSocket();
-		} catch (SocketException e)
-		{
-			e.printStackTrace();
-		}
 	}
 	
 	// public methods
 	
-	public Set<ContextServicePacket.PacketType> getPacketTypes() 
+	public Set<ContextServicePacket.PacketType> getPacketTypes()
 	{
 		return this.protocolTask.getEventTypes();
 	}
 	
-	public NodeIDType getMyID() 
+	public NodeIDType getMyID()
 	{
 		return this.messenger.getMyID();
 	}
@@ -149,6 +149,7 @@ public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemul
 	 */
 	public GenericMessagingTask<NodeIDType, ?>[] convertLinkedListToArray(LinkedList<?> givenList)
 	{
+		@SuppressWarnings("unchecked")
 		GenericMessagingTask<NodeIDType, ?>[] array = new GenericMessagingTask[givenList.size()];
 		for(int i=0;i<givenList.size();i++)
 		{
@@ -163,41 +164,60 @@ public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemul
 	}
 	
 	@Override
-	public boolean handleJSONObject(JSONObject jsonObject)
+	public boolean handleMessage(JSONObject jsonObject) 
 	{
-		//System.out.println("\n\n\n handleJSONObject contextService json "+jsonObject+"\n\n\n ");
+		BasicContextServicePacket<NodeIDType> csPacket = null;
+		try
+		{
+			if( (csPacket = this.protocolTask.getContextServicePacket(jsonObject)) != null )
+			{
+				this.protocolExecutor.handleEvent(csPacket);
+			}
+		} catch(JSONException je)
+		{
+			je.printStackTrace();
+		}
+		return true;
+	}
+	
+	/*public boolean handleJSONObject(JSONObject jsonObject)
+	{
 		BasicContextServicePacket<NodeIDType> csPacket = null;
 		//if(DEBUG) Reconfigurator.log.finest("Reconfigurator received " + jsonObject);
-		try 
+		try
 		{
 			// try handling as reconfiguration packet through protocol task 
 			if((csPacket = this.protocolTask.getContextServicePacket(jsonObject))!=null) 
 			{
 				this.protocolExecutor.handleEvent(csPacket);
-			} /*else if(isExternalRequest(jsonObject)) 
-			{
-				assert(false);
-			}*/
-		} catch(JSONException je) 
+			}
+			//else if( isExternalRequest(jsonObject) )
+			//{
+			//	assert(false);
+			//}
+		} catch(JSONException je)
 		{
 			je.printStackTrace();
 		}
 		return true; // neither reconfiguration packet nor app request
-	}
+	}*/
 	
 	public long getNumMesgInSystem()
 	{
 		return this.numMessagesInSystem;
 	}
 	
-	protected void sendReplyBackToUser(QueryInfo<NodeIDType> qinfo, LinkedList<String> resultList)
+	protected void sendReplyBackToUser(QueryInfo<NodeIDType> qinfo, JSONArray resultList)
 	{
 		QueryMsgFromUserReply<NodeIDType> qmesgUR
-			= new QueryMsgFromUserReply<NodeIDType>(this.getMyID(), qinfo.getQuery(), 
+			= new QueryMsgFromUserReply<NodeIDType>(this.getMyID(), qinfo.getQuery(), qinfo.getGroupGUID(),
 					resultList, qinfo.getUserReqID());
 		try
 		{
-			System.out.println("sendReplyBackToUser "+qinfo.getUserIP()+" "+qinfo.getUserPort()+
+			log.fine("sendReplyBackToUser "+qinfo.getUserIP()+" "+qinfo.getUserPort()+
+					qmesgUR.toJSONObject());
+			
+			System.out.println("QUERY COMPLETE: sendReplyBackToUser "+qinfo.getUserIP()+" "+qinfo.getUserPort()+
 					qmesgUR.toJSONObject());
 			
 			this.messenger.sendToAddress(new InetSocketAddress(InetAddress.getByName(qinfo.getUserIP()), qinfo.getUserPort())
@@ -214,14 +234,33 @@ public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemul
 		}
 	}
 	
-	protected void sendUpdateReplyBackToUser(String sourceIP, int sourcePort, long versioNum)
+	protected void sendQueryReplyBackToUser(InetSocketAddress destAddress, QueryMsgFromUserReply<NodeIDType> qmesgUR)
+	{
+		try
+		{
+			log.fine("sendReplyBackToUser "+destAddress+" "+ qmesgUR.toJSONObject());
+			this.messenger.sendToAddress(destAddress, qmesgUR.toJSONObject());
+		} catch (UnknownHostException e)
+		{
+			e.printStackTrace();
+		} catch (IOException e)
+		{
+			e.printStackTrace();
+		} catch (JSONException e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	protected void sendUpdateReplyBackToUser(String sourceIP, int sourcePort, long versioNum, 
+			long updateStartTime, long contextTime)
 	{
 		ValueUpdateFromGNSReply<NodeIDType> valUR
-			= new ValueUpdateFromGNSReply<NodeIDType>(this.getMyID(), versioNum);
+			= new ValueUpdateFromGNSReply<NodeIDType>(this.getMyID(), versioNum, updateStartTime, contextTime);
 		
 		try
 		{
-			System.out.println("sendUpdateReplyBackToUser "+sourceIP+" "+sourcePort+
+			log.fine("sendUpdateReplyBackToUser "+sourceIP+" "+sourcePort+
 					valUR.toJSONObject());
 			
 			this.messenger.sendToAddress(
@@ -239,20 +278,14 @@ public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemul
 		}
 	}
 	
-	protected void sendRefreshReplyBackToUser(String sourceIP, int sourcePort, 
-			String query, String groupGUID)
+	protected void sendRefreshReplyBackToUser(InetSocketAddress destSock, RefreshTrigger<NodeIDType> valUR)
 	{
-		RefreshTrigger<NodeIDType> valUR 
-			= new RefreshTrigger<NodeIDType>(this.getMyID(), query, groupGUID);
-		
 		try
 		{
-			System.out.println("sendRefreshReplyBackToUser "+sourceIP+" "+sourcePort+
+			log.fine("sendRefreshReplyBackToUser "+destSock+
 					valUR.toJSONObject());
 			
-			this.messenger.sendToAddress(
-					new InetSocketAddress(InetAddress.getByName(sourceIP), sourcePort)
-								, valUR.toJSONObject());
+			this.messenger.sendToAddress(destSock, valUR.toJSONObject());
 		} catch (UnknownHostException e)
 		{
 			e.printStackTrace();
@@ -320,4 +353,7 @@ public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemul
 	
 	protected abstract void processReplyInternally
 	(QueryMsgToValuenodeReply<NodeIDType> queryMsgToValnodeRep, QueryInfo<NodeIDType> queryInfo);
+	
+	
+	
 }

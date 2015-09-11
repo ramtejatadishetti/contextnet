@@ -8,29 +8,22 @@ import org.json.JSONObject;
 
 public class QueryMsgFromUserReply<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 {
-	private enum Keys {QUERY, GUIDs, USER_REQ_NUM};
+	private enum Keys {QUERY, QUERY_GUID, GUIDs, USER_REQ_NUM};
 	
 	private final String query;  // original query sent by the user.
+	private final String queryGUID;
 	private final JSONArray resultGUIDs;
 	private final long userReqNum;
 	
-	public QueryMsgFromUserReply(NodeIDType initiator, String query, LinkedList<String> resultGUIDs
+	public QueryMsgFromUserReply(NodeIDType initiator, String query, String queryGUID, JSONArray resultGUIDs
 			, long userReqNum)
 	{
 		super(initiator, ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY);
 		
-		this.resultGUIDs = new JSONArray();
-		for(int i=0;i<resultGUIDs.size();i++)
-		{
-			try
-			{
-				this.resultGUIDs.put(i, resultGUIDs.get(i));
-			} catch (JSONException e)
-			{
-				e.printStackTrace();
-			}
-		}
+		this.resultGUIDs = resultGUIDs;
+		
 		this.query = query;
+		this.queryGUID = queryGUID;
 		this.userReqNum = userReqNum;
 	}
 	
@@ -41,6 +34,7 @@ public class QueryMsgFromUserReply<NodeIDType> extends BasicContextServicePacket
 		this.resultGUIDs = json.getJSONArray(Keys.GUIDs.toString());
 		this.query = json.getString(Keys.QUERY.toString());
 		this.userReqNum = json.getLong(Keys.USER_REQ_NUM.toString());
+		this.queryGUID = json.getString(Keys.QUERY_GUID.toString());
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException
@@ -49,6 +43,7 @@ public class QueryMsgFromUserReply<NodeIDType> extends BasicContextServicePacket
 		json.put(Keys.GUIDs.toString(), resultGUIDs);
 		json.put(Keys.QUERY.toString(), query);
 		json.put(Keys.USER_REQ_NUM.toString(), this.userReqNum);
+		json.put(Keys.QUERY_GUID.toString(), this.queryGUID);
 		return json;
 	}
 	
@@ -67,7 +62,13 @@ public class QueryMsgFromUserReply<NodeIDType> extends BasicContextServicePacket
 		return this.userReqNum;
 	}
 	
+	public String getQueryGUID()
+	{
+		return this.queryGUID;
+	}
+	
 	public static void main(String[] args)
 	{
+		
 	}
 }

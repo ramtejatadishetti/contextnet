@@ -22,10 +22,10 @@ import edu.umass.cs.contextservice.messages.ContextServicePacket;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.gns.nio.AbstractPacketDemultiplexer;
-import edu.umass.cs.gns.nio.InterfacePacketDemultiplexer;
-import edu.umass.cs.gns.nio.JSONMessenger;
-import edu.umass.cs.gns.nio.JSONNIOTransport;
+import edu.umass.cs.nio.AbstractJSONPacketDemultiplexer;
+import edu.umass.cs.nio.InterfacePacketDemultiplexer;
+import edu.umass.cs.nio.JSONMessenger;
+import edu.umass.cs.nio.JSONNIOTransport;
 
 /**
  * Class is used to send queries to context service.
@@ -34,9 +34,8 @@ import edu.umass.cs.gns.nio.JSONNIOTransport;
  * It is basic because it takes input from the user, doesn't use any workload.
  * @author adipc
  */
-public class BasicContextUpdateSendExp<NodeIDType> implements InterfacePacketDemultiplexer
+public class BasicContextUpdateSendExp<NodeIDType> implements InterfacePacketDemultiplexer<JSONObject>
 {
-	
 	//public static String csServerName 										= "ananas.cs.umass.edu";
 	//public static int csPort 													= 5000;
 	
@@ -74,7 +73,7 @@ public class BasicContextUpdateSendExp<NodeIDType> implements InterfacePacketDem
 		
 		myID = id;
 		
-		listenPort = START_PORT+Integer.parseInt(myID.toString());
+		listenPort = START_PORT+Integer.parseInt( myID.toString() );
 		
 		csNodeConfig = new CSNodeConfig<NodeIDType>();
 		
@@ -84,7 +83,7 @@ public class BasicContextUpdateSendExp<NodeIDType> implements InterfacePacketDem
 		
 		csNodeConfig.add(myID, new InetSocketAddress(sourceIP, listenPort));
         
-        AbstractPacketDemultiplexer pd = new ContextServiceDemultiplexer();
+        AbstractJSONPacketDemultiplexer pd = new ContextServiceDemultiplexer();
 		
 		System.out.println("\n\n node IP "+csNodeConfig.getNodeAddress(this.myID)+
 				" node Port "+csNodeConfig.getNodePort(this.myID)+" nodeID "+this.myID);
@@ -92,7 +91,7 @@ public class BasicContextUpdateSendExp<NodeIDType> implements InterfacePacketDem
 		niot = new JSONNIOTransport<NodeIDType>(this.myID,  csNodeConfig, pd , true);
 		
 		JSONMessenger<NodeIDType> messenger = 
-			new JSONMessenger<NodeIDType>(niot.enableStampSenderInfo());
+			new JSONMessenger<NodeIDType>(niot);
 		
 		pd.register(ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY, this);
 		messenger.addPacketDemultiplexer(pd);
@@ -119,25 +118,6 @@ public class BasicContextUpdateSendExp<NodeIDType> implements InterfacePacketDem
 		}
 	}
 	
-	@Override
-	public boolean handleJSONObject(JSONObject jsonObject) 
-	{
-		System.out.println("QuerySourceDemux JSON packet recvd "+jsonObject);
-		try
-		{
-			if(jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-					== ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY.getInt())
-			{
-				System.out.println("JSON packet recvd "+jsonObject);
-				handleUpdateReply(jsonObject);
-			}
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-		return true;
-	}
-	
 	/**
 	 * creates GUID and adds all attributes
 	 */
@@ -148,7 +128,7 @@ public class BasicContextUpdateSendExp<NodeIDType> implements InterfacePacketDem
 		
 		for(int i=0;i<ContextServiceConfig.NUM_ATTRIBUTES;i++)
     	{
-    		attrValueMap.put(ContextServiceConfig.CONTEXT_ATTR_PREFIX+"ATT"+i, (double) 100);
+    		attrValueMap.put(ContextServiceConfig.CONTEXT_ATTR_PREFIX+i, (double) 100);
     	}
 		return guidString;
 	}
@@ -164,7 +144,7 @@ public class BasicContextUpdateSendExp<NodeIDType> implements InterfacePacketDem
 		for(int i=0;i<ContextServiceConfig.NUM_ATTRIBUTES;i++)
 		{
 			//System.out.println("doAttributeUpdates called "+i);
-			String attName = ContextServiceConfig.CONTEXT_ATTR_PREFIX+"ATT"+i;
+			String attName = ContextServiceConfig.CONTEXT_ATTR_PREFIX+i;
 			double nextVal = 1+rand.nextInt((int)(AttributeTypes.MAX_VALUE-AttributeTypes.MIN_VALUE));
 			
 			double oldValue = attrValueMap.get(attName);
@@ -178,7 +158,7 @@ public class BasicContextUpdateSendExp<NodeIDType> implements InterfacePacketDem
 			}
 			
 			ValueUpdateFromGNS<NodeIDType> valMsg = new ValueUpdateFromGNS<NodeIDType>(myID, versionNum++, guidString, attName, 
-					oldValue+"", nextVal+"", allAttr, sourceIP, listenPort);
+					oldValue+"", nextVal+"", allAttr, sourceIP, listenPort, System.currentTimeMillis());
 			
 			System.out.println("CONTEXTSERVICE EXPERIMENT: UPDATEFROMUSER REQUEST ID "
 					+ valMsg.getVersionNum() +" AT "+System.currentTimeMillis());
@@ -214,6 +194,7 @@ public class BasicContextUpdateSendExp<NodeIDType> implements InterfacePacketDem
 			
 			nodeMap.put(readNodeId, new InetSocketAddress(readIPAddress, readPort));
 		}
+		reader.close();
 	}
 	
 	public static void main(String[] args) throws IOException
@@ -221,7 +202,8 @@ public class BasicContextUpdateSendExp<NodeIDType> implements InterfacePacketDem
 		Integer clientID = Integer.parseInt(args[0]);
 		ATTR_UPDATE_RATE = Integer.parseInt(args[1]);
 		
-		BasicContextUpdateSendExp<Integer> basicObj = new BasicContextUpdateSendExp<Integer>(clientID);
+		BasicContextUpdateSendExp<Integer> basicObj 
+					= new BasicContextUpdateSendExp<Integer>(clientID);
 		
 		String guidAlias = CLIENT_GUID_PREFIX+clientID;
 		String guidString = createGUID(clientID);
@@ -237,5 +219,23 @@ public class BasicContextUpdateSendExp<NodeIDType> implements InterfacePacketDem
 			}
 		}
 	}
-	
+
+	@Override
+	public boolean handleMessage(JSONObject jsonObject) 
+	{
+		System.out.println("QuerySourceDemux JSON packet recvd "+jsonObject);
+		try
+		{
+			if(jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
+					== ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY.getInt())
+			{
+				System.out.println("JSON packet recvd "+jsonObject);
+				handleUpdateReply(jsonObject);
+			}
+		} catch (JSONException e)
+		{
+			e.printStackTrace();
+		}
+		return true;
+	}
 }

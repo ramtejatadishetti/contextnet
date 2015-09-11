@@ -3,40 +3,37 @@ package edu.umass.cs.contextservice.examples.basic;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-
 import edu.umass.cs.contextservice.CSNodeConfig;
 import edu.umass.cs.contextservice.ContextServiceNode;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.gns.GNSCalls;
-import edu.umass.cs.contextservice.messages.QueryMsgFromUser;
-import edu.umass.cs.contextservice.messages.ValueUpdateMsgToMetadataNode;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.gns.nio.GenericMessagingTask;
-import edu.umass.cs.gns.nio.InterfaceNodeConfig;
+import edu.umass.cs.nio.InterfaceNodeConfig;
 
 /**
- * 
  * Simple context service example with 3 nodes, with simple
  * conjunction query.
  * @author adipc
- *
  */
 public class BasicContextServiceExample extends ContextServiceNode<Integer>
 {
+	public static final int CONTEXTNET								= 1;
+	public static final int REPLICATE_ALL							= 2;
+	public static final int QUERY_ALL								= 3;
+	public static final int MERCURY									= 4;
+	public static final int HYPERDEX									= 5;
+	
+	
 	private static CSNodeConfig<Integer> csNodeConfig					= null;
 	
-	private static DatagramSocket server_socket;
+	//private static DatagramSocket server_socket;
 	
 	private static BasicContextServiceExample[] nodes					= null;
+	
+	public static final String configFileName						= "contextServiceNodeSetup.txt";
 	
 	public BasicContextServiceExample(Integer id, InterfaceNodeConfig<Integer> nc)
 			throws IOException
@@ -45,11 +42,47 @@ public class BasicContextServiceExample extends ContextServiceNode<Integer>
 	}
 	
 	public static void main(String[] args) throws NumberFormatException, UnknownHostException, IOException
-	{	
+	{
 		//server_socket = new DatagramSocket(12345, InetAddress.getByName("ananas.cs.umass.edu"));
-		server_socket = new DatagramSocket(12345, InetAddress.getByName("localhost"));
+		//server_socket = new DatagramSocket(12345, InetAddress.getByName("localhost"));
 		/*ReconfigurableSampleNodeConfig nc = new ReconfigurableSampleNodeConfig();
-		nc.localSetup(TestConfig.getNodes());*/	
+		nc.localSetup(TestConfig.getNodes());*/
+		
+		//Integer myID = Integer.parseInt(args[0]);
+		int schemeType = Integer.parseInt(args[1]);
+		int numAttr = Integer.parseInt(args[2]);
+		ContextServiceConfig.NUM_ATTRIBUTES = numAttr;
+		
+		
+		switch(schemeType)
+		{
+			case CONTEXTNET:
+			{
+				ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.CONTEXTNET;
+				break;
+			}
+			case REPLICATE_ALL:
+			{
+				ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.REPLICATE_ALL;
+				break;
+			}
+			case QUERY_ALL:
+			{
+				ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.QUERY_ALL;
+				break;
+			}
+			case MERCURY:
+			{
+				ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.MERCURY;
+				break;
+			}
+			case HYPERDEX:
+			{
+				ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERDEX;
+				break;
+			}
+		}		
+		
 		readNodeInfo();
 		
 		nodes = new BasicContextServiceExample[csNodeConfig.getNodes().size()];
@@ -71,7 +104,7 @@ public class BasicContextServiceExample extends ContextServiceNode<Integer>
 		// print state after 10 seconds
 		try
 		{
-			Thread.sleep(15000);
+			Thread.sleep(70000);
 		} catch (InterruptedException e)
 		{
 			e.printStackTrace();
@@ -122,7 +155,7 @@ public class BasicContextServiceExample extends ContextServiceNode<Integer>
 	{
 		csNodeConfig = new CSNodeConfig<Integer>();
 		
-		BufferedReader reader = new BufferedReader(new FileReader("nodesInfo.txt"));
+		BufferedReader reader = new BufferedReader(new FileReader(configFileName));
 		String line = null;
 		while ((line = reader.readLine()) != null)
 		{
@@ -133,8 +166,70 @@ public class BasicContextServiceExample extends ContextServiceNode<Integer>
 			
 			csNodeConfig.add(readNodeId, new InetSocketAddress(readIPAddress, readPort));
 		}
+		reader.close();
 	}
 	
+	private static class StartNode implements Runnable
+	{
+		private final int nodeID;
+		private final int myIndex;
+		public StartNode(Integer givenNodeID, int index)
+		{
+			this.nodeID = givenNodeID;
+			this.myIndex = index;
+		}
+		
+		@Override
+		public void run()
+		{
+			try
+			{
+				System.out.println("\n\nNode with id "+nodeID +" started\n\n");
+				nodes[myIndex] = new BasicContextServiceExample(nodeID, csNodeConfig);
+			} catch (IOException e)
+			{
+				e.printStackTrace();
+			}
+		}
+	}
+	
+//	public static void recvNotification(String query) 
+//    {
+//	   byte[] receive_data = new byte[1024];
+//       
+//       System.out.println ("UDPServer Waiting for client");
+//       
+//       while(true)
+//       {
+//    	   DatagramPacket receive_packet = new DatagramPacket(receive_data,
+//                                            receive_data.length);
+//    	   
+//    	   try 
+//    	   {
+//    		   server_socket.receive(receive_packet);
+//    	   } catch (IOException e) 
+//    	   {
+//    		   e.printStackTrace();
+//    	   }
+//           
+//			String data = new String(receive_packet.getData(),0, 0
+//			                             ,receive_packet.getLength());
+//			    
+//			InetAddress IPAddress = receive_packet.getAddress();
+//			 
+//			System.out.println("\n\n"+data+"\n\n" );
+//			
+//			JSONArray res = GNSCalls.readGroupMembers(query);
+//			if(res!=null)
+//			{
+//				System.out.println("\n\n query res "+ res);
+//			} 
+//			else
+//			{
+//				System.out.println("\n\n query res null" );
+//			}
+//    	}
+//    }
 	
 //	private void fillDummyGUIDValues() throws IOException
 //	{	
@@ -171,7 +266,6 @@ public class BasicContextServiceExample extends ContextServiceNode<Integer>
 //			}
 //		}
 //	}
-	
 	
 	/*private void enterQueries()
 	{	
@@ -260,74 +354,9 @@ public class BasicContextServiceExample extends ContextServiceNode<Integer>
 				e.printStackTrace();
 		      }
 		}
-		
 		//System.out.println("Thanks for the name, " + userName);
 		//GNSCalls.clearNotificationSetOfAGroup(query);
 		//GNSCalls.updateNotificationSetOfAGroup((InetSocketAddress)server_socket.getLocalSocketAddress(), query);
 		//recvNotification(query);
 	}*/
-	
-	
-	public static void recvNotification(String query) 
-    {
-	   byte[] receive_data = new byte[1024];
-       
-       System.out.println ("UDPServer Waiting for client");
-       
-       
-       while(true)
-       {
-    	   DatagramPacket receive_packet = new DatagramPacket(receive_data,
-                                            receive_data.length);
-    	   
-    	   try 
-    	   {
-    		   server_socket.receive(receive_packet);
-    	   } catch (IOException e) 
-    	   {
-    		   e.printStackTrace();
-    	   }
-           
-    	   String data = new String(receive_packet.getData(),0, 0
-                                         ,receive_packet.getLength());
-                
-                InetAddress IPAddress = receive_packet.getAddress();
-                 
-                System.out.println("\n\n"+data+"\n\n" );
-                
-                JSONArray res = GNSCalls.readGroupMembers(query);
-    			if(res!=null)
-    			{
-    				System.out.println("\n\n query res "+ res);
-    			} 
-    			else
-    			{
-    				System.out.println("\n\n query res null" );
-    			}
-    	}
-    }
-	
-	private static class StartNode implements Runnable
-	{
-		private final int nodeID;
-		private final int myIndex;
-		public StartNode(Integer givenNodeID, int index)
-		{
-			this.nodeID = givenNodeID;
-			this.myIndex = index;
-		}
-		
-		@Override
-		public void run()
-		{
-			try
-			{
-				System.out.println("\n\nNode with id "+nodeID +" started\n\n");
-				nodes[myIndex] = new BasicContextServiceExample(nodeID, csNodeConfig);
-			} catch (IOException e)
-			{
-				e.printStackTrace();
-			}
-		}
-	}
 }

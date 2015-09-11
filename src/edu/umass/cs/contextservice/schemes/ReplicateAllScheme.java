@@ -18,6 +18,7 @@ import edu.umass.cs.contextservice.database.records.GroupGUIDRecord;
 import edu.umass.cs.contextservice.database.records.NodeGUIDInfoRecord;
 import edu.umass.cs.contextservice.database.records.ValueInfoObjectRecord;
 import edu.umass.cs.contextservice.gns.GNSCalls;
+import edu.umass.cs.contextservice.gns.GNSCallsOriginal;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ContextServicePacket;
 import edu.umass.cs.contextservice.messages.MetadataMsgToValuenode;
@@ -32,20 +33,17 @@ import edu.umass.cs.contextservice.processing.QueryInfo;
 import edu.umass.cs.contextservice.processing.QueryParser;
 import edu.umass.cs.contextservice.processing.UpdateInfo;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.gns.main.GNS;
-import edu.umass.cs.gns.nio.GenericMessagingTask;
-import edu.umass.cs.gns.nio.InterfaceNodeConfig;
-import edu.umass.cs.gns.nio.InterfacePacketDemultiplexer;
-import edu.umass.cs.gns.nio.JSONMessenger;
-import edu.umass.cs.gns.nio.NIOTransport;
-import edu.umass.cs.gns.protocoltask.ProtocolEvent;
-import edu.umass.cs.gns.protocoltask.ProtocolTask;
+import edu.umass.cs.nio.GenericMessagingTask;
+import edu.umass.cs.nio.InterfaceNodeConfig;
+import edu.umass.cs.nio.JSONMessenger;
+import edu.umass.cs.protocoltask.ProtocolEvent;
+import edu.umass.cs.protocoltask.ProtocolTask;
 
-public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> implements InterfacePacketDemultiplexer 
+public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 {
-	public static final Logger log =
-			NIOTransport.LOCAL_LOGGER ? Logger.getLogger(NIOTransport.class.getName())
-					: GNS.getLogger();
+	public static final Logger log = Logger.getLogger(ReplicateAllScheme.class.getName());
+	
+	private final Object valueNodeReplyLock = new Object();
 	
 	//FIXME: sourceID is not properly set, it is currently set to sourceID of each node,
 	// it needs to be set to the origin sourceID.
@@ -84,7 +82,7 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> i
 		 */
 		@SuppressWarnings("unchecked")
 		ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS = (ValueUpdateFromGNS<NodeIDType>)event;
-		System.out.println("CS"+getMyID()+" received " + event.getType() + ": " + valUpdMsgFromGNS);
+		//System.out.println("CS"+getMyID()+" received " + event.getType() + ": " + valUpdMsgFromGNS);
 		
 		GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>[] retMsgs
 				= this.processValueUpdateFromGNS(valUpdMsgFromGNS);
@@ -105,7 +103,7 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> i
 	{
 		@SuppressWarnings("unchecked")
 		ValueUpdateMsgToValuenode<NodeIDType> valUpdMsgToValnode = (ValueUpdateMsgToValuenode<NodeIDType>)event;
-		System.out.println("CS"+getMyID()+" received " + event.getType() + ": " + valUpdMsgToValnode);
+		//System.out.println("CS"+getMyID()+" received " + event.getType() + ": " + valUpdMsgToValnode);
 		
 		GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenodeReply<NodeIDType>>[] retMsgs
 				= this.processValueUpdateMsgToValuenode(valUpdMsgToValnode);
@@ -124,9 +122,6 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> i
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
 			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks)
 	{
-		/* Actions:
-		 * - Just store the metadata info recvd in the local storage
-		 */
 		@SuppressWarnings("unchecked")
 		MetadataMsgToValuenode<NodeIDType> metaMsgToValnode = (MetadataMsgToValuenode<NodeIDType>) event;
 		// just need to store the val node info in the local storage
@@ -139,12 +134,10 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> i
 				this.getMyID()+" attriName "+attrName + 
 				" rangeStart "+rangeStart+" rangeEnd "+rangeEnd);
 		
-		
 		ValueInfoObjectRecord<Double> valInfoObjRec = new ValueInfoObjectRecord<Double>
 												(rangeStart, rangeEnd, new JSONArray());
 		
 		this.contextserviceDB.putValueObjectRecord(valInfoObjRec, attrName);
-		
 		return null;
 	}
 	
@@ -157,7 +150,7 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> i
 		 */
 		@SuppressWarnings("unchecked")
 		ValueUpdateMsgToValuenodeReply<NodeIDType> valUpdMsgToValnode = (ValueUpdateMsgToValuenodeReply<NodeIDType>)event;
-		System.out.println("CS"+getMyID()+" received " + event.getType() + ": " + valUpdMsgToValnode);
+		//System.out.println("CS"+getMyID()+" received " + event.getType() + ": " + valUpdMsgToValnode);
 		this.processValueUpdateMsgToValuenodeReply(valUpdMsgToValnode);
 		return null;
 	}
@@ -198,11 +191,11 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> i
 	 * @return
 	 */
 	public NodeIDType getResponsibleNodeId(String AttrName)
-	{	
+	{
 		return this.getMyID();
 	}
+	
 	/****************************** End of protocol task handler methods *********************/
-
 	/*********************** Private methods below **************************/
 	/**
 	 * Query req received here means that
@@ -212,40 +205,32 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> i
 	 */
 	public GenericMessagingTask<NodeIDType, QueryMsgToMetadataNode<NodeIDType>>[] 
 			processQueryMsgFromUser(QueryMsgFromUser<NodeIDType> queryMsgFromUser)
-	{	
+	{
 		String query = queryMsgFromUser.getQuery();
 		long userReqID = queryMsgFromUser.getUserReqNum();
 		String userIP = queryMsgFromUser.getSourceIP();
 		int userPort = queryMsgFromUser.getSourcePort();
 		
-		ContextServiceLogger.getLogger().info("QUERY_MSG recvd query recvd "+query);
+		System.out.println("QUERY RECVD QUERY_MSG recvd query recvd "+query);
 		
-		long queryStart = System.currentTimeMillis();
 		// create the empty group in GNS
 		String grpGUID = GNSCalls.createQueryGroup(query);
 		
-		QueryInfo<NodeIDType> currReq = null;
-		Vector<QueryComponent> qcomponents = null;
+		
+		Vector<QueryComponent> qcomponents = QueryParser.parseQuery(query);
+		
+		QueryInfo<NodeIDType> currReq = new QueryInfo<NodeIDType>(query, getMyID(),
+				grpGUID, userReqID, userIP, userPort, qcomponents);
+		
 		
 		synchronized(this.pendingQueryLock)
-		{
-			currReq = new QueryInfo<NodeIDType>(query, getMyID(),
-					queryIdCounter++, grpGUID, this, userReqID, userIP, userPort);
-			
+		{	
 			//StartContextServiceNode.sendQueryForProcessing(qinfo);
 			//currReq.setRequestId(requestIdCounter);
-			//requestIdCounter++;
+			//requestIdCounter++;	
 			
-			qcomponents = QueryParser.parseQuery(currReq.getQuery());
-			currReq.setQueryComponents(qcomponents);
+			currReq.setQueryRequestID(queryIdCounter++);
 			pendingQueryRequests.put(currReq.getRequestId(), currReq);
-		}
-		
-		if(ContextServiceConfig.EXP_PRINT_ON)
-		{
-			System.out.println("CONTEXTSERVICE EXPERIMENT: QUERYFROMUSER REQUEST ID "
-						+currReq.getRequestId()+" NUMATTR "+qcomponents.size()+" AT "+System.currentTimeMillis()
-						+" "+qcomponents.get(0).getAttributeName()+" QueryStart "+queryStart);
 		}
 		
 		LinkedList<LinkedList<String>> predicateReplies = new LinkedList<LinkedList<String>>();
@@ -291,22 +276,12 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> i
 		}
 
 		JSONArray queryAnswer = Utils.doConjuction(predicateReplies);
-		System.out.println("\n\nQuery Answer "+queryAnswer);
-		
-		long qprocessingTime = System.currentTimeMillis();
+		//System.out.println("\n\nQuery Answer "+queryAnswer);
 		
 		//FIXME: uncomment this, just for debugging
-		GNSCalls.addGUIDsToGroup(queryAnswer, query);
+		GNSCalls.addGUIDsToGroup(queryAnswer, query, grpGUID);
 		
-		long queryEndTime = System.currentTimeMillis();
-		
-		if(ContextServiceConfig.EXP_PRINT_ON)
-		{
-			System.out.println("CONTEXTSERVICE EXPERIMENT: QUERYFROMUSERREPLY REQUEST ID "
-						+currReq.getRequestId()+" NUMATTR "+qcomponents.size()+" AT "+qprocessingTime+" EndTime "
-					+queryEndTime+ " QUERY ANSWER "+queryAnswer);
-		}
-		sendReplyBackToUser(currReq, (LinkedList<String>) Utils.JSONArayToList(queryAnswer));
+		sendReplyBackToUser(currReq, queryAnswer);
 		
 		synchronized(this.pendingQueryLock)
 		{
@@ -314,28 +289,23 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> i
 		}
 		
 		return null;
-		//(GenericMessagingTask<NodeIDType, QueryMsgToMetadataNode<NodeIDType>>[]) this.convertLinkedListToArray(messageList);
-		//return (GenericMessagingTask<NodeIDType, QueryMsgToMetadataNode<NodeIDType>>[]) messageList.toArray();
 	}
 	
 	
 	public GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>[] initializeScheme()
-	{
-		System.out.println("\n\n\n" +
-				"In initializeMetadataObjects NodeId "+getMyID()+"\n\n\n");
-		
-		LinkedList<GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>> messageList = 
-				new  LinkedList<GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>>();
+	{	
+		//LinkedList<GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>> messageList = 
+		//		new  LinkedList<GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>>();
 		
 		Vector<String> attributes = AttributeTypes.getAllAttributes();
 		for(int i=0;i<attributes.size(); i++)
 		{
 			String currAttName = attributes.get(i);
-			System.out.println("initializeMetadataObjects currAttName "+currAttName);
+			//System.out.println("initializeMetadataObjects currAttName "+currAttName);
 			//String attributeHash = Utils.getSHA1(attributeName);
 			NodeIDType respNodeId = getResponsibleNodeId(currAttName);
-			System.out.println("InitializeMetadataObjects currAttName "+currAttName
-					+" respNodeID "+respNodeId);
+			//System.out.println("InitializeMetadataObjects currAttName "+currAttName
+			//		+" respNodeID "+respNodeId);
 			// This node is responsible(meta data)for this Att.
 			if(respNodeId == getMyID() )
 			{
@@ -357,8 +327,7 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> i
 				//GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>[] messageTasks = 
 				//		attrMeta.assignValueRanges(csNode.getMyID());
 				
-				GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>[] messageTasks 
-						= assignValueRanges(getMyID(), attrMetaRec);
+				assignValueRanges(getMyID(), attrMetaRec);
 				
 //				// add all the messaging tasks at different value nodes
 //				for(int j=0;j<messageTasks.length;j++)
@@ -393,7 +362,7 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> i
 		
 		String attrName = valUpdateMsgToValnode.getAttrName();
 		String GUID = valUpdateMsgToValnode.getGUID();
-		double oldValue = valUpdateMsgToValnode.getOldValue();
+		//double oldValue = valUpdateMsgToValnode.getOldValue();
 		double newValue = valUpdateMsgToValnode.getNewValue();
 		long versionNum = valUpdateMsgToValnode.getVersionNum();
 		long requestID = valUpdateMsgToValnode.getRequestID();
@@ -483,8 +452,6 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> i
 		String oldVal = valUpdMsgFromGNS.getOldVal();
 		String newVal = valUpdMsgFromGNS.getNewVal();
 		JSONObject allAttrs = valUpdMsgFromGNS.getAllAttrs();
-		String sourceIP = valUpdMsgFromGNS.getSourceIP();
-		int sourcePort = valUpdMsgFromGNS.getSourcePort();
 		
 		double oldValD, newValD;
 		
@@ -521,42 +488,45 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> i
 		AttributeMetaObjectRecord<NodeIDType, Double> newMetaObjRec = 
 				this.getContextServiceDB().getAttributeMetaObjectRecord(attrName, newValD, newValD).get(0);
 			
-		// do group updates for the old value
-		try
+		if(ContextServiceConfig.GROUP_UPDATE_TRIGGER)
 		{
-			if(oldMetaObjRec!=null)
+			// do group updates for the old value
+			try
 			{
-				LinkedList<GroupGUIDRecord> oldValueGroups = getGroupsAffectedUsingDatabase
-						(oldMetaObjRec, allAttrs, attrName, oldValD);
-			
-				//oldMetaObj.getGroupsAffected(allAttr, updateAttrName, oldVal);
-			
-				GNSCalls.userGUIDAndGroupGUIDOperations
-				(GUID, oldValueGroups, GNSCalls.UserGUIDOperations.REMOVE_USER_GUID_FROM_GROUP);
+				if( oldMetaObjRec != null )
+				{
+					LinkedList<GroupGUIDRecord> oldValueGroups = getGroupsAffectedUsingDatabase
+							(oldMetaObjRec, allAttrs, attrName, oldValD);
+				
+					//oldMetaObj.getGroupsAffected(allAttr, updateAttrName, oldVal);
+				
+					GNSCalls.userGUIDAndGroupGUIDOperations
+					(GUID, oldValueGroups, GNSCallsOriginal.UserGUIDOperations.REMOVE_USER_GUID_FROM_GROUP);
+				}
+			} catch (JSONException e)
+			{
+				e.printStackTrace();
 			}
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-	
-		// do group  updates for the new value
-		try
-		{
-			if(newMetaObjRec!=null)
+		
+			// do group  updates for the new value
+			try
 			{
-				LinkedList<GroupGUIDRecord> newValueGroups = getGroupsAffectedUsingDatabase
-						(newMetaObjRec, allAttrs, attrName, newValD);
-						
-						//newMetaObj.getGroupsAffected(allAttr, updateAttrName, newVal);
-				GNSCalls.userGUIDAndGroupGUIDOperations
-				(GUID, newValueGroups, GNSCalls.UserGUIDOperations.ADD_USER_GUID_TO_GROUP);
-			} else
+				if(newMetaObjRec!=null)
+				{
+					LinkedList<GroupGUIDRecord> newValueGroups = getGroupsAffectedUsingDatabase
+							(newMetaObjRec, allAttrs, attrName, newValD);
+							
+							//newMetaObj.getGroupsAffected(allAttr, updateAttrName, newVal);
+					GNSCalls.userGUIDAndGroupGUIDOperations
+					(GUID, newValueGroups, GNSCallsOriginal.UserGUIDOperations.ADD_USER_GUID_TO_GROUP);
+				} else
+				{
+					assert(false);
+				}
+			} catch (JSONException e)
 			{
-				assert(false);
+				e.printStackTrace();
 			}
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
 		}
 		
 		LinkedList<GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>> msgList
@@ -599,21 +569,29 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> i
 	processValueUpdateMsgToValuenodeReply(ValueUpdateMsgToValuenodeReply<NodeIDType> valUpdateMsgToValnodeRep)
 	{
 		long requestId =  valUpdateMsgToValnodeRep.getRequestID();
-		UpdateInfo<NodeIDType> updateInfo = pendingUpdateRequests.get(requestId);
-		if(updateInfo != null)
+		synchronized(valueNodeReplyLock)
 		{
-			updateInfo.incrementNumReplyRecvd();
-			if(updateInfo.getNumReplyRecvd() == valUpdateMsgToValnodeRep.getNumReply())
+			UpdateInfo<NodeIDType> updateInfo = pendingUpdateRequests.get(requestId);
+			if(updateInfo != null)
 			{
-				sendUpdateReplyBackToUser(updateInfo.getValueUpdateFromGNS().getSourceIP(), 
-						updateInfo.getValueUpdateFromGNS().getSourcePort(), updateInfo.getValueUpdateFromGNS().getVersionNum());
+				updateInfo.incrementNumReplyRecvd();
+				System.out.println("processValueUpdateMsgToValuenodeReply numReplyRecvd "+updateInfo.getNumReplyRecvd() 
+						+" NumReply "+valUpdateMsgToValnodeRep.getNumReply() );
 				
-				synchronized(this.pendingUpdateLock)
+				if(updateInfo.getNumReplyRecvd() == valUpdateMsgToValnodeRep.getNumReply())
 				{
-					pendingUpdateRequests.remove(requestId);
+					sendUpdateReplyBackToUser( updateInfo.getValueUpdateFromGNS().getSourceIP(), 
+							updateInfo.getValueUpdateFromGNS().getSourcePort(), updateInfo.getValueUpdateFromGNS().getVersionNum(),
+							updateInfo.getUpdateStartTime(), updateInfo.getContextStartTime() );
+					
+					synchronized(this.pendingUpdateLock)
+					{
+						pendingUpdateRequests.remove(requestId);
+					}
 				}
 			}
 		}
+		
 	}
 	
 	
@@ -651,9 +629,9 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> i
 			assignValueRanges(NodeIDType initiator, AttributeMetadataInfoRecord<NodeIDType, Double> attrMetaRec)
 	{
 		int numValueNodes = 1;
-		@SuppressWarnings("unchecked")
-		GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>[] mesgArray 
-								= new GenericMessagingTask[numValueNodes];
+		//@SuppressWarnings("unchecked")
+		//GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>[] mesgArray 
+		//						= new GenericMessagingTask[numValueNodes];
 		
 		double attributeMin = attrMetaRec.getAttrMin();
 		double attributeMax = attrMetaRec.getAttrMax();
@@ -728,9 +706,8 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType> i
 	}
 
 	@Override
-	public void checkQueryCompletion(QueryInfo<NodeIDType> qinfo) {
-		// TODO Auto-generated method stub
-		
+	public void checkQueryCompletion(QueryInfo<NodeIDType> qinfo) 
+	{	
 	}
 	
 	/*public void sendNotifications(LinkedList<GroupGUIDRecord> groupLists)
