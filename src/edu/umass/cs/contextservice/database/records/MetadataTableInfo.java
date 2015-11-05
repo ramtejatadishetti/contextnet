@@ -20,4 +20,9 @@ public class MetadataTableInfo<NodeIDType>
 	{
 		return this.partitionNum;
 	}
+	
+	public String toString()
+	{
+		return "this.nodeID "+this.nodeID+" this.partitionNum "+this.partitionNum;
+	}
 }

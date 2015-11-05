@@ -22,16 +22,11 @@ import edu.umass.cs.contextservice.database.MongoContextServiceDB;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.BasicContextServicePacket;
 import edu.umass.cs.contextservice.messages.ContextServicePacket;
-import edu.umass.cs.contextservice.messages.EchoMessage;
-import edu.umass.cs.contextservice.messages.EchoReplyMessage;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
 import edu.umass.cs.contextservice.messages.QueryMsgToValuenodeReply;
 import edu.umass.cs.contextservice.messages.RefreshTrigger;
-import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
-import edu.umass.cs.contextservice.messages.ContextServicePacket.PacketType;
 import edu.umass.cs.contextservice.processing.QueryInfo;
-import edu.umass.cs.contextservice.processing.UpdateInfo;
 import edu.umass.cs.nio.GenericMessagingTask;
 import edu.umass.cs.nio.InterfaceNodeConfig;
 import edu.umass.cs.nio.InterfacePacketDemultiplexer;
@@ -62,11 +57,11 @@ public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemul
 	
 	protected final Object pendingQueryLock												= new Object();
 	
-	protected ConcurrentHashMap<Long, UpdateInfo<NodeIDType>> pendingUpdateRequests		= null;
+	//protected ConcurrentHashMap<Long, UpdateInfo<NodeIDType>> pendingUpdateRequests		= null;
 	
-	protected long updateIdCounter														= 0;
+	//protected long updateIdCounter														= 0;
 	
-	protected final Object pendingUpdateLock											= new Object();
+	//protected final Object pendingUpdateLock											= new Object();
 	
 	// lock for synchronizing number of msg update
 	protected long numMessagesInSystem													= 0;
@@ -84,8 +79,7 @@ public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemul
 		
 		pendingQueryRequests  = new ConcurrentHashMap<Long, QueryInfo<NodeIDType>>();
 		
-		pendingUpdateRequests = new ConcurrentHashMap<Long, UpdateInfo<NodeIDType>>();
-		
+		//pendingUpdateRequests = new ConcurrentHashMap<Long, UpdateInfo<NodeIDType>>();
 		
 		switch(ContextServiceConfig.DATABASE_TYPE)
 		{
@@ -180,28 +174,6 @@ public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemul
 		return true;
 	}
 	
-	/*public boolean handleJSONObject(JSONObject jsonObject)
-	{
-		BasicContextServicePacket<NodeIDType> csPacket = null;
-		//if(DEBUG) Reconfigurator.log.finest("Reconfigurator received " + jsonObject);
-		try
-		{
-			// try handling as reconfiguration packet through protocol task 
-			if((csPacket = this.protocolTask.getContextServicePacket(jsonObject))!=null) 
-			{
-				this.protocolExecutor.handleEvent(csPacket);
-			}
-			//else if( isExternalRequest(jsonObject) )
-			//{
-			//	assert(false);
-			//}
-		} catch(JSONException je)
-		{
-			je.printStackTrace();
-		}
-		return true; // neither reconfiguration packet nor app request
-	}*/
-	
 	public long getNumMesgInSystem()
 	{
 		return this.numMessagesInSystem;
@@ -210,8 +182,8 @@ public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemul
 	protected void sendReplyBackToUser(QueryInfo<NodeIDType> qinfo, JSONArray resultList)
 	{
 		QueryMsgFromUserReply<NodeIDType> qmesgUR
-			= new QueryMsgFromUserReply<NodeIDType>(this.getMyID(), qinfo.getQuery(), qinfo.getGroupGUID(),
-					resultList, qinfo.getUserReqID());
+			= new QueryMsgFromUserReply<NodeIDType>( this.getMyID(), qinfo.getQuery(), qinfo.getGroupGUID(),
+					resultList, qinfo.getUserReqID(), resultList.length() );
 		try
 		{
 			log.fine("sendReplyBackToUser "+qinfo.getUserIP()+" "+qinfo.getUserPort()+
@@ -252,11 +224,10 @@ public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemul
 		}
 	}
 	
-	protected void sendUpdateReplyBackToUser(String sourceIP, int sourcePort, long versioNum, 
-			long updateStartTime, long contextTime)
+	protected void sendUpdateReplyBackToUser(String sourceIP, int sourcePort, long versioNum)
 	{
 		ValueUpdateFromGNSReply<NodeIDType> valUR
-			= new ValueUpdateFromGNSReply<NodeIDType>(this.getMyID(), versioNum, updateStartTime, contextTime);
+			= new ValueUpdateFromGNSReply<NodeIDType>(this.getMyID(), versioNum);
 		
 		try
 		{
@@ -347,13 +318,48 @@ public abstract class AbstractScheme<NodeIDType> implements InterfacePacketDemul
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
 			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
 	
+	public abstract GenericMessagingTask<NodeIDType,?>[] handleBulkGet(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+	
+	
+	public abstract GenericMessagingTask<NodeIDType,?>[] handleBulkGetReply(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+
+	public abstract GenericMessagingTask<NodeIDType,?>[] handleConsistentStoragePut(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+	
+	public abstract GenericMessagingTask<NodeIDType,?>[] handleConsistentStoragePutReply(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+	
+	
+	public abstract GenericMessagingTask<NodeIDType,?>[] handleQueryMesgToSubspaceRegion(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+	
+	public abstract GenericMessagingTask<NodeIDType,?>[] handleQueryMesgToSubspaceRegionReply(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+	
+	public abstract GenericMessagingTask<NodeIDType,?>[] handleValueUpdateToSubspaceRegionMessage(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+	
+	public abstract GenericMessagingTask<NodeIDType,?>[] handleGetMessage(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+	
+	public abstract GenericMessagingTask<NodeIDType,?>[] handleGetReplyMessage(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+	
 	public abstract void checkQueryCompletion(QueryInfo<NodeIDType> qinfo);
 	
 	public abstract GenericMessagingTask<NodeIDType, ?>[] initializeScheme();
 	
 	protected abstract void processReplyInternally
 	(QueryMsgToValuenodeReply<NodeIDType> queryMsgToValnodeRep, QueryInfo<NodeIDType> queryInfo);
-	
-	
-	
 }

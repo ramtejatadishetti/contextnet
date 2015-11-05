@@ -82,8 +82,8 @@ public class BasicContextUpdateNoGNS
 				allAttr.put(currKey, attrValueMap.get(currKey));
 			}
 			
-			ValueUpdateFromGNS<Integer> valMsg = new ValueUpdateFromGNS<Integer>(myID, versionNum++, guidString, attName, 
-					oldValue+"", nextVal+"", allAttr, myIP.getHostAddress(), myPort, System.currentTimeMillis());
+			ValueUpdateFromGNS<Integer> valMsg = new ValueUpdateFromGNS<Integer>(myID, versionNum++, guidString,
+					allAttr, myIP.getHostAddress(), 1000);
 			
 			niot.sendToAddress(new InetSocketAddress(InetAddress.getByName(csServerName), csPort)
 			, valMsg.toJSONObject());

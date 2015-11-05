@@ -7,36 +7,94 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Vector;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.mysql.jdbc.Connection;
 import com.mysql.jdbc.Statement;
 
+import edu.umass.cs.contextservice.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.records.MetadataTableInfo;
 import edu.umass.cs.contextservice.database.records.ValueTableInfo;
 import edu.umass.cs.contextservice.examples.basic.CSTestConfig;
+import edu.umass.cs.contextservice.messages.ValueUpdateMsgToMetadataNode;
+import edu.umass.cs.contextservice.processing.QueryComponent;
+import edu.umass.cs.contextservice.processing.QueryParser;
 
 public class SQLContextServiceDB<NodeIDType>
 {
-	private final Connection dbConnection;
+	//private final Connection dbConnection;
 	private final NodeIDType myNodeID;
 	private final HashMap<NodeIDType, SQLNodeInfo> sqlNodeInfoMap;
+	
+	public static final int NUM_PARALLEL_CLIENTS				= 100;
+	
+	private Connection[] dbConnectionArray						= new Connection[NUM_PARALLEL_CLIENTS];
+	
+	private final ConcurrentLinkedQueue<Connection> freedbConnQueue;
+	
+	private final Object dbConnFreeMonitor						= new Object();
+	
+	//private final Object storeFullObjMonitor					= new Object();
 	
 	public SQLContextServiceDB(NodeIDType myNodeID) throws Exception
 	{
 		this.myNodeID = myNodeID;
+		sqlNodeInfoMap = new HashMap<NodeIDType, SQLNodeInfo>();
 		readDBNodeSetup();
 		
-		dbConnection = getConnection();
+		freedbConnQueue = new ConcurrentLinkedQueue<Connection>();
 		
-		sqlNodeInfoMap = new HashMap<NodeIDType, SQLNodeInfo>();
+		for(int i=0;i<NUM_PARALLEL_CLIENTS;i++)
+		{
+			dbConnectionArray[i] = getConnection();
+			freedbConnQueue.add(dbConnectionArray[i]);
+		}
 		
 		// create necessary tables
 		createTables();
+	}
+	
+	private Connection getAFreeConnection()
+	{
+		Connection dbConFree = null;
+		
+		while( dbConFree == null )
+		{
+			dbConFree = freedbConnQueue.poll();
+			
+			if( dbConFree == null )
+			{
+				synchronized(dbConnFreeMonitor)
+				{
+					try
+					{
+						dbConnFreeMonitor.wait();
+					} catch (InterruptedException e)
+					{
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+		return dbConFree;
+	}
+	
+	private void returnAFreeConn(Connection retConn)
+	{
+		synchronized(dbConnFreeMonitor)
+		{
+			freedbConnQueue.add(retConn);
+			dbConnFreeMonitor.notifyAll();
+		}
 	}
 	
 	/**
@@ -45,7 +103,8 @@ public class SQLContextServiceDB<NodeIDType>
 	 */
 	private void createTables() throws SQLException
 	{
-		Statement stmt = (Statement) dbConnection.createStatement();
+		Connection myConn = getAFreeConnection();
+		Statement stmt = (Statement) myConn.createStatement();
 		
 		for( int i=0; i<ContextServiceConfig.NUM_ATTRIBUTES; i++ )
 		{
@@ -54,8 +113,8 @@ public class SQLContextServiceDB<NodeIDType>
 			
 			String newTableCommand = "create table "+tableName+" ( "
 				      + "   lowerRange DOUBLE NOT NULL, upperRange DOUBLE NOT NULL, nodeID INT NOT NULL, "
-				      + "   partitionNum INT AUTO_INCREMENT, INDEX USING BTREE (lowerRange), "
-				      + "   INDEX USING BTREE (upperRange) )";
+				      + "   partitionNum INT NOT NULL AUTO_INCREMENT , INDEX USING BTREE (lowerRange), "
+			 	      + "   INDEX USING BTREE (upperRange), PRIMARY KEY (partitionNum) )";
 			
 			stmt.executeUpdate(newTableCommand);
 			
@@ -63,16 +122,16 @@ public class SQLContextServiceDB<NodeIDType>
 			
 			// char 45 for GUID because, GUID is 40 char in length, 5 just additional
 			newTableCommand = "create table "+tableName+" ( "
-				      + "   value DOUBLE NOT NULL, nodeGUID CHAR(45) PRIMARY KEY, versionNum INT NOT NULL,"
+				      + "   value DOUBLE NOT NULL, nodeGUID CHAR(100) PRIMARY KEY, versionNum INT NOT NULL,"
 				      + " INDEX USING BTREE (value) )";
 			
 			stmt.executeUpdate(newTableCommand);
 			
 			for( int j=0;j<ContextServiceConfig.NUM_RANGE_PARTITIONS;j++ )
 			{
-				tableName       = "groupGUIDTable"+j;
+				tableName       = attName+"GroupGUIDTable"+j;
 				newTableCommand = "create table "+tableName+" ( "
-				      + "   groupGUID PRIMARY KEY, groupQuery )";
+				      + "   groupGUID CHAR(100) PRIMARY KEY, groupQuery VARCHAR(100) )";
 				
 				stmt.executeUpdate(newTableCommand);
 			}
@@ -82,18 +141,27 @@ public class SQLContextServiceDB<NodeIDType>
 		String tableName = "fullObjectTable";
 		
 		String newTableCommand = "create table "+tableName+" ( "
-			      + "   nodeGUID CHAR(45) PRIMARY KEY";
+			      + "   nodeGUID CHAR(100) PRIMARY KEY";
 		
 		//	      + ", upperRange DOUBLE NOT NULL, nodeID INT NOT NULL, "
 		//	      + "   partitionNum INT AUTO_INCREMENT, INDEX USING BTREE (lowerRange, upperRange) )";
 		for(int i=0; i<ContextServiceConfig.NUM_ATTRIBUTES; i++)
 		{
-			newTableCommand += newTableCommand + ", contextATT"+i+" DOUBLE";
+			newTableCommand = newTableCommand + ", contextATT"+i+" DOUBLE DEFAULT "+AttributeTypes.NOT_SET+" , INDEX USING BTREE(contextATT"+i+")";
 		}
-		newTableCommand += newTableCommand +" )";
+		newTableCommand = newTableCommand +" )";
 		stmt.executeUpdate(newTableCommand);
 		
+		
+		// groupGUID storage table
+		/*tableName       = ContextServiceConfig.groupGUIDTable;
+		newTableCommand = "create table "+tableName+" ( "
+			      + " nodeGUID CHAR(100) NOT NULL, groupGUID CHAR(100) NOT NULL, groupQuery VARCHAR(100) NOT NULL, "
+			      + " INDEX USING HASH(nodeGUID), INDEX USING HASH(groupGUID) )";
+		stmt.executeUpdate(newTableCommand);*/
+		
 		stmt.close();
+		this.returnAFreeConn(myConn);
 	}
 	
 	private Connection getConnection() throws Exception
@@ -116,6 +184,12 @@ public class SQLContextServiceDB<NodeIDType>
 	{
 		List<MetadataTableInfo<Integer>> answerList 
 						= new LinkedList<MetadataTableInfo<Integer>>();
+		//System.out.println("getAttributeMetaObjectRecord attrName "+attrName+" queryMin "
+		//				+queryMin+" queryMax "+queryMax);
+		
+		Connection myConn = this.getAFreeConnection();
+		//System.out.println("getAttributeMetaObjectRecord gotTheConnection ");
+		
 		
 		try
 		{
@@ -136,7 +210,8 @@ public class SQLContextServiceDB<NodeIDType>
 					+ "( lowerRange < "+queryMax +" AND upperRange >= "+queryMax+" ) OR "
 					+ "( lowerRange >= "+queryMin +" AND upperRange < "+queryMax+" ) ";
 			
-			Statement stmt = (Statement) dbConnection.createStatement();
+			
+			Statement stmt = (Statement) myConn.createStatement();
 			
 			ResultSet rs = stmt.executeQuery(selectTableSQL);
 			
@@ -150,30 +225,33 @@ public class SQLContextServiceDB<NodeIDType>
 		    	answerList.add(metaobj);
 		    }
 		    
+		    //System.out.println("getAttributeMetaObjectRecord queryExecuted");
+		    
 		    rs.close();
 		    stmt.close();
 		} catch(SQLException sqlex)
 		{
 			sqlex.printStackTrace();
 		}
+		this.returnAFreeConn(myConn);
+		//System.out.println("getAttributeMetaObjectRecord greturnedConnection "+answerList.size()+" "+answerList);
 		return answerList;
 	}
 	
 	public JSONArray getValueInfoObjectRecord
 							(String attrName, double queryMin, double queryMax)
 	{
-		//List<ValueTableInfo> answerList 
-		//	= new LinkedList<ValueTableInfo>();
-		
+		Connection myConn  = this.getAFreeConnection();
 		JSONArray jsoArray = new JSONArray();
 		
 		try
 		{
 			String tableName = attrName+ContextServiceConfig.ValueTableSuffix;
+			
 			String selectTableSQL = "SELECT value, nodeGUID from "+tableName+" WHERE "
 					+ "( value >= "+queryMin +" AND value < "+queryMax+" )";
-
-			Statement stmt = (Statement) dbConnection.createStatement();
+			
+			Statement stmt = (Statement) myConn.createStatement();
 			
 			ResultSet rs = stmt.executeQuery(selectTableSQL);
 			
@@ -182,9 +260,7 @@ public class SQLContextServiceDB<NodeIDType>
 				//Retrieve by column name
 				//double value  	 = rs.getDouble("value");
 				String nodeGUID = rs.getString("nodeGUID");
-			
-				//ValueTableInfo valobj = new ValueTableInfo(value, nodeGUID);
-				//answerList.add(valobj);
+				
 				jsoArray.put(nodeGUID);
 			}
 		
@@ -194,22 +270,61 @@ public class SQLContextServiceDB<NodeIDType>
 		{
 			sqlex.printStackTrace();
 		}
+		this.returnAFreeConn(myConn);
 		return jsoArray;
 	}
+	
+	
+	/*public JSONArray getValueInfoObjectRecordCreateTable
+		(String attrName, double queryMin, double queryMax)
+	{
+		Connection myConn  = this.getAFreeConnection();
+		JSONArray jsoArray = new JSONArray();
+
+		try
+		{
+			String tableName = attrName+ContextServiceConfig.ValueTableSuffix;
+			String selectTableSQL = "SELECT value, nodeGUID from "+tableName+" WHERE "
+					+ "( value >= "+queryMin +" AND value < "+queryMax+" ) LIMIT 10";
+			
+			Statement stmt = (Statement) myConn.createStatement();
+			
+			ResultSet rs = stmt.executeQuery(selectTableSQL);
+			
+			while( rs.next() )
+			{
+				//Retrieve by column name
+				//double value  	 = rs.getDouble("value");
+				String nodeGUID = rs.getString("nodeGUID");
+
+				jsoArray.put(nodeGUID);
+			}
+			
+			rs.close();
+			stmt.close();
+		} catch(SQLException sqlex)
+		{
+			sqlex.printStackTrace();
+		}
+		this.returnAFreeConn(myConn);
+		return jsoArray;
+	}*/
+	
 	
 	public void putAttributeMetaObjectRecord
 							(String attrName, double lowerRange, double upperRange, NodeIDType nodeID)
 	{
+		Connection myConn = this.getAFreeConnection();
 		Statement statement = null;
 
 		String tableName = attrName+ContextServiceConfig.MetadataTableSuffix;
 		String insertTableSQL = "INSERT INTO "+tableName 
-				+"(lowerRange, upperRange, nodeID) " + "VALUES"
+				+" (lowerRange, upperRange, nodeID) " + "VALUES"
 				+ "("+lowerRange+","+upperRange+","+nodeID +")";
-
+		
 		try 
 		{
-			statement = (Statement) dbConnection.createStatement();
+			statement = (Statement) myConn.createStatement();
 
 			// execute insert SQL stetement
 			statement.executeUpdate(insertTableSQL);
@@ -229,21 +344,24 @@ public class SQLContextServiceDB<NodeIDType>
 				}
 			}
 		}
+		this.returnAFreeConn(myConn);
 	}
+	
 	
 	public void putValueObjectRecord(String attrName, double value, String nodeGUID, 
 			long versionNum)
 	{
+		Connection myConn = this.getAFreeConnection();
 		Statement statement = null;
 
 		String tableName = attrName+ContextServiceConfig.ValueTableSuffix;
 		String insertTableSQL = "INSERT INTO "+tableName 
-				+"(value, nodeGUID, versionNum) " + "VALUES"
+				+" (value, nodeGUID, versionNum) " + "VALUES"
 				+ "("+value+",'"+nodeGUID+"',"+versionNum +")";
 
 		try 
 		{
-			statement = (Statement) dbConnection.createStatement();
+			statement = (Statement) myConn.createStatement();
 
 			// execute insert SQL stetement
 			statement.executeUpdate(insertTableSQL);
@@ -263,12 +381,14 @@ public class SQLContextServiceDB<NodeIDType>
 				}
 			}
 		}
+		this.returnAFreeConn(myConn);
 	}
 	
 	// updates valueInfoObjectRecord
 	public void updateValueInfoObjectRecord(String attrName, 
 				ValueTableInfo.Operations operType, String nodeGUID, double value, long versionNum)
 	{
+		Connection myConn = this.getAFreeConnection();
 		Statement statement = null;
 
 		String tableName = attrName+ContextServiceConfig.ValueTableSuffix;
@@ -293,10 +413,11 @@ public class SQLContextServiceDB<NodeIDType>
 
 		try 
 		{
-			statement = (Statement) dbConnection.createStatement();
+			statement = (Statement) myConn.createStatement();
 
 			// execute insert SQL stetement
-			statement.executeUpdate(sqlQuery);
+			int numRows = statement.executeUpdate(sqlQuery);
+			System.out.println("Num rows affected "+numRows);
 		} catch (SQLException e) 
 		{
 			e.printStackTrace();
@@ -313,6 +434,221 @@ public class SQLContextServiceDB<NodeIDType>
 				}
 			}
 		}
+		this.returnAFreeConn(myConn);
+	}
+	
+	// store in fulldataObjTable
+	@SuppressWarnings("unchecked")
+	public JSONObject storeInFullDataObjTable(String nodeGUID, JSONObject attrValuePairs) throws JSONException
+	{
+		Connection myConn = this.getAFreeConnection();
+		Statement statement = null;
+
+		String tableName = "fullObjectTable";
+		
+		//String sqlQuery = "UPDATE "+tableName
+		//		+ " SET "+attrName+" = "+value + " WHERE nodeGUID = '"+nodeGUID+"'";
+		//INSERT INTO table (a,b,c) VALUES (1,2,3)
+		// ON DUPLICATE KEY UPDATE c=c+1;
+		
+		String selectQuery = "SELECT ";
+		//+attrName+" FROM "+tableName+" WHERE nodeGUID = '"+nodeGUID+"'";
+		
+		String updateSqlQuery = "UPDATE "+tableName
+				+ " SET ";
+				//+ "value = "+value+" , versionNum = "+versionNum
+				//+ " WHERE nodeGUID = '"+nodeGUID+"'";
+		
+		String insertQuery = "INSERT INTO "+tableName+ " (";
+		//String sqlQuery = "INSERT INTO "+tableName 
+		//				+" ("+attrName+", nodeGUID) " + "VALUES"
+		//		+ "("+value+",'"+nodeGUID+"' ) ON DUPLICATE KEY UPDATE "+attrName+" = "+value;
+		
+		JSONObject oldValueJSON = new JSONObject();
+		
+		@SuppressWarnings("unchecked")
+		Iterator<String> jsoObjKeysIter = attrValuePairs.keys();
+		int i=0;
+		while( jsoObjKeysIter.hasNext() )
+		{
+			String attrName = jsoObjKeysIter.next();
+			double newVal = attrValuePairs.getDouble(attrName);
+			
+			oldValueJSON.put(attrName, AttributeTypes.NOT_SET);
+			
+			if(i == 0)
+			{
+				selectQuery = selectQuery + attrName;
+				updateSqlQuery = updateSqlQuery + attrName +" = "+newVal;
+				insertQuery = insertQuery + attrName;
+			}
+			else
+			{
+				selectQuery = selectQuery + ", "+attrName+" ";
+				updateSqlQuery = updateSqlQuery +" , "+ attrName +" = "+newVal;
+				insertQuery = insertQuery +", "+attrName;
+			}
+			i++;
+		}
+		
+		selectQuery = selectQuery + " FROM "+tableName+" WHERE nodeGUID = '"+nodeGUID+"'";
+		updateSqlQuery = updateSqlQuery + " WHERE nodeGUID = '"+nodeGUID+"'";
+		insertQuery = insertQuery + ", nodeGUID) " + "VALUES"+ "(";
+				//+ ",'"+nodeGUID+"' )
+		//double oldValue = Double.MIN_VALUE;
+		boolean foundARow = false;
+		
+		try
+		{
+			statement = (Statement) myConn.createStatement();
+			ResultSet rs = statement.executeQuery(selectQuery);
+			
+			while( rs.next() )
+			{
+				//Retrieve by column name
+				//double value  	 = rs.getDouble("value");
+				//oldValue = rs.getDouble(attrName);
+				
+				jsoObjKeysIter = attrValuePairs.keys();
+				while( jsoObjKeysIter.hasNext() )
+				{
+					String attrName = jsoObjKeysIter.next();
+					double oldValueForAttr = rs.getDouble(attrName);
+					
+					oldValueJSON.put(attrName, oldValueForAttr);
+				}
+				foundARow = true;
+			}
+			rs.close();
+			
+			// then update
+			if(foundARow)
+			{
+				statement.executeUpdate(updateSqlQuery);
+			}
+			else
+			{// otherwise insert and update on duplication
+				try
+				{
+					i = 0;
+					//try insert, if fails then update
+					jsoObjKeysIter = attrValuePairs.keys();
+					while( jsoObjKeysIter.hasNext() )
+					{
+						String attrName = jsoObjKeysIter.next();
+						double newValue = attrValuePairs.getDouble(attrName);
+						
+						if(i == 0)
+						{
+							insertQuery = insertQuery + newValue;
+						}
+						else
+						{
+							insertQuery = insertQuery +", "+newValue;
+						}
+						i++;
+					}
+					insertQuery = insertQuery +", '"+nodeGUID+"')";
+					statement.executeUpdate(insertQuery);
+				}catch(SQLException e)
+				{
+					System.out.println("Insert failed, duplicate key, doing update");
+					statement.executeUpdate(updateSqlQuery);
+				}
+			}
+			// execute insert SQL stetement
+			//statement.executeUpdate(sqlQuery);
+		} catch (SQLException e) 
+		{
+			e.printStackTrace();
+		} finally
+		{
+			if (statement != null) 
+			{
+				try 
+				{
+					statement.close();
+				} catch (SQLException e) 
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		this.returnAFreeConn(myConn);
+		return oldValueJSON;
+	}
+	
+	public JSONArray checkGUIDsForQuery(String query, JSONArray guidsToCheck)
+	{
+		Vector<QueryComponent> qComponents = QueryParser.parseQuery(query);
+		String mysqlQuery = "SELECT nodeGUID from fullObjectTable WHERE ( ";
+		
+		
+		for(int i=0; i<guidsToCheck.length(); i++)
+		{
+			try
+			{
+				if(i == (guidsToCheck.length()-1) )
+				{
+					mysqlQuery = mysqlQuery +"nodeGUID = '"+guidsToCheck.getString(i)+"' ) ";
+				}
+				else
+				{
+					mysqlQuery = mysqlQuery +"nodeGUID = '"+guidsToCheck.getString(i)+"' OR ";
+				}
+			} catch (JSONException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		mysqlQuery = mysqlQuery + " AND ( ";
+		
+		for(int i=0;i<qComponents.size();i++)
+		{
+			QueryComponent qc = qComponents.get(i);
+			
+			if(i == (qComponents.size()-1) )
+			{
+				mysqlQuery = mysqlQuery + " ( "+qc.getAttributeName() +" >= "+qc.getLeftValue() +" AND " 
+						+qc.getAttributeName() +" <= "+qc.getRightValue()+" ) )";
+			}
+			else
+			{
+				mysqlQuery = mysqlQuery + " ( "+qc.getAttributeName() +" >= "+qc.getLeftValue() +" AND " 
+						+qc.getAttributeName() +" <= "+qc.getRightValue()+" ) AND ";
+			}
+		}
+		
+		
+		Connection myConn = this.getAFreeConnection();
+		JSONArray jsoArray = new JSONArray();
+		
+		try
+		{
+			Statement stmt = (Statement) myConn.createStatement();
+			
+			ResultSet rs = stmt.executeQuery(mysqlQuery);
+			
+			while( rs.next() )
+			{
+				//Retrieve by column name
+				//double value  	 = rs.getDouble("value");
+				String nodeGUID = rs.getString("nodeGUID");
+			
+				//ValueTableInfo valobj = new ValueTableInfo(value, nodeGUID);
+				//answerList.add(valobj);
+				jsoArray.put(nodeGUID);
+			}
+		
+			rs.close();
+			stmt.close();
+		} catch(SQLException sqlex)
+		{
+			sqlex.printStackTrace();
+		}
+		this.returnAFreeConn(myConn);
+		return jsoArray;
 	}
 	
 

@@ -43,24 +43,12 @@ ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>
 		return this.key;
 	}
 	
-	/*@Override
-	public String refreshKey()
-	{
-		return (this.key =
-				(this.myID.toString() + (int) (Math.random() * Integer.MAX_VALUE)));
-	}*/
-	
 	@Override
 	public Set<ContextServicePacket.PacketType> getEventTypes()
 	{
 		//return new HashSet<ContextServicePacket.PacketType>(Arrays.asList(types));
 		return new HashSet<ContextServicePacket.PacketType>(types);
 	}
-	
-	/*public Set<ReconfigurationPacket.PacketType> getDefaultTypes() 
-	{
-		return new HashSet<ReconfigurationPacket.PacketType>(Arrays.asList(localTypes));
-	}*/
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -103,11 +91,7 @@ ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>
 	@Override
 	public GenericMessagingTask<NodeIDType, ?>[] start() 
 	{
-		/**
-		 * In the beginning of the protocol, each node finds for what 
-		 * attributes it is a meta data node and sends the MetadataMsgToValueNode.
-		 * assignValueRanges() returns the messaging tasks that need to run.
-		 */
+
 		return csNode.initializeScheme();
 	}
 }

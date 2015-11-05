@@ -328,8 +328,8 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 		//String oldVal = valUpdMsgFromGNS.getOldVal();
 		//String newVal = valUpdMsgFromGNS.getNewVal();
 		//JSONObject allAttrs = valUpdMsgFromGNS.getAllAttrs();
-		String sourceIP = valUpdMsgFromGNS.getSourceIP();
-		int sourcePort = valUpdMsgFromGNS.getSourcePort();
+		//String sourceIP = valUpdMsgFromGNS.getSourceIP();
+		//int sourcePort = valUpdMsgFromGNS.getSourcePort();
 		
 		/*double oldValD, newValD;
 		
@@ -344,7 +344,7 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 		
 		long currReqID = -1;
 		
-		UpdateInfo<NodeIDType> currReq = null;
+		/*UpdateInfo<NodeIDType> currReq = null;
 		
 		synchronized(this.pendingUpdateLock)
 		{
@@ -356,7 +356,7 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 		
 		//this.hyperdexES.execute(new HyperdexTaskClass(HyperdexTaskClass.UPDATE, null, currReq));
 		
-		new HyperdexTaskClass(HyperdexTaskClass.UPDATE, null, currReq).run();
+		new HyperdexTaskClass(HyperdexTaskClass.UPDATE, null, currReq).run();*/
 		
 		/*while( !currReq.getUpdComl() )
 		{
@@ -398,8 +398,7 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 		}*/
 		
 		//send reply back
-		sendUpdateReplyBackToUser(sourceIP, sourcePort, versionNum, 
-				currReq.getUpdateStartTime(), currReq.getContextStartTime() );
+		//sendUpdateReplyBackToUser(sourceIP, sourcePort, versionNum );
 		
 		// send refresh trigger to a writer, just for experiment
 		/*if( ContextServiceConfig.GROUP_UPDATE_TRIGGER )
@@ -408,10 +407,10 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 				"groupQuery", "groupGUID", versionNum);
 		}*/
 		
-		synchronized(this.pendingUpdateLock)
+		/*synchronized(this.pendingUpdateLock)
 		{
 			pendingUpdateRequests.remove(currReqID);
-		}
+		}*/
 		return null;
 	}
 	
@@ -493,8 +492,10 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 				{
 					try
 					{
-						String attrName = updateReq.getValueUpdateFromGNS().getAttrName();
-						double newVal = Double.parseDouble(updateReq.getValueUpdateFromGNS().getNewVal());
+						//String attrName = updateReq.getValueUpdateFromGNS().getAttrName();
+						String attrName = "";
+						//double newVal = Double.parseDouble(updateReq.getValueUpdateFromGNS().getNewVal());
+						double newVal = Double.MIN_VALUE;
 						String GUID = updateReq.getValueUpdateFromGNS().getGUID();
 						
 						Map<String, Object> attrs = new HashMap<String, Object>();
@@ -535,5 +536,77 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 			}
 		}
 	}
-	
+
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleBulkGet(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleBulkGetReply(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleConsistentStoragePut(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+	{
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleConsistentStoragePutReply(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+	{
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMesgToSubspaceRegion(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMesgToSubspaceRegionReply(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleValueUpdateToSubspaceRegionMessage(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleGetMessage(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleGetReplyMessage(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

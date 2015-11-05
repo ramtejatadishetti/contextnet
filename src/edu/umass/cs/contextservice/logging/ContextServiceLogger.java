@@ -9,7 +9,7 @@ public class ContextServiceLogger
 	
 	public static Logger getLogger()
 	{
-		LOGGER.setLevel(Level.INFO);
+		LOGGER.setLevel(Level.OFF);
 		return LOGGER;
 		
 		// set the LogLevel to Severe, only severe Messages will be written

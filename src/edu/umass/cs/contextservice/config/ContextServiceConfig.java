@@ -29,14 +29,14 @@ public class ContextServiceConfig
 	// if true, groupGUID is stored, if false it is not stores.
 	// false only for experiments, as experiments compare with equation/
 	// otherwise should be true.
-	public static final boolean  GROUP_INFO_STORAGE					= false;
+	public static final boolean  GROUP_INFO_COMPONENT				= false;
 	
 	// if it is true then the group trigger mechanism works, that
 	// on each update the GUID is stored and removed from the 
 	// affected groups. If false that doesn't happen.
 	// false only for experiment comparison with Mercury, Hyperdex,
 	// Replicate-All etc.
-	public static final boolean GROUP_UPDATE_TRIGGER				= false;
+	//public static final boolean GROUP_UPDATE_TRIGGER				= false;
 	
 	//this flag indicates whether GNS is used or not.
 	// In GNSCalls class, it bypasses GNS calls if set to false.
@@ -49,5 +49,20 @@ public class ContextServiceConfig
 	
 	public static final String FullObjectTable    					= "fullObjectTable";
 	
+	public static final String groupGUIDTable						= "groupGUIDTable";
+	
 	public static final boolean USESQL								= true;
+	
+	public static boolean DELAY_MEASURE_PRINTS						= true;
+	
+	public static boolean DELAY_PROFILER_ON							= true;
+	
+	public static boolean DATABASE_SIZE_PRINT						= true;
+	
+	public static final String NodeSubspaceInfo						= "subspaceInfo.txt";
+	
+	//control if full guids are sent in the search query
+	// reply, if false only sends the number of guids, not
+	// the actual guids
+	public static final boolean sendFullReplies						= false;
 }

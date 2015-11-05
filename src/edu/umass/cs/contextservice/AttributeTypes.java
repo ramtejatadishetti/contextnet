@@ -7,17 +7,19 @@ import java.util.Vector;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 
 /**
- * Defines the attribute types on which context based 
+ * Defines the attribute types on which context based
  * communication is supported.
  * @author ayadav
  */
 public class AttributeTypes
 {
 	//public static String [] attributeNames					= null;
-	public static final double MIN_VALUE						= 1.0;
+	public static final double MIN_VALUE						= 0.0;
 	public static final double MAX_VALUE						= 1500.0;
+	// used as default value in hyperspace if none is specified.
+	public static final double DEFAULT_VALUE					= 0.0;
 	
-	public static final double NOT_SET							= Double.MIN_VALUE;
+	public static final double NOT_SET							= DEFAULT_VALUE;
 	
 	private static Map<String, String> attributeMap 			= null;
 	

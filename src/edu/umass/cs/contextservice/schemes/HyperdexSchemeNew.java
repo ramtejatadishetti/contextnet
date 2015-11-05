@@ -187,7 +187,7 @@ public class HyperdexSchemeNew<NodeIDType> extends AbstractScheme<NodeIDType>
 			{
 				InetSocketAddress destAdd = new InetSocketAddress(InetAddress.getByName(userIP), userPort);
 				QueryMsgFromUserReply<NodeIDType> qmesgUR = new QueryMsgFromUserReply<NodeIDType>(this.getMyID(), query, 
-						grpGUID, resultArray, userReqID);
+						grpGUID, resultArray, userReqID, resultArray.length());
 				sendQueryReplyBackToUser(destAdd, qmesgUR);
 			} catch (UnknownHostException e)
 			{
@@ -244,12 +244,14 @@ public class HyperdexSchemeNew<NodeIDType> extends AbstractScheme<NodeIDType>
 			
 			long versionNum = valUpdMsgFromGNS.getVersionNum();
 			String GUID = valUpdMsgFromGNS.getGUID();
-			String attrName = valUpdMsgFromGNS.getAttrName();
-			String oldVal = valUpdMsgFromGNS.getOldVal();
-			String newVal = valUpdMsgFromGNS.getNewVal();
+			//String attrName = valUpdMsgFromGNS.getAttrName();
+			String attrName = "";
+			String oldVal = "";
+			//String newVal = valUpdMsgFromGNS.getNewVal();
+			String newVal = "";
 			//JSONObject allAttrs = valUpdMsgFromGNS.getAllAttrs();
-			String sourceIP = valUpdMsgFromGNS.getSourceIP();
-			int sourcePort = valUpdMsgFromGNS.getSourcePort();
+			//String sourceIP = valUpdMsgFromGNS.getSourceIP();
+			//int sourcePort = valUpdMsgFromGNS.getSourcePort();
 			
 			Map<String, Object> attrs = new HashMap<String, Object>();
 			attrs.put(attrName, Double.parseDouble(newVal));
@@ -258,8 +260,7 @@ public class HyperdexSchemeNew<NodeIDType> extends AbstractScheme<NodeIDType>
 			HyperdexCalls(UPDATE_RECVD, attrs, GUID, null, null, versionNum);
 			
 			//send reply back
-			sendUpdateReplyBackToUser(sourceIP, sourcePort, versionNum, 
-					System.currentTimeMillis(), System.currentTimeMillis() );
+			//sendUpdateReplyBackToUser(sourceIP, sourcePort, versionNum );
 			
 			// send refresh trigger to a writer, just for experiment
 			/*if( ContextServiceConfig.GROUP_UPDATE_TRIGGER )
@@ -768,6 +769,78 @@ public class HyperdexSchemeNew<NodeIDType> extends AbstractScheme<NodeIDType>
 		@Override
 		public NodeIDType getResponsibleNodeId(String AttrName)
 		{
+			return null;
+		}
+
+		@Override
+		public GenericMessagingTask<NodeIDType, ?>[] handleBulkGet(
+				ProtocolEvent<PacketType, String> event,
+				ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public GenericMessagingTask<NodeIDType, ?>[] handleBulkGetReply(
+				ProtocolEvent<PacketType, String> event,
+				ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public GenericMessagingTask<NodeIDType, ?>[] handleConsistentStoragePut(
+				ProtocolEvent<PacketType, String> event,
+				ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public GenericMessagingTask<NodeIDType, ?>[] handleConsistentStoragePutReply(
+				ProtocolEvent<PacketType, String> event,
+				ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public GenericMessagingTask<NodeIDType, ?>[] handleQueryMesgToSubspaceRegion(
+				ProtocolEvent<PacketType, String> event,
+				ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public GenericMessagingTask<NodeIDType, ?>[] handleQueryMesgToSubspaceRegionReply(
+				ProtocolEvent<PacketType, String> event,
+				ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public GenericMessagingTask<NodeIDType, ?>[] handleValueUpdateToSubspaceRegionMessage(
+				ProtocolEvent<PacketType, String> event,
+				ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public GenericMessagingTask<NodeIDType, ?>[] handleGetMessage(
+				ProtocolEvent<PacketType, String> event,
+				ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public GenericMessagingTask<NodeIDType, ?>[] handleGetReplyMessage(
+				ProtocolEvent<PacketType, String> event,
+				ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			// TODO Auto-generated method stub
 			return null;
 		}
 }

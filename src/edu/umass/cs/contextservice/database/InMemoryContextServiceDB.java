@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -228,7 +228,7 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 			{
 				if(fieldType == AttributeMetaObjectRecord.Keys.GROUP_GUID_LIST)
 				{
-					if(ContextServiceConfig.GROUP_INFO_STORAGE)
+					if(ContextServiceConfig.GROUP_INFO_COMPONENT)
 					{
 						// update by reference
 						JSONArray currValue = dbRec.getGroupGUIDList();
@@ -325,7 +325,6 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 		}
 		//return nodeGUIDList;
 	}
-	
 	
 	public void printDatabase()
 	{

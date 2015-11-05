@@ -157,8 +157,7 @@ public class BasicContextUpdateSendExp<NodeIDType> implements InterfacePacketDem
 				allAttr.put(key, attrValueMap.get(key));
 			}
 			
-			ValueUpdateFromGNS<NodeIDType> valMsg = new ValueUpdateFromGNS<NodeIDType>(myID, versionNum++, guidString, attName, 
-					oldValue+"", nextVal+"", allAttr, sourceIP, listenPort, System.currentTimeMillis());
+			ValueUpdateFromGNS<NodeIDType> valMsg = new ValueUpdateFromGNS<NodeIDType>(myID, versionNum++, guidString, allAttr, sourceIP, listenPort);
 			
 			System.out.println("CONTEXTSERVICE EXPERIMENT: UPDATEFROMUSER REQUEST ID "
 					+ valMsg.getVersionNum() +" AT "+System.currentTimeMillis());

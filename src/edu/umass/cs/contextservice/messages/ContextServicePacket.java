@@ -11,7 +11,6 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.nio.IntegerPacketType;
-import edu.umass.cs.nio.JSONNIOTransport;
 import edu.umass.cs.nio.JSONPacket;
 import edu.umass.cs.protocoltask.ProtocolEvent;
 import edu.umass.cs.protocoltask.ProtocolTask;
@@ -42,31 +41,38 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		// predicate mesg
 		QUERY_MSG_TO_METADATANODE(3),
 		// valuenode mesg
-		QUERY_MSG_TO_VALUENODE(4), // on an add request replica controller sends to active replica
+		QUERY_MSG_TO_VALUENODE(4), 				// on an add request replica controller sends to active replica
 		// valuenode reply mesg
-		QUERY_MSG_TO_VALUENODE_REPLY(5), // after adding name, active replica confirms to replica controller
-		VALUE_UPDATE_MSG_TO_METADATANODE(6), // value update mesg to meta data node
-		VALUE_UPDATE_MSG_TO_VALUENODE(7), // value update mesg to value node.
-		VALUE_UPDATE_MSG_FROM_GNS(8),     // value update trigger from GNS
-		QUERY_MSG_FROM_USER_REPLY(9),     // reply to the query mesg from user, reply goes back to the original querier
-		VALUE_UPDATE_MSG_FROM_GNS_REPLY(10),  // reply that goes back to GNS or whoever issues this message.
-		VALUE_UPDATE_MSG_TO_VALUENODE_REPLY(11),  // valuenode reply to ?
-		REFRESH_TRIGGER(12),   // trigger sent to the querier to refresh
-		BULK_GET(13),   // used to get bulk guid records stored by consistent hashing
-		BULK_PUT(14),   // used to put bulk guid records if needed, usually puts are single
+		QUERY_MSG_TO_VALUENODE_REPLY(5), 		// after adding name, active replica confirms to replica controller
+		VALUE_UPDATE_MSG_TO_METADATANODE(6), 	// value update mesg to meta data node
+		VALUE_UPDATE_MSG_TO_VALUENODE(7), 		// value update mesg to value node.
+		VALUE_UPDATE_MSG_FROM_GNS(8),     		// value update trigger from GNS
+		QUERY_MSG_FROM_USER_REPLY(9),     		// reply to the query mesg from user, reply goes back to the original querier
+		VALUE_UPDATE_MSG_FROM_GNS_REPLY(10),  	// reply that goes back to GNS or whoever issues this message.
+		VALUE_UPDATE_MSG_TO_VALUENODE_REPLY(11),// valuenode reply to ?
+		REFRESH_TRIGGER(12),   					// trigger sent to the querier to refresh
+		BULK_GET(13),   						// used to get bulk guid records stored by consistent hashing
+		CONSISTENT_STORAGE_PUT(14),   			// used to put bulk guid records if needed, usually puts are single
 		BULK_GET_REPLY(15),
-		BULK_PUT_REPLY(16),
-		QUERIER_TO_RELAYSERVICE(17), // queries sends this message to relay service, for relay service to communicate with users.
-		RELAY_TO_RELAY_MSG(18),      // message sent between relay service nodes.
+		CONSISTENT_STORAGE_PUT_REPLY(16),
+		QUERIER_TO_RELAYSERVICE(17), 			// queries sends this message to relay service, for relay service to communicate with users.
+		RELAY_TO_RELAY_MSG(18),      			// message sent between relay service nodes.
 		ECHO_MESSAGE(19),
-		ECHOREPLY_MESSAGE(20);
+		ECHOREPLY_MESSAGE(20),
+		QUERY_MESG_TO_UPDATE_GROUPINFO(21),
+		METADATA_TO_SOURCE_QUERYINFO(22),
+		QUERY_MESG_TO_SUBSPACE_REGION(23),
+		QUERY_MESG_TO_SUBSPACE_REGION_REPLY(24),
+		VALUEUPDATE_TO_SUBSPACE_REGION_MESSAGE(25),
+		GET_MESSAGE(26),
+		GET_REPLY_MESSAGE(27);
 		
 		
 		private final int number;
-
+		
 		PacketType(int t) {this.number = t;}
 		public int getInt() {return number;}
-
+		
 		public static final IntegerPacketTypeMap<PacketType> intToType = 
 				new IntegerPacketTypeMap<PacketType>(PacketType.values());
 		
@@ -92,6 +98,7 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 	/**************************** Start of ContextServicePacketType class map **************/
 	private static final HashMap<ContextServicePacket.PacketType, Class<?>> typeMap = 
 			new HashMap<ContextServicePacket.PacketType, Class<?>>();
+	
 	static
 	{
 		/* This map prevents the need for laborious switch/case sequences as it automatically
@@ -113,9 +120,16 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		typeMap.put(ContextServicePacket.PacketType.VALUE_UPDATE_MSG_TO_VALUENODE_REPLY, ValueUpdateMsgToValuenodeReply.class);
 		typeMap.put(ContextServicePacket.PacketType.REFRESH_TRIGGER, ValueUpdateMsgToValuenodeReply.class);
 		typeMap.put(ContextServicePacket.PacketType.BULK_GET, BulkGet.class);
-		typeMap.put(ContextServicePacket.PacketType.BULK_PUT, BulkPut.class);
+		typeMap.put(ContextServicePacket.PacketType.CONSISTENT_STORAGE_PUT, ConsistentStoragePut.class);
 		typeMap.put(ContextServicePacket.PacketType.BULK_GET_REPLY, BulkGetReply.class);
 		typeMap.put(ContextServicePacket.PacketType.ECHO_MESSAGE, EchoMessage.class);
+		typeMap.put(ContextServicePacket.PacketType.CONSISTENT_STORAGE_PUT_REPLY, ConsistentStoragePutReply.class);
+		typeMap.put(ContextServicePacket.PacketType.QUERY_MESG_TO_SUBSPACE_REGION, QueryMesgToSubspaceRegion.class);
+		typeMap.put(ContextServicePacket.PacketType.QUERY_MESG_TO_SUBSPACE_REGION_REPLY, QueryMesgToSubspaceRegionReply.class);
+		typeMap.put(ContextServicePacket.PacketType.VALUEUPDATE_TO_SUBSPACE_REGION_MESSAGE, ValueUpdateToSubspaceRegionMessage.class);
+		typeMap.put(ContextServicePacket.PacketType.GET_MESSAGE, GetMessage.class);
+		typeMap.put(ContextServicePacket.PacketType.GET_REPLY_MESSAGE, GetReplyMessage.class);
+		
 		
 		for( ContextServicePacket.PacketType type : ContextServicePacket.PacketType.intToType.values() )
 		{
@@ -128,7 +142,6 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 	protected ContextServicePacket(NodeIDType initiator)
 	{
 		super(initiator);
-		//this.setType(t);
 	}
 
 	public ContextServicePacket(JSONObject json) throws JSONException
@@ -242,7 +255,8 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 			String handlerMethodPrefix) 
 	{
 		// Assertions ensure that method name changes do not break code.
-		for(ContextServicePacket.PacketType type : typeMap.keySet()) {
+		for(ContextServicePacket.PacketType type : typeMap.keySet()) 
+		{
 			assertPacketTypeChecks(type, getPacketTypeClassName(type), target, handlerMethodPrefix);
 		}
 	}
@@ -277,8 +291,10 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		for(ContextServicePacket.PacketType[] tarray : types) size += tarray.length;
 		ContextServicePacket.PacketType[] allTypes = new ContextServicePacket.PacketType[size];
 		int i=0;
-		for(ContextServicePacket.PacketType[] tarray : types) {
-			for(ContextServicePacket.PacketType type : tarray) {
+		for(ContextServicePacket.PacketType[] tarray : types) 
+		{
+			for(ContextServicePacket.PacketType type : tarray) 
+			{
 				allTypes[i++] = type;
 			}
 		}

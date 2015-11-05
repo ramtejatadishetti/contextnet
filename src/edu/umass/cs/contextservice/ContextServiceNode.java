@@ -1,18 +1,24 @@
 package edu.umass.cs.contextservice;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.messages.ContextServicePacket.PacketType;
 import edu.umass.cs.contextservice.schemes.AbstractScheme;
 import edu.umass.cs.contextservice.schemes.ContextNetScheme;
 import edu.umass.cs.contextservice.schemes.HyperdexScheme;
 import edu.umass.cs.contextservice.schemes.HyperdexSchemeNew;
+import edu.umass.cs.contextservice.schemes.HyperspaceHashing;
+import edu.umass.cs.contextservice.schemes.MercuryMySQL;
+import edu.umass.cs.contextservice.schemes.MercuryMySQLInstrumented;
 import edu.umass.cs.contextservice.schemes.MercuryNewScheme;
 import edu.umass.cs.contextservice.schemes.MercuryScheme;
 import edu.umass.cs.contextservice.schemes.MercurySchemeConsistent;
 import edu.umass.cs.contextservice.schemes.QueryAllScheme;
 import edu.umass.cs.contextservice.schemes.ReplicateAllScheme;
 import edu.umass.cs.nio.AbstractJSONPacketDemultiplexer;
+import edu.umass.cs.nio.IntegerPacketType;
 import edu.umass.cs.nio.InterfaceNodeConfig;
 import edu.umass.cs.nio.JSONMessenger;
 import edu.umass.cs.nio.JSONNIOTransport;
@@ -72,7 +78,7 @@ public abstract class ContextServiceNode<NodeIDType>
 			}
 			case HYPERDEX:
 			{
-				System.out.println("HYPERDEX started");
+				System.out.println("HYPERDEX Our started");
 				this.contextservice = new HyperdexSchemeNew<NodeIDType>(nc, messenger);
 				break;
 			}
@@ -84,8 +90,11 @@ public abstract class ContextServiceNode<NodeIDType>
 			}
 			case MERCURYCONSISTENT:
 			{
-				System.out.println("MERCURYCONSISTENT started");
-				this.contextservice = new MercurySchemeConsistent<NodeIDType>(nc, messenger);
+				//System.out.println("MERCURYCONSISTENT started");
+				//this.contextservice = new MercuryMySQLInstrumented<NodeIDType>(nc, messenger);
+				System.out.println("HyperspaceHashing started");
+				this.contextservice = new HyperspaceHashing<NodeIDType>(nc, messenger);
+				System.out.println("HyperspaceHashing completed");
 				break;
 			}
 			default:
@@ -100,7 +109,13 @@ public abstract class ContextServiceNode<NodeIDType>
 		//pd = new ContextServicePacketDemultiplexer(contextservice);
 		
 		//pd.register(this.activeReplica.getPacketTypes(), this.activeReplica); // includes app packets
-		pd.register(this.contextservice.getPacketTypes().toArray(), this.contextservice);
+		Iterator<PacketType> packTypeIter = this.contextservice.getPacketTypes().iterator();
+		
+		while( packTypeIter.hasNext() )
+		{
+			PacketType pktType = packTypeIter.next();
+			pd.register(pktType, this.contextservice);
+		}
 		messenger.addPacketDemultiplexer(pd);
 		
 		//FIXME: remove this sleep, it is there because 

@@ -1,0 +1,10 @@
+0,0,1
+0, contextATT0, contextATT1, contextATT2, contextATT3
+1,2,3
+1, contextATT4, contextATT5, contextATT6, contextATT7
+2,4,5
+2, contextATT8, contextATT9, contextATT10, contextATT11
+3,6,7
+3, contextATT12, contextATT13, contextATT14, contextATT15
+4,8,9
+4, contextATT16, contextATT17, contextATT18, contextATT19

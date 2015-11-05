@@ -165,4 +165,9 @@ public class CSNodeConfig<NodeIDType> implements InterfaceNodeConfig<NodeIDType>
 	{
 		return null;
 	}
+	@Override
+	public InetAddress getBindAddress(NodeIDType myID) 
+	{
+		return nmap.get(myID).getAddress();
+	}
 }

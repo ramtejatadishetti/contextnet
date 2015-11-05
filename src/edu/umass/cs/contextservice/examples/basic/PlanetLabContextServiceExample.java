@@ -137,8 +137,8 @@ public class PlanetLabContextServiceExample extends ContextServiceNode<Integer>
 			}
 		}*/
 		
-		System.out.println("printing state for node "+myID);
-		nodes[myID-CSTestConfig.startNodeID].printNodeState();
+		//System.out.println("printing state for node "+myID);
+		//nodes[myID-CSTestConfig.startNodeID].printNodeState();
 		
 		/*try
 		{

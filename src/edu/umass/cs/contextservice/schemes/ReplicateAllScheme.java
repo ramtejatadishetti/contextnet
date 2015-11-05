@@ -21,6 +21,7 @@ import edu.umass.cs.contextservice.gns.GNSCalls;
 import edu.umass.cs.contextservice.gns.GNSCallsOriginal;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ContextServicePacket;
+import edu.umass.cs.contextservice.messages.ContextServicePacket.PacketType;
 import edu.umass.cs.contextservice.messages.MetadataMsgToValuenode;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUser;
 import edu.umass.cs.contextservice.messages.QueryMsgToMetadataNode;
@@ -366,7 +367,7 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		double newValue = valUpdateMsgToValnode.getNewValue();
 		long versionNum = valUpdateMsgToValnode.getVersionNum();
 		long requestID = valUpdateMsgToValnode.getRequestID();
-		NodeIDType sourceID = valUpdateMsgToValnode.getSourceID();
+		//NodeIDType sourceID = valUpdateMsgToValnode.getSourceID();
 		
 		// first check whole value ranges to see if this GUID exists and check the version number
 		// of update
@@ -427,11 +428,11 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 			= new ValueUpdateMsgToValuenodeReply<NodeIDType>
 				(this.getMyID(), versionNum, this.allNodeIDs.size(), requestID);
 		
-		GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenodeReply<NodeIDType>> newmtask = 
+		/*GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenodeReply<NodeIDType>> newmtask = 
 				new GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenodeReply<NodeIDType>>
 			(sourceID, newValueUpdateMsgReply);
 		
-		msgList.add(newmtask);
+		msgList.add(newmtask);*/
 		return 
 		(GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenodeReply<NodeIDType>>[]) this.convertLinkedListToArray(msgList);
 	}
@@ -448,10 +449,10 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		long versionNum = valUpdMsgFromGNS.getVersionNum();
 		String GUID = valUpdMsgFromGNS.getGUID();
-		String attrName = valUpdMsgFromGNS.getAttrName();
-		String oldVal = valUpdMsgFromGNS.getOldVal();
-		String newVal = valUpdMsgFromGNS.getNewVal();
-		JSONObject allAttrs = valUpdMsgFromGNS.getAllAttrs();
+		String attrName = "";
+		String oldVal = "";
+		String newVal = "";
+		JSONObject allAttrs = new JSONObject();
 		
 		double oldValD, newValD;
 		
@@ -488,7 +489,7 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		AttributeMetaObjectRecord<NodeIDType, Double> newMetaObjRec = 
 				this.getContextServiceDB().getAttributeMetaObjectRecord(attrName, newValD, newValD).get(0);
 			
-		if(ContextServiceConfig.GROUP_UPDATE_TRIGGER)
+		if( ContextServiceConfig.GROUP_INFO_COMPONENT )
 		{
 			// do group updates for the old value
 			try
@@ -533,13 +534,13 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 			= new LinkedList<GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>>();
 		
 		long currReqID = -1;
-		synchronized(this.pendingUpdateLock)
+		/*synchronized(this.pendingUpdateLock)
 		{
 			UpdateInfo<NodeIDType> currReq 
 				= new UpdateInfo<NodeIDType>(valUpdMsgFromGNS, updateIdCounter++);
 			currReqID = currReq.getRequestId();
 			pendingUpdateRequests.put(currReqID, currReq);
-		}
+		}*/
 		
 		Iterator<NodeIDType> iter = this.allNodeIDs.iterator();
 		while ( iter.hasNext() )
@@ -549,7 +550,7 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 			ValueUpdateMsgToValuenode<NodeIDType> valueUpdateMsgToValnode = new ValueUpdateMsgToValuenode<NodeIDType>
 			(this.getMyID(), versionNum, GUID, attrName, oldValD, newValD, 
-				ValueUpdateMsgToValuenode.REMOVE_ADD_BOTH, new JSONObject(), this.getMyID(), currReqID);
+				ValueUpdateMsgToValuenode.REMOVE_ADD_BOTH, currReqID);
 			
 			GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>> mtask = 
 					new GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>
@@ -568,7 +569,7 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	private void 
 	processValueUpdateMsgToValuenodeReply(ValueUpdateMsgToValuenodeReply<NodeIDType> valUpdateMsgToValnodeRep)
 	{
-		long requestId =  valUpdateMsgToValnodeRep.getRequestID();
+		/*long requestId =  valUpdateMsgToValnodeRep.getRequestID();
 		synchronized(valueNodeReplyLock)
 		{
 			UpdateInfo<NodeIDType> updateInfo = pendingUpdateRequests.get(requestId);
@@ -581,8 +582,7 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 				if(updateInfo.getNumReplyRecvd() == valUpdateMsgToValnodeRep.getNumReply())
 				{
 					sendUpdateReplyBackToUser( updateInfo.getValueUpdateFromGNS().getSourceIP(), 
-							updateInfo.getValueUpdateFromGNS().getSourcePort(), updateInfo.getValueUpdateFromGNS().getVersionNum(),
-							updateInfo.getUpdateStartTime(), updateInfo.getContextStartTime() );
+							updateInfo.getValueUpdateFromGNS().getSourcePort(), updateInfo.getValueUpdateFromGNS().getVersionNum() );
 					
 					synchronized(this.pendingUpdateLock)
 					{
@@ -590,7 +590,7 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 					}
 				}
 			}
-		}
+		}*/
 		
 	}
 	
@@ -708,6 +708,78 @@ public class ReplicateAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	@Override
 	public void checkQueryCompletion(QueryInfo<NodeIDType> qinfo) 
 	{	
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleBulkGet(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleBulkGetReply(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleConsistentStoragePut(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleConsistentStoragePutReply(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMesgToSubspaceRegion(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMesgToSubspaceRegionReply(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleValueUpdateToSubspaceRegionMessage(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleGetMessage(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleGetReplyMessage(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 	/*public void sendNotifications(LinkedList<GroupGUIDRecord> groupLists)

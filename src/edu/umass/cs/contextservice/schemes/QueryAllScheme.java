@@ -388,12 +388,12 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		long versionNum = valUpdMsgFromGNS.getVersionNum();
 		String GUID = valUpdMsgFromGNS.getGUID();
-		String attrName = valUpdMsgFromGNS.getAttrName();
-		String oldVal = valUpdMsgFromGNS.getOldVal();
-		String newVal = valUpdMsgFromGNS.getNewVal();
-		JSONObject allAttrs = valUpdMsgFromGNS.getAllAttrs();
-		String sourceIP = valUpdMsgFromGNS.getSourceIP();
-		int sourcePort = valUpdMsgFromGNS.getSourcePort();
+		String attrName = "";
+		String oldVal   = "";
+		String newVal   = "";
+		JSONObject allAttrs = new JSONObject();
+		//String sourceIP = valUpdMsgFromGNS.getSourceIP();
+		//int sourcePort = valUpdMsgFromGNS.getSourcePort();
 		
 		double oldValD, newValD;
 		
@@ -410,13 +410,13 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		UpdateInfo<NodeIDType> currReq = null;
 		
-		synchronized(this.pendingUpdateLock)
+		/*synchronized(this.pendingUpdateLock)
 		{
 			currReq 
 				= new UpdateInfo<NodeIDType>(valUpdMsgFromGNS, updateIdCounter++);
 			currReqID = currReq.getRequestId();
 			pendingUpdateRequests.put(currReqID, currReq);
-		}
+		}*/
 		
 	
 		ContextServiceLogger.getLogger().info("ValueUpdateToMetadataMesg recvd at " 
@@ -442,7 +442,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		AttributeMetaObjectRecord<NodeIDType, Double> newMetaObjRec = 
 				this.getContextServiceDB().getAttributeMetaObjectRecord(attrName, newValD, newValD).get(0);
 			
-		if(ContextServiceConfig.GROUP_UPDATE_TRIGGER)
+		if( ContextServiceConfig.GROUP_INFO_COMPONENT )
 		{
 			// do group updates for the old value
 			try
@@ -523,13 +523,12 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 		
 		//send reply back
-		sendUpdateReplyBackToUser(sourceIP, sourcePort, versionNum, 
-				currReq.getUpdateStartTime(), currReq.getContextStartTime());
+		//sendUpdateReplyBackToUser(sourceIP, sourcePort, versionNum);
 		
-		synchronized(this.pendingUpdateLock)
+		/*synchronized(this.pendingUpdateLock)
 		{
 			pendingUpdateRequests.remove(currReqID);
-		}
+		}*/
 		return null;
 	}
 	
@@ -794,6 +793,78 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 			ProtocolEvent<PacketType, String> event,
 			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
 	{
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleBulkGet(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleBulkGetReply(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleConsistentStoragePut(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleConsistentStoragePutReply(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMesgToSubspaceRegion(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMesgToSubspaceRegionReply(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleValueUpdateToSubspaceRegionMessage(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleGetMessage(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleGetReplyMessage(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
 		return null;
 	}
 	

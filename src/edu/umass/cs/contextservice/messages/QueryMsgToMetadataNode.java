@@ -26,7 +26,6 @@ public class QueryMsgToMetadataNode<NodeIDType> extends BasicContextServicePacke
 	private final String query;
 	// GUID of group associated with this query
 	private final String groupGUID;
-	
 
 	/*
 	 * sourceID will be the ID of the node that 
@@ -92,20 +91,5 @@ public class QueryMsgToMetadataNode<NodeIDType> extends BasicContextServicePacke
 	
 	public static void main(String[] args)
 	{
-		/*int[] group = {3, 45, 6, 19};
-		MetadataMsgToValuenode<Integer> se = 
-				new MetadataMsgToValuenode<Integer>(4, "name1", 2, Util.arrayToIntSet(group), Util.arrayToIntSet(group));
-		try
-		{
-			System.out.println(se);
-			MetadataMsgToValuenode<Integer> se2 = new MetadataMsgToValuenode<Integer>(se.toJSONObject());
-			System.out.println(se2);
-			assert(se.toString().length()==se2.toString().length());
-			assert(se.toString().indexOf("}") == se2.toString().indexOf("}"));
-			assert(se.toString().equals(se2.toString())) : se.toString() + "!=" + se2.toString();
-		} catch(JSONException je)
-		{
-			je.printStackTrace();
-		}*/
 	}
 }

@@ -6,6 +6,9 @@ import java.util.Vector;
 
 import org.json.JSONArray;
 
+import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegionReply;
+
 /**
  * Class to store the query related information, 
  * like query, its source etc
@@ -36,11 +39,17 @@ public class QueryInfo<NodeIDType>
 	public HashMap<Integer, LinkedList<String>> componentReplies;
 	//public HashMap<Integer, JSONArray> componentReplies;
 	
-	
 	private JSONArray hyperdexResultArray;
 	
 	// for synch
 	private boolean requestCompl;
+	
+	// to store replies of each region of subspace
+	public HashMap<Integer, JSONArray> regionalReplies;
+	public HashMap<Integer, Integer> regionalRepliesSize;
+	private final Object regionalRepliesLock = new Object();
+	private int regionalRepliesCounter 		 = 0;
+	
 	
 	public QueryInfo(String query, NodeIDType sourceNodeId, String grpGUID, 
 			long userReqID, String userIP, int userPort, Vector<QueryComponent> queryComponents)
@@ -59,6 +68,8 @@ public class QueryInfo<NodeIDType>
 		this.userPort = userPort;
 		
 		this.creationTime = System.currentTimeMillis();
+		regionalReplies = new HashMap<Integer, JSONArray>();
+		regionalRepliesSize = new HashMap<Integer, Integer>();
 		
 		requestCompl = false;
 	}
@@ -132,5 +143,52 @@ public class QueryInfo<NodeIDType>
 	public JSONArray getHyperdexResults()
 	{
 		return this.hyperdexResultArray;
+	}
+	
+	/**
+	 * Initialize regional replies with number of regions 
+	 * contacted for the search query
+	 */
+	public void initializeRegionalReplies(HashMap<Integer, JSONArray> regionalReplies)
+	{
+		this.regionalReplies = regionalReplies;
+	}
+	
+	public boolean setRegionalReply(Integer senderID, 
+			QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply)
+	{
+		synchronized(this.regionalRepliesLock)
+		{
+			if(ContextServiceConfig.sendFullReplies)
+			{
+				this.regionalReplies.put(senderID, queryMesgToSubspaceRegionReply.getResultGUIDs());
+			}
+			else
+			{
+				this.regionalRepliesSize.put(senderID, queryMesgToSubspaceRegionReply.returnReplySize());
+			}
+			
+			regionalRepliesCounter++;
+			
+			// replies from all regions revd.
+			if(regionalRepliesCounter == this.regionalReplies.size())
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+	}
+	
+	public HashMap<Integer, JSONArray> getRepliesHashMap()
+	{
+		return this.regionalReplies;
+	}
+	
+	public HashMap<Integer, Integer> getRepliesSizeHashMap()
+	{
+		return this.regionalRepliesSize;
 	}
 }

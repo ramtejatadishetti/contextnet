@@ -1,7 +1,5 @@
 package edu.umass.cs.contextservice.messages;
 
-import java.util.LinkedList;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -99,21 +97,6 @@ public class QueryMsgToValuenodeReply<NodeIDType> extends BasicContextServicePac
 	
 	public static void main(String[] args)
 	{
-		/*int[] group = {3, 45, 6, 19};
-		MetadataMsgToValuenode<Integer> se = 
-				new MetadataMsgToValuenode<Integer>(4, "name1", 2, Util.arrayToIntSet(group), Util.arrayToIntSet(group));
 		
-		try
-		{
-			System.out.println(se);
-			MetadataMsgToValuenode<Integer> se2 = new MetadataMsgToValuenode<Integer>(se.toJSONObject());
-			System.out.println(se2);
-			assert(se.toString().length()==se2.toString().length());
-			assert(se.toString().indexOf("}") == se2.toString().indexOf("}"));
-			assert(se.toString().equals(se2.toString())) : se.toString() + "!=" + se2.toString();
-		} catch(JSONException je)
-		{
-			je.printStackTrace();
-		}*/
 	}
 }

@@ -9,8 +9,8 @@ public class UpdateInfo<NodeIDType>
 	private final long updateRequestId;
 	
 	// just for debugging the large update times.
-	private final long updateStartTime;
-	private final long contextStartTime;
+	//private final long updateStartTime;
+	//private final long contextStartTime;
 	
 	// stores the replies recvd from the value nodes for the query
 	// Hash map indexed by componentId, and Vector<String> stores 
@@ -25,8 +25,8 @@ public class UpdateInfo<NodeIDType>
 		this.valUpdMsgFromGNS = valUpdMsgFromGNS;
 		this.updateRequestId = updateRequestId;
 		numReplyRecvd = 0;
-		contextStartTime = System.currentTimeMillis();
-		updateStartTime = valUpdMsgFromGNS.getUpdateStartTime();
+		//contextStartTime = System.currentTimeMillis();
+		//updateStartTime = valUpdMsgFromGNS.getUpdateStartTime();
 		
 		updateReqCompl = false;
 	}
@@ -51,15 +51,15 @@ public class UpdateInfo<NodeIDType>
 		return this.valUpdMsgFromGNS;
 	}
 	
-	public long getUpdateStartTime()
+	/*public long getUpdateStartTime()
 	{
 		return this.updateStartTime;
-	}
+	}*/
 	
-	public long getContextStartTime()
+	/*public long getContextStartTime()
 	{
 		return this.contextStartTime;
-	}
+	}*/
 	
 	public boolean getUpdComl()
 	{

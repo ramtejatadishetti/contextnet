@@ -36,6 +36,7 @@ import edu.umass.cs.contextservice.gns.GNSCalls;
 import edu.umass.cs.contextservice.gns.GNSCallsOriginal;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ContextServicePacket;
+import edu.umass.cs.contextservice.messages.ContextServicePacket.PacketType;
 import edu.umass.cs.contextservice.messages.MetadataMsgToValuenode;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUser;
 import edu.umass.cs.contextservice.messages.QueryMsgToMetadataNode;
@@ -538,7 +539,7 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 			AttributeMetaObjectRecord<NodeIDType, Double> currObj = 
 													attrMetaObjRecList.get(i);
 		
-			if(ContextServiceConfig.GROUP_UPDATE_TRIGGER)
+			if( ContextServiceConfig.GROUP_INFO_COMPONENT )
 			{
 				GroupGUIDRecord groupGUIDRec = new GroupGUIDRecord(queryMsgToMetaNode.getGroupGUID(),
 						queryMsgToMetaNode.getQuery());
@@ -660,11 +661,11 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 		long versionNum = valUpdateMsgToMetaNode.getVersionNum();
 		String updatedAttrName = valUpdateMsgToMetaNode.getAttrName();
 		String GUID = valUpdateMsgToMetaNode.getGUID();
-		double oldValue = valUpdateMsgToMetaNode.getOldValue();
+		double oldValue = Double.MIN_VALUE;
 		double newValue = valUpdateMsgToMetaNode.getNewValue();
-		JSONObject allAttrs = valUpdateMsgToMetaNode.getAllAttrs();
+		JSONObject allAttrs = new JSONObject();
 		//String taggedAttr = valUpdateMsgToMetaNode.getTaggedAttribute();
-		NodeIDType sourceID = valUpdateMsgToMetaNode.getSourceID();
+		//NodeIDType sourceID = valUpdateMsgToMetaNode.getSourceID();
 		long requestID = valUpdateMsgToMetaNode.getRequestID();
 		
 		System.out.println("processValueUpdateMsgToMetadataNode");
@@ -710,7 +711,7 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 			AttributeMetaObjectRecord<NodeIDType, Double> newMetaObjRec = 
 					this.getContextServiceDB().getAttributeMetaObjectRecord(updatedAttrName, newValue, newValue).get(0);
 			
-			if(ContextServiceConfig.GROUP_UPDATE_TRIGGER)
+			if( ContextServiceConfig.GROUP_INFO_COMPONENT )
 			{
 				// do group updates for the old value
 				try
@@ -765,7 +766,7 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 			{
 				ValueUpdateMsgToValuenode<NodeIDType> valueUpdateMsgToValnode = new ValueUpdateMsgToValuenode<NodeIDType>
 				(this.getMyID(), versionNum, GUID, updatedAttrName, oldValue, newValue, 
-						ValueUpdateMsgToValuenode.REMOVE_ADD_BOTH, allAttrs, sourceID, requestID);
+						ValueUpdateMsgToValuenode.REMOVE_ADD_BOTH, requestID);
 				
 				GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>> mtask1 = 
 						new GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>
@@ -780,7 +781,7 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 			{
 				ValueUpdateMsgToValuenode<NodeIDType> oldValueUpdateMsgToValnode = new ValueUpdateMsgToValuenode<NodeIDType>
 				(this.getMyID(), versionNum, GUID, updatedAttrName, oldValue, newValue, 
-						ValueUpdateMsgToValuenode.REMOVE_ENTRY, allAttrs, sourceID, requestID);
+						ValueUpdateMsgToValuenode.REMOVE_ENTRY, requestID);
 				
 				GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>> oldmtask = 
 						new GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>
@@ -789,7 +790,7 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 				
 				ValueUpdateMsgToValuenode<NodeIDType> newValueUpdateMsgToValnode = new ValueUpdateMsgToValuenode<NodeIDType>
 				(this.getMyID(), versionNum, GUID, updatedAttrName, oldValue, newValue, 
-						ValueUpdateMsgToValuenode.ADD_ENTRY, allAttrs, sourceID, requestID);
+						ValueUpdateMsgToValuenode.ADD_ENTRY, requestID);
 				
 				GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>> newmtask = 
 					new GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>
@@ -822,11 +823,11 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 		
 		String attrName = valUpdateMsgToValnode.getAttrName();
 		String GUID = valUpdateMsgToValnode.getGUID();
-		double oldValue = valUpdateMsgToValnode.getOldValue();
+		double oldValue = Double.MIN_VALUE;
 		double newValue = valUpdateMsgToValnode.getNewValue();
 		long versionNum = valUpdateMsgToValnode.getVersionNum();
-		JSONObject allAttrs = valUpdateMsgToValnode.getAllAttrs();
-		NodeIDType sourceID = valUpdateMsgToValnode.getSourceID();
+		JSONObject allAttrs = new JSONObject();
+		//NodeIDType sourceID = valUpdateMsgToValnode.getSourceID();
 		long requestID = valUpdateMsgToValnode.getRequestID();
 		
 		// first check whole value ranges to see if this GUID exists and check the version number
@@ -898,11 +899,11 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 						= new ValueUpdateMsgToValuenodeReply<NodeIDType>
 					(this.getMyID(), versionNum, numRep, requestID);
 				
-					GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenodeReply<NodeIDType>> newmtask 
+					/*GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenodeReply<NodeIDType>> newmtask 
 						= new GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenodeReply<NodeIDType>>
 					(sourceID, newValueUpdateMsgReply);
 				
-					msgList.add(newmtask);
+					msgList.add(newmtask);*/
 				
 					break;
 				}
@@ -941,11 +942,11 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 						= new ValueUpdateMsgToValuenodeReply<NodeIDType>
 					(this.getMyID(), versionNum, 2, requestID);
 					
-					GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenodeReply<NodeIDType>> newmtask 
+					/*GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenodeReply<NodeIDType>> newmtask 
 						= new GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenodeReply<NodeIDType>>
 							(sourceID, newValueUpdateMsgReply);
 					
-					msgList.add(newmtask);
+					msgList.add(newmtask);*/
 					break;
 				}
 				case ValueUpdateMsgToValuenode.REMOVE_ADD_BOTH:
@@ -996,10 +997,10 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 						= new ValueUpdateMsgToValuenodeReply<NodeIDType>
 					(this.getMyID(), versionNum, 1, requestID);
 		
-					GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenodeReply<NodeIDType>> newmtask 
+					/*GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenodeReply<NodeIDType>> newmtask 
 						= new GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenodeReply<NodeIDType>>
 							(sourceID, newValueUpdateMsgReply);
-					msgList.add(newmtask);
+					msgList.add(newmtask);*/
 					break;
 				}
 			}
@@ -1025,10 +1026,10 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 		
 		long versionNum = valUpdMsgFromGNS.getVersionNum();
 		String GUID = valUpdMsgFromGNS.getGUID();
-		String attrName = valUpdMsgFromGNS.getAttrName();
-		String oldVal = valUpdMsgFromGNS.getOldVal();
-		String newVal = valUpdMsgFromGNS.getNewVal();
-		JSONObject allAttrs = valUpdMsgFromGNS.getAllAttrs();
+		String attrName = "";
+		String oldVal   = "";
+		String newVal   = "";
+		JSONObject allAttrs = new JSONObject();
 		
 		double oldValD, newValD;
 		
@@ -1041,7 +1042,7 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 		}
 		newValD = Double.parseDouble(newVal );
 		
-		long currReqID = -1;
+		/*long currReqID = -1;
 		
 		synchronized(this.pendingUpdateLock)
 		{
@@ -1049,7 +1050,7 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 				= new UpdateInfo<NodeIDType>(valUpdMsgFromGNS, updateIdCounter++);
 			currReqID = currReq.getRequestId();
 			pendingUpdateRequests.put(currReqID, currReq);
-		}
+		}*/
 		
 		// update in mongodb here itself, so metadata node doesn't become a bottleneck.
 		// mongo is crashing by multiple concurrent writes, 
@@ -1078,9 +1079,9 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 		
 		//String valueString = allAttrs.getString(attrNameKey);
 		
-		ValueUpdateMsgToMetadataNode<NodeIDType> valueUpdMsgToMetanode = 
-				new ValueUpdateMsgToMetadataNode<NodeIDType>(this.getMyID(), versionNum, GUID, attrName, oldValD, 
-						newValD, allAttrs, attrName, this.getMyID(), currReqID);
+		/*ValueUpdateMsgToMetadataNode<NodeIDType> valueUpdMsgToMetanode = 
+				new ValueUpdateMsgToMetadataNode<NodeIDType>(this.getMyID(), versionNum, GUID, attrName, 
+						newValD, this.getMyID(), currReqID);
 		
 		NodeIDType respMetadataNodeId = this.getResponsibleNodeId(attrName);
 		
@@ -1088,7 +1089,7 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 			new GenericMessagingTask<NodeIDType, ValueUpdateMsgToMetadataNode<NodeIDType>>(respMetadataNodeId, 
 						valueUpdMsgToMetanode);
 		
-		msgList.add(mtask);
+		msgList.add(mtask);*/
 			//GenericMessagingTask<NodeIDType, ValueUpdateMsgToMetadataNode<NodeIDType>> [] returnTaskArr = 
 			//	new GenericMessagingTask[1];
 		//}
@@ -1100,7 +1101,7 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 		processValueUpdateMsgToValuenodeReply(ValueUpdateMsgToValuenodeReply<NodeIDType> valUpdateMsgToValnodeRep)
 	{
 		long requestId =  valUpdateMsgToValnodeRep.getRequestID();
-		UpdateInfo<NodeIDType> updateInfo = pendingUpdateRequests.get(requestId);
+		/*UpdateInfo<NodeIDType> updateInfo = pendingUpdateRequests.get(requestId);
 		
 		if( updateInfo != null )
 		{
@@ -1114,14 +1115,12 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 					if( this.pendingUpdateRequests.get(updateInfo.getRequestId())  != null )
 					{
 						sendUpdateReplyBackToUser(updateInfo.getValueUpdateFromGNS().getSourceIP(), 
-							updateInfo.getValueUpdateFromGNS().getSourcePort(), updateInfo.getValueUpdateFromGNS().getVersionNum()
-							, updateInfo.getUpdateStartTime(), updateInfo.getContextStartTime() );
+							updateInfo.getValueUpdateFromGNS().getSourcePort(), updateInfo.getValueUpdateFromGNS().getVersionNum() );
 					}
-					
 					pendingUpdateRequests.remove(requestId);
 				}
 			}
-		}
+		}*/
 		//System.out.println("componentReplies.size() "+componentReplies.size() +
 		//		" queryComponents.size() "+queryComponents.size());
 		// if there is at least one replies recvd for each component
@@ -1450,7 +1449,7 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 		
 		long t0= System.currentTimeMillis();
 		DBCursor cursor4 = collection.find(andQuery, fields);
-		DelayProfiler.update("mongoBulkGet", t0);
+		DelayProfiler.updateDelay("mongoBulkGet", t0);
 		System.out.println(DelayProfiler.getStats());
 		
 		while (cursor4.hasNext())
@@ -1527,6 +1526,78 @@ public class MercurySchemeConsistent<NodeIDType> extends AbstractScheme<NodeIDTy
 			freeMClientQueue.add(MClientFree);
 			mclientFreeMonitor.notifyAll();
 		}
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleBulkGet(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleBulkGetReply(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleConsistentStoragePut(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleConsistentStoragePutReply(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMesgToSubspaceRegion(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMesgToSubspaceRegionReply(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleValueUpdateToSubspaceRegionMessage(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleGetMessage(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleGetReplyMessage(
+			ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 	// just to store GUID as well. gObject retrieved

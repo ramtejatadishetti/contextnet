@@ -57,15 +57,7 @@ import edu.umass.cs.protocoltask.ProtocolEvent;
 import edu.umass.cs.protocoltask.ProtocolTask;
 import edu.umass.cs.utils.DelayProfiler;
 
-/**
- * Implements the contextnet scheme.
- * For comparison with Mercury, Replicate-All, Query-All, Hyperdex just compare the 
- * search and update scheme, disable the trigger mechanism where GroupGUIDs are updated 
- * based on each update.
- * @author adipc
- * @param <NodeIDType>
- */
-public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
+public class ContextNetIterative<NodeIDType> extends AbstractScheme<NodeIDType>
 {
 	public static final Logger log = ContextServiceLogger.getLogger();
 	
@@ -78,16 +70,16 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	//FIXME: sourceID is not properly set, it is currently set to sourceID of each node,
 	// it needs to be set to the origin sourceID.
 	// Any id-based communication requires NodeConfig and Messenger
-	public ContextNetScheme(InterfaceNodeConfig<NodeIDType> nc, JSONMessenger<NodeIDType> m)
+	public ContextNetIterative(InterfaceNodeConfig<NodeIDType> nc, JSONMessenger<NodeIDType> m)
 	{
 		super(nc, m);
 		nodeES = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 		new Thread(new ProfilerStatClass()).start();
 		
-		try 
+		try
 		{
-			sqlDBObject = new SQLContextServiceDB<NodeIDType>(this.getMyID());
-		} catch (Exception e) 
+			sqlDBObject = new SQLContextServiceDB<NodeIDType>( this.getMyID() );
+		} catch (Exception e)
 		{
 			e.printStackTrace();
 		}
@@ -123,11 +115,10 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 			this.contextserviceDB.putValueObjectRecord(valInfoObjRec, attrName);
 		}
 		else
-		{	
+		{
 		}
 		
 		DelayProfiler.updateDelay("handleMetadataMsgToValuenode", t0);
-		
 		return null;
 	}
 	
@@ -220,8 +211,7 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	@SuppressWarnings("unchecked")
 	public GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>[] initializeScheme()
 	{
-		long t0 = System.currentTimeMillis();
-		
+		long t0 = System.currentTimeMillis();	
 		log.fine("\n\n\n" +
 				"In initializeMetadataObjects NodeId "+getMyID()+"\n\n\n");
 		
@@ -238,7 +228,7 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 			log.fine("InitializeMetadataObjects currAttName "+currAttName
 					+" respNodeID "+respNodeId);
 			// This node is responsible(meta data)for this Att.
-			if(respNodeId == getMyID() )
+			//if(respNodeId == getMyID() )
 			{
 				ContextServiceLogger.getLogger().info("Node Id "+getMyID() +
 						" meta data node for attribute "+currAttName);
@@ -264,10 +254,14 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 				GenericMessagingTask<NodeIDType, MetadataMsgToValuenode<NodeIDType>>[] messageTasks 
 						= assignValueRanges(getMyID(), currAttName, AttributeTypes.MIN_VALUE, AttributeTypes.MAX_VALUE);
 				
-				// add all the messaging tasks at different value nodes
-				for(int j=0;j<messageTasks.length;j++)
+				// every node stores metadata information but not send messages to value nodes
+				if(respNodeId == getMyID() )
 				{
-					messageList.add(messageTasks[j]);
+					// add all the messaging tasks at different value nodes
+					for(int j=0;j<messageTasks.length;j++)
+					{
+						messageList.add(messageTasks[j]);
+					}
 				}
 			}
 		}
@@ -299,9 +293,6 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	{
 		long t0 = System.currentTimeMillis();
 		
-		//LinkedList<GenericMessagingTask<NodeIDType, QueryMsgToMetadataNode<NodeIDType>>> messageList = 
-		//		new  LinkedList<GenericMessagingTask<NodeIDType, QueryMsgToMetadataNode<NodeIDType>>>();
-		
 		String query = queryMsgFromUser.getQuery();
 		long userReqID = queryMsgFromUser.getUserReqNum();
 		String userIP = queryMsgFromUser.getSourceIP();
@@ -315,15 +306,23 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		{
 			System.out.println("Query request failed at the recieving node "+queryMsgFromUser);
 			return;
-			//return empty list
-			//return
-			//(GenericMessagingTask<NodeIDType, QueryMsgToMetadataNode<NodeIDType>>[]) this.convertLinkedListToArray(messageList);
 		}
 		
 		// adding user to the notification set
 		//GNSCalls.updateNotificationSetOfAGroup(new InetSocketAddress(userIP, userPort), query);
 		
 		Vector<QueryComponent> qcomponents = QueryParser.parseQuery(query);
+		
+		for( int i=0;i<qcomponents.size();i++ )
+		{
+			QueryComponent qc = qcomponents.get(i);
+			String attrName = qc.getAttributeName();	
+			List<MetadataTableInfo<Integer>> attrMetaObjRecList 
+				= this.sqlDBObject.getAttributeMetaObjectRecord(attrName, qc.getLeftValue(), qc.getRightValue());
+			
+			qc.setValueNodeArray(attrMetaObjRecList);
+		}
+		
 		QueryInfo<NodeIDType> currReq  
 			= new QueryInfo<NodeIDType>(query, getMyID(), grpGUID, userReqID, userIP, userPort, qcomponents);
 		
@@ -378,20 +377,12 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 				e.printStackTrace();
 			}
 			
-			//GenericMessagingTask<NodeIDType, QueryMsgToMetadataNode<NodeIDType>> mtask = new GenericMessagingTask<NodeIDType, 
-			//		QueryMsgToMetadataNode<NodeIDType>>(respNodeId, queryMsgToMetaNode);
-			
-			//messageList.add(mtask);
-			
 			ContextServiceLogger.getLogger().info("Sending predicate mesg from " 
 					+ getMyID() +" to node "+respNodeId + 
 					" predicate "+qc.toString());
 		}
 		DelayProfiler.updateDelay("processQueryMsgFromUser:Loop", t2);
-		
 		DelayProfiler.updateDelay("processQueryMsgFromUser", t0);
-		//return
-		//(GenericMessagingTask<NodeIDType, QueryMsgToMetadataNode<NodeIDType>>[]) this.convertLinkedListToArray(messageList);
 	}
 	
 	/**
@@ -405,9 +396,6 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	{
 		long t0 = System.currentTimeMillis();
 		
-		//LinkedList<GenericMessagingTask<NodeIDType,QueryMsgToValuenode<NodeIDType>>> msgList
-		//= new LinkedList<GenericMessagingTask<NodeIDType,QueryMsgToValuenode<NodeIDType>>>();
-		
 		log.fine("processQueryMsgToMetadataNode: " +
 				"predicate recvd string form "+queryMsgToMetaNode.getQueryComponent());
 		
@@ -418,7 +406,7 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 				+ this.getMyID() +" from node "+queryMsgToMetaNode.getSourceId() +
 				" predicate "+qc.toString());
 		
-		if(!ContextServiceConfig.USESQL)
+		if( !ContextServiceConfig.USESQL )
 		{
 			List<AttributeMetaObjectRecord<NodeIDType, Double>> attrMetaObjRecList = 
 			this.contextserviceDB.getAttributeMetaObjectRecord(attrName, qc.getLeftValue(), qc.getRightValue());
@@ -479,11 +467,6 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 				{
 					e.printStackTrace();
 				}
-				
-				//GenericMessagingTask<NodeIDType, QueryMsgToValuenode<NodeIDType>> mtask = 
-				//new GenericMessagingTask<NodeIDType, QueryMsgToValuenode<NodeIDType>>(currObj.getNodeID(), queryMsgToValnode);
-				//relaying the query to the value nodes of the attribute
-				//msgList.add(mtask);
 			}
 		}
 		else
@@ -528,12 +511,13 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 					e.printStackTrace();
 				}
 				DelayProfiler.updateDelay("processQueryMsgToMetadataNode:NIO", t3);
+				
+				// just send the first one and break;
+				break;
 			}
 			DelayProfiler.updateDelay("processQueryMsgToMetadataNode:Loop", t2);
-		}
-		
+		}	
 		DelayProfiler.updateDelay("processQueryMsgToMetadataNode", t0);
-		//return (GenericMessagingTask<NodeIDType, QueryMsgToValuenode<NodeIDType>>[]) this.convertLinkedListToArray(msgList);
 	}
 	
 	/**
@@ -544,17 +528,17 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	{
 		long t0 = System.currentTimeMillis();
 		
-		//LinkedList<GenericMessagingTask<NodeIDType, QueryMsgToValuenodeReply<NodeIDType>>> msgList
-		// = new LinkedList<GenericMessagingTask<NodeIDType, QueryMsgToValuenodeReply<NodeIDType>>>();
+		QueryComponent predicate   = queryMsgToValnode.getQueryComponent();
 		
-		QueryComponent predicate = queryMsgToValnode.getQueryComponent();
-		long requestID = queryMsgToValnode.getRequestId();
+		NodeIDType queryRecvNodeId = queryMsgToValnode.getSourceId();
+		
+		long requestID  = queryMsgToValnode.getRequestId();
 		int componentID = predicate.getComponentID();
 		
-	  //  LinkedList<String> resultGUIDs = new LinkedList<String>();
+		//  LinkedList<String> resultGUIDs = new LinkedList<String>();
 		JSONArray resultGUIDs = new JSONArray();
 		
-		if(!ContextServiceConfig.USESQL)
+		if( !ContextServiceConfig.USESQL )
 		{
 		    List<ValueInfoObjectRecord<Double>> valInfoObjRecList = 
 					this.contextserviceDB.getValueInfoObjectRecord
@@ -600,8 +584,14 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 		else
 		{
-			resultGUIDs = this.sqlDBObject.getValueInfoObjectRecord
-					(predicate.getAttributeName(), predicate.getLeftValue(), predicate.getRightValue());
+			//resultGUIDs = this.sqlDBObject.getValueInfoObjectRecord
+			//		( predicate.getAttributeName(), predicate.getLeftValue(), predicate.getRightValue() );
+			String attrName 	= predicate.getAttributeName();
+			double predicateMin = predicate.getLeftValue();
+			double predicateMax = predicate.getRightValue();
+			//this.sqlDBObject.getValueInfoObjectRecordCreateTable(attrName, predicateMin, predicateMax);
+			//getValueInfoObjectRecordIterative(attrName, queryMin, queryMax);
+			
 			DelayProfiler.updateDelay("processQueryMsgToValuenode:DatabaseGet ", t0);
 		}
 		
@@ -611,7 +601,7 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 			= new QueryMsgToValuenodeReply<NodeIDType>(getMyID(), resultGUIDs, requestID, 
 					componentID, getMyID(), queryMsgToValnode.getNumValNodesContacted());
 		
-		try 
+		try
 		{
 			this.messenger.sendToID(queryMsgToValnode.getSourceId(), queryMsgToValReply.toJSONObject());
 		} catch (IOException e)
@@ -623,21 +613,12 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 		
 		DelayProfiler.updateDelay("processQueryMsgToValuenode:Sending ", t4);
-		//GenericMessagingTask<NodeIDType, QueryMsgToValuenodeReply<NodeIDType>> mtask = 
-		//		new GenericMessagingTask<NodeIDType, QueryMsgToValuenodeReply<NodeIDType>>
-		//		(queryMsgToValnode.getSourceId(), queryMsgToValReply);
-				//relaying the query to the value nodes of the attribute
 		
-		
-		//msgList.add(mtask);
 		ContextServiceLogger.getLogger().info("Sending QueryMsgToValuenodeReply from " 
 						+ this.getMyID() +" to node "+queryMsgToValnode.getSourceId()+
 						" reply "+queryMsgToValReply.toString());
 		
 		DelayProfiler.updateDelay("processQueryMsgToValuenode", t0);
-		
-		//return (GenericMessagingTask<NodeIDType, QueryMsgToValuenodeReply<NodeIDType>>[]) 
-		//		this.convertLinkedListToArray(msgList);
 	}
 	
 	private void processValueUpdateMsgToMetadataNode(ValueUpdateMsgToMetadataNode<NodeIDType> valUpdateMsgToMetaNode)
@@ -651,6 +632,7 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		double newValue = valUpdateMsgToMetaNode.getNewValue();
 		JSONObject allAttrs = new JSONObject();
 		//NodeIDType sourceID = valUpdateMsgToMetaNode.getSourceID();
+		NodeIDType sourceID;
 		long requestID = valUpdateMsgToMetaNode.getRequestID();
 		
 		ContextServiceLogger.getLogger().info("ValueUpdateToMetadataMesg recvd at " 
@@ -922,15 +904,13 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		ContextServiceLogger.getLogger().info("\n\n Recvd ValueUpdateMsgToValuenode at " 
 				+ this.getMyID() +" reply "+valUpdateMsgToValnode);
 		
-		//LinkedList<GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenodeReply<NodeIDType>>> msgList
-		//	= new LinkedList<GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenodeReply<NodeIDType>>>();
-		
 		String attrName = valUpdateMsgToValnode.getAttrName();
 		String GUID = valUpdateMsgToValnode.getGUID();
 		double oldValue = Double.MIN_VALUE;
 		double newValue = valUpdateMsgToValnode.getNewValue();
 		long versionNum = valUpdateMsgToValnode.getVersionNum();
 		//NodeIDType sourceID = valUpdateMsgToValnode.getSourceID();
+		NodeIDType sourceID = null ;
 		long requestID = valUpdateMsgToValnode.getRequestID();
 		// first check whole value ranges to see if this GUID exists and check the version number
 		// of update
@@ -1002,7 +982,7 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 			
 					try 
 					{
-						this.messenger.sendToID(null, newValueUpdateMsgReply.toJSONObject());
+						this.messenger.sendToID(sourceID, newValueUpdateMsgReply.toJSONObject());
 					} catch (IOException e) 
 					{
 						e.printStackTrace();
@@ -1057,7 +1037,7 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 				
 					try 
 					{
-						this.messenger.sendToID(null, newValueUpdateMsgReply.toJSONObject());
+						this.messenger.sendToID(sourceID, newValueUpdateMsgReply.toJSONObject());
 					} catch (IOException e) 
 					{
 						e.printStackTrace();
@@ -1136,7 +1116,7 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 				
 					try
 					{
-						this.messenger.sendToID(null, newValueUpdateMsgReply.toJSONObject());
+						this.messenger.sendToID(sourceID, newValueUpdateMsgReply.toJSONObject());
 					} catch (IOException e)
 					{
 						e.printStackTrace();
@@ -1210,7 +1190,7 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		String attrName = "";
 		String oldVal = "";
 		String newVal = "";
-		JSONObject allAttrs = new JSONObject();
+		//JSONObject allAttrs = new JSONObject();
 		
 		double oldValD, newValD;
 		
@@ -1235,11 +1215,11 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		ValueUpdateMsgToMetadataNode<NodeIDType> valueUpdMsgToMetanode = 
 			new ValueUpdateMsgToMetadataNode<NodeIDType>(this.getMyID(), versionNum, GUID, attrName, 
-					0, newValD, currReqID);
+					0,newValD, currReqID);
 		
 		NodeIDType respMetadataNodeId = this.getResponsibleNodeId(attrName);
 		
-		try
+		try 
 		{
 			this.messenger.sendToID(respMetadataNodeId, valueUpdMsgToMetanode.toJSONObject());
 		} catch (IOException e) 
@@ -1282,7 +1262,6 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 		
 		DelayProfiler.updateDelay("getGroupsAffectedUsingDatabase", t0);
-		
 		return satisfyingGroups;
 	}
 	
@@ -1409,7 +1388,7 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		//String attributeHash = Utils.getSHA1(attributeName);
 		int mapIndex = Hashing.consistentHash(attrName.hashCode(), numNodes);
-			
+		
 		for(int i=0;i<numValueNodes;i++)
 		{
 			double rangeSplit = (attributeMax - attributeMin)/numValueNodes;
@@ -1450,9 +1429,9 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 				{
 					this.sqlDBObject.putAttributeMetaObjectRecord(attrName, 
 							currMinRange, currMaxRange, currNodeID);
-					
 				}
 			}
+			
 			
 			MetadataMsgToValuenode<NodeIDType> metaMsgToValnode = new MetadataMsgToValuenode<NodeIDType>
 							( initiator, attrName, currMinRange, currMaxRange);
@@ -1465,15 +1444,8 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 			ContextServiceLogger.getLogger().info("csID "+getMyID()+" Metadata Message attribute "+
 					attrName+"dest "+currNodeID+" min range "+currMinRange+" max range "+currMaxRange);
 			
-			//JSONObject metadataJSON = metadata.getJSONMessage();
-			//ContextServiceLogger.getLogger().info("Metadata Message attribute "+attributeName+
-			//		"dest "+currNodeID+" min range "+currMinRange+" max range "+currMaxRange);
-			// sending the message
-			//StartContextServiceNode.sendToNIOTransport(currNodeID, metadataJSON);
 		}
-		
 		DelayProfiler.updateDelay("assignValueRanges", t0);
-		
 		return mesgArray;
 	}
 	
@@ -1638,11 +1610,11 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		@Override
 		public void run()
 		{
-			switch(event.getType())
+			switch( event.getType() )
 			{
 				case  QUERY_MSG_FROM_USER:
 				{
-					long t0 = System.currentTimeMillis();	
+					long t0 = System.currentTimeMillis();
 					@SuppressWarnings("unchecked")
 					QueryMsgFromUser<NodeIDType> queryMsgFromUser 
 											= (QueryMsgFromUser<NodeIDType>)event;
@@ -1803,16 +1775,6 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		return null;
 	}
 	
-	/*private void sendNotification(String ipPort) throws NumberFormatException, IOException
-	{
-		String [] parsed = ipPort.split(":");
-		byte[] send_data = new byte[1024]; 
-		send_data = new String("REFRESH").getBytes();
-        DatagramPacket send_packet = new DatagramPacket(send_data, send_data.length, 
-                                                        InetAddress.getByName(parsed[0]), Integer.parseInt(parsed[1]));
-        client_socket.send(send_packet);
-	}*/
-	
 	private class ProfilerStatClass implements Runnable
 	{
 		@Override
@@ -1835,7 +1797,8 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	@Override
 	public GenericMessagingTask<NodeIDType, ?>[] handleBulkGet(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+	{
 		return null;
 	}
 
@@ -1858,7 +1821,8 @@ public class ContextNetScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	@Override
 	public GenericMessagingTask<NodeIDType, ?>[] handleConsistentStoragePutReply(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+	{
 		return null;
 	}
 

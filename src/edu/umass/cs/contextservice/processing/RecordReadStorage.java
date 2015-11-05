@@ -1,5 +1,8 @@
 package edu.umass.cs.contextservice.processing;
 
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -18,38 +21,12 @@ public class RecordReadStorage<NodeIDType>
 	
 	private int numGetRepliesRecvd;
 	
+	private ConcurrentHashMap<Integer, JSONArray> repliesMap;
 	// stores bulk get replies as and when they are recvd
-	private JSONArray repliesArray;
+	//private JSONArray repliesArray;
 	
 	//private final Object repliesRecvdMonitor = new Object();
 	private final Object repliesArrayMonitor = new Object();
-	
-	// user query
-	/*private final String query;
-	private final NodeIDType sourceNodeId;
-	private final long requestId;
-	private final String groupGUID;
-	
-	// req id set by the user
-	private final long userReqID;
-	private final String userIP;
-	private final int userPort;
-	
-	// just for debugging and experimentation purpose
-	private final long creationTime;
-	
-	//private final AbstractScheme<NodeIDType> scheme;
-	// stores the parsed query components
-	public Vector<QueryComponent> queryComponents;
-	// stores the replies recvd from the value nodes for the query
-	// Hash map indexed by componentId, and Vector<String> stores 
-	// the GUIDs
-	public HashMap<Integer, LinkedList<String>> componentReplies;
-	
-	private JSONArray hyperdexResultArray;
-	
-	// for synch
-	private boolean requestCompl;*/
 	
 	public RecordReadStorage(long recordStorageNum, int numDiffNodesContacted, 
 			QueryMsgToValuenode<NodeIDType> queryMsgToValnode)
@@ -62,7 +39,9 @@ public class RecordReadStorage<NodeIDType>
 		
 		numGetRepliesRecvd = 0;
 		
-		repliesArray = new JSONArray();
+		//repliesArray = new JSONArray();
+		
+		repliesMap = new ConcurrentHashMap<Integer, JSONArray>();
 		
 		/*this.query = query;
 		this.sourceNodeId = sourceNodeId;
@@ -73,15 +52,64 @@ public class RecordReadStorage<NodeIDType>
 		//this.scheme = scheme;
 		this.userReqID = userReqID;
 		this.userIP = userIP;
-		this.userPort = userPort;
-		
+		this.userPort = userPort;	
 		this.creationTime = System.currentTimeMillis();
 		requestCompl = false;*/
 	}
 	
 	public JSONArray addBulkGetReply( BulkGetReply<NodeIDType> bulkGetReplyMesg )
 	{
-		synchronized(repliesArrayMonitor)
+		JSONArray apppendArray = bulkGetReplyMesg.getGUIDRecords();
+		if(apppendArray != null)
+		{
+			int myRepNum = 0;
+			synchronized(repliesArrayMonitor)
+			{
+				numGetRepliesRecvd++;
+				myRepNum = numGetRepliesRecvd;
+			}
+			this.repliesMap.put(myRepNum, apppendArray);
+			
+			System.out.println("addBulkGetReply numGetRepliesRecvd "+numGetRepliesRecvd+
+					" numDiffNodesContacted "+numDiffNodesContacted);
+			
+			// used myRepNum here instead of numGetRepliesRecvd for synchronization
+			if( myRepNum == numDiffNodesContacted )
+			{
+				//return repliesArray;
+				Iterator<Integer> mapKeys = this.repliesMap.keySet().iterator();
+				JSONArray answerJSON = new JSONArray();
+				while(mapKeys.hasNext())
+				{
+					JSONArray currJSON = this.repliesMap.get(mapKeys.next());
+					for(int i=0;i<currJSON.length();i++)
+					{
+						try 
+						{
+							answerJSON.put(currJSON.getString(i));
+						} catch (JSONException e) 
+						{
+							e.printStackTrace();
+						}
+					}
+				}
+				return answerJSON;
+			}
+			else
+			{
+				return null;
+			}
+		}
+		else
+		{
+			synchronized(repliesArrayMonitor)
+			{
+				numGetRepliesRecvd++;
+			}
+			return null;
+		}
+		
+		/*synchronized(repliesArrayMonitor)
 		{
 			JSONArray apppendArray = bulkGetReplyMesg.getGUIDRecords();
 			
@@ -111,7 +139,7 @@ public class RecordReadStorage<NodeIDType>
 			{
 				return null;
 			}
-		}
+		}*/
 	}
 	
 	public QueryMsgToValuenode<NodeIDType> getQueryMsgToValnode()
