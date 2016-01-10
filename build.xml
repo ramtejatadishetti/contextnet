@@ -1,0 +1,151 @@
+<?xml version="1.0" ?>
+<project name="context service " basedir=".">
+
+  <!-- Directories -->
+  <property name="build.dir" value="build" />
+  <property name="src.dir" value="src" />
+  <property name="lib.dir" value="libs" />
+  <property name="release.dir" value="release" />
+
+  <!-- Properties -->
+  <property file="build.properties" />
+
+  <!-- Classpath definitions -->
+  <path id="classpath.base">
+    <fileset dir="${lib.dir}" includes="**/*.jar" />
+  </path>
+
+  <!-- Init -->
+  <target name="init">
+    <mkdir dir="${build.dir}" />
+    <mkdir dir="${release.dir}" />
+  </target>
+
+  <!-- Clean -->
+  <target name="clean">
+    <delete dir="${build.dir}" />
+    <delete dir="${release.dir}" failonerror="false" />
+  </target>
+
+  <!-- Compile -->
+  <target name="compile" depends="init" description="Compile the context service code">
+
+    <!-- Compile the lib and tools but not the tests -->
+    <javac srcdir="${src.dir}"
+           destdir="${build.dir}"
+           debug="on">
+      <classpath refid="classpath.base" />
+    </javac>
+  </target>
+
+<!-- Release -->
+
+<target name="context-nodoc-jar"
+        depends="clean,compile"
+        description="Builds the context Jar">
+<jar jarfile="${release.dir}/context-nodoc-${VERSION}-${RELEASE}.jar">
+  <fileset dir="${build.dir}/">
+  </fileset>
+  <fileset dir="${basedir}">
+  	<include name="nodesInfo.txt" />
+  </fileset>
+  <zipgroupfileset dir="${lib.dir}/" includes="gns-lib-*.jar,GNS.jar,org.hyperdex.client-1.8.1.jar,combinatoricslib-2.1.jar"/>
+  <manifest>
+    <attribute name="Built-By" value="Aditya Yadav" />
+    <!-- Information about the program itself -->
+    <attribute name="Implementation-Vendor"
+               value="University of Massachusetts" />
+    <attribute name="Implementation-Title" value="context" />
+    <attribute name="Implementation-Version" value="${VERSION}-${RELEASE}" />
+  </manifest>
+</jar>
+</target>
+	
+	<!-- gns version doesn't include GNS jar, because it is meant to be used with GNS-->
+	<target name="context-nodoc-jar-gns"
+	        depends="clean,compile"
+	        description="Builds the context Jar">
+	<jar jarfile="${release.dir}/context-nodoc-GNS.jar">
+	  <fileset dir="${build.dir}/">
+	  </fileset>
+	   <fileset dir="${basedir}">
+				<include name="conf/contextServiceConf/contextServiceNodeSetup.txt" />
+				<include name="conf/contextServiceConf/attributeInfo.txt" />
+	     </fileset>
+	  <zipgroupfileset dir="${lib.dir}/" includes="combinatoricslib-2.1.jar"/>
+	  <manifest>
+	    <attribute name="Built-By" value="Aditya Yadav" />
+	    <!-- Information about the program itself -->
+	    <attribute name="Implementation-Vendor"
+	               value="University of Massachusetts" />
+	    <attribute name="Implementation-Title" value="context" />
+	    <attribute name="Implementation-Version" value="${VERSION}-${RELEASE}" />
+	  </manifest>
+	</jar>
+	</target>
+
+	<target name="context-client-jar"
+	        depends="clean,compile"
+	        description="Builds the context client Jar">
+		<jar jarfile="${release.dir}/context-client-${VERSION}-${RELEASE}.jar">
+	  
+		<fileset dir="${build.dir}/">
+			<include name="edu/umass/cs/contextservice/common/**" />
+			<include name="edu/umass/cs/contextservice/client/**" />
+			<include name="edu/umass/cs/contextservice/messages/**" />
+			<include name="edu/umass/cs/contextservice/utils/**" />
+			<include name="edu/umass/cs/contextservice/logging/**" />
+			<include name="edu/umass/cs/contextservice/config/**" />
+			<!--<exclude name="edu/umass/cs/msocket/watchdog/**" />-->
+		</fileset>
+	  
+		<fileset dir="${basedir}">
+			<include name="conf/contextServiceConf/contextServiceNodeSetup.txt" />
+			<include name="conf/contextServiceConf/attributeInfo.txt" />
+		</fileset>
+	  
+		<zipgroupfileset dir="${lib.dir}/" includes="GNSClient.jar, gigapaxos-1.0.jar"/>
+	  <manifest>
+	    <attribute name="Built-By" value="Aditya Yadav" />
+	    <!-- Information about the program itself -->
+	    <attribute name="Implementation-Vendor"
+	               value="University of Massachusetts" />
+	    <attribute name="Implementation-Title" value="context" />
+	    <attribute name="Implementation-Version" value="${VERSION}-${RELEASE}" />
+	  </manifest>
+	</jar>
+	</target>
+	
+	<target name="context-client-jar-gns"
+		        depends="clean,compile"
+		        description="Builds the context client Jar">
+		<jar jarfile="${release.dir}/context-client-GNS.jar">
+		  
+			<fileset dir="${build.dir}/">
+				<include name="edu/umass/cs/contextservice/common/**" />
+				<include name="edu/umass/cs/contextservice/client/**" />
+				<include name="edu/umass/cs/contextservice/messages/**" />
+				<include name="edu/umass/cs/contextservice/utils/**" />
+				<include name="edu/umass/cs/contextservice/logging/**" />
+				<include name="edu/umass/cs/contextservice/config/**" />
+				<!--<exclude name="edu/umass/cs/msocket/watchdog/**" />-->
+			</fileset>
+		  
+			<fileset dir="${basedir}">
+		  	<include name="conf/contextServiceConf/contextServiceNodeSetup.txt" />
+			<include name="conf/contextServiceConf/attributeInfo.txt" />
+			</fileset>
+		  
+			<!--<zipgroupfileset dir="${lib.dir}/" includes="GNSClient.jar, gigapaxos-1.0.jar"/>-->
+		  <manifest>
+		    <attribute name="Built-By" value="Aditya Yadav" />
+		    <!-- Information about the program itself -->
+		    <attribute name="Implementation-Vendor"
+		               value="University of Massachusetts" />
+		    <attribute name="Implementation-Title" value="context" />
+		    <attribute name="Implementation-Version" value="${VERSION}-${RELEASE}" />
+		  </manifest>
+		</jar>
+	</target>
+
+</project>
