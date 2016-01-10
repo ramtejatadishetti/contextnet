@@ -20,8 +20,6 @@
 package edu.umass.cs.contextservice.installer;
 
 
-import edu.umass.cs.contextservice.common.CSNodeConfig;
-import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.networktools.ExecuteBash;
 import edu.umass.cs.contextservice.networktools.RSync;
@@ -29,19 +27,14 @@ import edu.umass.cs.contextservice.networktools.SSHClient;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -73,7 +66,7 @@ public class CSInstaller
 {
 
   private static final String FILESEPARATOR = System.getProperty("file.separator");
-  private static final String CONF_FOLDER = FILESEPARATOR + "conf";
+  private static final String CONF_FOLDER_NAME = "conf";
   private static final String KEYHOME = System.getProperty("user.home") + FILESEPARATOR + ".ssh";
 
   /**
@@ -95,7 +88,7 @@ public class CSInstaller
   //private static final String LNS_HOSTS_FILENAME = "lns_hosts.txt";
   //private static final String NS_HOSTS_FILENAME = "ns_hosts.txt";
   private static final String DEFAULT_JAVA_COMMAND = "java -ea -Xms1024M";
-  private static final String DEFAULT_JAVA_COMMAND_FOR_LNS = "java -ea -Xms512M";
+  //private static final String DEFAULT_JAVA_COMMAND_FOR_LNS = "java -ea -Xms512M";
   //private static final String KEYSTORE_FOLDER_NAME = "keyStore";
   //private static final String TRUSTSTORE_FOLDER_NAME = "trustStore";
   //private static final String TRUST_STORE_OPTION = "-Djavax.net.ssl.trustStorePassword=qwerty -Djavax.net.ssl.trustStore=conf/trustStore/node100.jks";
@@ -106,8 +99,9 @@ public class CSInstaller
 
   /**
    * Hostname map
+   * <hostname, nodeID> is the tuple stored
    */
-  private static final ConcurrentHashMap<String, Boolean> hostTable = new ConcurrentHashMap<String, Boolean>();
+  private static final ConcurrentHashMap<String, String> hostTable = new ConcurrentHashMap<String, String>();
   //
   //private static DataStoreType dataStoreType = DEFAULT_DATA_STORE_TYPE;
   private static String hostType = "linux";
@@ -115,7 +109,7 @@ public class CSInstaller
   private static String keyFile = DEFAULT_KEYNAME;
   private static String installPath = DEFAULT_INSTALL_PATH;
   private static String javaCommand = DEFAULT_JAVA_COMMAND;
-  private static String javaCommandForLNS = DEFAULT_JAVA_COMMAND_FOR_LNS; // this one isn't changed by config
+  //private static String javaCommandForLNS = DEFAULT_JAVA_COMMAND_FOR_LNS; // this one isn't changed by config
   // calculated from the Jar location
   //private static String distFolderPath;
   private static String csJarFileLocation;
@@ -130,10 +124,27 @@ public class CSInstaller
 //  private static String nsConfFileName;
 //  private static String lnsConfFileName;
 //  private static String paxosConfFileName;
+  
+  //ATTR_INFO_FILENAME  			= "attributeInfo.txt";
+  //NODE_SETUP_FILENAME 			= "contextServiceNodeSetup.txt";
+  //DB_SETUP_FILENAME   			= "dbNodeSetup.txt";
+  //SUBSPACE_INFO_FILENAME
+  
+  private static String localAttrInfoFileLocation;
+  private static String localNodeSetupFileLocation;
+  private static String localDBSetupFileLocation;
+  private static String localSubspaceInfoFileLocation;
+  
+  private static String localAttrInfoFileName;
+  private static String localNodeSetupFileName;
+  private static String localDBSetupFileName;
+  private static String localSubspaceInfoFileName;
 
-  private static final String StartLNSClass = "edu.umass.cs.gnsserver.localnameserver.LocalNameServer";
-  private static final String StartNSClass = "edu.umass.cs.gnsserver.gnsApp.AppReconfigurableNode";
-  private static final String StartNoopClass = "edu.umass.cs.gnsserver.gnsApp.noopTest.DistributedNoopReconfigurableNode";
+  private static final String StartCSClass 
+  				 = "edu.umass.cs.contextservice.nodeApp.StartContextServiceNode";
+  //private static final String StartLNSClass = "edu.umass.cs.gnsserver.localnameserver.LocalNameServer";
+  //private static final String StartNSClass = "edu.umass.cs.gnsserver.gnsApp.AppReconfigurableNode";
+  //private static final String StartNoopClass = "edu.umass.cs.gnsserver.gnsApp.noopTest.DistributedNoopReconfigurableNode";
 
   private static final String CHANGETOINSTALLDIR
           = "# make current directory the directory this script is in\n"
@@ -141,7 +152,7 @@ public class CSInstaller
           + "cd $DIR\n";
 
   private static final String MongoRecordsClass = "edu.umass.cs.gnsserver.database.MongoRecords";
-  private static final String CassandraRecordsClass = "edu.umass.cs.gnsserver.database.CassandraRecords";
+  //private static final String CassandraRecordsClass = "edu.umass.cs.gnsserver.database.CassandraRecords";
 
   private static void loadConfig(String configName) {
 
@@ -178,10 +189,10 @@ public class CSInstaller
 	  while ( (line = reader.readLine()) != null )
 	  {
 		  String [] parsed = line.split(" ");
-//		  int readNodeId = Integer.parseInt(parsed[0]);
-//		  InetAddress readIPAddress = InetAddress.getByName(parsed[1]);
-//		  int readPort = Integer.parseInt(parsed[2]);
-		  hostTable.put(parsed[1], true);
+		  String readNodeId = parsed[0];
+		  //InetAddress readIPAddress = InetAddress.getByName(parsed[1]);
+		  //int readPort = Integer.parseInt(parsed[2]);
+		  hostTable.put(parsed[1], readNodeId);
 	  }
 	  reader.close();
   }
@@ -200,8 +211,8 @@ public class CSInstaller
    * @param runAsRoot
    * @param noopTest
    */
-  public static void updateRunSet(String name, InstallerAction action, boolean removeLogs, boolean deleteDatabase,
-          String lnsHostsFile, String nsHostsFile, String scriptFile, boolean runAsRoot, boolean noopTest) {
+  public static void updateRunSet(String name, InstallerAction action, boolean deleteDatabase,
+           String scriptFile, boolean withGNS) {
     ArrayList<Thread> threads = new ArrayList<>();
     
     Enumeration<String> keyIter = hostTable.keys();
@@ -209,18 +220,11 @@ public class CSInstaller
     while( keyIter.hasMoreElements() )
     {
     	String hostname = keyIter.nextElement();
-    	threads.add(new UpdateThread(info.getHostname(), info.getNsId(),
-                noopTest ? false : info.isCreateLNS(),
-                action, removeLogs, deleteDatabase,
-                lnsHostsFile, nsHostsFile, scriptFile, runAsRoot, noopTest));
+    	String nodeId = hostTable.get(hostname);
+    	threads.add(new UpdateThread(hostname, nodeId,
+                action, deleteDatabase, 
+                scriptFile, withGNS));
     }
-    
-    /*for ( String info : hostTable.keys() ) {
-      threads.add(new UpdateThread(info.getHostname(), info.getNsId(),
-              noopTest ? false : info.isCreateLNS(),
-              action, removeLogs, deleteDatabase,
-              lnsHostsFile, nsHostsFile, scriptFile, runAsRoot, noopTest));
-    }*/
     
     for (Thread thread : threads) {
       thread.start();
@@ -238,7 +242,7 @@ public class CSInstaller
 //    }
     
     System.out.println("Finished " + name + " " + action.name() 
-    					+ " at " + Format.formatDateTimeOnly(new Date()));
+    					+ " at " + new Date().toString());
   }
 
   /**
@@ -279,30 +283,22 @@ public class CSInstaller
    * @param noopTest
    * @throws java.net.UnknownHostException
    */
-  public static void updateAndRunGNS(String nsId, boolean createLNS, String hostname, InstallerAction action,
-          boolean removeLogs, boolean deleteDatabase,
-          String lnsHostsFile, String nsHostsFile, String scriptFile, boolean runAsRoot,
-          boolean noopTest) throws UnknownHostException {
+  public static void updateAndRunGNS(String nodeId, String hostname, InstallerAction action,
+          boolean deleteDatabase, String scriptFile, boolean withGNS) throws UnknownHostException {
     if (!action.equals(InstallerAction.STOP)) {
-      if (!noopTest) {
-        System.out.println("**** NS " + nsId + " Create LNS " + createLNS + " running on " + hostname + " starting update ****");
-      } else {
-        System.out.println("#### Noop test " + nsId + " on " + hostname + " starting update ****");
-      }
+    	System.out.println("**** CSNode nodeId " + nodeId + " on host " + hostname + " starting update ****");
+      
       if (action == InstallerAction.UPDATE) {
         makeInstallDir(hostname);
       }
-      System.out.println("Kill servers start "+runAsRoot);
-      killAllServers(hostname, runAsRoot);
+      System.out.println("Kill servers start ");
+      killAllServers(hostname);
       System.out.println("Kill servers complete");
       if (scriptFile != null) {
     	  System.out.println("Executing script file");
     	  executeScriptFile(hostname, scriptFile);
       }
-      if (removeLogs) {
-    	System.out.println("Removing logs");
-        removeLogFiles(hostname, runAsRoot);
-      }
+      
       if (deleteDatabase) {
     	System.out.println("Delete db");
         deleteDatabase(hostname);
@@ -310,120 +306,56 @@ public class CSInstaller
       switch (action) {
         case UPDATE:
         	System.out.println("Executing update case");
-          makeConfAndcopyJarAndConfFiles(hostname, createLNS, noopTest);
-          copyHostsFiles(hostname, createLNS ? lnsHostsFile : null, nsHostsFile);
-          copySSLFiles(hostname);
+          makeConfAndcopyJarAndConfFiles(hostname);
+          //copyHostsFiles(hostname, createLNS ? lnsHostsFile : null, nsHostsFile);
+          //copySSLFiles(hostname);
           break;
         case RESTART:
           break;
+	default:
+		assert(false);
+		break;
       }
-      if (!noopTest) {
-        startServers(nsId, createLNS, hostname, runAsRoot);
-        System.out.println("#### NS " + nsId + " Create LNS " + createLNS + " running on " + hostname + " finished update ####");
-      } else {
-        startNoopServers(nsId, hostname, runAsRoot);
-        System.out.println("#### Noop test " + nsId + " on " + hostname + " finished update ####");
-      }
+      startServers(nodeId, hostname, withGNS);
+      System.out.println("#### CS " + nodeId +" on host " + hostname + " finished update ####"); 
     } else {
-      killAllServers(hostname, runAsRoot);
-      if (removeLogs) {
-        removeLogFiles(hostname, runAsRoot);
-      }
+      killAllServers(hostname);
+//      if (removeLogs) {
+//        removeLogFiles(hostname, runAsRoot);
+//      }
       if (deleteDatabase) {
         deleteDatabase(hostname);
       }
-      System.out.println("#### NS " + nsId + " Create LNS " + createLNS + " running on " + hostname + " has been stopped ####");
+      System.out.println("#### CS " + nodeId + " on host " + hostname + " has been stopped ####");
     }
   }
 
   /**
    * Starts a pair of active replica / reconfigurator on each host in the ns hosts file
    * plus lns servers on each host in the lns hosts file.
-   *
    * @param id
    * @param hostname
    */
-  private static void startServers(String nsId, boolean createLNS, String hostname, boolean runAsRoot) {
+  private static void startServers(String nodeId, String hostname, boolean runningWithGNS) {
     File keyFileName = getKeyFile();
-    if (createLNS) {
-      System.out.println("Starting local name servers");
-      ExecuteBash.executeBashScriptNoSudo(userName, hostname, keyFileName, buildInstallFilePath("runLNS.sh"),
-              "#!/bin/bash\n"
-              + CHANGETOINSTALLDIR
-              + "if [ -f LNSlogfile ]; then\n"
-              + "mv --backup=numbered LNSlogfile LNSlogfile.save\n"
-              + "fi\n"
-              //+ ((runAsRoot) ? "sudo " : "")
-              + "nohup " + javaCommandForLNS
-              + " -cp " + gnsJarFileName
-              //+ " " + SSL_DEBUG
-              + " " + TRUST_STORE_OPTION
-              + " " + KEY_STORE_OPTION
-              + " " + StartLNSClass + " "
-              // YES, THIS SHOULD BE NS_HOSTS_FILENAME, the LNS needs this
-              + "-nsfile "
-              + "conf" + FILESEPARATOR + NS_HOSTS_FILENAME + " "
-              + "-configFile "
-              + "conf" + FILESEPARATOR + LNS_PROPERTIES_FILENAME + " "
-              + " > LNSlogfile 2>&1 &");
-    }
-    if (nsId != null) {
-      System.out.println("Starting name servers");
-      ExecuteBash.executeBashScriptNoSudo(userName, hostname, keyFileName, buildInstallFilePath("runNS.sh"),
-              "#!/bin/bash\n"
-              + CHANGETOINSTALLDIR
-              + "if [ -f NSlogfile ]; then\n"
-              + "mv --backup=numbered NSlogfile NSlogfile.save\n"
-              + "fi\n"
-              + ((runAsRoot) ? "sudo " : "")
-              + "nohup " + javaCommand
-              + " -DgigapaxosConfig=" + "conf" + FILESEPARATOR + PAXOS_PROPERTIES_FILENAME + " "
-              + " -cp " + gnsJarFileName
-              //+ " " + SSL_DEBUG
-              + " " + TRUST_STORE_OPTION
-              + " " + KEY_STORE_OPTION
-              + " " + StartNSClass + " "
-              + "-id "
-              + nsId.toString() + " "
-              + "-nsfile "
-              + "conf" + FILESEPARATOR + NS_HOSTS_FILENAME + " "
-              + "-configFile "
-              + "conf" + FILESEPARATOR + NS_PROPERTIES_FILENAME + " "
-              //+ " -demandProfileClass edu.umass.cs.gnsserver.gnsApp.NullDemandProfile "
-              + " > NSlogfile 2>&1 &");
-    }
-    System.out.println("All servers started");
-  }
-
-  /**
-   * Starts a noop test server.
-   *
-   * @param nsId
-   * @param hostname
-   * @param runAsRoot
-   */
-  private static void startNoopServers(String nsId, String hostname, boolean runAsRoot) {
-    File keyFileName = getKeyFile();
-    if (nsId != null) {
-      System.out.println("Starting noop server");
-      ExecuteBash.executeBashScriptNoSudo(userName, hostname, keyFileName, buildInstallFilePath("runNoop.sh"),
-              "#!/bin/bash\n"
-              + CHANGETOINSTALLDIR
-              + "if [ -f Nooplogfile ]; then\n"
-              + "mv --backup=numbered Nooplogfile Nooplogfile.save\n"
-              + "fi\n"
-              + ((runAsRoot) ? "sudo " : "")
-              + "nohup " + javaCommand + " -cp " + gnsJarFileName + " " + StartNoopClass + " "
-              + nsId.toString() + " "
-              + NS_HOSTS_FILENAME + " "
-              + " > Nooplogfile 2>&1 &");
-    }
-    System.out.println("Noop server started");
+    System.out.println("Starting context service on "+hostname+" with nodeId "+ nodeId);
+    ExecuteBash.executeBashScriptNoSudo(userName, hostname, keyFileName, buildInstallFilePath("runContextServiceOnNode.sh"),
+            "#!/bin/bash\n"
+            + CHANGETOINSTALLDIR
+            + "nohup " + javaCommand
+            + " -cp " + csJarFileName
+            + (runningWithGNS?":GNS.jar":"")
+            + " " + StartCSClass + " "
+            + "-id "
+            + nodeId + " "
+            + "-confDir "
+            + CONF_FOLDER_NAME + FILESEPARATOR + CS_CONF_FOLDERNAME + " "
+            + " > CSlogfile 2>&1 &");
+    System.out.println("Starting context service on "+hostname+" with nodeId "+ nodeId);
   }
 
   /**
    * Runs the script file on the remote host.
-   *
    * @param id
    * @param hostname
    */
@@ -461,11 +393,10 @@ public class CSInstaller
 
   /**
    * Kills all servers on the remote host.
-   *
    * @param id
    * @param hostname
    */
-  private static void killAllServers(String hostname, boolean runAsRoot) {
+  private static void killAllServers(String hostname) {
 	  // kill not working on emulab
 	  /*try
 	  {
@@ -486,103 +417,44 @@ public class CSInstaller
   }
 
   /**
-   * Removes log files on the remote host.
-   *
-   * @param id
-   * @param hostname
-   */
-  private static void removeLogFiles(String hostname, boolean runAsRoot) {
-    System.out.println("Removing log files");
-    ExecuteBash.executeBashScriptNoSudo(userName, hostname, getKeyFile(),
-            //runAsRoot,
-            buildInstallFilePath("removelogs.sh"),
-            "#!/bin/bash\n"
-            + CHANGETOINSTALLDIR
-            + ((runAsRoot) ? "sudo " : "")
-            + "rm NSlogfile*\n"
-            + ((runAsRoot) ? "sudo " : "")
-            + "rm Nooplogfile*\n"
-            + ((runAsRoot) ? "sudo " : "")
-            + "rm LNSlogfile*\n"
-            + ((runAsRoot) ? "sudo " : "")
-            + "rm -rf log\n"
-            + ((runAsRoot) ? "sudo " : "")
-            + "rm -rf derby.log\n"
-            + ((runAsRoot) ? "sudo " : "")
-            + "rm -rf paxos_logs\n"
-            + ((runAsRoot) ? "sudo " : "")
-            + "rm -rf reconfiguration_DB\n"
-            + ((runAsRoot) ? "sudo " : "")
-            + "rm -rf paxos_large_checkpoints\n"
-            + ((runAsRoot) ? "sudo " : "")
-            + "rm -rf paxoslog");
-  }
-
-  private static void copyHostsFiles(String hostname, String lnsHostsFile, String nsHostsFile) {
-    File keyFileName = getKeyFile();
-    System.out.println("Copying hosts files");
-    RSync.upload(userName, hostname, keyFileName, nsHostsFile,
-            buildInstallFilePath("conf" + FILESEPARATOR + NS_HOSTS_FILENAME));
-    if (lnsHostsFile != null) {
-      RSync.upload(userName, hostname, keyFileName, lnsHostsFile,
-              buildInstallFilePath("conf" + FILESEPARATOR + LNS_HOSTS_FILENAME));
-    }
-  }
-
-  /**
    * Copies the JAR and configuration files to the remote host.
-   *
    * @param id
    * @param hostname
    */
-  private static void makeConfAndcopyJarAndConfFiles(String hostname, boolean createLNS, boolean noopTest) {
+  private static void makeConfAndcopyJarAndConfFiles(String hostname) {
     if (installPath != null) {
       System.out.println("Creating conf, keystore and truststore directories");
-      SSHClient.exec(userName, hostname, getKeyFile(), "mkdir -p " + installPath + CONF_FOLDER);
+      SSHClient.exec(userName, hostname, getKeyFile(), "mkdir -p " + installPath + FILESEPARATOR+CONF_FOLDER_NAME);
 
-      SSHClient.exec(userName, hostname, getKeyFile(), "mkdir -p " + installPath + CONF_FOLDER + FILESEPARATOR + KEYSTORE_FOLDER_NAME);
-      SSHClient.exec(userName, hostname, getKeyFile(), "mkdir -p " + installPath + CONF_FOLDER + FILESEPARATOR + TRUSTSTORE_FOLDER_NAME);
+      SSHClient.exec(userName, hostname, getKeyFile(), "mkdir -p " + installPath 
+    		  + FILESEPARATOR +CONF_FOLDER_NAME + FILESEPARATOR + CS_CONF_FOLDERNAME);
+      //SSHClient.exec(userName, hostname, getKeyFile(), "mkdir -p " + installPath + CONF_FOLDER + FILESEPARATOR + TRUSTSTORE_FOLDER_NAME);
 
 //      SSHClient.exec(userName, hostname, getKeyFile(), "rm " + installPath + FILESEPARATOR + "*.txt");
 //      SSHClient.exec(userName, hostname, getKeyFile(), "rm " + installPath + FILESEPARATOR + "*.properties");
       File keyFileName = getKeyFile();
       System.out.println("Copying jar and conf files");
-      RSync.upload(userName, hostname, keyFileName, gnsJarFileLocation, buildInstallFilePath(gnsJarFileName));
-      if (createLNS && !noopTest) {
-        RSync.upload(userName, hostname, keyFileName, lnsConfFileLocation,
-                buildInstallFilePath("conf" + FILESEPARATOR + lnsConfFileName));
-      }
-      if (!noopTest) {
-        RSync.upload(userName, hostname, keyFileName, nsConfFileLocation,
-                buildInstallFilePath("conf" + FILESEPARATOR + nsConfFileName));
-      }
-      if (!noopTest) {
-        RSync.upload(userName, hostname, keyFileName, paxosConfFileLocation,
-                buildInstallFilePath("conf" + FILESEPARATOR + paxosConfFileName));
-      }
+      RSync.upload(userName, hostname, keyFileName, csJarFileLocation, buildInstallFilePath(csJarFileName));
+      
+      // localAttrInfoFileLocation;
+      // localNodeSetupFileLocation;
+      // localDBSetupFileLocation;
+      // localSubspaceInfoFileLocation;
+      String relativeCsConfFolder = CONF_FOLDER_NAME + FILESEPARATOR +CS_CONF_FOLDERNAME;
+      
+      RSync.upload(userName, hostname, keyFileName, localAttrInfoFileLocation,
+              buildInstallFilePath(relativeCsConfFolder + FILESEPARATOR + localAttrInfoFileName));
+      RSync.upload(userName, hostname, keyFileName, localNodeSetupFileLocation,
+              buildInstallFilePath(relativeCsConfFolder + FILESEPARATOR + localNodeSetupFileName));
+      RSync.upload(userName, hostname, keyFileName, localDBSetupFileLocation,
+              buildInstallFilePath(relativeCsConfFolder + FILESEPARATOR + localDBSetupFileName));
+      RSync.upload(userName, hostname, keyFileName, localSubspaceInfoFileLocation,
+              buildInstallFilePath(relativeCsConfFolder + FILESEPARATOR + localSubspaceInfoFileName));
     }
-  }
-
-  private static void copySSLFiles(String hostname) {
-    File keyFileName = getKeyFile();
-    System.out.println("Copying SSL files");
-    RSync.upload(userName, hostname, keyFileName,
-            confFolderPath + FILESEPARATOR + KEYSTORE_FOLDER_NAME + FILESEPARATOR + "node100.jks",
-            buildInstallFilePath("conf" + FILESEPARATOR + KEYSTORE_FOLDER_NAME + FILESEPARATOR + "node100.jks"));
-    RSync.upload(userName, hostname, keyFileName,
-            confFolderPath + FILESEPARATOR + KEYSTORE_FOLDER_NAME + FILESEPARATOR + "node100.cer",
-            buildInstallFilePath("conf" + FILESEPARATOR + KEYSTORE_FOLDER_NAME + FILESEPARATOR + "node100.cer"));
-    RSync.upload(userName, hostname, keyFileName,
-            confFolderPath + FILESEPARATOR + TRUSTSTORE_FOLDER_NAME + FILESEPARATOR + "node100.jks",
-            buildInstallFilePath("conf" + FILESEPARATOR + TRUSTSTORE_FOLDER_NAME + FILESEPARATOR + "node100.jks"));
-    RSync.upload(userName, hostname, keyFileName,
-            confFolderPath + FILESEPARATOR + TRUSTSTORE_FOLDER_NAME + FILESEPARATOR + "node100.cer",
-            buildInstallFilePath("conf" + FILESEPARATOR + TRUSTSTORE_FOLDER_NAME + FILESEPARATOR + "node100.cer"));
   }
 
   /**
    * Figures out the locations of the JAR and conf files.
-   *
    * @return true if it found them
    */
   private static void determineJarAndMasterPaths() {
@@ -591,8 +463,8 @@ public class CSInstaller
     csJarFileLocation = jarPath.getPath();
     File mainPath = jarPath.getParentFile().getParentFile();
     System.out.println("Main path: " + mainPath);
-    confFolderPath = mainPath + CONF_FOLDER;
-    csConfFolderPath = mainPath + CONF_FOLDER+FILESEPARATOR + CS_CONF_FOLDERNAME;
+    confFolderPath = mainPath + FILESEPARATOR + CONF_FOLDER_NAME;
+    String csConfFolderPath = confFolderPath+FILESEPARATOR + CS_CONF_FOLDERNAME;
     System.out.println("Conf folder path: " + confFolderPath+" csConfPath "+csConfFolderPath);
     csJarFileName = new File(csJarFileLocation).getName();
   }
@@ -618,7 +490,6 @@ public class CSInstaller
   }
 
   private static boolean checkAndSetConfFilePaths(String configNameOrFolder) {
-
     // first check for a least a config folder
     if (!fileExistsSomewhere(configNameOrFolder, confFolderPath)) {
       System.out.println("Config folder " + configNameOrFolder + " not found... exiting. ");
@@ -651,16 +522,32 @@ public class CSInstaller
     		relativeCsConfFolder + FILESEPARATOR + SUBSPACE_INFO_FILENAME, confFolderPath)) {
       System.out.println("csConfig folder " + relativeCsConfFolder + " missing file " + SUBSPACE_INFO_FILENAME);
     }
-    lnsConfFileLocation = fileSomewhere(configNameOrFolder + FILESEPARATOR + 
-            LNS_PROPERTIES_FILENAME, confFolderPath).toString();
-    nsConfFileLocation = fileSomewhere(configNameOrFolder + FILESEPARATOR + 
-            NS_PROPERTIES_FILENAME, confFolderPath).toString();
-    paxosConfFileLocation = fileSomewhere(configNameOrFolder + FILESEPARATOR + 
-            PAXOS_PROPERTIES_FILENAME, confFolderPath).toString();
-    lnsConfFileName = new File(lnsConfFileLocation).getName();
-    nsConfFileName = new File(nsConfFileLocation).getName();
-    paxosConfFileName = new File(paxosConfFileLocation).getName();
+    
+    //localAttrInfoFileLocation;
+    //localNodeSetupFileLocation;
+    //localDBSetupFileLocation;
+    //localSubspaceInfoFileLocation;
+    
+    localAttrInfoFileLocation = fileSomewhere(relativeCsConfFolder + FILESEPARATOR + 
+    		ATTR_INFO_FILENAME, confFolderPath).toString();
+    localNodeSetupFileLocation = fileSomewhere(relativeCsConfFolder + FILESEPARATOR + 
+    		NODE_SETUP_FILENAME, confFolderPath).toString();
+    localDBSetupFileLocation = fileSomewhere(relativeCsConfFolder + FILESEPARATOR + 
+    		DB_SETUP_FILENAME, confFolderPath).toString();
+    localSubspaceInfoFileLocation = fileSomewhere(relativeCsConfFolder + FILESEPARATOR + 
+    		SUBSPACE_INFO_FILENAME, confFolderPath).toString();
+    
+    
+    localAttrInfoFileName		= new File(localAttrInfoFileLocation).getName();
+    localNodeSetupFileName    	= new File(localNodeSetupFileLocation).getName();
+    localDBSetupFileName 		= new File(localDBSetupFileLocation).getName();
+    localSubspaceInfoFileName 	= new File(localSubspaceInfoFileLocation).getName();
 
+    assert(localAttrInfoFileName.equals(ATTR_INFO_FILENAME));
+    assert(localNodeSetupFileName.equals(NODE_SETUP_FILENAME));
+    assert(localDBSetupFileName.equals(DB_SETUP_FILENAME));
+    assert(localSubspaceInfoFileName.equals(SUBSPACE_INFO_FILENAME));
+    
     return true;
   }
 
@@ -698,11 +585,11 @@ public class CSInstaller
       return installPath + FILESEPARATOR + filename;
     }
   }
-
+  
   // COMMAND LINE STUFF
   private static HelpFormatter formatter = new HelpFormatter();
   private static Options commandLineOptions;
-
+  
   private static CommandLine initializeOptions(String[] args) throws ParseException {
     Option help = new Option("help", "Prints Usage");
     Option update = OptionBuilder.withArgName("installation name").hasArg()
@@ -722,7 +609,7 @@ public class CSInstaller
     Option stop = OptionBuilder.withArgName("installation name").hasArg()
             .withDescription("stops CS servers in a installation")
             .create("stop");
-    //Option root = new Option("root", "run the installation as root");
+    Option withGNS = new Option("withGNS", "run CS along with GNS.jar, GNS.jar and contextService.jar should be in the same folder");
     //Option noopTest = new Option("noopTest", "starts noop test servers instead of GNS APP servers");
 
     commandLineOptions = new Options();
@@ -733,7 +620,7 @@ public class CSInstaller
     commandLineOptions.addOption(deleteDatabase);
     //commandLineOptions.addOption(dataStore);
     commandLineOptions.addOption(scriptFile);
-    //commandLineOptions.addOption(root);
+    commandLineOptions.addOption(withGNS);
     //commandLineOptions.addOption(noopTest);
     commandLineOptions.addOption(help);
 
@@ -747,10 +634,12 @@ public class CSInstaller
 
   /**
    * The main routine.
-   *
    * @param args
+ * @throws IOException 
+ * @throws UnknownHostException 
+ * @throws NumberFormatException 
    */
-  public static void main(String[] args) {
+  public static void main(String[] args) throws NumberFormatException, UnknownHostException, IOException {
     try {
       CommandLine parser = initializeOptions(args);
       if (parser.hasOption("help") || args.length == 0) {
@@ -763,7 +652,7 @@ public class CSInstaller
       //boolean removeLogs = parser.hasOption("removeLogs");
       boolean deleteDatabase = parser.hasOption("deleteDatabase");
       String scriptFile = parser.getOptionValue("scriptFile");
-      //boolean runAsRoot = parser.hasOption("root");
+      boolean withGNS = parser.hasOption("withGNS");
       //boolean noopTest = parser.hasOption("noopTest");
 
       /*if (dataStoreName != null) {
@@ -803,14 +692,14 @@ public class CSInstaller
       RSync.setVerbose(true);
 
       if (runsetUpdate != null) {
-        updateRunSet(runsetUpdate, InstallerAction.UPDATE, removeLogs, deleteDatabase,
-                lnsHostFile, nsHostFile, scriptFile, runAsRoot, noopTest);
+        updateRunSet(runsetUpdate, InstallerAction.UPDATE, deleteDatabase
+        		, scriptFile, withGNS);
       } else if (runsetRestart != null) {
-        updateRunSet(runsetRestart, InstallerAction.RESTART, removeLogs, deleteDatabase,
-                lnsHostFile, nsHostFile, scriptFile, runAsRoot, noopTest);
+        updateRunSet(runsetRestart, InstallerAction.RESTART, deleteDatabase
+        		, scriptFile, withGNS);
       } else if (runsetStop != null) {
-        updateRunSet(runsetStop, InstallerAction.STOP, removeLogs, deleteDatabase,
-                null, null, null, runAsRoot, noopTest);
+        updateRunSet(runsetStop, InstallerAction.STOP, deleteDatabase,
+                null, withGNS);
       } else {
         printUsage();
         System.exit(1);
@@ -828,39 +717,28 @@ public class CSInstaller
    * The thread we use to run a copy of the updater for each host we're updating.
    */
   private static class UpdateThread extends Thread {
-	  
     private final String hostname;
-    private final String nsId;
-    private final boolean createLNS;
+    private final String nodeId;
     private final InstallerAction action;
-    private final boolean removeLogs;
     private final boolean deleteDatabase;
-    private final String lnsHostsFile;
-    private final String nsHostsFile;
     private final String scriptFile;
-    private final boolean runAsRoot;
-    private final boolean noopTest;
+    private final boolean withGNS;
 
-    public UpdateThread(String hostname, String nsId, boolean createLNS, InstallerAction action, boolean removeLogs, boolean deleteDatabase,
-            String lnsHostsFile, String nsHostsFile, String scriptFile, boolean runAsRoot, boolean noopTest) {
+    public UpdateThread(String hostname, String nodeId, InstallerAction action
+    		, boolean deleteDatabase, String scriptFile, boolean withGNS) {
       this.hostname = hostname;
-      this.nsId = nsId;
-      this.createLNS = createLNS;
+      this.nodeId = nodeId;
       this.action = action;
-      this.removeLogs = removeLogs;
       this.deleteDatabase = deleteDatabase;
       this.scriptFile = scriptFile;
-      this.lnsHostsFile = lnsHostsFile;
-      this.nsHostsFile = nsHostsFile;
-      this.runAsRoot = runAsRoot;
-      this.noopTest = noopTest;
+      this.withGNS = withGNS;
     }
 
     @Override
     public void run() {
       try {
-        CSInstaller.updateAndRunGNS(nsId, createLNS, hostname, action, removeLogs, deleteDatabase,
-                lnsHostsFile, nsHostsFile, scriptFile, runAsRoot, noopTest);
+        CSInstaller.updateAndRunGNS(nodeId, hostname, action, deleteDatabase,
+                scriptFile, withGNS);
       } catch (UnknownHostException e) {
         ContextServiceLogger.getLogger().info("Unknown hostname while updating " + hostname + ": " + e);
       }
@@ -870,5 +748,90 @@ public class CSInstaller
       }
     }
   }
+  
+  /*private static void copySSLFiles(String hostname) {
+  File keyFileName = getKeyFile();
+  System.out.println("Copying SSL files");
+  RSync.upload(userName, hostname, keyFileName,
+          confFolderPath + FILESEPARATOR + KEYSTORE_FOLDER_NAME + FILESEPARATOR + "node100.jks",
+          buildInstallFilePath("conf" + FILESEPARATOR + KEYSTORE_FOLDER_NAME + FILESEPARATOR + "node100.jks"));
+  RSync.upload(userName, hostname, keyFileName,
+          confFolderPath + FILESEPARATOR + KEYSTORE_FOLDER_NAME + FILESEPARATOR + "node100.cer",
+          buildInstallFilePath("conf" + FILESEPARATOR + KEYSTORE_FOLDER_NAME + FILESEPARATOR + "node100.cer"));
+  RSync.upload(userName, hostname, keyFileName,
+          confFolderPath + FILESEPARATOR + TRUSTSTORE_FOLDER_NAME + FILESEPARATOR + "node100.jks",
+          buildInstallFilePath("conf" + FILESEPARATOR + TRUSTSTORE_FOLDER_NAME + FILESEPARATOR + "node100.jks"));
+  RSync.upload(userName, hostname, keyFileName,
+          confFolderPath + FILESEPARATOR + TRUSTSTORE_FOLDER_NAME + FILESEPARATOR + "node100.cer",
+          buildInstallFilePath("conf" + FILESEPARATOR + TRUSTSTORE_FOLDER_NAME + FILESEPARATOR + "node100.cer"));
+}*/
+
+/*private static void copyHostsFiles(String hostname, String lnsHostsFile, String nsHostsFile) {
+File keyFileName = getKeyFile();
+System.out.println("Copying hosts files");
+RSync.upload(userName, hostname, keyFileName, nsHostsFile,
+        buildInstallFilePath("conf" + FILESEPARATOR + NS_HOSTS_FILENAME));
+if (lnsHostsFile != null) {
+  RSync.upload(userName, hostname, keyFileName, lnsHostsFile,
+          buildInstallFilePath("conf" + FILESEPARATOR + LNS_HOSTS_FILENAME));
+}
+}*/
+
+/**
+* Starts a noop test server.
+* @param nsId
+* @param hostname
+* @param runAsRoot
+*/
+/*private static void startNoopServers(String nsId, String hostname, boolean runAsRoot) {
+File keyFileName = getKeyFile();
+if (nsId != null) {
+  System.out.println("Starting noop server");
+  ExecuteBash.executeBashScriptNoSudo(userName, hostname, keyFileName, buildInstallFilePath("runNoop.sh"),
+          "#!/bin/bash\n"
+          + CHANGETOINSTALLDIR
+          + "if [ -f Nooplogfile ]; then\n"
+          + "mv --backup=numbered Nooplogfile Nooplogfile.save\n"
+          + "fi\n"
+          + ((runAsRoot) ? "sudo " : "")
+          + "nohup " + javaCommand + " -cp " + gnsJarFileName + " " + StartNoopClass + " "
+          + nsId.toString() + " "
+          + NS_HOSTS_FILENAME + " "
+          + " > Nooplogfile 2>&1 &");
+}
+System.out.println("Noop server started");
+}*/
+  
+  /**
+   * Removes log files on the remote host.
+   * @param id
+   * @param hostname
+   */
+  /*private static void removeLogFiles(String hostname, boolean runAsRoot) {
+    System.out.println("Removing log files");
+    ExecuteBash.executeBashScriptNoSudo(userName, hostname, getKeyFile(),
+            //runAsRoot,
+            buildInstallFilePath("removelogs.sh"),
+            "#!/bin/bash\n"
+            + CHANGETOINSTALLDIR
+            + ((runAsRoot) ? "sudo " : "")
+            + "rm NSlogfile*\n"
+            + ((runAsRoot) ? "sudo " : "")
+            + "rm Nooplogfile*\n"
+            + ((runAsRoot) ? "sudo " : "")
+            + "rm LNSlogfile*\n"
+            + ((runAsRoot) ? "sudo " : "")
+            + "rm -rf log\n"
+            + ((runAsRoot) ? "sudo " : "")
+            + "rm -rf derby.log\n"
+            + ((runAsRoot) ? "sudo " : "")
+            + "rm -rf paxos_logs\n"
+            + ((runAsRoot) ? "sudo " : "")
+            + "rm -rf reconfiguration_DB\n"
+            + ((runAsRoot) ? "sudo " : "")
+            + "rm -rf paxos_large_checkpoints\n"
+            + ((runAsRoot) ? "sudo " : "")
+            + "rm -rf paxoslog");
+  }*/
   
 }

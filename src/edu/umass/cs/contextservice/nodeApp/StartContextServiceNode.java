@@ -58,7 +58,7 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 		
 		
 		ContextServiceLogger.getLogger().fine("Starting context service");
-		new Thread(new StartNode(myID, myID-ContextServiceConfig.startNodeID)).start();
+		new Thread(new StartNode(myID, myID)).start();
 	}
 	
 	private static void readNodeInfo() throws NumberFormatException, UnknownHostException, IOException
@@ -70,7 +70,7 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 		while ((line = reader.readLine()) != null)
 		{
 			String [] parsed = line.split(" ");
-			int readNodeId = Integer.parseInt(parsed[0])+ContextServiceConfig.startNodeID;
+			int readNodeId = Integer.parseInt(parsed[0]);
 			InetAddress readIPAddress = InetAddress.getByName(parsed[1]);
 			int readPort = Integer.parseInt(parsed[2]);
 			

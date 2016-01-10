@@ -25,7 +25,9 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.UserInfo;
-import edu.umass.cs.gnsserver.main.GNS;
+
+import edu.umass.cs.contextservice.logging.ContextServiceLogger;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -136,7 +138,7 @@ public class SSHClient {
           }
         }
         if (channel.isClosed()) {
-          GNS.getLogger().fine("exit status: " + channel.getExitStatus());
+          ContextServiceLogger.getLogger().fine("exit status: " + channel.getExitStatus());
           break;
         }
         try {
@@ -148,7 +150,7 @@ public class SSHClient {
       session.disconnect();
     } catch (Exception e) {
       e.printStackTrace();
-      GNS.getLogger().severe(e.toString());
+      ContextServiceLogger.getLogger().severe(e.toString());
     }
   }
 
@@ -246,7 +248,7 @@ public class SSHClient {
       session.disconnect();
 
     } catch (Exception e) {
-      GNS.getLogger().severe(e.toString());
+    	ContextServiceLogger.getLogger().severe(e.toString());
       try {
         if (fis != null) {
           fis.close();
@@ -319,10 +321,10 @@ public class SSHClient {
         sb.append((char) c);
       } while (c != '\n');
       if (b == 1) { // error
-        GNS.getLogger().warning(sb.toString());
+    	  ContextServiceLogger.getLogger().warning(sb.toString());
       }
       if (b == 2) { // fatal error
-        GNS.getLogger().warning(sb.toString());
+    	  ContextServiceLogger.getLogger().warning(sb.toString());
       }
     }
     return b;

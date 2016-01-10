@@ -194,7 +194,7 @@ public class DataSource<NodeIDType>
 				continue;
 			
 			String [] parsed = line.split(" ");
-			Integer readNodeId = Integer.parseInt(parsed[0])+ContextServiceConfig.startNodeID;
+			Integer readNodeId = Integer.parseInt(parsed[0]);
 			int readPort = Integer.parseInt(parsed[1]);
 			String dbName = parsed[2];
 			String username = parsed[3];

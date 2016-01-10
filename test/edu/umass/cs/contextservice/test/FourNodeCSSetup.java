@@ -59,16 +59,16 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 		nodes = new FourNodeCSSetup[csNodeConfig.getNodeIDs().size()];
 		
 		System.out.println("Starting context service 0");
-		new Thread(new StartNode(0, 0-ContextServiceConfig.startNodeID)).start();
+		new Thread(new StartNode(0, 0)).start();
 		
 		System.out.println("Starting context service 1");
-		new Thread(new StartNode(1, 1-ContextServiceConfig.startNodeID)).start();
+		new Thread(new StartNode(1, 1)).start();
 		
 		System.out.println("Starting context service 2");
-		new Thread(new StartNode(2, 2-ContextServiceConfig.startNodeID)).start();
+		new Thread(new StartNode(2, 2)).start();
 		
 		System.out.println("Starting context service 3");
-		new Thread(new StartNode(3, 3-ContextServiceConfig.startNodeID)).start();
+		new Thread(new StartNode(3, 3)).start();
 		
 		try
 		{
@@ -96,7 +96,7 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 		while ((line = reader.readLine()) != null)
 		{
 			String [] parsed = line.split(" ");
-			int readNodeId = Integer.parseInt(parsed[0])+ContextServiceConfig.startNodeID;
+			int readNodeId = Integer.parseInt(parsed[0]);
 			InetAddress readIPAddress = InetAddress.getByName(parsed[1]);
 			int readPort = Integer.parseInt(parsed[2]);
 			
