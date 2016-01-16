@@ -1,0 +1,5 @@
+userName=adipc
+keyFile=skuldKey
+hostType=linux
+installPath=/home/adipc/TestLocalGNS
+javaCommand=java -ea

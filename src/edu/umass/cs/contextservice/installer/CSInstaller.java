@@ -54,7 +54,7 @@ import org.apache.commons.cli.ParseException;
  * Typical uses:
  *
  * First time install:
- * java -cp jars/GNS.jar edu.umass.cs.gnsserver.installer.GNSInstaller -scriptFile conf/ec2_mongo_java_install.bash -update kittens.name
+ * -cp jars/GNS.jar edu.umass.cs.gnsserver.installer.GNSInstaller -scriptFile conf/ec2_mongo_java_install.bash -update kittens.name
  *
  * Later updates:
  * java -cp jars/GNS.jar edu.umass.cs.gnsserver.installer.GNSInstaller -update kittens.name
@@ -99,7 +99,7 @@ public class CSInstaller
 
   /**
    * Hostname map
-   * <hostname, nodeID> is the tuple stored
+   * <nodeId, hostname> is the tuple stored
    */
   private static final ConcurrentHashMap<String, String> hostTable = new ConcurrentHashMap<String, String>();
   //
@@ -192,7 +192,7 @@ public class CSInstaller
 		  String readNodeId = parsed[0];
 		  //InetAddress readIPAddress = InetAddress.getByName(parsed[1]);
 		  //int readPort = Integer.parseInt(parsed[2]);
-		  hostTable.put(parsed[1], readNodeId);
+		  hostTable.put(readNodeId, parsed[1]);
 	  }
 	  reader.close();
   }
@@ -219,8 +219,9 @@ public class CSInstaller
     
     while( keyIter.hasMoreElements() )
     {
-    	String hostname = keyIter.nextElement();
-    	String nodeId = hostTable.get(hostname);
+    	
+    	String nodeId = keyIter.nextElement();
+    	String hostname = hostTable.get(nodeId);
     	threads.add(new UpdateThread(hostname, nodeId,
                 action, deleteDatabase, 
                 scriptFile, withGNS));
@@ -235,7 +236,7 @@ public class CSInstaller
         thread.join();
       }
     } catch (InterruptedException e) {
-      System.out.println("Problem joining threads: " + e);
+    	System.out.println("Problem joining threads: " + e);
     }
 //    if (action != InstallerAction.STOP) {
 //      updateNodeConfigAndSendOutServerInit();
@@ -339,7 +340,8 @@ public class CSInstaller
   private static void startServers(String nodeId, String hostname, boolean runningWithGNS) {
     File keyFileName = getKeyFile();
     System.out.println("Starting context service on "+hostname+" with nodeId "+ nodeId);
-    ExecuteBash.executeBashScriptNoSudo(userName, hostname, keyFileName, buildInstallFilePath("runContextServiceOnNode.sh"),
+    ExecuteBash.executeBashScriptNoSudo(userName, hostname, keyFileName, 
+    		buildInstallFilePath("runContextServiceId"+nodeId+"OnNode.sh"),
             "#!/bin/bash\n"
             + CHANGETOINSTALLDIR
             + "nohup " + javaCommand
@@ -348,9 +350,9 @@ public class CSInstaller
             + " " + StartCSClass + " "
             + "-id "
             + nodeId + " "
-            + "-confDir "
+            + "-csConfDir "
             + CONF_FOLDER_NAME + FILESEPARATOR + CS_CONF_FOLDERNAME + " "
-            + " > CSlogfile 2>&1 &");
+            + " > CSlogfileId"+nodeId+" 2>&1 &");
     System.out.println("Starting context service on "+hostname+" with nodeId "+ nodeId);
   }
 
@@ -567,7 +569,6 @@ public class CSInstaller
 
   /**
    * Returns the location of the key file (probably in the users .ssh home).
-   *
    * @return a File
    */
   private static File getKeyFile() {
@@ -575,7 +576,6 @@ public class CSInstaller
     return new File(keyFile).exists() ? new File(keyFile)
             : // also check in blessed location
             new File(KEYHOME + FILESEPARATOR + keyFile).exists() ? new File(KEYHOME + FILESEPARATOR + keyFile) : null;
-
   }
 
   private static String buildInstallFilePath(String filename) {
@@ -634,10 +634,12 @@ public class CSInstaller
 
   /**
    * The main routine.
+   * sample usage 
    * @param args
- * @throws IOException 
- * @throws UnknownHostException 
- * @throws NumberFormatException 
+   * @throws IOException 
+   * @throws UnknownHostException 
+   * @throws NumberFormatException
+   * java -cp ./release/context-nodoc-GNS.jar edu.umass.cs.contextservice.installer.CSInstaller -update singleNodeConf -withGNS
    */
   public static void main(String[] args) throws NumberFormatException, UnknownHostException, IOException {
     try {
@@ -676,13 +678,14 @@ public class CSInstaller
       if (!checkAndSetConfFilePaths(configName)) {
         System.exit(1);
       }
+      
+      loadConfig(configName);
 
       if (getKeyFile() == null) {
         System.out.println("Can't find keyfile: " + keyFile + "; exiting.");
         System.exit(1);
       }
 
-      loadConfig(configName);
       loadCSConfFiles(configName);
 
       //String lnsHostFile = fileSomewhere(configName + FILESEPARATOR + LNS_HOSTS_FILENAME, confFolderPath).toString();
@@ -704,7 +707,6 @@ public class CSInstaller
         printUsage();
         System.exit(1);
       }
-
     } catch (ParseException e1) {
       e1.printStackTrace();
       printUsage();
@@ -833,5 +835,4 @@ System.out.println("Noop server started");
             + ((runAsRoot) ? "sudo " : "")
             + "rm -rf paxoslog");
   }*/
-  
 }

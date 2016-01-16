@@ -184,7 +184,8 @@ public class DataSource<NodeIDType>
     @SuppressWarnings("unchecked")
 	private void readDBNodeSetup() throws NumberFormatException, IOException
 	{
-		BufferedReader reader = new BufferedReader(new FileReader(ContextServiceConfig.dbConfigFileName));
+		BufferedReader reader = new BufferedReader(new FileReader(
+				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.dbConfigFileName));
 		String line = null;
 		
 		while ( (line = reader.readLine()) != null )

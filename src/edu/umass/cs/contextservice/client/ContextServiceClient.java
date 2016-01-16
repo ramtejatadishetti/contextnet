@@ -13,6 +13,8 @@ import edu.umass.cs.contextservice.client.storage.GetStorage;
 import edu.umass.cs.contextservice.client.storage.SearchQueryStorage;
 import edu.umass.cs.contextservice.client.storage.UpdateStorage;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
+import edu.umass.cs.contextservice.messages.ClientConfigReply;
+import edu.umass.cs.contextservice.messages.ClientConfigRequest;
 import edu.umass.cs.contextservice.messages.ContextServicePacket;
 import edu.umass.cs.contextservice.messages.GetMessage;
 import edu.umass.cs.contextservice.messages.GetReplyMessage;
@@ -22,15 +24,27 @@ import edu.umass.cs.contextservice.messages.RefreshTrigger;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
 
+/**
+ * Contextservice client.
+ * It is used to send and recv replies from context service.
+ * It knows context service node addresses from a file in the conf folder.
+ * 
+ * It is thread safe, means same client can be used by multiple threads without any 
+ * synchronization problems.
+ * @author adipc
+ *
+ * @param <NodeIDType>
+ */
 public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClient<NodeIDType>
-{	
-	public ContextServiceClient() throws IOException
+{
+	public ContextServiceClient(String hostName, int portNum) throws IOException
 	{
-		super();
+		super(hostName, portNum);
+		sendConfigRequest();
 	}
 	
 	@Override
-	public void sendUpdate(String GUID, JSONObject gnsAttrValuePairs, long versionNum) 
+	public void sendUpdate(String GUID, JSONObject gnsAttrValuePairs, long versionNum)
 	{
 		ContextServiceLogger.getLogger().fine("ContextClient sendUpdate enter "+GUID+" json "+
 				gnsAttrValuePairs);
@@ -72,7 +86,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			//System.out.println("ValueUpdateFromGNS this.nodeid "+this.nodeid);
 			
 			ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = 
-					new ValueUpdateFromGNS<NodeIDType>(null, versionNum, GUID, csAttrValuePairs, sourceIP, sourcePort, reqeustID );
+					new ValueUpdateFromGNS<NodeIDType>(null, versionNum, GUID, csAttrValuePairs, reqeustID, sourceIP, sourcePort );
 			
 			//System.out.println("ValueUpdateFromGNS after");
 			//ContextServiceLogger.getLogger().fine("ContextClient sendUpdate valUpdFromGNS "+valUpdFromGNS);
@@ -105,11 +119,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		{
 			ex.printStackTrace();
 		}
-		
-		// no waiting in update
-		
+		// no waiting in update	
 	}
-
+	
 	@Override
 	public JSONArray sendSearchQuery(String searchQuery) 
 	{
@@ -125,7 +137,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 		
 		QueryMsgFromUser<NodeIDType> qmesgU 
-			= new QueryMsgFromUser<NodeIDType>(this.nodeid, searchQuery, sourceIP, sourcePort, currId);
+			= new QueryMsgFromUser<NodeIDType>(this.nodeid, searchQuery, currId, 300000, sourceIP, sourcePort);
 		
 		SearchQueryStorage<NodeIDType> searchQ = new SearchQueryStorage<NodeIDType>();
 		searchQ.requestID = currId;
@@ -233,6 +245,11 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		return result;
 	}
 	
+//	@Override
+//	public void expireSearchQuery(String searchQuery) 
+//	{
+//	}
+	
 	@Override
 	public boolean handleMessage(JSONObject jsonObject)
 	{
@@ -254,6 +271,10 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 					== ContextServicePacket.PacketType.GET_REPLY_MESSAGE.getInt() )
 			{
 				handleGetReply(jsonObject);
+			} else if(jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
+					== ContextServicePacket.PacketType.CONFIG_REPLY.getInt() )
+			{
+				handleConfigReply(jsonObject);
 			}
 		} catch (JSONException e)
 		{
@@ -283,9 +304,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		} catch (JSONException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}*/
-		
-		
+		}*/	
 	}
 	
 	private void handleGetReply(JSONObject jso)
@@ -302,6 +321,39 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			synchronized(replyGetObj)
 			{
 				replyGetObj.notify();
+			}
+		} catch (JSONException e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	private void handleConfigReply(JSONObject jso)
+	{
+		try
+		{
+			ClientConfigReply<NodeIDType> configReply
+			= new ClientConfigReply<NodeIDType>(jso);
+			
+			JSONArray nodeIPArray = configReply.getNodeConfigArray();
+			JSONArray attrInfoArray = configReply.getAttributeArray();
+			
+			for(int i=0;i<nodeIPArray.length();i++)
+			{
+				String ipPort = nodeIPArray.getString(i);
+				String[] parsed = ipPort.split(":");
+				csNodeAddresses.add(new InetSocketAddress(parsed[0], Integer.parseInt(parsed[1])));
+			}
+			
+			for(int i=0;i<attrInfoArray.length();i++)
+			{
+				String attrName = attrInfoArray.getString(i);
+				attributeHashMap.put(attrName, true);	
+			}
+			
+			synchronized(this.configLock)
+			{
+				configLock.notify();
 			}
 		} catch (JSONException e)
 		{
@@ -337,6 +389,39 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 	}
 	
+	private void sendConfigRequest()
+	{	
+		ClientConfigRequest<NodeIDType> clientConfigReq 
+			= new ClientConfigRequest<NodeIDType>(this.nodeid, sourceIP, sourcePort);
+		
+		InetSocketAddress sockAddr = new InetSocketAddress(configHost, configPort);
+		
+		try 
+		{
+			niot.sendToAddress(sockAddr, clientConfigReq.toJSONObject());
+		} catch (IOException e) 
+		{
+			e.printStackTrace();
+		} catch (JSONException e) 
+		{
+			e.printStackTrace();
+		}
+		
+		synchronized( this.configLock )
+		{
+			while(csNodeAddresses.size() == 0 )
+			{
+				try 
+				{
+					this.configLock.wait();
+				} catch (InterruptedException e) 
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
 	private void handleRefreshTrigger(JSONObject jso)
 	{
 		try
@@ -346,7 +431,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			
 			long reqID = qmur.getVersionNum();
 			
-		
+			
 			System.out.println("RefreshTrigger completion requestID "+reqID+" time "+System.currentTimeMillis());
 		} catch (JSONException e)
 		{

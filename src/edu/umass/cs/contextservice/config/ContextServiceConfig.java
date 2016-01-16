@@ -8,7 +8,7 @@ package edu.umass.cs.contextservice.config;
 public class ContextServiceConfig
 {
 	// path where all config files are stored, like node setup, attribute info, subspace info
-	public static final String configFileDirectory					= "conf/contextServiceConf/";
+	public static String configFileDirectory;
 	
 	public static enum SchemeTypes {HYPERSPACE_HASHING};
 	
@@ -51,10 +51,10 @@ public class ContextServiceConfig
 	public static boolean DATABASE_SIZE_PRINT						= true;
 	
 	// config files
-	public static final String subspaceInfoFileName					= configFileDirectory+"subspaceInfo.txt";
-	public static final String attributeInfoFileName				= configFileDirectory+"attributeInfo.txt";
-	public static final String nodeSetupFileName					= configFileDirectory+"contextServiceNodeSetup.txt";
-	public static final String dbConfigFileName						= configFileDirectory+"dbNodeSetup.txt";
+	public static String subspaceInfoFileName						= "subspaceInfo.txt";
+	public static String attributeInfoFileName						= "attributeInfo.txt";
+	public static String nodeSetupFileName							= "contextServiceNodeSetup.txt";
+	public static String dbConfigFileName							= "dbNodeSetup.txt";
 	
 	//control if full guids are sent in the search query
 	// reply, if false only sends the number of guids, not
@@ -68,7 +68,7 @@ public class ContextServiceConfig
 	// if true group update trigger is enabled, not enabled if false
 	public static final boolean TRIGGER_ENABLED						= false;
 	
-	//public static final int startNodeID								= 0;
+	//public static final int startNodeID							= 0;
 	
 	//public static enum DatabaseTypes {INMEMORY, MONGODB};
 	

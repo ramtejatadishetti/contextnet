@@ -1,0 +1,5 @@
+# attrName, minValue, maxValue, defaultValue, datatype[Integer, Long, Double, String]
+# In String case, minValue denotes minimum num of string chars, maxValue denotes maximum String chars, if 
+# default value can be set to a specific string or just "". Double quotes should be included. But then minimum value then should be set to 0, w# ihihc is the lowest
+latitude, 0, 10, "", String
+longitude, 0, 10, "", String

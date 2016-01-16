@@ -56,6 +56,7 @@ public abstract class AbstractContextServiceClient<NodeIDType> implements Packet
 	protected final Object searchIdLock											= new Object();
 	protected final Object updateIdLock											= new Object();
 	protected final Object getIdLock											= new Object();
+	protected final Object configLock											= new Object();
 	
 	
 	protected long searchReqId													= 0;
@@ -64,14 +65,18 @@ public abstract class AbstractContextServiceClient<NodeIDType> implements Packet
 	
 	protected NodeIDType nodeid													= null;
 	
+	protected final String configHost;
+	protected final int configPort;
 	
-	public AbstractContextServiceClient() throws IOException
+	public AbstractContextServiceClient(String hostname, int port) throws IOException
 	{
+		this.configHost = hostname;
+		this.configPort = port;
 		csNodeAddresses  = new LinkedList<InetSocketAddress>();
 		attributeHashMap = new HashMap<String, Boolean>();
 		
-		readNodeInfo();
-		readAttributeInfo();
+		//readNodeInfo();
+		//readAttributeInfo();
 		
 		pendingSearches = new HashMap<Long, SearchQueryStorage<NodeIDType>>();
 		pendingUpdate = new HashMap<Long, UpdateStorage<NodeIDType>>();
@@ -102,13 +107,19 @@ public abstract class AbstractContextServiceClient<NodeIDType> implements Packet
 		pd.register(ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY, this);
 		pd.register(ContextServicePacket.PacketType.REFRESH_TRIGGER, this);
 		pd.register(ContextServicePacket.PacketType.GET_REPLY_MESSAGE, this);
+		pd.register(ContextServicePacket.PacketType.CONFIG_REPLY, this);
 		
 		messenger.addPacketDemultiplexer(pd);
+		
+		
 	}
+	
+	
 	
 	private void readNodeInfo() throws NumberFormatException, UnknownHostException, IOException
 	{
-		InputStream input = getClass().getResourceAsStream("/"+ContextServiceConfig.nodeSetupFileName);
+		InputStream input = getClass().getResourceAsStream("/"+
+				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.nodeSetupFileName);
 		//FileReader fread = new FileReader(configFileName);
 		BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 		String line = null;
@@ -154,16 +165,20 @@ public abstract class AbstractContextServiceClient<NodeIDType> implements Packet
 				ContextServiceLogger.getLogger().fine("Contextservice attribute info attrName "
 						+ attrName);
 				attributeHashMap.put(attrName, true);
-				
 			}
 		}
 		reader.close();
 		input.close();
 	}
 	
+	// non blocking call
 	public abstract void sendUpdate(String GUID, JSONObject attrValuePairs, long versionNum);
 	
+	//blocking call
 	public abstract JSONArray sendSearchQuery(String searchQuery);
-	
+	// blocking call
 	public abstract JSONObject sendGetRequest(String GUID);
+	
+	// non blocking call
+	//public abstract void expireSearchQuery(String searchQuery);
 }

@@ -296,6 +296,7 @@ public class SSHClient {
     // another way to do this is to use a know-hosts file
     java.util.Properties props = new Properties();
     props.setProperty("StrictHostKeyChecking", "no");
+    props.put("kex", "diffie-hellman-group1-sha1,diffie-hellman-group14-sha1,diffie-hellman-group-exchange-sha1,diffie-hellman-group-exchange-sha256");
     session.setConfig(props);
     return session;
   }

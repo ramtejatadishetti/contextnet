@@ -11,6 +11,7 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.nio.JSONPacket;
+import edu.umass.cs.nio.MessageNIOTransport;
 import edu.umass.cs.nio.interfaces.IntegerPacketType;
 import edu.umass.cs.protocoltask.ProtocolEvent;
 import edu.umass.cs.protocoltask.ProtocolTask;
@@ -26,10 +27,19 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 {
 	public static final String PACKET_TYPE = JSONPacket.PACKET_TYPE;
 	
+	// these are internal nio fields to get the sender ip and port
+	// sender ip and port when a sender is behind NAT can only be obtained
+	// like this, sender cannot send it in the packet.
+	//private final static String SENDERADDRESS = MessageNIOTransport.SNDR_IP_FIELD;
+	//private final static String SENDERPORT 	 = MessageNIOTransport.SNDR_PORT_FIELD;
+	
 	//public final static String SENDERADDRESS = JSONNIOTransport.DEFAULT_IP_FIELD;
 	//public final static String SENDERPORT = JSONNIOTransport.DEFAULT_PORT_FIELD;
 	
 	public static final String HANDLER_METHOD_PREFIX = "handle";
+	
+	//private String sourceIP;
+	//private int sourcePort;
 	
 	/********************************* End of ContextServicePacket ***********************/
 	public enum PacketType implements IntegerPacketType
@@ -50,7 +60,9 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		VALUEUPDATE_TO_SUBSPACE_REGION_REPLY_MESSAGE(13),
 		QUERY_TRIGGER_MESSAGE(14),
 		UPDATE_TRIGGER_MESSAGE(15),
-		UPDATE_TRIGGER_REPLY_MESSAGE(16);
+		UPDATE_TRIGGER_REPLY_MESSAGE(16),
+		CONFIG_REQUEST(17),
+		CONFIG_REPLY(18);
 		
 		private final int number;
 		
@@ -111,6 +123,10 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 				UpdateTriggerReply.class);
 		typeMap.put(ContextServicePacket.PacketType.REFRESH_TRIGGER,
 				RefreshTrigger.class);
+		typeMap.put(ContextServicePacket.PacketType.CONFIG_REQUEST,
+				ClientConfigRequest.class);
+		typeMap.put(ContextServicePacket.PacketType.CONFIG_REPLY,
+				ClientConfigReply.class);
 
 		
 		for( ContextServicePacket.PacketType type : ContextServicePacket.PacketType.intToType.values() )
@@ -281,8 +297,8 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		}
 		return allTypes;
 	}
-	/************************* End of assertion methods **************************************************/ 
-
+	/************************* End of assertion methods **************************************************/
+	
 	public static void main(String[] args)
 	{
 		ContextServiceLogger.getLogger().fine( ContextServicePacket.PacketType.intToType.get(225).toString() );

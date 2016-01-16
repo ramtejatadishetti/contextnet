@@ -12,7 +12,7 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 
 public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 {
-	private enum Keys {VERSION_NUM, GUID, ATTR_VALUE_PAIR, USER_REQUESTID, SOURCE_IP, SOURCE_PORT};
+	private enum Keys {VERSION_NUM, GUID, ATTR_VALUE_PAIR, USER_REQUESTID, SOURCEIP, SOURCEPORT};
 	
 	private final long versionNum;
 	private final String GUID;
@@ -26,8 +26,8 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 	//private final JSONObject allAttributes; // contains all context attributes for the group update trigger.
 	//private final long updateStartTime;
 	
-	public ValueUpdateFromGNS( NodeIDType initiator, long versionNum, String GUID, JSONObject attrValuePair, 
-			String sourceIP, int sourcePort, long userRequestID )
+	public ValueUpdateFromGNS( NodeIDType initiator, long versionNum, String GUID, JSONObject attrValuePair, long userRequestID
+			, String sourceIP, int sourcePort)
 	{
 		super(initiator, ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS);
 		ContextServiceLogger.getLogger().fine("ValueUpdateFromGNS enter super compl");
@@ -48,9 +48,8 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 		this.GUID = json.getString(Keys.GUID.toString());
 		this.attrValuePair = json.getJSONObject(Keys.ATTR_VALUE_PAIR.toString());
 		this.userRequestID = json.getLong(Keys.USER_REQUESTID.toString());
-		this.sourceIP = json.getString(Keys.SOURCE_IP.toString());
-		this.sourcePort = json.getInt(Keys.SOURCE_PORT.toString());
-		
+		this.sourceIP = json.getString(Keys.SOURCEIP.toString());
+		this.sourcePort = json.getInt(Keys.SOURCEPORT.toString());
 		//this.oldVal = json.getString(Keys.OLDVALUE.toString());
 		//this.newVal = json.getString(Keys.NEWVALUE.toString());
 		//this.allAttributes = json.getJSONObject(Keys.ALL_OTHER_ATTRs.toString());
@@ -64,9 +63,9 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 		json.put(Keys.VERSION_NUM.toString(), this.versionNum);
 		json.put(Keys.GUID.toString(), this.GUID);
 		json.put(Keys.ATTR_VALUE_PAIR.toString(), attrValuePair);
-		json.put(Keys.SOURCE_IP.toString(), this.sourceIP);
-		json.put(Keys.SOURCE_PORT.toString(), this.sourcePort);
 		json.put(Keys.USER_REQUESTID.toString(), this.userRequestID);
+		json.put(Keys.SOURCEIP.toString(), this.sourceIP);
+		json.put(Keys.SOURCEPORT.toString(), this.sourcePort);
 		
 		//json.put(Keys.OLDVALUE.toString(), this.oldVal);
 		//json.put(Keys.NEWVALUE.toString(), this.newVal);
@@ -91,6 +90,12 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 		return this.attrValuePair;
 	}
 	
+	public long getUserRequestID()
+	{
+		return this.userRequestID;
+	}
+	
+	
 	public String getSourceIP()
 	{
 		return this.sourceIP;
@@ -99,11 +104,6 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 	public int getSourcePort()
 	{
 		return this.sourcePort;
-	}
-	
-	public long getUserRequestID()
-	{
-		return this.userRequestID;
 	}
 	
 	/*public String getAttrName()

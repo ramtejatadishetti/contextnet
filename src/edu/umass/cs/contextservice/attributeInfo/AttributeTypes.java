@@ -98,7 +98,8 @@ public class AttributeTypes
 	
 	private static void readAttributeInfo() throws IOException
 	{
-		FileReader freader 	  = new FileReader(ContextServiceConfig.attributeInfoFileName);
+		FileReader freader 	  = new FileReader(ContextServiceConfig.configFileDirectory+
+				"/"+ContextServiceConfig.attributeInfoFileName);
 		BufferedReader reader = new BufferedReader( freader );
 		String line 		  = null;
 		

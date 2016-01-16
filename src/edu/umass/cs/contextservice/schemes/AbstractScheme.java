@@ -303,6 +303,9 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
 			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
 	
+	public abstract GenericMessagingTask<NodeIDType,?>[] handleClientConfigRequest(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
 	
 	public abstract void checkQueryCompletion(QueryInfo<NodeIDType> qinfo);
 }

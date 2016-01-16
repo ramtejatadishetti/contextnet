@@ -5,12 +5,12 @@ import org.json.JSONObject;
 
 public class GetMessage<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 {
-	private enum Keys {SOURCE_IP, SOURCE_PORT, USER_REQ_NUM, GUIDsToGet};
+	private enum Keys {USER_REQ_NUM, GUIDsToGet, SOURCEIP, SOURCEPORT};
 	
-	private final String sourceIP;
-	private final int sourcePort;
 	private final long userReqId;
 	private final String guidToGet;
+	private final String sourceIP;
+	private final int sourcePort;
 	// query is sent so that bulk get only returns GUIDs that satisfy query
 	//private final String query;
 	
@@ -29,8 +29,8 @@ public class GetMessage<NodeIDType> extends BasicContextServicePacket<NodeIDType
 		super(json);
 		this.userReqId  = json.getLong(Keys.USER_REQ_NUM.toString());
 		this.guidToGet  = json.getString(Keys.GUIDsToGet.toString());
-		this.sourceIP   = json.getString(Keys.SOURCE_IP.toString());
-		this.sourcePort = json.getInt(Keys.SOURCE_PORT.toString());
+		this.sourceIP   = json.getString(Keys.SOURCEIP.toString());
+		this.sourcePort = json.getInt(Keys.SOURCEPORT.toString());
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException
@@ -38,8 +38,8 @@ public class GetMessage<NodeIDType> extends BasicContextServicePacket<NodeIDType
 		JSONObject json = super.toJSONObjectImpl();
 		json.put(Keys.USER_REQ_NUM.toString(), this.userReqId);
 		json.put(Keys.GUIDsToGet.toString(), guidToGet);
-		json.put(Keys.SOURCE_IP.toString(), sourceIP);
-		json.put(Keys.SOURCE_PORT.toString(), sourcePort);
+		json.put(Keys.SOURCEIP.toString(), this.sourceIP);
+		json.put(Keys.SOURCEPORT.toString(), this.sourcePort);
 		return json;
 	}
 	

@@ -332,7 +332,7 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 			//currNumAttr  = currNumAttr + 2;
 			
 			QueryMsgFromUser<Integer> qmesgU 
-			= new QueryMsgFromUser<Integer>(myID, query, sourceIP, sourcePort, currID);
+			= new QueryMsgFromUser<Integer>(myID, query, sourceIP, sourcePort, currID, 300000);
 			
 			InetSocketAddress sockAddr = getRandomNodeSock();
 			//ContextServiceLogger.getLogger().fine("Sending query to "+sockAddr);

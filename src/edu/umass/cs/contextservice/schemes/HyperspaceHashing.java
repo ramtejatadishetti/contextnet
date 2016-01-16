@@ -3,6 +3,7 @@ package edu.umass.cs.contextservice.schemes;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -30,6 +31,8 @@ import edu.umass.cs.contextservice.gns.GNSCalls;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
+import edu.umass.cs.contextservice.messages.ClientConfigReply;
+import edu.umass.cs.contextservice.messages.ClientConfigRequest;
 import edu.umass.cs.contextservice.messages.ContextServicePacket.PacketType;
 import edu.umass.cs.contextservice.messages.GetMessage;
 import edu.umass.cs.contextservice.messages.GetReplyMessage;
@@ -216,6 +219,14 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	}
 	
 	@Override
+	public GenericMessagingTask<NodeIDType, ?>[] handleClientConfigRequest(ProtocolEvent<PacketType, String> event,
+			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+	{
+		nodeES.submit(new HandleEventThread(event));
+		return null;
+	}
+	
+	@Override
 	public NodeIDType getResponsibleNodeId(String AttrName) 
 	{
 		int numNodes = this.allNodeIDs.size();
@@ -230,7 +241,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	@SuppressWarnings("unchecked")
 	private void readSubspaceInfo() throws NumberFormatException, IOException
 	{
-		FileReader freader 	  = new FileReader(ContextServiceConfig.subspaceInfoFileName);
+		FileReader freader 	  = new FileReader(
+				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.subspaceInfoFileName);
 		BufferedReader reader = new BufferedReader( freader );
 		String line 		  = null;
 		
@@ -772,6 +784,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		// guid stored in primary subspace.
 		if( this.getMyID() != respNodeId )
 		{
+			ContextServiceLogger.getLogger().fine("not primary node case souceIp "+valueUpdateFromGNS.getSourceIP()
+			+" sourcePort "+valueUpdateFromGNS.getSourcePort());
 			try
 			{
 				this.messenger.sendToID( respNodeId, valueUpdateFromGNS.toJSONObject() );
@@ -785,6 +799,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 		else
 		{
+			ContextServiceLogger.getLogger().fine("primary node case souceIp "+valueUpdateFromGNS.getSourceIP()
+			+" sourcePort "+valueUpdateFromGNS.getSourcePort());
+			
 			UpdateInfo<NodeIDType> updReq  	= null;
 			long requestID 					= -1;
 			// if no outstanding request then it is set to true
@@ -1298,6 +1315,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ValueUpdateFromGNSReply<NodeIDType> valueUpdateFromGNSReply = new ValueUpdateFromGNSReply<NodeIDType>
 			(this.getMyID(), updInfo.getValueUpdateFromGNS().getVersionNum(), updInfo.getValueUpdateFromGNS().getUserRequestID());
 			
+			ContextServiceLogger.getLogger().fine("reply IP Port "+updInfo.getValueUpdateFromGNS().getSourceIP()
+					+":"+updInfo.getValueUpdateFromGNS().getSourcePort());
 			try
 			{
 				this.messenger.sendToAddress( new InetSocketAddress(updInfo.getValueUpdateFromGNS().getSourceIP()
@@ -1364,11 +1383,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
-	
-	public void processUpdateTriggerReply(
+	private void processUpdateTriggerReply(
 			UpdateTriggerReply<NodeIDType> updateTriggerReply) 
 	{
-		//private enum Keys {REQUESTID, SUBSPACENUM, ADDED_GROUPS, REMOVED_GROUPS};
 		long requestID              	= updateTriggerReply.getRequestId();
 		//int subspaceNum             	= updateTriggerReply.getSubspaceNum();
 		JSONArray toBeAddedGroups  		= updateTriggerReply.getToBeAddedGroups();
@@ -1417,7 +1434,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				}
 			}
 			
-			
 			iter = toBeAddedGroupsMap.keySet().iterator();
 			
 			while( iter.hasNext() )
@@ -1425,7 +1441,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				String groupGUID = iter.next();
 				JSONObject groupInfo = toBeAddedGroupsMap.get(groupGUID);
 				
-				try 
+				try
 				{
 					RefreshTrigger<NodeIDType> refTrig = new RefreshTrigger<NodeIDType>
 					(this.getMyID(), groupInfo.getString(HyperspaceMySQLDB.userQuery), groupGUID, updInfo.getValueUpdateFromGNS().getVersionNum(),
@@ -1450,12 +1466,50 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				{
 					e.printStackTrace();
 				}
-			}		
+			}
+		}
+	}
+	
+	private void processClientConfigRequest(ClientConfigRequest<NodeIDType> clientConfigRequest)
+	{
+		JSONArray nodeConfigArray 		= new JSONArray();
+		JSONArray attributeArray  		= new JSONArray();
+		
+		Iterator<NodeIDType> nodeIDIter = this.allNodeIDs.iterator();
+		
+		while( nodeIDIter.hasNext() )
+		{
+			NodeIDType nodeId = nodeIDIter.next();
+			InetAddress nodeAddress = this.messenger.getNodeConfig().getNodeAddress(nodeId);
+			int nodePort = this.messenger.getNodeConfig().getNodePort(nodeId);
+			String ipPortString = nodeAddress.getHostAddress()+":"+nodePort;
+			nodeConfigArray.put(ipPortString);
+		}
+		
+		Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
+		
+		while(attrIter.hasNext())
+		{
+			String attrName = attrIter.next();
+			attributeArray.put(attrName);
+		}
+		
+		InetSocketAddress sourceSocketAddr = new InetSocketAddress(clientConfigRequest.getSourceIP(),
+				clientConfigRequest.getSourcePort());
+		ClientConfigReply<NodeIDType> configReply 
+					= new ClientConfigReply<NodeIDType>(this.getMyID(), nodeConfigArray,
+							attributeArray);
+		try {
+			this.messenger.sendToAddress(sourceSocketAddr, configReply.toJSONObject());
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (JSONException e) {
+			e.printStackTrace();
 		}
 	}
 	
 	/**
-	 * returns subspace number of the maximum overlapping
+	 * Returns subspace number of the maximum overlapping
 	 * subspace. Used in processing search query.
 	 * @return
 	 */
@@ -1738,6 +1792,18 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 								+ updateTriggerReply);
 						processUpdateTriggerReply(updateTriggerReply);
 						
+						break;
+					}
+					
+					case CONFIG_REQUEST:
+					{
+						@SuppressWarnings("unchecked")
+						ClientConfigRequest<NodeIDType> configRequest 
+									= (ClientConfigRequest<NodeIDType>)event;
+						
+						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " + event.getType() + ": " 
+								+ configRequest);
+						processClientConfigRequest(configRequest);
 						break;
 					}
 					default:

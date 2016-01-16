@@ -7,6 +7,15 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
 import edu.umass.cs.contextservice.ContextServiceNode;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
@@ -22,10 +31,7 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 {
 	public static final int HYPERSPACE_HASHING							= 1;
 	
-	
 	private static CSNodeConfig<Integer> csNodeConfig					= null;
-	
-	//private static DatagramSocket server_socket;
 	
 	private static StartContextServiceNode[] nodes						= null;
 	
@@ -35,37 +41,12 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 		super(id, nc);
 	}
 	
-	public static void main(String[] args) throws NumberFormatException, UnknownHostException, IOException
-	{
-		Integer myID = Integer.parseInt(args[0]);
-		//int schemeType = Integer.parseInt(args[1]);
-		//int numAttr = Integer.parseInt(args[2]);
-		//ContextServiceConfig.NUM_ATTRIBUTES = numAttr;
-		
-		
-		ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERSPACE_HASHING;
-		
-		
-		//server_socket = new DatagramSocket(12345, InetAddress.getByName("ananas.cs.umass.edu"));
-		//server_socket = new DatagramSocket(12345, InetAddress.getByName("localhost"));
-		/*ReconfigurableSampleNodeConfig nc = new ReconfigurableSampleNodeConfig();
-		nc.localSetup(TestConfig.getNodes());*/
-		readNodeInfo();
-		
-		ContextServiceLogger.getLogger().fine("Number of nodes in the system "+csNodeConfig.getNodeIDs().size());
-		
-		nodes = new StartContextServiceNode[csNodeConfig.getNodeIDs().size()];
-		
-		
-		ContextServiceLogger.getLogger().fine("Starting context service");
-		new Thread(new StartNode(myID, myID)).start();
-	}
-	
 	private static void readNodeInfo() throws NumberFormatException, UnknownHostException, IOException
 	{
 		csNodeConfig = new CSNodeConfig<Integer>();
 		
-		BufferedReader reader = new BufferedReader(new FileReader(ContextServiceConfig.nodeSetupFileName));
+		BufferedReader reader = new BufferedReader(new FileReader(
+				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.nodeSetupFileName));
 		String line = null;
 		while ((line = reader.readLine()) != null)
 		{
@@ -103,7 +84,6 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 		}
 	}
 	
-	
 	private static class NumMessagesPerSec implements Runnable
 	{
 		private final StartContextServiceNode csObj;
@@ -138,174 +118,64 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 			}
 		}
 	}
-}
-
-
-//private void fillDummyGUIDValues() throws IOException
-//{	
-//	ContextServiceLogger.getLogger().fine("fillDummyGUIDValues");
-//	
-//	BufferedReader reader = new BufferedReader(new FileReader("dummyValues.txt"));
-//	String line = null;
-//	while ( (line = reader.readLine()) != null )
-//	{
-//		String [] parsed = line.split(" ");
-//		String GUID = parsed[0];
-//		for(int i=1;i<parsed.length; i++)
-//		{
-//			String attName = ContextServiceConfig.CONTEXT_ATTR_PREFIX+"ATT"+(i-1);
-//			double attrValue = Double.parseDouble(parsed[i]);
-//			ValueUpdateMsgToMetadataNode<Integer> valueUpdMsgToMetanode = 
-//					new ValueUpdateMsgToMetadataNode<Integer>(this.getContextService().getMyID(), 0, GUID, attName, attrValue, attrValue, null);
-//			
-//			Integer respMetadataNodeId = this.getContextService().getResponsibleNodeId(attName);
-//			//nioTransport.sendToID(respMetadataNodeId, valueMeta.getJSONMessage());
-//			
-//			GenericMessagingTask<Integer, ValueUpdateMsgToMetadataNode<Integer>> mtask = 
-//					new GenericMessagingTask<Integer, ValueUpdateMsgToMetadataNode<Integer>>(respMetadataNodeId, 
-//							valueUpdMsgToMetanode);
-//			
-//			// send the message 
-//			try
-//			{
-//				this.getContextService().getJSONMessenger().send(mtask);
-//			} catch (JSONException e)
-//			{
-//				e.printStackTrace();
-//			}
-//		}
-//	}
-//}
-
-
-/*private void enterQueries()
-{	
-	while (true)
+	
+	public static void main(String[] args) throws NumberFormatException, UnknownHostException, IOException, ParseException
 	{
-		  //  prompt the user to enter their name
-	      System.out.print("\n\n\nEnter Queries here: ");
-	 
-	      //  open up standard input
-	      BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-	 
-	      String query = null;
-	 
-	      //  read the username from the command-line; need to use try/catch with the
-	      //  readLine() method
-	      
-	      try 
-	      {
-			query = br.readLine();
-	      } catch (IOException e1) 
-	      {
-			e1.printStackTrace();
-	      }
-	      
-	      QueryMsgFromUser<Integer> queryMsgFromUser = 
-	        	new QueryMsgFromUser<Integer>(this.getContextService().getMyID(), query);
-	      // nioTransport.sendToID(0, queryMesg.getJSONMessage());
-	         
-	      GenericMessagingTask<Integer, QueryMsgFromUser<Integer>> mtask = 
-	    		  new GenericMessagingTask<Integer, QueryMsgFromUser<Integer>>
-	      (this.getContextService().getMyID(), queryMsgFromUser);
-				
-	      // send the message 
-	      try 
-	      {
-	    	  this.getContextService().getJSONMessenger().send(mtask);
-	      } catch (JSONException e) 
-	      {
-	    	  e.printStackTrace();
-	      } catch (IOException e) 
-	      {
-	    	  e.printStackTrace();
-	      }
-	      //ContextServiceLogger.getLogger().fine("Thanks for the name, " + userName);
-   }
-}
+		CommandLine parser = initializeOptions(args);
+		if (parser.hasOption("help") || args.length == 0) {
+			printUsage();
+	        System.exit(1);
+	    }
+		
+		String nodeId = parser.getOptionValue("id");
+		String csConfDir = parser.getOptionValue("csConfDir");
+		
+		System.out.println("StartContextServiceNode starting with nodeId "
+				+nodeId+" csConfDir "+csConfDir);
+		
+		assert(nodeId != null);
+		assert(csConfDir != null);
+		
+		ContextServiceConfig.configFileDirectory = csConfDir;
+		
+		Integer myID = Integer.parseInt(nodeId);
+		
+		ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERSPACE_HASHING;
+		
+		readNodeInfo();
+		
+		ContextServiceLogger.getLogger().fine("Number of nodes in the system "+csNodeConfig.getNodeIDs().size());
+		
+		nodes = new StartContextServiceNode[csNodeConfig.getNodeIDs().size()];
+		
+		ContextServiceLogger.getLogger().fine("Starting context service");
+		new Thread(new StartNode(myID, myID)).start();
+	}
 
-private void enterAndMonitorQuery()
-{	
-	while (true)
-	{
-		  //  prompt the user to enter their name
-	      System.out.print("\n\n\nEnter Queries here: ");
-	 
-	      //  open up standard input
-	      BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-	 
-	      String query = null;
-	 
-	      //  read the username from the command-line; need to use try/catch with the
-	      //  readLine() method
-	      
-	      try
-	      {
-			query = br.readLine();
-	      } catch (IOException e1) 
-	      {
-			e1.printStackTrace();
-	      }
-	      QueryMsgFromUser<Integer> queryMsgFromUser = 
-	        	new QueryMsgFromUser<Integer>(this.getContextService().getMyID(), query);
-	      // nioTransport.sendToID(0, queryMesg.getJSONMessage());
-	         
-	      GenericMessagingTask<Integer, QueryMsgFromUser<Integer>> mtask = 
-	    		  new GenericMessagingTask<Integer, QueryMsgFromUser<Integer>>
-	      (this.getContextService().getMyID(), queryMsgFromUser);
-				
-	      // send the message 
-	      try 
-	      {
-	    	  this.getContextService().getJSONMessenger().send(mtask);
-	      } catch (JSONException e) 
-	      {
-	    	  e.printStackTrace();
-	      } catch (IOException e) 
-	      {
-			e.printStackTrace();
-	      }
+	//COMMAND LINE STUFF
+	private static HelpFormatter formatter = new HelpFormatter();
+	private static Options commandLineOptions;
+
+	private static CommandLine initializeOptions(String[] args) throws ParseException {
+		Option help = new Option("help", "Prints Usage");
+		Option nodeid = OptionBuilder.withArgName("node id").hasArg()
+	         .withDescription("node id")
+	         .create("id");
+		Option csConfDir = OptionBuilder.withArgName("cs Conf directory").hasArg()
+	         .withDescription("conf directory path relative to top level dir")
+	         .create("csConfDir");
+
+		commandLineOptions = new Options();
+		commandLineOptions.addOption(nodeid);
+		commandLineOptions.addOption(csConfDir);
+		commandLineOptions.addOption(help);
+		
+		CommandLineParser parser = new GnuParser();
+		return parser.parse(commandLineOptions, args);
 	}
 	
-	//ContextServiceLogger.getLogger().fine("Thanks for the name, " + userName);
-	//GNSCalls.clearNotificationSetOfAGroup(query);
-	//GNSCalls.updateNotificationSetOfAGroup((InetSocketAddress)server_socket.getLocalSocketAddress(), query);
-	//recvNotification(query);
-}*/
-
-
-/*public static void recvNotification(String query)
-{
-   byte[] receive_data = new byte[1024];
-   
-   ContextServiceLogger.getLogger().fine ("UDPServer Waiting for client");
-   while(true)
-   {
-	   DatagramPacket receive_packet = new DatagramPacket(receive_data,
-                                        receive_data.length);
-	   try
-	   {
-		   server_socket.receive(receive_packet);
-	   } catch (IOException e) 
-	   {
-		   e.printStackTrace();
-	   }
-       
-	   String data = new String(receive_packet.getData(),0, 0
-                                     ,receive_packet.getLength());
-            
-       InetAddress IPAddress = receive_packet.getAddress();
-             
-       ContextServiceLogger.getLogger().fine("\n\n"+data+"\n\n" );
-       
-       JSONArray res = GNSCalls.readGroupMembers(query);
-	   if(res!=null)
-	   {
-	   		ContextServiceLogger.getLogger().fine("\n\n query res "+ res);
-	   }
-	   else
-	   {
-	   		ContextServiceLogger.getLogger().fine("\n\n query res null" );
-	   }
+	private static void printUsage() 
+	{
+		formatter.printHelp("java -cp contextService.jar edu.umass.cs.contextservice.nodeApp.StartContextServiceNode <options>", commandLineOptions);
 	}
-}*/
+}

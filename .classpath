@@ -7,9 +7,7 @@
 	<classpathentry kind="lib" path="libs/gigapaxos-1.0.jar"/>
 	<classpathentry kind="lib" path="libs/GNSClient.jar"/>
 	<classpathentry kind="lib" path="libs/mysql-connector-java-5.1.36-bin.jar"/>
-	<classpathentry kind="lib" path="libs/org.hyperdex.client-1.8.1.jar"/>
-	<classpathentry kind="lib" path="libs/zql.jar"/>
-	<classpathentry kind="lib" path="release/context-client-GNS.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk1.8.0_25"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

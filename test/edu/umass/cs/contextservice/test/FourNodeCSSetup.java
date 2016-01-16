@@ -50,6 +50,8 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 	
 	public static void main(String[] args) throws NumberFormatException, UnknownHostException, IOException
 	{
+		ContextServiceConfig.configFileDirectory 
+		= "/home/adipc/Documents/MobilityFirstGitHub/ContextNet/contextnet/conf/singleNodeConf/contextServiceConf";
 		ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERSPACE_HASHING;		
 		
 		readNodeInfo();
@@ -91,7 +93,8 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 	{	
 		csNodeConfig = new CSNodeConfig<Integer>();
 		
-		BufferedReader reader = new BufferedReader(new FileReader(ContextServiceConfig.nodeSetupFileName));
+		BufferedReader reader = new BufferedReader(new FileReader(
+				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.nodeSetupFileName));
 		String line = null;
 		while ((line = reader.readLine()) != null)
 		{
@@ -251,7 +254,7 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 			try
 			{
 				GetMessage<Integer> getMessageObj = 
-						new GetMessage<Integer>(myID, currID, myGUID,  sourceIP, sourcePort );
+						new GetMessage<Integer>(myID, currID, myGUID, sourceIP, sourcePort);
 				
 				niot.sendToAddress(getRandomNodeSock(), getMessageObj.toJSONObject());
 			} catch (JSONException e)
@@ -291,7 +294,7 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 				
 				
 				ValueUpdateFromGNS<Integer> valUpdFromGNS = 
-						new ValueUpdateFromGNS<Integer>(myID, currID, myGUID, attrValuePair, sourceIP, sourcePort, currID );
+						new ValueUpdateFromGNS<Integer>(myID, currID, myGUID, attrValuePair, currID, sourceIP, sourcePort );
 				
 				niot.sendToAddress(getRandomNodeSock(), valUpdFromGNS.toJSONObject());
 			} catch (JSONException e)
@@ -319,7 +322,7 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 			//currNumAttr = currNumAttr + 2;
 			
 			QueryMsgFromUser<Integer> qmesgU 
-			= new QueryMsgFromUser<Integer>(myID, query, sourceIP, sourcePort, currID);
+				= new QueryMsgFromUser<Integer>(myID, query, currID, 300000, sourceIP, sourcePort);
 			
 			InetSocketAddress sockAddr = getRandomNodeSock();
 			//ContextServiceLogger.getLogger().fine("Sending query to "+sockAddr);

@@ -72,7 +72,7 @@
 				<include name="conf/contextServiceConf/contextServiceNodeSetup.txt" />
 				<include name="conf/contextServiceConf/attributeInfo.txt" />
 	     </fileset>
-	  <zipgroupfileset dir="${lib.dir}/" includes="combinatoricslib-2.1.jar"/>
+	  <zipgroupfileset dir="${lib.dir}/" includes="combinatoricslib-2.1.jar, commons-cli-1.1.jar, com.jcraft.jsch-all-1.0.6.release.jar"/>
 	  <manifest>
 	    <attribute name="Built-By" value="Aditya Yadav" />
 	    <!-- Information about the program itself -->
