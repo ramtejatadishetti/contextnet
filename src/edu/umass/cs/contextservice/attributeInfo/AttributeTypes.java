@@ -14,6 +14,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 
 /**
@@ -226,11 +227,11 @@ public class AttributeTypes
 		{
 			case AttributeTypes.DoubleType:
 			{
+				
 				double minValD = Double.parseDouble(minValue);
 				double maxValD = Double.parseDouble(maxValue);
 				
-				double numElemementsPerPartition = 
-						Math.floor((maxValD - minValD)/numPartitions);
+				double numElemementsPerPartition = (maxValD - minValD)/numPartitions;
 				double currLower = minValD;
 				double currUpper = minValD;
 				
@@ -253,7 +254,7 @@ public class AttributeTypes
 				int maxValI = Integer.parseInt(maxValue);
 				
 				int numElemementsPerPartition = 
-							(int)Math.floor((maxValI - minValI)/numPartitions);
+							(int)((maxValI - minValI)/numPartitions);
 				int currLower = minValI;
 				int currUpper = minValI;
 				
@@ -275,8 +276,7 @@ public class AttributeTypes
 				long minValL = Long.parseLong(minValue);
 				long maxValL = Long.parseLong(maxValue);
 				
-				long numElemementsPerPartition = (long)
-						Math.floor((maxValL - minValL)/numPartitions);
+				long numElemementsPerPartition = (long)((maxValL - minValL)/numPartitions);
 				long currLower = minValL;
 				long currUpper = minValL;
 				
