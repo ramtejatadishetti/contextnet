@@ -358,7 +358,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		String userIP;
 		int userPort;
 		
-		
 		query   = queryMsgFromUser.getQuery();
 		userReqID = queryMsgFromUser.getUserReqNum();
 		userIP  = queryMsgFromUser.getSourceIP();
@@ -667,7 +666,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	
 	private void processUpdateTriggerMessage(UpdateTriggerMessage<NodeIDType> updateTriggerMessage)
 	{
-		//private enum Keys {REQUESTID, SUBSPACENUM, UPDATE_VALUE, OLD_NEW_VAL, HASHCODE};
 		long requestID  = updateTriggerMessage.getRequestId();
 		int subspaceNum = updateTriggerMessage.getSubspaceNum();
 		JSONObject oldValJSON = updateTriggerMessage.getOldUpdateValPair();
@@ -710,7 +708,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					}	
 				}
 				
-				
 				boolean newSatisfied = true;
 				
 				attrIter = pqcMap.keySet().iterator();
@@ -740,7 +737,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					}
 				}
 				
-				
 				// trigger needs to be snet when oldval is satisfied but not new value
 				// or old not satisfied but new value is satisfied.
 				
@@ -752,11 +748,14 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				{
 					toBeAdded.put(currGroup);
 				}
-			} catch (JSONException e) 
+			} catch (JSONException e)
 			{
 				e.printStackTrace();
 			}
 		}
+		
+		ContextServiceLogger.getLogger().fine("toBeRemoved size "+toBeRemoved.length()
+			+" toBeAdded size "+toBeAdded.length());
 		
 		UpdateTriggerReply<NodeIDType> updTriggerRep = 
 				new UpdateTriggerReply<NodeIDType>( this.getMyID(), requestID, subspaceNum, 
@@ -1119,7 +1118,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				
 				/*JSONObject oldUpdateValPair = new JSONObject();
 				JSONObject newUpdateValPair = new JSONObject();
-				
 				try
 				{
 					oldUpdateValPair.put(currAttrName, oldValue);
@@ -1131,6 +1129,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				
 				if( oldOverlappingRegion.size() != 1 )
 				{
+					// it should fall in exactly one region/node
 					assert(false);
 				}
 				else
@@ -1160,7 +1159,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				
 				HashMap<Integer, OverlappingInfoClass> newOverlappingRegion = 
 						this.hyperspaceDB.getOverlappingRegionsInSubspace(subspaceNum, newTriggerComponents);
-			
+				
+				
 				if( newOverlappingRegion.size() != 1 )
 				{
 					assert(false);
@@ -1409,12 +1409,16 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				
 				try 
 				{
+					String queryString = groupInfo.getString(HyperspaceMySQLDB.userQuery);
 					RefreshTrigger<NodeIDType> refTrig = new RefreshTrigger<NodeIDType>
-					(this.getMyID(), groupInfo.getString(HyperspaceMySQLDB.userQuery), groupGUID, updInfo.getValueUpdateFromGNS().getVersionNum(),
+					(this.getMyID(), queryString, groupGUID, updInfo.getValueUpdateFromGNS().getVersionNum(),
 							updInfo.getValueUpdateFromGNS().getGUID(), RefreshTrigger.REMOVE);
 					
 					String userIP = groupInfo.getString(HyperspaceMySQLDB.userIP);
-					int userPort = groupInfo.getInt(HyperspaceMySQLDB.userPort);
+					int userPort  = groupInfo.getInt(HyperspaceMySQLDB.userPort);
+					
+					ContextServiceLogger.getLogger().fine("processUpdateTriggerReply removed grps queryString "
+							+queryString+" userIP "+userIP+" userPort "+userPort);
 					
 					try
 					{
@@ -1427,7 +1431,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					{
 						e.printStackTrace();
 					}
-
 				} catch (JSONException e) 
 				{
 					e.printStackTrace();
@@ -1443,12 +1446,18 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				
 				try
 				{
+					String queryString = groupInfo.getString(HyperspaceMySQLDB.userQuery);
+					
 					RefreshTrigger<NodeIDType> refTrig = new RefreshTrigger<NodeIDType>
-					(this.getMyID(), groupInfo.getString(HyperspaceMySQLDB.userQuery), groupGUID, updInfo.getValueUpdateFromGNS().getVersionNum(),
+					(this.getMyID(), queryString, groupGUID, updInfo.getValueUpdateFromGNS().getVersionNum(),
 							updInfo.getValueUpdateFromGNS().getGUID(), RefreshTrigger.ADD);
 					
 					String userIP = groupInfo.getString(HyperspaceMySQLDB.userIP);
 					int userPort = groupInfo.getInt(HyperspaceMySQLDB.userPort);
+					
+					
+					ContextServiceLogger.getLogger().fine("processUpdateTriggerReply added grps queryString "
+							+queryString+" userIP "+userIP+" userPort "+userPort);
 					
 					try
 					{

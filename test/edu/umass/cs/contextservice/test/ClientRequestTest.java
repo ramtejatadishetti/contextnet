@@ -18,7 +18,6 @@ public class ClientRequestTest
 	public static final String latitudeAttrName								= "geoLocationCurrentLat";
 	public static final String longitudeAttrName							= "geoLocationCurrentLong";
 	
-	
 	public static final int UPDATE											= 1;
 	public static final int GET												= 2;
 	public static final int SEARCH											= 3;

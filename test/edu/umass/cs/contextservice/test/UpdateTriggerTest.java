@@ -34,15 +34,15 @@ import edu.umass.cs.nio.JSONNIOTransport;
 import edu.umass.cs.nio.interfaces.NodeConfig;
 import edu.umass.cs.nio.interfaces.PacketDemultiplexer;
 
-public class FourNodeCSSetup extends ContextServiceNode<Integer>
+public class UpdateTriggerTest extends ContextServiceNode<Integer>
 {
 	public static final int HYPERSPACE_HASHING							= 1;
 	
 	private static CSNodeConfig<Integer> csNodeConfig					= null;
 	
-	private static FourNodeCSSetup[] nodes								= null;
+	private static UpdateTriggerTest[] nodes							= null;
 	
-	public FourNodeCSSetup(Integer id, NodeConfig<Integer> nc)
+	public UpdateTriggerTest(Integer id, NodeConfig<Integer> nc)
 			throws IOException
 	{
 		super(id, nc);
@@ -58,7 +58,7 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 		
 		System.out.println("Number of nodes in the system "+csNodeConfig.getNodeIDs().size());
 		
-		nodes = new FourNodeCSSetup[csNodeConfig.getNodeIDs().size()];
+		nodes = new UpdateTriggerTest[csNodeConfig.getNodeIDs().size()];
 		
 		System.out.println("Starting context service 0");
 		new Thread(new StartNode(0, 0)).start();
@@ -79,11 +79,11 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 		{
 			e.printStackTrace();
 		}
-		
+		System.out.println("Starting requests ");
 		try {
 			RequestClass.startRequests();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
+		} catch (Exception e) 
+		{
 			e.printStackTrace();
 		}
 	}
@@ -123,7 +123,7 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 		{
 			try
 			{
-				nodes[myIndex] = new FourNodeCSSetup(nodeID, csNodeConfig);
+				nodes[myIndex] = new UpdateTriggerTest(nodeID, csNodeConfig);
 			} catch (IOException e)
 			{
 				e.printStackTrace();
@@ -139,7 +139,7 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 		public static final int GET												= 2;
 		public static final int SEARCH											= 3;
 		
-		public static int NUMGUIDs												= 100;
+		public static int NUMGUIDs												= 1;
 		
 		private final JSONNIOTransport<Integer> niot;
 		private final JSONMessenger<Integer> messenger;
@@ -157,6 +157,10 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 		
 		private final int myID;
 		
+		// should be false if the update causes group removal
+		// true if update causes group insertion
+		private static boolean checkForTrigger 									= true;
+		
 		public static void startRequests() throws Exception
 		{
 			writerName = "writer1";
@@ -164,11 +168,27 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 			RequestClass basicObj = new RequestClass();
 			sendAMessage(basicObj, SEARCH);
 			
-			sendAMessage(basicObj, UPDATE);
+			Thread.sleep(1000);
 			
-			sendAMessage(basicObj, GET);
+			// expecting removal
+			checkForTrigger = true;
+			double latitude  = 35.00;
+			double longitude = -95.00;
+			//sendAMessage(basicObj, UPDATE);
+			requestID++;
+			basicObj.sendUpdate(requestID, 0, latitude, longitude);
 			
-			sendAMessage(basicObj, SEARCH);
+			Thread.sleep(10000);
+			
+			// expecting removal
+			checkForTrigger = false;
+			latitude  = 25.00;
+			longitude = -85.00;
+			//sendAMessage(basicObj, UPDATE);
+			requestID++;
+			basicObj.sendUpdate(requestID, 0, latitude, longitude);
+			//sendAMessage(basicObj, GET);
+			//sendAMessage(basicObj, SEARCH);
 		}
 		
 		private static void sendAMessage(RequestClass basicObj, int reqType)
@@ -184,11 +204,14 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 				for(int i=0; i< NUMGUIDs; i++)
 				{
 					requestID++;
-					basicObj.sendUpdate(requestID, i);
-					try 
+					double latitude  = 35.00;
+					double longitude = -95.00;
+					
+					basicObj.sendUpdate(requestID, i, latitude, longitude);
+					try
 					{
 						Thread.sleep(100);
-					} catch (InterruptedException e) 
+					} catch (InterruptedException e)
 					{
 						e.printStackTrace();
 					}
@@ -200,10 +223,10 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 				{
 					requestID++;
 					basicObj.sendGet(requestID, i);
-					try 
+					try
 					{
 						Thread.sleep(100);
-					} catch (InterruptedException e) 
+					} catch (InterruptedException e)
 					{
 						e.printStackTrace();
 					}
@@ -274,19 +297,20 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 		/**
 		 * This function sends update
 		 */
-		public void sendUpdate(long currID, int guidNum)
-		{	
+		public void sendUpdate(long currID, int guidNum, double latitude, double longitude)
+		{
 			String memberAlias = CLIENT_GUID_PREFIX+myID;
 			String realAlias = memberAlias+guidNum;
 			String myGUID = getSHA1(realAlias);
-			Random valRand = new Random();
-			double latitude = (valRand.nextDouble()-0.5)*180;
-			double longitude = (valRand.nextDouble()-0.5)*360;
-			if(currID%2 == 0)
+			//Random valRand = new Random();
+//			double latitude = (valRand.nextDouble()-0.5)*180;
+//			double longitude = (valRand.nextDouble()-0.5)*360;
+			
+			/*if(currID%2 == 0)
 			{
 				latitude = 42.466;
 				longitude = -72.58;
-			}
+			}*/
 			
 			try
 			{
@@ -316,9 +340,11 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 		 */
 		public void sendQuery(long currID)
 		{
-			//String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE latitude >= -90 AND longitude <= 180";
-			JSONObject geoJSONObject = getGeoJSON();
-			String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE GeojsonOverlap(geoLocationCurrentLat, geoLocationCurrentLong, "+geoJSONObject.toString()+")";
+			String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE "
+					+ "geoLocationCurrentLat >= 30 AND geoLocationCurrentLat <= 40 "
+					+ "AND geoLocationCurrentLong <= -90 AND geoLocationCurrentLong >= -100";
+			//JSONObject geoJSONObject = getGeoJSON();
+			//String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE GeojsonOverlap(geoLocationCurrentLat, geoLocationCurrentLong, "+geoJSONObject.toString()+")";
 			
 			//eservice.execute(new SendingRequest(currID, SendingRequest.QUERY, query, currNumAttr, "", -1, -1, "") );
 			//currNumAttr = currNumAttr + 2;
@@ -408,7 +434,25 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 				long reqID = qmur.getVersionNum();
 				
 				System.out.println("RefreshTrigger completion requestID "
-				+reqID+" time "+System.currentTimeMillis()+" "+qmur);
+						+reqID+" time "+System.currentTimeMillis()+" "+qmur);
+				
+				if(qmur.getAddRemove() == RefreshTrigger.ADD)
+				{
+					// expecting removal but trigger recvd for addition
+					if(!checkForTrigger)
+					{
+						assert(false);
+					}
+				}
+				
+				if(qmur.getAddRemove() == RefreshTrigger.REMOVE)
+				{
+					// expecting addition but trigger recvd for removal
+					if(checkForTrigger)
+					{
+						assert(false);
+					}
+				}
 			} catch (JSONException e)
 			{
 				e.printStackTrace();

@@ -8,4 +8,5 @@ public class UpdateStorage<NodeIDType>
 	public long requestID;
 	public ValueUpdateFromGNS<NodeIDType> valUpdFromGNS;
 	public ValueUpdateFromGNSReply<NodeIDType> valUpdFromGNSReply;
+	public boolean blocking;
 }

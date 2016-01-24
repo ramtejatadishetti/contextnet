@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -44,7 +45,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 	
 	@Override
-	public void sendUpdate(String GUID, JSONObject gnsAttrValuePairs, long versionNum)
+	public void sendUpdate(String GUID, JSONObject gnsAttrValuePairs, long versionNum, boolean blocking)
 	{
 		ContextServiceLogger.getLogger().fine("ContextClient sendUpdate enter "+GUID+" json "+
 				gnsAttrValuePairs);
@@ -62,10 +63,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			while( gnsIter.hasNext() )
 			{
 				String gnsAttrName = (String) gnsIter.next();
-				//ContextServiceLogger.getLogger().fine("ContextClient gnsAttrName "+gnsAttrName+" currId "+
-				//		currId);
-				// this attribute is context attribute,
-				// indexed in context service
 				if( attributeHashMap.containsKey(gnsAttrName) )
 				{
 					csAttrValuePairs.put(gnsAttrName, gnsAttrValuePairs.get(gnsAttrName));
@@ -77,25 +74,17 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				return;
 			}
 			
-			//ContextServiceLogger.getLogger().fine("ContextClient sendUpdate enter "+GUID+" processed json "+
-			//		csAttrValuePairs);
 			long reqeustID = currId;
-			
-			//JSONObject valUpdateJSON = createValueUpdateJSON(versionNum, GUID, 
-			//		csAttrValuePairs, sourceIP, sourcePort, reqeustID);
-			//System.out.println("ValueUpdateFromGNS this.nodeid "+this.nodeid);
 			
 			ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = 
 					new ValueUpdateFromGNS<NodeIDType>(null, versionNum, GUID, csAttrValuePairs, reqeustID, sourceIP, sourcePort );
-			
-			//System.out.println("ValueUpdateFromGNS after");
-			//ContextServiceLogger.getLogger().fine("ContextClient sendUpdate valUpdFromGNS "+valUpdFromGNS);
 			
 			UpdateStorage<NodeIDType> updateQ = new UpdateStorage<NodeIDType>();
 			updateQ.requestID = currId;
 			//updateQ.valUpdFromGNS = valUpdFromGNS;
 			updateQ.valUpdFromGNS = valUpdFromGNS;
 			updateQ.valUpdFromGNSReply = null;
+			updateQ.blocking = blocking;
 			
 			this.pendingUpdate.put(currId, updateQ);
 			
@@ -105,6 +94,24 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 					valUpdFromGNS);		
 			//niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
 			niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
+			
+			if(blocking)
+			{
+				synchronized( updateQ )
+				{
+					while( updateQ.valUpdFromGNSReply == null )
+					{
+						try 
+						{
+							updateQ.wait();
+						} catch (InterruptedException e) 
+						{
+							e.printStackTrace();
+						}
+					}
+				}
+				pendingUpdate.remove(currId);
+			}
 		} catch (JSONException e)
 		{
 			e.printStackTrace();
@@ -123,13 +130,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 	
 	@Override
-	public JSONArray sendSearchQuery(String searchQuery) 
+	public void sendSearchQuery(String searchQuery, 
+			ConcurrentHashMap<String, Boolean> resultGUIDMap, long expiryTime)
 	{
-		//JSONObject geoJSONObject = getGeoJSON();
-		//String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE GeojsonOverlap("+geoJSONObject.toString()+")";
-		//eservice.execute(new SendingRequest(currID, SendingRequest.QUERY, query, currNumAttr, "", -1, -1, "") );
-		//currNumAttr = currNumAttr + 2;
-		
 		long currId;
 		synchronized(this.searchIdLock)
 		{
@@ -137,7 +140,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 		
 		QueryMsgFromUser<NodeIDType> qmesgU 
-			= new QueryMsgFromUser<NodeIDType>(this.nodeid, searchQuery, currId, 300000, sourceIP, sourcePort);
+			= new QueryMsgFromUser<NodeIDType>(this.nodeid, searchQuery, currId, expiryTime, sourceIP, sourcePort);
 		
 		SearchQueryStorage<NodeIDType> searchQ = new SearchQueryStorage<NodeIDType>();
 		searchQ.requestID = currId;
@@ -176,7 +179,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		pendingSearches.remove(currId);
 		
 		// convert result to list of GUIDs, currently is is list of JSONArrays 
-		JSONArray resultRet = new JSONArray();
+		//JSONArray resultRet = new JSONArray();
 		for(int i=0; i<result.length(); i++)
 		{
 			try
@@ -184,15 +187,13 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				JSONArray jsoArr1 = result.getJSONArray(i);
 				for(int j=0; j<jsoArr1.length(); j++)
 				{
-					resultRet.put(jsoArr1.getString(j));
+					resultGUIDMap.put(jsoArr1.getString(j), true);
 				}
-			} catch (JSONException e) 
+			} catch (JSONException e)
 			{
 				e.printStackTrace();
 			}
 		}
-		
-		return resultRet;
 	}
 
 	@Override
@@ -283,28 +284,41 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		return true;
 	}
 	
-	
 	public void handleUpdateReply(JSONObject jso)
 	{
 		ValueUpdateFromGNSReply<NodeIDType> vur = null;
 		try
 		{
-		vur = new ValueUpdateFromGNSReply<NodeIDType>(jso);
+			vur = new ValueUpdateFromGNSReply<NodeIDType>(jso);
 		}
 		catch(Exception ex)
 		{
 			ex.printStackTrace();
 		}
 		long currReqID = vur.getUserReqNum();
-		this.pendingUpdate.remove(currReqID);
-		/*long currReqID;
-		try {
-			currReqID = jso.getLong(ValueUpdateReplyKeys.USER_REQ_NUM.toString());
-			this.pendingUpdate.remove(currReqID);
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/	
+		ContextServiceLogger.getLogger().fine("Update reply recvd "+currReqID);
+		UpdateStorage<NodeIDType> replyUpdObj = this.pendingUpdate.get(currReqID);
+		if(replyUpdObj != null)
+		{
+			if( replyUpdObj.blocking )
+			{
+				replyUpdObj.valUpdFromGNSReply = vur;
+				
+				synchronized(replyUpdObj)
+				{
+					replyUpdObj.notify();
+				}
+			}
+			else
+			{
+				this.pendingUpdate.remove(currReqID);
+			}
+		}
+		else
+		{
+			ContextServiceLogger.getLogger().fine("Update reply recvd "+currReqID+" update Obj null");
+			assert(false);
+		}
 	}
 	
 	private void handleGetReply(JSONObject jso)

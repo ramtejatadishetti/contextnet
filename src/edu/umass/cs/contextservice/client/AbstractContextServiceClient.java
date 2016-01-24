@@ -11,8 +11,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.client.storage.GetStorage;
@@ -30,40 +30,41 @@ import edu.umass.cs.nio.JSONNIOTransport;
 import edu.umass.cs.nio.interfaces.PacketDemultiplexer;
 
 public abstract class AbstractContextServiceClient<NodeIDType> implements PacketDemultiplexer<JSONObject>
-{	
+{
 	protected final JSONNIOTransport<NodeIDType> niot;
 	protected final JSONMessenger<NodeIDType> messenger;
 	protected final String sourceIP;
 	protected final int sourcePort;
 	protected final Random rand;
 	// local client config
-	protected CSNodeConfig<NodeIDType> clientNodeConfig							= null;
+	protected CSNodeConfig<NodeIDType> clientNodeConfig								= null;
 	
 	// context service node config
 	// this is read from the file already included in jar
-	//protected CSNodeConfig<Integer> csNodeConfig								= null;
+	//protected CSNodeConfig<Integer> csNodeConfig									= null;
 	
-	protected List<InetSocketAddress> csNodeAddresses							= null;
+	protected List<InetSocketAddress> csNodeAddresses								= null;
 	// hashmap of attributes, incoming updates are checked 
 	// if they are for context attributes only then they are forwarded to context service
-	protected HashMap<String, Boolean> attributeHashMap							= null;
+	protected HashMap<String, Boolean> attributeHashMap								= null;
 	
 	//long is the request num
-	protected HashMap<Long, SearchQueryStorage<NodeIDType>> pendingSearches		= null;
-	protected HashMap<Long, UpdateStorage<NodeIDType>> pendingUpdate			= null;
-	protected HashMap<Long, GetStorage<NodeIDType>> pendingGet					= null;
+	protected HashMap<Long, SearchQueryStorage<NodeIDType>> pendingSearches			= null;
+	protected HashMap<Long, UpdateStorage<NodeIDType>> pendingUpdate				= null;
+	protected HashMap<Long, GetStorage<NodeIDType>> pendingGet						= null;
 	
-	protected final Object searchIdLock											= new Object();
-	protected final Object updateIdLock											= new Object();
-	protected final Object getIdLock											= new Object();
-	protected final Object configLock											= new Object();
+	protected HashMap<String, HashMap<String, Boolean>> activeGroupGUIDMap 			= null;	
 	
+	protected final Object searchIdLock												= new Object();
+	protected final Object updateIdLock												= new Object();
+	protected final Object getIdLock												= new Object();
+	protected final Object configLock												= new Object();
 	
-	protected long searchReqId													= 0;
-	protected long updateReqId													= 0;
-	protected long getReqId														= 0;
+	protected long searchReqId														= 0;
+	protected long updateReqId														= 0;
+	protected long getReqId															= 0;
 	
-	protected NodeIDType nodeid													= null;
+	protected NodeIDType nodeid														= null;
 	
 	protected final String configHost;
 	protected final int configPort;
@@ -74,6 +75,7 @@ public abstract class AbstractContextServiceClient<NodeIDType> implements Packet
 		this.configPort = port;
 		csNodeAddresses  = new LinkedList<InetSocketAddress>();
 		attributeHashMap = new HashMap<String, Boolean>();
+		activeGroupGUIDMap = new HashMap<String, HashMap<String, Boolean>>();
 		
 		//readNodeInfo();
 		//readAttributeInfo();
@@ -110,11 +112,7 @@ public abstract class AbstractContextServiceClient<NodeIDType> implements Packet
 		pd.register(ContextServicePacket.PacketType.CONFIG_REPLY, this);
 		
 		messenger.addPacketDemultiplexer(pd);
-		
-		
 	}
-	
-	
 	
 	private void readNodeInfo() throws NumberFormatException, UnknownHostException, IOException
 	{
@@ -171,12 +169,36 @@ public abstract class AbstractContextServiceClient<NodeIDType> implements Packet
 		input.close();
 	}
 	
-	// non blocking call
-	public abstract void sendUpdate(String GUID, JSONObject attrValuePairs, long versionNum);
+	/**
+	 * send update to context service.
+	 * If blocking is set to true then the call blocks until the update is complete.
+	 * If false then the call just returns after forwarding update to the context service.
+	 * @param GUID
+	 * @param attrValuePairs
+	 * @param versionNum
+	 * @param blocking
+	 */
+	public abstract void sendUpdate(String GUID, JSONObject attrValuePairs, long versionNum, boolean blocking);
 	
 	//blocking call
-	public abstract JSONArray sendSearchQuery(String searchQuery);
+	/**
+	 * Context service search API call.
+	 * result is returned in resultGUIDMap.
+	 * resultGUIDMap map is also internally updated on refresh trigger.
+	 * expiry time denotes the time for which this query will be active.
+	 * @param searchQuery
+	 * @param resultGUIDMap
+	 * @param expiryTime
+	 */
+	public abstract void sendSearchQuery(String searchQuery, 
+			ConcurrentHashMap<String, Boolean> resultGUIDMap, long expiryTime);
+	
 	// blocking call
+	/**
+	 * performs a get object, based on GUID
+	 * @param GUID
+	 * @return
+	 */
 	public abstract JSONObject sendGetRequest(String GUID);
 	
 	// non blocking call
