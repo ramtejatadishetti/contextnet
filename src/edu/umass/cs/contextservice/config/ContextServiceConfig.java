@@ -66,7 +66,7 @@ public class ContextServiceConfig
 	//public static final boolean sendUpdateReplies					= true;
 	
 	// if true group update trigger is enabled, not enabled if false
-	public static final boolean TRIGGER_ENABLED						= true;
+	public static final boolean TRIGGER_ENABLED						= false;
 	
 	//public static final int startNodeID							= 0;
 	
