@@ -30,7 +30,7 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 			, String sourceIP, int sourcePort)
 	{
 		super(initiator, ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS);
-		ContextServiceLogger.getLogger().fine("ValueUpdateFromGNS enter super compl");
+		//ContextServiceLogger.getLogger().fine("ValueUpdateFromGNS enter super compl");
 		this.versionNum = versionNum;
 		this.GUID = GUID;
 		this.attrValuePair = attrValuePair;

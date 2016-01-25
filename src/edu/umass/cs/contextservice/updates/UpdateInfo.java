@@ -97,7 +97,7 @@ public class UpdateInfo<NodeIDType>
 		hyperspaceHashingReplies.put(subspaceNum, 0);
 	}
 	
-	public void setUpdateReply( Integer subspaceNum, int numRep )
+	public boolean setUpdateReply( Integer subspaceNum, int numRep )
 	{
 		synchronized(this.regionalRepliesLock)
 		{
@@ -117,10 +117,19 @@ public class UpdateInfo<NodeIDType>
 			{
 				return false;
 			}*/
+			
+			if( numRepliesCounter == this.hyperspaceHashingReplies.size() )
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
 		}
 	}
 	
-	public void setUpdateTriggerReply(JSONArray toBeRemovedGroups, JSONArray toBeAddedGroups)
+	public boolean setUpdateTriggerReply(JSONArray toBeRemovedGroups, JSONArray toBeAddedGroups)
 	{
 		synchronized(triggerRepliesLock)
 		{
@@ -153,6 +162,16 @@ public class UpdateInfo<NodeIDType>
 			}		
 			valueTriggerReplyCounter++;
 			
+			// twice because reply comes from old and new value both
+			// it can be just empty, but a reply always comes
+			if(valueTriggerReplyCounter == (valUpdMsgFromGNS.getAttrValuePairs().length()*2) )
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
 		}
 	}
 	

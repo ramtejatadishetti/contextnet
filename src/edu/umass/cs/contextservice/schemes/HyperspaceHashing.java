@@ -1304,9 +1304,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		int subspaceNum = valueUpdateToSubspaceRegionReplyMessage.getSubspaceNum();
 		int numReply = valueUpdateToSubspaceRegionReplyMessage.getNumReply();
 		UpdateInfo<NodeIDType> updInfo = pendingUpdateRequests.get(requestID);
-		updInfo.setUpdateReply(subspaceNum, numReply);
-		//boolean completion = updInfo.setUpdateReply(subspaceNum, numReply);
-		boolean completion = updInfo.checkAllUpdateReplyRecvd();
+		//updInfo.setUpdateReply(subspaceNum, numReply);
+		boolean completion = updInfo.setUpdateReply(subspaceNum, numReply);
+		//boolean completion = updInfo.checkAllUpdateReplyRecvd();
 		//ContextServiceLogger.getLogger().fine("processValueUpdateToSubspaceRegionMessageReply requestID "+requestID+" subspaceNum "
 		//		+ subspaceNum +" numReply "+numReply+" completion "+completion);
 		
@@ -1316,7 +1316,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			(this.getMyID(), updInfo.getValueUpdateFromGNS().getVersionNum(), updInfo.getValueUpdateFromGNS().getUserRequestID());
 			
 			ContextServiceLogger.getLogger().fine("reply IP Port "+updInfo.getValueUpdateFromGNS().getSourceIP()
-					+":"+updInfo.getValueUpdateFromGNS().getSourcePort());
+					+":"+updInfo.getValueUpdateFromGNS().getSourcePort()+ " ValueUpdateFromGNSReply for requestId "+requestID
+					+" "+valueUpdateFromGNSReply);
 			try
 			{
 				this.messenger.sendToAddress( new InetSocketAddress(updInfo.getValueUpdateFromGNS().getSourceIP()
@@ -1343,43 +1344,49 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				removedUpdate = pendingUpdateRequests.remove(requestID);
 			}
 			
+			// starts the queues serialized updates for that guid
 			if(removedUpdate != null)
-			{	
-				boolean startANewUpdate = false;
-				Long nextRequestID = null;
-				synchronized( this.pendingUpdateLock )
-				{
-					// remove from guidUpdateInfo
-					GUIDUpdateInfo<NodeIDType> guidUpdateInfo = 
-							this.guidUpdateInfoMap.get(removedUpdate.getValueUpdateFromGNS().getGUID());
-					
-					assert(guidUpdateInfo!=null);
-					Long currRequestID = guidUpdateInfo.removeFromQueue();
-					// it must not be null
-					assert(currRequestID != null);
-					// it should be same as current requestID
-					assert(requestID == currRequestID);
-					
-					// get the next requestID
-					nextRequestID = guidUpdateInfo.getNextRequestID();
-					if(nextRequestID == null)
-					{
-						// remove the guidUpdateInfo, there are no more updates for this GUID
-						this.guidUpdateInfoMap.remove(removedUpdate.getValueUpdateFromGNS().getGUID());
-					}
-					else
-					{
-						// start a new update serially outside the lock
-						startANewUpdate = true;
-					}
-				}
-				
-				if(startANewUpdate)
-				{
-					assert(nextRequestID != null);
-					this.processUpdateSerially(pendingUpdateRequests.get(nextRequestID));
-				}
+			{
+				startANewUpdate(removedUpdate, requestID);
 			}
+		}
+	}
+	
+	private void startANewUpdate(UpdateInfo<NodeIDType> removedUpdate, long requestID)
+	{
+		boolean startANewUpdate = false;
+		Long nextRequestID = null;
+		synchronized( this.pendingUpdateLock )
+		{
+			// remove from guidUpdateInfo
+			GUIDUpdateInfo<NodeIDType> guidUpdateInfo = 
+					this.guidUpdateInfoMap.get(removedUpdate.getValueUpdateFromGNS().getGUID());
+			
+			assert(guidUpdateInfo!=null);
+			Long currRequestID = guidUpdateInfo.removeFromQueue();
+			// it must not be null
+			assert(currRequestID != null);
+			// it should be same as current requestID
+			assert(requestID == currRequestID);
+			
+			// get the next requestID
+			nextRequestID = guidUpdateInfo.getNextRequestID();
+			if(nextRequestID == null)
+			{
+				// remove the guidUpdateInfo, there are no more updates for this GUID
+				this.guidUpdateInfoMap.remove(removedUpdate.getValueUpdateFromGNS().getGUID());
+			}
+			else
+			{
+				// start a new update serially outside the lock
+				startANewUpdate = true;
+			}
+		}
+		
+		if(startANewUpdate)
+		{
+			assert(nextRequestID != null);
+			this.processUpdateSerially(pendingUpdateRequests.get(nextRequestID));
 		}
 	}
 	
@@ -1392,8 +1399,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		JSONArray toBeRemovedGroups 	= updateTriggerReply.getToBeRemovedGroups();
 		
 		UpdateInfo<NodeIDType> updInfo  = pendingUpdateRequests.get(requestID);
-		updInfo.setUpdateTriggerReply(toBeRemovedGroups, toBeAddedGroups);
-		boolean triggerCompl = updInfo.checkAllTriggerRepRecvd();
+		boolean triggerCompl = updInfo.setUpdateTriggerReply(toBeRemovedGroups, toBeAddedGroups);
+		//boolean triggerCompl = updInfo.checkAllTriggerRepRecvd();
 		
 		if(triggerCompl)
 		{
@@ -1470,11 +1477,26 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					{
 						e.printStackTrace();
 					}
-
 				} catch (JSONException e) 
 				{
 					e.printStackTrace();
 				}
+			}
+			
+			// removing here, because updInfo only gets removed 
+			// when both trigger and update replies are recvd.
+			boolean updateCompl = updInfo.checkAllUpdateReplyRecvd();
+			UpdateInfo<NodeIDType> removedUpdate = null;
+			
+			if( updateCompl )
+				removedUpdate = pendingUpdateRequests.remove(requestID);
+			
+			// starts the queues serialized updates for that guid
+			// null is checked becuase it can also be remove on
+			// update completion. So only one can start the new update
+			if(removedUpdate != null)
+			{
+					startANewUpdate(removedUpdate, requestID);
 			}
 		}
 	}
@@ -1508,11 +1530,14 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		ClientConfigReply<NodeIDType> configReply 
 					= new ClientConfigReply<NodeIDType>(this.getMyID(), nodeConfigArray,
 							attributeArray);
-		try {
+		try 
+		{
 			this.messenger.sendToAddress(sourceSocketAddr, configReply.toJSONObject());
-		} catch (IOException e) {
+		} catch (IOException e) 
+		{
 			e.printStackTrace();
-		} catch (JSONException e) {
+		} catch (JSONException e) 
+		{
 			e.printStackTrace();
 		}
 	}

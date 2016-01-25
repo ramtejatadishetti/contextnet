@@ -59,9 +59,6 @@ public abstract class ContextServiceNode<NodeIDType>
 			pd.register(pktType, this.contextservice);
 		}
 		messenger.addPacketDemultiplexer(pd);
-		
-		//packet types registered, now spawn the task and start the system
-		//this.contextservice.spawnTheTask();
 	}
 	
 	/**
