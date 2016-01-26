@@ -43,13 +43,13 @@
 <target name="context-nodoc-jar"
         depends="clean,compile"
         description="Builds the context Jar">
-<jar jarfile="${release.dir}/context-nodoc-${VERSION}-${RELEASE}.jar">
+<jar jarfile="${release.dir}/contextnetJar.jar">
   <fileset dir="${build.dir}/">
   </fileset>
   <fileset dir="${basedir}">
   	<include name="nodesInfo.txt" />
   </fileset>
-  <zipgroupfileset dir="${lib.dir}/" includes="gns-lib-*.jar,GNS.jar,org.hyperdex.client-1.8.1.jar,combinatoricslib-2.1.jar"/>
+  <zipgroupfileset dir="${lib.dir}/" includes="combinatoricslib-2.1.jar, commons-cli-1.1.jar, com.jcraft.jsch-all-1.0.6.release.jar,gigapaxos-1.0.jar"/>
   <manifest>
     <attribute name="Built-By" value="Aditya Yadav" />
     <!-- Information about the program itself -->
