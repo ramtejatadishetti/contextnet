@@ -49,11 +49,9 @@ public abstract class AbstractContextServiceClient<NodeIDType> implements Packet
 	protected HashMap<String, Boolean> attributeHashMap								= null;
 	
 	//long is the request num
-	protected HashMap<Long, SearchQueryStorage<NodeIDType>> pendingSearches			= null;
-	protected HashMap<Long, UpdateStorage<NodeIDType>> pendingUpdate				= null;
-	protected HashMap<Long, GetStorage<NodeIDType>> pendingGet						= null;
-	
-	protected HashMap<String, HashMap<String, Boolean>> activeGroupGUIDMap 			= null;	
+	protected ConcurrentHashMap<Long, SearchQueryStorage<NodeIDType>> pendingSearches = null;
+	protected ConcurrentHashMap<Long, UpdateStorage<NodeIDType>> pendingUpdate		  = null;
+	protected ConcurrentHashMap<Long, GetStorage<NodeIDType>> pendingGet			  = null;
 	
 	protected final Object searchIdLock												= new Object();
 	protected final Object updateIdLock												= new Object();
@@ -75,14 +73,13 @@ public abstract class AbstractContextServiceClient<NodeIDType> implements Packet
 		this.configPort = port;
 		csNodeAddresses  = new LinkedList<InetSocketAddress>();
 		attributeHashMap = new HashMap<String, Boolean>();
-		activeGroupGUIDMap = new HashMap<String, HashMap<String, Boolean>>();
 		
 		//readNodeInfo();
 		//readAttributeInfo();
 		
-		pendingSearches = new HashMap<Long, SearchQueryStorage<NodeIDType>>();
-		pendingUpdate = new HashMap<Long, UpdateStorage<NodeIDType>>();
-		pendingGet = new HashMap<Long, GetStorage<NodeIDType>>();
+		pendingSearches = new ConcurrentHashMap<Long, SearchQueryStorage<NodeIDType>>();
+		pendingUpdate = new ConcurrentHashMap<Long, UpdateStorage<NodeIDType>>();
+		pendingGet = new ConcurrentHashMap<Long, GetStorage<NodeIDType>>();
 		
 		rand = new Random();
 		
@@ -112,61 +109,6 @@ public abstract class AbstractContextServiceClient<NodeIDType> implements Packet
 		pd.register(ContextServicePacket.PacketType.CONFIG_REPLY, this);
 		
 		messenger.addPacketDemultiplexer(pd);
-	}
-	
-	private void readNodeInfo() throws NumberFormatException, UnknownHostException, IOException
-	{
-		InputStream input = getClass().getResourceAsStream("/"+
-				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.nodeSetupFileName);
-		//FileReader fread = new FileReader(configFileName);
-		BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-		String line = null;
-		
-		while ( (line = reader.readLine()) != null )
-		{
-			String [] parsed = line.split(" ");
-			int nodeId = Integer.parseInt(parsed[0]);
-			InetAddress readIPAddress = InetAddress.getByName(parsed[1]);
-			int readPort = Integer.parseInt(parsed[2]);
-			ContextServiceLogger.getLogger().fine("Contextservice nodes address info nodeId "
-					+ nodeId+" readIPAddress "+readIPAddress+" readPort "+readPort);
-			csNodeAddresses.add(new InetSocketAddress(readIPAddress, readPort));
-			//csNodeConfig.add(nodeId, new InetSocketAddress(readIPAddress, readPort));
-			//nodeList.add(new InetSocketAddress(readIPAddress, readPort));
-		}
-		reader.close();
-		input.close();
-	}
-	
-	private void readAttributeInfo() throws IOException
-	{
-		//FileReader freader 	  = new FileReader(ContextServiceConfig.attributeInfoFileName);
-		InputStream input = getClass().getResourceAsStream("/"+ContextServiceConfig.attributeInfoFileName);
-		BufferedReader reader = new BufferedReader( new InputStreamReader(input));
-		String line 		  = null;
-		
-		while ( (line = reader.readLine()) != null )
-		{
-			line = line.trim();
-			if(line.startsWith("#"))
-			{
-				// ignore comments
-			}
-			else
-			{
-				String [] parsed = line.split(",");
-				String attrName = parsed[0].trim();
-				//String minValue = parsed[1].trim();
-				//String maxValue = parsed[2].trim();
-				//String defaultValue = parsed[3].trim();
-				//String dataType = parsed[4].trim();
-				ContextServiceLogger.getLogger().fine("Contextservice attribute info attrName "
-						+ attrName);
-				attributeHashMap.put(attrName, true);
-			}
-		}
-		reader.close();
-		input.close();
 	}
 	
 	/**

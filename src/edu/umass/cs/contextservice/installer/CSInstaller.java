@@ -87,7 +87,7 @@ public class CSInstaller
   //private static final String PAXOS_PROPERTIES_FILENAME = "gigapaxos.gnsApp.properties";
   //private static final String LNS_HOSTS_FILENAME = "lns_hosts.txt";
   //private static final String NS_HOSTS_FILENAME = "ns_hosts.txt";
-  private static final String DEFAULT_JAVA_COMMAND = "java -ea -Xms1024M";
+  private static final String DEFAULT_JAVA_COMMAND = "java -ea -Xmx2048M";
   //private static final String DEFAULT_JAVA_COMMAND_FOR_LNS = "java -ea -Xms512M";
   //private static final String KEYSTORE_FOLDER_NAME = "keyStore";
   //private static final String TRUSTSTORE_FOLDER_NAME = "trustStore";
