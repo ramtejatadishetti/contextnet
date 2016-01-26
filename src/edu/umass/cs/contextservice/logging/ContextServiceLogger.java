@@ -16,6 +16,7 @@ public class ContextServiceLogger
         LOGGER.addHandler(ch);
         LOGGER.setLevel(Level.FINE);
 	}
+	
 	public static Logger getLogger()
 	{
 		return LOGGER;

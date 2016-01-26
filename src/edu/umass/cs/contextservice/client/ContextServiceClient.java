@@ -298,7 +298,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		long currReqID = vur.getUserReqNum();
 		ContextServiceLogger.getLogger().fine("Update reply recvd "+currReqID);
 		UpdateStorage<NodeIDType> replyUpdObj = this.pendingUpdate.get(currReqID);
-		if(replyUpdObj != null)
+		if( replyUpdObj != null )
 		{
 			if( replyUpdObj.blocking )
 			{
