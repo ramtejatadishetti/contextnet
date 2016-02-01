@@ -29,11 +29,9 @@ import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
  * Contextservice client.
  * It is used to send and recv replies from context service.
  * It knows context service node addresses from a file in the conf folder.
- * 
  * It is thread safe, means same client can be used by multiple threads without any 
  * synchronization problems.
  * @author adipc
- *
  * @param <NodeIDType>
  */
 public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClient<NodeIDType>
