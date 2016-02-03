@@ -25,6 +25,8 @@ import com.google.common.hash.Hashing;
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.configurator.AbstractSubspaceConfigurator;
+import edu.umass.cs.contextservice.configurator.SubspaceConfigurator;
 import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
 import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.gns.GNSCalls;
@@ -63,14 +65,16 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	public static final int THREAD_POOL_SIZE											= 20;
 	private final ExecutorService nodeES;
 	
-	private  HashMap<Integer, SubspaceInfo<NodeIDType>> subspaceInfoVector;
-	
 	private long numberOfQueryFromUser													= 0;
 	private long numberOfQueryFromUserDepart											= 0;
 	private long numberOfQuerySubspaceRegion											= 0;
 	private long numberOfQuerySubspaceRegionReply										= 0;
 	
 	private HashMap<String, GUIDUpdateInfo<NodeIDType>> guidUpdateInfoMap				= null;
+	
+	private final AbstractSubspaceConfigurator<NodeIDType> subspaceConfigurator;
+	
+	private final Random replicaChoosingRand;
 	
 	public static final Logger log 														= ContextServiceLogger.getLogger();
 	
@@ -79,24 +83,19 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	{
 		super(nc, m);
 		
+		replicaChoosingRand = new Random();
 		guidUpdateInfoMap = new HashMap<String, GUIDUpdateInfo<NodeIDType>>();
 		
-		subspaceInfoVector = new HashMap<Integer, SubspaceInfo<NodeIDType>>();
+		//subspaceInfoVector = new HashMap<Integer, SubspaceInfo<NodeIDType>>();
+		
+		// can be changed to basic configurator here
+		subspaceConfigurator = new SubspaceConfigurator<NodeIDType>(messenger.getNodeConfig());
+		// configure subspaces
+		subspaceConfigurator.configureSubspaceInfo();
 		
 		try
 		{
-			readSubspaceInfo();
-		} catch (NumberFormatException e)
-		{
-			e.printStackTrace();
-		} catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-		
-		try
-		{
-			hyperspaceDB = new HyperspaceMySQLDB<NodeIDType>(this.getMyID(), subspaceInfoVector);
+			hyperspaceDB = new HyperspaceMySQLDB<NodeIDType>(this.getMyID(), subspaceConfigurator.getSubspaceInfoMap());
 		} catch (Exception e)
 		{
 			e.printStackTrace();
@@ -227,7 +226,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	}
 	
 	@Override
-	public NodeIDType getResponsibleNodeId(String AttrName) 
+	public NodeIDType getResponsibleNodeId(String AttrName)
 	{
 		int numNodes = this.allNodeIDs.size();
 		//String attributeHash = Utils.getSHA1(attributeName);
@@ -238,112 +237,62 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		return allNodeIDArr[mapIndex];
 	}
 	
-	@SuppressWarnings("unchecked")
-	private void readSubspaceInfo() throws NumberFormatException, IOException
-	{
-		FileReader freader 	  = new FileReader(
-				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.subspaceInfoFileName);
-		BufferedReader reader = new BufferedReader( freader );
-		String line 		  = null;
-		
-		while ( (line = reader.readLine()) != null )
-		{
-			String [] parsed = line.split(",");
-			Integer subspaceNum = Integer.parseInt(parsed[0]);
-			Vector<NodeIDType> subspaceNodes = new Vector<NodeIDType>();
-			
-			for(int i=1;i<parsed.length;i++)
-			{
-				subspaceNodes.add((NodeIDType)((Integer)Integer.parseInt(parsed[i])));
-			}
-			
-			line = reader.readLine();
-			parsed = line.split(",");
-			Integer newSubspaceNum = Integer.parseInt(parsed[0]);
-			
-			HashMap<String, AttributePartitionInfo> subspaceAttrs = new HashMap<String, AttributePartitionInfo>();
-			if(subspaceNum == newSubspaceNum)
-			{
-				for( int i=1;i<parsed.length;i++ )
-				{
-					String attrName = parsed[i].trim();
-					assert(AttributeTypes.attributeMap.get(attrName) != null);
-					AttributePartitionInfo attrPartInfo = new AttributePartitionInfo
-							( AttributeTypes.attributeMap.get(attrName) );
-					subspaceAttrs.put(attrName, attrPartInfo);
-				}
-			}
-			else
-			{
-				assert(false);
-			}
-			
-			
-			
-			double numAttr  = subspaceAttrs.size();
-			double numNodes = subspaceNodes.size();
-			
-			int numPartitions = (int)Math.ceil(Math.pow(numNodes, 1.0/numAttr));
-			
-			
-			Iterator<String> subspaceAttrIter = subspaceAttrs.keySet().iterator();
-			while( subspaceAttrIter.hasNext() )
-			{
-				String attrName = subspaceAttrIter.next();
-				AttributePartitionInfo attrPartInfo = subspaceAttrs.get(attrName);
-				attrPartInfo.initializePartitionInfo(numPartitions);
-			}
-			
-			SubspaceInfo<NodeIDType> subspaceInfo = new 
-					SubspaceInfo<NodeIDType>(subspaceNum, subspaceAttrs, subspaceNodes, numPartitions);
-			this.subspaceInfoVector.put(subspaceInfo.getSubspaceNum(), subspaceInfo);
-		}
-		reader.close();
-		freader.close();
-	}
-	
 	/**
 	 * recursive function to generate all the
 	 * subspace regions/partitions.
 	 */
 	private void generateSubspacePartitions()
 	{
-		for(int i=0; i<this.subspaceInfoVector.size(); i++)
+		HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap 
+			= this.subspaceConfigurator.getSubspaceInfoMap();
+		
+		Iterator<Integer> subspaceIter = subspaceInfoMap.keySet().iterator();
+		
+		while( subspaceIter.hasNext() )
 		{
-			SubspaceInfo<NodeIDType> subspaceInfo = subspaceInfoVector.get(i);
-			HashMap<String, AttributePartitionInfo> attrsOfSubspace = subspaceInfo.getAttributesOfSubspace();
-			Vector<NodeIDType> nodesOfSubspace = subspaceInfo.getNodesOfSubspace();
-			//Vector<DomainPartitionInfo> domainPartitionInfo = subspaceInfo.getDomainPartitionInfo(); 
+			int subspaceId = subspaceIter.next();
+			Vector<SubspaceInfo<NodeIDType>> replicaVect 
+								= subspaceInfoMap.get(subspaceId);
 			
-			double numAttr  = attrsOfSubspace.size();
-			//double numNodes = nodesOfSubspace.size();
-			
-			Integer[] partitionNumArray = new Integer[subspaceInfo.getNumPartitions()];
-			for(int j = 0; j<partitionNumArray.length; j++)
+			for( int i=0; i<replicaVect.size(); i++ )
 			{
-				partitionNumArray[j] = new Integer(j);
-				//ContextServiceLogger.getLogger().fine("partitionNumArray[j] "+j+" "+partitionNumArray[j]);
-			}
-			
-			// Create the initial vector of 2 elements (apple, orange)
-			ICombinatoricsVector<Integer> originalVector = Factory.createVector(partitionNumArray);
-			
-		    //ICombinatoricsVector<Integer> originalVector = Factory.createVector(new String[] { "apple", "orange" });
+				SubspaceInfo<NodeIDType> subspaceInfo = replicaVect.get(i);
+				HashMap<String, AttributePartitionInfo> attrsOfSubspace 
+										= subspaceInfo.getAttributesOfSubspace();
+				
+				Vector<NodeIDType> nodesOfSubspace = subspaceInfo.getNodesOfSubspace();
+				
+				double numAttr  = attrsOfSubspace.size();
+				//double numNodes = nodesOfSubspace.size();
+				
+				Integer[] partitionNumArray = new Integer[subspaceInfo.getNumPartitions()];
+				for(int j = 0; j<partitionNumArray.length; j++)
+				{
+					partitionNumArray[j] = new Integer(j);
+					//ContextServiceLogger.getLogger().fine("partitionNumArray[j] "+j+" "+partitionNumArray[j]);
+				}
+				
+				// Create the initial vector of 2 elements (apple, orange)
+				ICombinatoricsVector<Integer> originalVector = Factory.createVector(partitionNumArray);
+				
+			    //ICombinatoricsVector<Integer> originalVector = Factory.createVector(new String[] { "apple", "orange" });
 
-			// Create the generator by calling the appropriate method in the Factory class. 
-			// Set the second parameter as 3, since we will generate 3-elemets permutations
-			Generator<Integer> gen = Factory.createPermutationWithRepetitionGenerator(originalVector, (int)numAttr);
-			
-			// Print the result
-			int nodeIdCounter = 0;
-			int sizeOfNumNodes = nodesOfSubspace.size();
-			for( ICombinatoricsVector<Integer> perm : gen )
-			{
-				NodeIDType respNodeId = nodesOfSubspace.get(nodeIdCounter%sizeOfNumNodes);
-				//ContextServiceLogger.getLogger().fine("perm.getVector() "+perm.getVector());
-				hyperspaceDB.insertIntoSubspacePartitionInfo(subspaceInfo.getSubspaceNum(), perm.getVector(), respNodeId);
-				//ContextServiceLogger.getLogger().fine("hyperspaceDB.insertIntoSubspacePartitionInfo complete");
-				nodeIdCounter++;
+				// Create the generator by calling the appropriate method in the Factory class. 
+				// Set the second parameter as 3, since we will generate 3-elemets permutations
+				Generator<Integer> gen = Factory.createPermutationWithRepetitionGenerator(originalVector, (int)numAttr);
+				
+				// Print the result
+				int nodeIdCounter = 0;
+				int sizeOfNumNodes = nodesOfSubspace.size();
+				for( ICombinatoricsVector<Integer> perm : gen )
+				{
+					NodeIDType respNodeId = nodesOfSubspace.get(nodeIdCounter%sizeOfNumNodes);
+					//ContextServiceLogger.getLogger().fine("perm.getVector() "+perm.getVector());
+					hyperspaceDB.insertIntoSubspacePartitionInfo(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
+							perm.getVector(), respNodeId);
+					//ContextServiceLogger.getLogger().fine("hyperspaceDB.insertIntoSubspacePartitionInfo complete");
+					nodeIdCounter++;
+				}
 			}
 		}
 	}
@@ -412,9 +361,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		
 		Vector<ProcessingQueryComponent> matchingQueryComponents = new Vector<ProcessingQueryComponent>();
-		int maxMatchingSubspaceNum = getMaxOverlapSubspace(currReq.getProcessingQC(), matchingQueryComponents);
+		int maxMatchingSubspaceId = getMaxOverlapSubspace(currReq.getProcessingQC(), matchingQueryComponents);
 		
-		ContextServiceLogger.getLogger().fine("userReqID "+userReqID+" maxMatchingSubspaceNum "+maxMatchingSubspaceNum+" matchingQueryComponents "
+		ContextServiceLogger.getLogger().fine("userReqID "+userReqID+" maxMatchingSubspaceNum "+maxMatchingSubspaceId+" matchingQueryComponents "
 				+matchingQueryComponents.size()+" query "+query);
 		/*for(int i=0;i<matchingQueryComponents.size();i++)
 		{
@@ -423,8 +372,14 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}*/
 		
 		// get number of nodes/or regions to send to in that subspace.
+		
+		// choose a replica randomly
+		Vector<SubspaceInfo<NodeIDType>> maxMatchingSubspaceReplicas 
+			= this.subspaceConfigurator.getSubspaceInfoMap().get(maxMatchingSubspaceId);
+		int replicaNum = maxMatchingSubspaceReplicas.get(this.replicaChoosingRand.nextInt(maxMatchingSubspaceReplicas.size())).getReplicaNum();
+		
 	    HashMap<Integer, OverlappingInfoClass> respNodeIdList 
-	    		= this.hyperspaceDB.getOverlappingRegionsInSubspace(maxMatchingSubspaceNum, matchingQueryComponents);
+	    		= this.hyperspaceDB.getOverlappingRegionsInSubspace(maxMatchingSubspaceId, replicaNum, matchingQueryComponents);
 	    
 		synchronized(this.pendingQueryLock)
 		{
@@ -434,7 +389,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		pendingQueryRequests.put(currReq.getRequestId(), currReq);
 		
 		log.fine("processQueryMsgFromUser respNodeIdList size "+respNodeIdList.size()+
-	    		" requestId "+currReq.getRequestId() +" maxMatchingSubspaceNum "+maxMatchingSubspaceNum);
+	    		" requestId "+currReq.getRequestId() +" maxMatchingSubspaceNum "+maxMatchingSubspaceId);
 		
 	    currReq.initializeRegionalReplies(respNodeIdList);
 		
@@ -447,7 +402,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	    	
 	    	QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion = 
 					new QueryMesgToSubspaceRegion<NodeIDType>
-	    (getMyID(), currReq.getRequestId(), query, grpGUID, maxMatchingSubspaceNum, userIP, userPort, overlapInfo.hashCode);
+	    (getMyID(), currReq.getRequestId(), query, grpGUID, maxMatchingSubspaceId, userIP, userPort, overlapInfo.hashCode);
 	    	
 			try
 			{
@@ -467,85 +422,100 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	    // are stored for each attribute in the query one at a time
 	    // We use value of one attribute and use the default value of other attributes 
 	    // and do this for each attribute in turn.
+	    //FIXME: check trigger with replication
 	    if( ContextServiceConfig.TRIGGER_ENABLED )
 	    {
-	    	HashMap<Integer, Vector<ProcessingQueryComponent>> overlappingSubspaces =
-	    			new HashMap<Integer, Vector<ProcessingQueryComponent>>();
-	    	getAllOverlappingSubspaces( currReq.getProcessingQC(), overlappingSubspaces );
-	    	
-	    	Iterator<Integer> overlapSubspaceIter = overlappingSubspaces.keySet().iterator();
-	    	
-	    	while( overlapSubspaceIter.hasNext() )
-	    	{
-	    		int subspaceNum = overlapSubspaceIter.next();
-	    		Vector<ProcessingQueryComponent> matchingComp = overlappingSubspaces.get(subspaceNum);
-	    		
-	    		for(int i=0; i<matchingComp.size(); i++)
-	    		{
-	    			ProcessingQueryComponent matchingQComp = matchingComp.get(i);
-	    			
-	    			String currMatchingAttr = matchingQComp.getAttributeName();
-	    			
-		    		SubspaceInfo<NodeIDType> currSubInfo = this.subspaceInfoVector.get(subspaceNum);
-					HashMap<String, AttributePartitionInfo> attrsSubspaceInfo = currSubInfo.getAttributesOfSubspace();
-		    		
-		    		Iterator<String> subspaceAttrIter = attrsSubspaceInfo.keySet().iterator();
-					
-		    		Vector<ProcessingQueryComponent> triggerStorageComp = new Vector<ProcessingQueryComponent>();
-					while( subspaceAttrIter.hasNext() )
-					{
-						//double value = AttributeTypes.NOT_SET;
-						
-						String attrName = subspaceAttrIter.next();
-						ProcessingQueryComponent qcomponent = null;
-						if( currMatchingAttr.equals(attrName) )
-						{
-							qcomponent = new ProcessingQueryComponent( attrName, matchingQComp.getLowerBound(), 
-									matchingQComp.getUpperBound() );
-						}
-						else
-						{
-							AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-							qcomponent = new ProcessingQueryComponent( attrName, attrMetaInfo.getDefaultValue(), 
-									attrMetaInfo.getDefaultValue());
-						}
-						
-						triggerStorageComp.add(qcomponent);
-					}
-					
-					HashMap<Integer, OverlappingInfoClass> overlappingRegion = 
-							this.hyperspaceDB.getOverlappingRegionsInSubspace(subspaceNum, triggerStorageComp);
-					
-					Iterator<Integer> overlapIter = overlappingRegion.keySet().iterator();
-					
-					while( overlapIter.hasNext() )
-				    {
-				    	Integer respNodeId = overlapIter.next();
-				    	OverlappingInfoClass overlapInfo = overlappingRegion.get(respNodeId);
-				    	
-				    	QueryTriggerMessage<NodeIDType> queryTriggerMessage = 
-								new QueryTriggerMessage<NodeIDType>
-				    				(getMyID(), currReq.getRequestId(), query, grpGUID, maxMatchingSubspaceNum, 
-				    						userIP, userPort, overlapInfo.hashCode);
-				    	
-						try
-						{
-							this.messenger.sendToID( (NodeIDType)respNodeId, queryTriggerMessage.toJSONObject() );
-						} catch (IOException e)
-						{
-							e.printStackTrace();
-						} catch (JSONException e)
-						{
-							e.printStackTrace();
-						}
-						ContextServiceLogger.getLogger().info("Sending QueryMesgToSubspaceRegion mesg from " 
-								+ getMyID() +" to node "+respNodeId);
-				    }
-	    		}
-	    	}
-	    	
+	    	processTriggerOnQueryMsgFromUser(currReq);
 	    }
 	    this.numberOfQueryFromUserDepart++;
+	}
+	
+	private void processTriggerOnQueryMsgFromUser(QueryInfo<NodeIDType> currReq)
+	{
+		
+		HashMap<Integer, Vector<ProcessingQueryComponent>> overlappingSubspaces =
+    			new HashMap<Integer, Vector<ProcessingQueryComponent>>();
+    	getAllOverlappingSubspaces( currReq.getProcessingQC(), overlappingSubspaces );
+    	
+    	Iterator<Integer> overlapSubspaceIter = overlappingSubspaces.keySet().iterator();
+    	HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subapceInfoMap = 
+    			this.subspaceConfigurator.getSubspaceInfoMap();
+    	while( overlapSubspaceIter.hasNext() )
+    	{
+    		int subspaceId = overlapSubspaceIter.next();
+    		Vector<SubspaceInfo<NodeIDType>> replicasVect 
+    										= subapceInfoMap.get(subspaceId);
+    		
+    		// trigger info on a query just goes to any one random replica of a subspace
+    		// it doesn't need to be stored on all replicas of a subspace
+    		SubspaceInfo<NodeIDType> currSubInfo = replicasVect.get(this.replicaChoosingRand.nextInt(replicasVect.size()));
+    		int replicaNum = currSubInfo.getReplicaNum();
+    		Vector<ProcessingQueryComponent> matchingComp = overlappingSubspaces.get(subspaceId);
+    		
+    		for(int i=0; i<matchingComp.size(); i++)
+    		{
+    			ProcessingQueryComponent matchingQComp = matchingComp.get(i);
+    			
+    			String currMatchingAttr = matchingQComp.getAttributeName();
+    			
+				HashMap<String, AttributePartitionInfo> attrsSubspaceInfo = currSubInfo.getAttributesOfSubspace();
+	    		
+	    		Iterator<String> subspaceAttrIter = attrsSubspaceInfo.keySet().iterator();
+				
+	    		Vector<ProcessingQueryComponent> triggerStorageComp = new Vector<ProcessingQueryComponent>();
+				while( subspaceAttrIter.hasNext() )
+				{
+					//double value = AttributeTypes.NOT_SET;
+					
+					String attrName = subspaceAttrIter.next();
+					ProcessingQueryComponent qcomponent = null;
+					if( currMatchingAttr.equals(attrName) )
+					{
+						qcomponent = new ProcessingQueryComponent( attrName, matchingQComp.getLowerBound(), 
+								matchingQComp.getUpperBound() );
+					}
+					else
+					{
+						AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
+						qcomponent = new ProcessingQueryComponent( attrName, attrMetaInfo.getDefaultValue(), 
+								attrMetaInfo.getDefaultValue());
+					}
+					
+					triggerStorageComp.add(qcomponent);
+				}
+				
+				HashMap<Integer, OverlappingInfoClass> overlappingRegion = 
+						this.hyperspaceDB.getOverlappingRegionsInSubspace(subspaceId, replicaNum, 
+								triggerStorageComp);
+				
+				Iterator<Integer> overlapIter = overlappingRegion.keySet().iterator();
+				
+				while( overlapIter.hasNext() )
+			    {
+			    	Integer respNodeId = overlapIter.next();
+			    	OverlappingInfoClass overlapInfo = overlappingRegion.get(respNodeId);
+			    	
+			    	QueryTriggerMessage<NodeIDType> queryTriggerMessage = 
+							new QueryTriggerMessage<NodeIDType>
+			    				(getMyID(), currReq.getRequestId(), currReq.getQuery(), 
+			    						currReq.getGroupGUID(), subspaceId, 
+			    						currReq.getUserIP(), currReq.getUserPort(), overlapInfo.hashCode);
+			    	
+					try
+					{
+						this.messenger.sendToID( (NodeIDType)respNodeId, queryTriggerMessage.toJSONObject() );
+					} catch (IOException e)
+					{
+						e.printStackTrace();
+					} catch (JSONException e)
+					{
+						e.printStackTrace();
+					}
+					ContextServiceLogger.getLogger().info("Sending QueryMesgToSubspaceRegion mesg from " 
+							+ getMyID() +" to node "+respNodeId);
+			    }
+    		}
+    	}
 	}
 	
 	private void processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion)
@@ -554,12 +524,12 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		//long requestId 		= queryMesgToSubspaceRegion.getRequestId();
 		String query 			= queryMesgToSubspaceRegion.getQuery();
 		String groupGUID 		= queryMesgToSubspaceRegion.getGroupGUID();
-		int subspaceNum 		= queryMesgToSubspaceRegion.getSubspaceNum();
+		int subspaceId 			= queryMesgToSubspaceRegion.getSubspaceNum();
 		//String userIP       	= queryMesgToSubspaceRegion.getUserIP();
 		//int userPort        	= queryMesgToSubspaceRegion.getUserPort();
 		//int hashCode        	= queryMesgToSubspaceRegion.getHashCode();
 		
-		JSONArray resultGUIDs = this.hyperspaceDB.processSearchQueryInSubspaceRegion(subspaceNum, query);
+		JSONArray resultGUIDs = this.hyperspaceDB.processSearchQueryInSubspaceRegion(subspaceId, query);
 		
 		QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply = 
 				new QueryMesgToSubspaceRegionReply<NodeIDType>( getMyID(), queryMesgToSubspaceRegion.getRequestId(), 
@@ -653,28 +623,28 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	{
 		String query 		= queryTriggerMessage.getQuery();
 		String groupGUID 	= queryTriggerMessage.getGroupGUID();
-		int subspaceNum 	= queryTriggerMessage.getSubspaceNum();
+		int subspaceId 		= queryTriggerMessage.getSubspaceNum();
 		String userIP       = queryTriggerMessage.getUserIP();
 		int userPort        = queryTriggerMessage.getUserPort();
 		int hashCode        = queryTriggerMessage.getHashCode();
 		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
-			this.hyperspaceDB.insertIntoSubspaceTriggerInfo(subspaceNum, hashCode, query, groupGUID, userIP, userPort);
+			this.hyperspaceDB.insertIntoSubspaceTriggerInfo(subspaceId, hashCode, query, groupGUID, userIP, userPort);
 		}
 	}
 	
 	private void processUpdateTriggerMessage(UpdateTriggerMessage<NodeIDType> updateTriggerMessage)
 	{
 		long requestID  = updateTriggerMessage.getRequestId();
-		int subspaceNum = updateTriggerMessage.getSubspaceNum();
+		int subspaceId = updateTriggerMessage.getSubspaceNum();
 		JSONObject oldValJSON = updateTriggerMessage.getOldUpdateValPair();
 		JSONObject newUpdateVal = updateTriggerMessage.getNewUpdateValPair();
 		
 		//int oldNewVal = updateTriggerMessage.getOldNewVal();
 		int hashCode  = updateTriggerMessage.getHashCode();
 		
-		JSONArray allGroups = this.hyperspaceDB.getTriggerInfo(subspaceNum, hashCode);
+		JSONArray allGroups = this.hyperspaceDB.getTriggerInfo(subspaceId, hashCode);
 		
 		JSONArray toBeRemoved = new JSONArray();
 		JSONArray toBeAdded = new JSONArray();
@@ -758,7 +728,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			+" toBeAdded size "+toBeAdded.length());
 		
 		UpdateTriggerReply<NodeIDType> updTriggerRep = 
-				new UpdateTriggerReply<NodeIDType>( this.getMyID(), requestID, subspaceNum, 
+				new UpdateTriggerReply<NodeIDType>( this.getMyID(), requestID, subspaceId, 
 						toBeRemoved, toBeAdded);
 		
 		try
@@ -875,183 +845,193 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			
 			try
 			{
-			// attributes which are not set should be set to default value
-			// for subspace hashing
-			if( oldValueJSON.length() != AttributeTypes.attributeMap.size() )
-			{
-				Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
-				while(attrIter.hasNext())
+				// attributes which are not set should be set to default value
+				// for subspace hashing
+				if( oldValueJSON.length() != AttributeTypes.attributeMap.size() )
 				{
-					String attrName = attrIter.next();
-					AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-					if( !oldValueJSON.has(attrName) )
+					Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
+					while(attrIter.hasNext())
 					{
-						try
+						String attrName = attrIter.next();
+						AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
+						if( !oldValueJSON.has(attrName) )
 						{
-							
-							oldValueJSON.put(attrName, attrMetaInfo.getDefaultValue());
-						} catch (JSONException e)
-						{
-							e.printStackTrace();
+							try
+							{
+								
+								oldValueJSON.put(attrName, attrMetaInfo.getDefaultValue());
+							} catch (JSONException e)
+							{
+								e.printStackTrace();
+							}
 						}
 					}
 				}
-			}
 			} catch(Error | Exception ex)
 			{
 				ex.printStackTrace();
 			}
 			
-			
 			this.hyperspaceDB.storeGUIDInSubspace(tableName, GUID, attrValuePairs, updateOrInsert);
 			//JSONObject oldValueJSON 	= this.hyperspaceDB.storeGUIDInSubspace(tableName, GUID, attrValuePairs);
 			// process update at other subspaces.
+			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap
+					= this.subspaceConfigurator.getSubspaceInfoMap();
 			
-			Iterator<Integer> keyIter   = this.subspaceInfoVector.keySet().iterator();
+			
+			Iterator<Integer> keyIter   = subspaceInfoMap.keySet().iterator();
 			//int maxMatchingAttrs 		= 0;
 			//int maxMatchingSubspaceNum 	= -1;
 			// subspaceNum to nodeId in that subspace mapping
-			//HashMap<Integer, Integer> oldValueMapping = new HashMap<Integer, Integer>();
-			//HashMap<Integer, Integer> newValueMapping = new HashMap<Integer, Integer>();
+			// HashMap<Integer, Integer> oldValueMapping = new HashMap<Integer, Integer>();
+			// HashMap<Integer, Integer> newValueMapping = new HashMap<Integer, Integer>();
 			NodeIDType oldRespNodeId = null, newRespNodeId = null;
 			
 			while( keyIter.hasNext() )
 			{
-				int subspaceNum = keyIter.next();
-				SubspaceInfo<NodeIDType> currSubInfo = this.subspaceInfoVector.get(subspaceNum);
-				HashMap<String, AttributePartitionInfo> attrsSubspaceInfo = currSubInfo.getAttributesOfSubspace();
+				int subspaceId = keyIter.next();
+				Vector<SubspaceInfo<NodeIDType>> replicasVect 
+										= subspaceInfoMap.get(subspaceId);
 				
-				//int currMaxMatch = 0;
-				Vector<ProcessingQueryComponent> oldQueryComponents = new Vector<ProcessingQueryComponent>();
-				
-				Iterator<String> subspaceAttrIter = attrsSubspaceInfo.keySet().iterator();
-				
-				while( subspaceAttrIter.hasNext() )
+				for( int i=0;i<replicasVect.size();i++ )
 				{
-					String attrName = subspaceAttrIter.next();
-					//( String attributeName, String leftOperator, double leftValue, 
-					//		String rightOperator, double rightValue )
-					ProcessingQueryComponent qcomponent = new ProcessingQueryComponent( attrName, oldValueJSON.getString(attrName), 
-							oldValueJSON.getString(attrName) );
+					SubspaceInfo<NodeIDType> currSubInfo 
+								= replicasVect.get(i);
+					int replicaNum = currSubInfo.getReplicaNum();
 					
-					oldQueryComponents.add(qcomponent);
-				}
-				
-				HashMap<Integer, OverlappingInfoClass> overlappingRegion = 
-							this.hyperspaceDB.getOverlappingRegionsInSubspace(subspaceNum, oldQueryComponents);
-				
-				if( overlappingRegion.size() != 1 )
-				{
+					HashMap<String, AttributePartitionInfo> attrsSubspaceInfo = currSubInfo.getAttributesOfSubspace();
 					
-					assert(false);
-				}
-				else
-				{
-					//oldValueMapping.put(subspaceNum, overlappingRegion.keySet().iterator().next());
-					oldRespNodeId = (NodeIDType)overlappingRegion.keySet().iterator().next();
-				}
-				
-				
-				// for new value
-				Vector<ProcessingQueryComponent> newQueryComponents = new Vector<ProcessingQueryComponent>();
-				Iterator<String> subspaceAttrIter1 = attrsSubspaceInfo.keySet().iterator();
-				while( subspaceAttrIter1.hasNext() )
-				{
-					String attrName = subspaceAttrIter1.next();
-					//( String attributeName, String leftOperator, double leftValue, 
-					//		String rightOperator, double rightValue )
-					String value;
-					if( attrValuePairs.has(attrName) )
+					//int currMaxMatch = 0;
+					Vector<ProcessingQueryComponent> oldQueryComponents = new Vector<ProcessingQueryComponent>();
+					
+					Iterator<String> subspaceAttrIter = attrsSubspaceInfo.keySet().iterator();
+					
+					while( subspaceAttrIter.hasNext() )
 					{
-						value = attrValuePairs.getString(attrName);
+						String attrName = subspaceAttrIter.next();
+						//( String attributeName, String leftOperator, double leftValue, 
+						//		String rightOperator, double rightValue )
+						ProcessingQueryComponent qcomponent = new ProcessingQueryComponent( attrName, oldValueJSON.getString(attrName), 
+								oldValueJSON.getString(attrName) );
+						
+						oldQueryComponents.add(qcomponent);
+					}
+					
+					HashMap<Integer, OverlappingInfoClass> overlappingRegion = 
+								this.hyperspaceDB.getOverlappingRegionsInSubspace(subspaceId, replicaNum, oldQueryComponents);
+					
+					if( overlappingRegion.size() != 1 )
+					{	
+						assert(false);
 					}
 					else
 					{
-						value = oldValueJSON.getString(attrName);
-					}
-					ProcessingQueryComponent qcomponent = new ProcessingQueryComponent(attrName, value, value );
-					
-					newQueryComponents.add(qcomponent);
-				}
-				HashMap<Integer, OverlappingInfoClass> newOverlappingRegion = 
-							this.hyperspaceDB.getOverlappingRegionsInSubspace(subspaceNum, newQueryComponents);
-				
-				if( newOverlappingRegion.size() != 1 )
-				{
-					assert(false);
-				}
-				else
-				{
-					//newValueMapping.put(subspaceNum, newOverlappingRegion.keySet().iterator().next());
-					newRespNodeId = (NodeIDType)newOverlappingRegion.keySet().iterator().next();
-				}
-				
-				ContextServiceLogger.getLogger().fine("oldNodeId "+oldRespNodeId+" newRespNodeId "+newRespNodeId);
-				
-				// send messages to the subspace region nodes
-				if( oldRespNodeId == newRespNodeId )
-				{
-					// add entry for reply
-					// 1 reply as both old and new goes to same node
-					updateReq.initializeSubspaceEntry(subspaceNum);
-					
-					ValueUpdateToSubspaceRegionMessage<NodeIDType>  valueUpdateToSubspaceRegionMessage 
-						= new ValueUpdateToSubspaceRegionMessage<NodeIDType>(this.getMyID(), -1, GUID, attrValuePairs,
-							ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, subspaceNum, requestID);
-					
-					try
-					{
-						this.messenger.sendToID(oldRespNodeId, valueUpdateToSubspaceRegionMessage.toJSONObject());
-					} catch (IOException e)
-					{
-						e.printStackTrace();
-					} catch (JSONException e)
-					{
-						e.printStackTrace();
-					}
-				}
-				else
-				{
-					// add entry for reply
-					// 2 reply as both old and new goes to different node
-					updateReq.initializeSubspaceEntry(subspaceNum);
-					
-					ValueUpdateToSubspaceRegionMessage<NodeIDType>  oldValueUpdateToSubspaceRegionMessage 
-						= new ValueUpdateToSubspaceRegionMessage<NodeIDType>(this.getMyID(), -1, GUID, attrValuePairs,
-							ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY, subspaceNum, requestID);
-					
-					try
-					{
-						this.messenger.sendToID(oldRespNodeId, oldValueUpdateToSubspaceRegionMessage.toJSONObject());
-					} catch (IOException e)
-					{
-						e.printStackTrace();
-					} catch (JSONException e)
-					{
-						e.printStackTrace();
+						//oldValueMapping.put(subspaceNum, overlappingRegion.keySet().iterator().next());
+						oldRespNodeId = (NodeIDType)overlappingRegion.keySet().iterator().next();
 					}
 					
-					ValueUpdateToSubspaceRegionMessage<NodeIDType>  newValueUpdateToSubspaceRegionMessage 
-					 = new ValueUpdateToSubspaceRegionMessage<NodeIDType>(this.getMyID(), -1, GUID, attrValuePairs,
-							ValueUpdateToSubspaceRegionMessage.ADD_ENTRY, subspaceNum, requestID);
-					
-					try
+					// for new value
+					Vector<ProcessingQueryComponent> newQueryComponents = new Vector<ProcessingQueryComponent>();
+					Iterator<String> subspaceAttrIter1 = attrsSubspaceInfo.keySet().iterator();
+					while( subspaceAttrIter1.hasNext() )
 					{
-						this.messenger.sendToID(newRespNodeId, newValueUpdateToSubspaceRegionMessage.toJSONObject());
-					} catch (IOException e)
-					{
-						e.printStackTrace();
-					} catch (JSONException e)
-					{
-						e.printStackTrace();
+						String attrName = subspaceAttrIter1.next();
+						
+						String value;
+						if( attrValuePairs.has(attrName) )
+						{
+							value = attrValuePairs.getString(attrName);
+						}
+						else
+						{
+							value = oldValueJSON.getString(attrName);
+						}
+						ProcessingQueryComponent qcomponent = new ProcessingQueryComponent(attrName, value, value );
+						newQueryComponents.add(qcomponent);
 					}
-				}
-				
-				//getting group GUIDs that are affected
-				if( ContextServiceConfig.TRIGGER_ENABLED )
-				{
-					triggerProcessingOnUpdate( attrValuePairs, attrsSubspaceInfo, 
-							subspaceNum, oldValueJSON, requestID );
+					
+					HashMap<Integer, OverlappingInfoClass> newOverlappingRegion = 
+								this.hyperspaceDB.getOverlappingRegionsInSubspace(subspaceId, replicaNum, newQueryComponents);
+					
+					if( newOverlappingRegion.size() != 1 )
+					{
+						assert(false);
+					}
+					else
+					{
+						newRespNodeId = (NodeIDType)newOverlappingRegion.keySet().iterator().next();
+					}
+					
+					ContextServiceLogger.getLogger().fine
+						("oldNodeId "+oldRespNodeId+" newRespNodeId "+newRespNodeId);
+					
+					// send messages to the subspace region nodes
+					if( oldRespNodeId == newRespNodeId )
+					{
+						// add entry for reply
+						// 1 reply as both old and new goes to same node
+						updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
+						
+						ValueUpdateToSubspaceRegionMessage<NodeIDType>  valueUpdateToSubspaceRegionMessage 
+							= new ValueUpdateToSubspaceRegionMessage<NodeIDType>(this.getMyID(), -1, GUID, attrValuePairs,
+								ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, subspaceId, requestID);
+						
+						try
+						{
+							this.messenger.sendToID
+									(oldRespNodeId, valueUpdateToSubspaceRegionMessage.toJSONObject());
+						} catch (IOException e)
+						{
+							e.printStackTrace();
+						} catch (JSONException e)
+						{
+							e.printStackTrace();
+						}
+					}
+					else
+					{
+						// add entry for reply
+						// 2 reply as both old and new goes to different node
+						updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
+						
+						ValueUpdateToSubspaceRegionMessage<NodeIDType>  oldValueUpdateToSubspaceRegionMessage 
+							= new ValueUpdateToSubspaceRegionMessage<NodeIDType>(this.getMyID(), -1, GUID, attrValuePairs,
+								ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY, subspaceId, requestID);
+						
+						try
+						{
+							this.messenger.sendToID(oldRespNodeId, oldValueUpdateToSubspaceRegionMessage.toJSONObject());
+						} catch (IOException e)
+						{
+							e.printStackTrace();
+						} catch (JSONException e)
+						{
+							e.printStackTrace();
+						}
+						
+						ValueUpdateToSubspaceRegionMessage<NodeIDType>  newValueUpdateToSubspaceRegionMessage 
+						 = new ValueUpdateToSubspaceRegionMessage<NodeIDType>(this.getMyID(), -1, GUID, attrValuePairs,
+								ValueUpdateToSubspaceRegionMessage.ADD_ENTRY, subspaceId, requestID);
+						
+						try
+						{
+							this.messenger.sendToID(newRespNodeId, newValueUpdateToSubspaceRegionMessage.toJSONObject());
+						} catch (IOException e)
+						{
+							e.printStackTrace();
+						} catch (JSONException e)
+						{
+							e.printStackTrace();
+						}
+					}
+					
+					//getting group GUIDs that are affected
+					//FIXME: check how triggers can be affected by replica of subspaces
+					if( ContextServiceConfig.TRIGGER_ENABLED )
+					{
+						triggerProcessingOnUpdate( attrValuePairs, attrsSubspaceInfo, 
+								subspaceId, replicaNum, oldValueJSON, requestID );
+					}
 				}
 			}
 		} catch (JSONException e)
@@ -1062,7 +1042,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	
 	@SuppressWarnings("unchecked")
 	private void triggerProcessingOnUpdate( JSONObject attrValuePairs, HashMap<String, AttributePartitionInfo> attrsSubspaceInfo, 
-			int subspaceNum, JSONObject  oldValueJSON, long requestID ) throws JSONException
+			int subspaceId, int replicaNum, JSONObject  oldValueJSON, long requestID ) throws JSONException
 	{
 		// update can be over multiple attributes
 		Iterator<String> attrIter = attrValuePairs.keys();
@@ -1114,18 +1094,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				}
 				
 				HashMap<Integer, OverlappingInfoClass> oldOverlappingRegion = 
-							this.hyperspaceDB.getOverlappingRegionsInSubspace(subspaceNum, oldTriggerComponents);
-				
-				/*JSONObject oldUpdateValPair = new JSONObject();
-				JSONObject newUpdateValPair = new JSONObject();
-				try
-				{
-					oldUpdateValPair.put(currAttrName, oldValue);
-					newUpdateValPair.put(currAttrName, currValue);
-				} catch (JSONException e1)
-				{
-					e1.printStackTrace();
-				}*/
+							this.hyperspaceDB.getOverlappingRegionsInSubspace(subspaceId, replicaNum, oldTriggerComponents);
 				
 				if( oldOverlappingRegion.size() != 1 )
 				{
@@ -1141,7 +1110,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					// compared to double now.
 					
 					UpdateTriggerMessage<NodeIDType>  updateTriggerMessage 
-					 = new UpdateTriggerMessage<NodeIDType>( this.getMyID(), requestID, subspaceNum, 
+					 = new UpdateTriggerMessage<NodeIDType>( this.getMyID(), requestID, subspaceId, 
 							 oldValueJSON, attrValuePairs, UpdateTriggerMessage.OLD_VALUE, overlapInfoObj.hashCode);
 					
 					try
@@ -1158,7 +1127,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				// find new overlapping groups
 				
 				HashMap<Integer, OverlappingInfoClass> newOverlappingRegion = 
-						this.hyperspaceDB.getOverlappingRegionsInSubspace(subspaceNum, newTriggerComponents);
+						this.hyperspaceDB.getOverlappingRegionsInSubspace(subspaceId, replicaNum, newTriggerComponents);
 				
 				
 				if( newOverlappingRegion.size() != 1 )
@@ -1174,7 +1143,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					// compared to double now.
 					
 					UpdateTriggerMessage<NodeIDType>  updateTriggerMessage 
-					 = new UpdateTriggerMessage<NodeIDType>( this.getMyID(), requestID, subspaceNum, 
+					 = new UpdateTriggerMessage<NodeIDType>( this.getMyID(), requestID, subspaceId, 
 							 oldValueJSON, attrValuePairs, UpdateTriggerMessage.NEW_VALUE, overlapInfoObj.hashCode);
 					
 					try
@@ -1197,12 +1166,13 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	private void processValueUpdateToSubspaceRegionMessage(
 			ValueUpdateToSubspaceRegionMessage<NodeIDType> valueUpdateToSubspaceRegionMessage)
 	{
-		int subspaceNum = valueUpdateToSubspaceRegionMessage.getSubspaceNum();
+		int subspaceId = valueUpdateToSubspaceRegionMessage.getSubspaceNum();
 		String GUID = valueUpdateToSubspaceRegionMessage.getGUID();
 		JSONObject attrValuePairs = valueUpdateToSubspaceRegionMessage.getAttrValuePairs();
 		int operType = valueUpdateToSubspaceRegionMessage.getOperType();
+		int replicaNum = getTheReplicaNumForASubspace(subspaceId);
 		
-		String tableName 	= "subspace"+subspaceNum+"DataStorage";
+		String tableName 	= "subspaceId"+subspaceId+"DataStorage";
 		try 
 		{
 			int numRep = 1;
@@ -1235,7 +1205,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>  valueUpdateToSubspaceRegionReplyMessage 
 				= new ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>(this.getMyID(), 
 						valueUpdateToSubspaceRegionMessage.getVersionNum(), numRep, 
-						valueUpdateToSubspaceRegionMessage.getRequestID(), subspaceNum);
+						valueUpdateToSubspaceRegionMessage.getRequestID(), subspaceId, replicaNum);
 			
 			try
 			{
@@ -1252,6 +1222,32 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		{
 			e.printStackTrace();
 		}
+	}
+	
+	/**
+	 * returns the replica num for a subspace
+	 * One nodeid should have just one replica num
+	 * as it can belong to just one replica of that subspace
+	 * @return
+	 */
+	private int getTheReplicaNumForASubspace( int subpsaceId )
+	{
+		HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap
+				= this.subspaceConfigurator.getSubspaceInfoMap();
+		Vector<SubspaceInfo<NodeIDType>> replicasVect 
+				= subspaceInfoMap.get(subpsaceId);
+		
+		int replicaNum = -1;
+		for( int i=0;i<replicasVect.size();i++ )
+		{
+			SubspaceInfo<NodeIDType> subInfo = replicasVect.get(i);
+			if( this.hyperspaceDB.checkIfSubspaceHasMyID(subInfo.getNodesOfSubspace()))
+			{
+				replicaNum = subInfo.getReplicaNum();
+				break;
+			}
+		}
+		return replicaNum;
 	}
 	
 	private void processGetMessage(GetMessage<NodeIDType> getMessage)
@@ -1301,14 +1297,12 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		(ValueUpdateToSubspaceRegionReplyMessage<NodeIDType> valueUpdateToSubspaceRegionReplyMessage)
 	{
 		long requestID = valueUpdateToSubspaceRegionReplyMessage.getRequestID();
-		int subspaceNum = valueUpdateToSubspaceRegionReplyMessage.getSubspaceNum();
+		int subspaceId = valueUpdateToSubspaceRegionReplyMessage.getSubspaceNum();
 		int numReply = valueUpdateToSubspaceRegionReplyMessage.getNumReply();
+		int replicaNum = valueUpdateToSubspaceRegionReplyMessage.getReplicaNum();
+		
 		UpdateInfo<NodeIDType> updInfo = pendingUpdateRequests.get(requestID);
-		//updInfo.setUpdateReply(subspaceNum, numReply);
-		boolean completion = updInfo.setUpdateReply(subspaceNum, numReply);
-		//boolean completion = updInfo.checkAllUpdateReplyRecvd();
-		//ContextServiceLogger.getLogger().fine("processValueUpdateToSubspaceRegionMessageReply requestID "+requestID+" subspaceNum "
-		//		+ subspaceNum +" numReply "+numReply+" completion "+completion);
+		boolean completion = updInfo.setUpdateReply(subspaceId, replicaNum, numReply);
 		
 		if( completion )
 		{
@@ -1394,7 +1388,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			UpdateTriggerReply<NodeIDType> updateTriggerReply) 
 	{
 		long requestID              	= updateTriggerReply.getRequestId();
-		//int subspaceNum             	= updateTriggerReply.getSubspaceNum();
 		JSONArray toBeAddedGroups  		= updateTriggerReply.getToBeAddedGroups();
 		JSONArray toBeRemovedGroups 	= updateTriggerReply.getToBeRemovedGroups();
 		
@@ -1550,7 +1543,10 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	private int getMaxOverlapSubspace( HashMap<String, ProcessingQueryComponent> pqueryComponents, 
 			Vector<ProcessingQueryComponent> matchingAttributes )
 	{
-		Iterator<Integer> keyIter   	= this.subspaceInfoVector.keySet().iterator();
+		HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap 
+			= this.subspaceConfigurator.getSubspaceInfoMap();
+		// first the maximum matching subspace is found and then any of its replica it chosen
+		Iterator<Integer> keyIter   	= subspaceInfoMap.keySet().iterator();
 		int maxMatchingAttrs 			= 0;
 		
 		HashMap<Integer, Vector<MaxAttrMatchingStorageClass>> matchingSubspaceHashMap = 
@@ -1558,8 +1554,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		while( keyIter.hasNext() )
 		{
-			int subspaceNum = keyIter.next();
-			SubspaceInfo<NodeIDType> currSubInfo = this.subspaceInfoVector.get(subspaceNum);
+			int subspaceId = keyIter.next();
+			SubspaceInfo<NodeIDType> currSubInfo = subspaceInfoMap.get(subspaceId).get(0);
 			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo = currSubInfo.getAttributesOfSubspace();
 			
 			int currMaxMatch = 0;
@@ -1583,7 +1579,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				maxMatchingAttrs = currMaxMatch;
 				MaxAttrMatchingStorageClass maxAttrMatchObj = new MaxAttrMatchingStorageClass();
 				maxAttrMatchObj.currMatchingComponents = currMatchingComponents;
-				maxAttrMatchObj.subspaceNum = subspaceNum;
+				maxAttrMatchObj.subspaceId = subspaceId;
 				
 				if(matchingSubspaceHashMap.containsKey(currMaxMatch))
 				{
@@ -1611,11 +1607,11 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		String print = "size "+maxMatchingSubspaceNumVector.size()+" ";
 		for(int i=0;i<maxMatchingSubspaceNumVector.size();i++)
 		{
-			print = print + maxMatchingSubspaceNumVector.get(i).subspaceNum+" ";
+			print = print + maxMatchingSubspaceNumVector.get(i).subspaceId+" ";
 		}
-		print = print + " chosen "+maxMatchingSubspaceNumVector.get(returnIndex).subspaceNum;
+		print = print + " chosen "+maxMatchingSubspaceNumVector.get(returnIndex).subspaceId;
 		
-		return maxMatchingSubspaceNumVector.get(returnIndex).subspaceNum;
+		return maxMatchingSubspaceNumVector.get(returnIndex).subspaceId;
 	}
 	
 	
@@ -1626,12 +1622,15 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	private void getAllOverlappingSubspaces( HashMap<String, ProcessingQueryComponent> pqueryComponents, 
 			HashMap<Integer, Vector<ProcessingQueryComponent>> overlappingSubspaces )
 	{
-		Iterator<Integer> keyIter   	= this.subspaceInfoVector.keySet().iterator();
+		HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap 
+			= this.subspaceConfigurator.getSubspaceInfoMap();
+		
+		Iterator<Integer> keyIter   	= subspaceInfoMap.keySet().iterator();
 		
 		while( keyIter.hasNext() )
 		{
-			int subspaceNum = keyIter.next();
-			SubspaceInfo<NodeIDType> currSubInfo = this.subspaceInfoVector.get(subspaceNum);
+			int subspaceId = keyIter.next();
+			SubspaceInfo<NodeIDType> currSubInfo = subspaceInfoMap.get(subspaceId).get(0);
 			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo = currSubInfo.getAttributesOfSubspace();
 			
 			int currMaxMatch = 0;
@@ -1652,14 +1651,14 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			
 			if( currMaxMatch > 0 )
 			{
-				overlappingSubspaces.put(subspaceNum, currMatchingComponents);
+				overlappingSubspaces.put(subspaceId, currMatchingComponents);
 			}
 		}
 	}
 	
 	private class MaxAttrMatchingStorageClass
 	{
-		public int subspaceNum;
+		public int subspaceId;
 		public Vector<ProcessingQueryComponent> currMatchingComponents;
 	}
 	
@@ -1930,4 +1929,65 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ContextServiceLogger.getLogger().fine("hyperspaceDB.insertIntoSubspacePartitionInfo complete");
 		}
 	}
+	
+	/*@SuppressWarnings("unchecked")
+	private void readSubspaceInfo() throws NumberFormatException, IOException
+	{
+		FileReader freader 	  = new FileReader(
+				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.subspaceInfoFileName);
+		BufferedReader reader = new BufferedReader( freader );
+		String line 		  = null;
+		
+		while ( (line = reader.readLine()) != null )
+		{
+			String [] parsed = line.split(",");
+			Integer subspaceNum = Integer.parseInt(parsed[0]);
+			Vector<NodeIDType> subspaceNodes = new Vector<NodeIDType>();
+			
+			for(int i=1;i<parsed.length;i++)
+			{
+				subspaceNodes.add((NodeIDType)((Integer)Integer.parseInt(parsed[i])));
+			}
+			
+			line = reader.readLine();
+			parsed = line.split(",");
+			Integer newSubspaceNum = Integer.parseInt(parsed[0]);
+			
+			HashMap<String, AttributePartitionInfo> subspaceAttrs = new HashMap<String, AttributePartitionInfo>();
+			if(subspaceNum == newSubspaceNum)
+			{
+				for( int i=1;i<parsed.length;i++ )
+				{
+					String attrName = parsed[i].trim();
+					assert(AttributeTypes.attributeMap.get(attrName) != null);
+					AttributePartitionInfo attrPartInfo = new AttributePartitionInfo
+							( AttributeTypes.attributeMap.get(attrName) );
+					subspaceAttrs.put(attrName, attrPartInfo);
+				}
+			}
+			else
+			{
+				assert(false);
+			}	
+			
+			double numAttr  = subspaceAttrs.size();
+			double numNodes = subspaceNodes.size();
+			
+			int numPartitions = (int)Math.ceil(Math.pow(numNodes, 1.0/numAttr));
+			
+			Iterator<String> subspaceAttrIter = subspaceAttrs.keySet().iterator();
+			while( subspaceAttrIter.hasNext() )
+			{
+				String attrName = subspaceAttrIter.next();
+				AttributePartitionInfo attrPartInfo = subspaceAttrs.get(attrName);
+				attrPartInfo.initializePartitionInfo(numPartitions);
+			}
+			
+			SubspaceInfo<NodeIDType> subspaceInfo = new 
+					SubspaceInfo<NodeIDType>(subspaceNum, subspaceAttrs, subspaceNodes, numPartitions);
+			this.subspaceInfoVector.put(subspaceInfo.getSubspaceNum(), subspaceInfo);
+		}
+		reader.close();
+		freader.close();
+	}*/
 }

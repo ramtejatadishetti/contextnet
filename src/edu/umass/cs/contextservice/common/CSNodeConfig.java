@@ -12,10 +12,7 @@ import org.json.JSONException;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.nio.interfaces.NodeConfig;
 
-
-
 /**
- * 
  * @author ayadav
  *
  * @param <NodeIDType>
@@ -167,6 +164,7 @@ public class CSNodeConfig<NodeIDType> implements NodeConfig<NodeIDType>
 	{
 		return null;
 	}
+	
 	@Override
 	public InetAddress getBindAddress(NodeIDType myID) 
 	{

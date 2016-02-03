@@ -33,7 +33,7 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 	
 	private static CSNodeConfig<Integer> csNodeConfig					= null;
 	
-	private static StartContextServiceNode[] nodes						= null;
+	private static StartContextServiceNode myObj						= null;
 	
 	public StartContextServiceNode(Integer id, NodeConfig<Integer> nc)
 			throws IOException
@@ -58,30 +58,6 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 			csNodeConfig.add(readNodeId, new InetSocketAddress(readIPAddress, readPort));
 		}
 		reader.close();
-	}
-	
-	private static class StartNode implements Runnable
-	{
-		private final int nodeID;
-		private final int myIndex;
-		public StartNode(Integer givenNodeID, int index)
-		{
-			this.nodeID = givenNodeID;
-			this.myIndex = index;
-		}
-		
-		@Override
-		public void run()
-		{
-			try
-			{
-				nodes[myIndex] = new StartContextServiceNode(nodeID, csNodeConfig);
-				new Thread(new NumMessagesPerSec(nodes[myIndex])).start();
-			} catch (IOException e)
-			{
-				e.printStackTrace();
-			}
-		}
 	}
 	
 	private static class NumMessagesPerSec implements Runnable
@@ -146,17 +122,21 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 		
 		ContextServiceLogger.getLogger().fine("Number of nodes in the system "+csNodeConfig.getNodeIDs().size());
 		
-		nodes = new StartContextServiceNode[csNodeConfig.getNodeIDs().size()];
+		//nodes = new StartContextServiceNode[csNodeConfig.getNodeIDs().size()];
 		
 		ContextServiceLogger.getLogger().fine("Starting context service");
-		new Thread(new StartNode(myID, myID)).start();
+		//new Thread(new StartNode(myID)).start();
+		
+		myObj = new StartContextServiceNode(myID, csNodeConfig);
+		new Thread(new NumMessagesPerSec(myObj)).start();
 	}
 
 	//COMMAND LINE STUFF
 	private static HelpFormatter formatter = new HelpFormatter();
 	private static Options commandLineOptions;
 
-	private static CommandLine initializeOptions(String[] args) throws ParseException {
+	private static CommandLine initializeOptions(String[] args) throws ParseException 
+	{
 		Option help = new Option("help", "Prints Usage");
 		Option nodeid = OptionBuilder.withArgName("node id").hasArg()
 	         .withDescription("node id")
@@ -174,7 +154,7 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 		return parser.parse(commandLineOptions, args);
 	}
 	
-	private static void printUsage() 
+	private static void printUsage()
 	{
 		formatter.printHelp("java -cp contextService.jar edu.umass.cs.contextservice.nodeApp.StartContextServiceNode <options>", commandLineOptions);
 	}

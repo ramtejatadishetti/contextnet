@@ -27,7 +27,9 @@ public class UpdateInfo<NodeIDType>
 	
 	private boolean updateReqCompl;
 	
-	private HashMap<Integer, Integer> hyperspaceHashingReplies 									= null;
+	// string key is of the form subspaceId-replicaNum, value integer is 
+	// num of replies
+	private HashMap<String, Integer> hyperspaceHashingReplies 									= null;
 	// counter over number of subspaces
 	private int numRepliesCounter 																= 0;
 	
@@ -53,7 +55,7 @@ public class UpdateInfo<NodeIDType>
 		
 		updateReqCompl = false;
 		
-		hyperspaceHashingReplies = new HashMap<Integer, Integer>();
+		hyperspaceHashingReplies = new HashMap<String, Integer>();
 		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
@@ -92,18 +94,19 @@ public class UpdateInfo<NodeIDType>
 		this.updateReqCompl = true;
 	}
 	
-	public void initializeSubspaceEntry(int subspaceNum)
+	public void initializeSubspaceEntry(int subspaceId, int replicaNum)
 	{
-		hyperspaceHashingReplies.put(subspaceNum, 0);
+		hyperspaceHashingReplies.put(subspaceId+"-"+replicaNum, 0);
 	}
 	
-	public boolean setUpdateReply( Integer subspaceNum, int numRep )
+	public boolean setUpdateReply( int subspaceId, int replicaNum, int numRep )
 	{
 		synchronized(this.regionalRepliesLock)
 		{
-			int repliesRecvdSoFar = this.hyperspaceHashingReplies.get(subspaceNum);
+			String mapKey = subspaceId+"-"+replicaNum;
+			int repliesRecvdSoFar = this.hyperspaceHashingReplies.get(mapKey);
 			repliesRecvdSoFar++;
-			this.hyperspaceHashingReplies.put(subspaceNum, repliesRecvdSoFar);
+			this.hyperspaceHashingReplies.put(mapKey, repliesRecvdSoFar);
 			if(repliesRecvdSoFar == numRep)
 			{
 				this.numRepliesCounter++;

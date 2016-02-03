@@ -34,45 +34,43 @@ public class HyperspaceMySQLDB<NodeIDType>
 	// maximum query length of 1000bytes
 	public static final int MAX_QUERY_LENGTH						= 1000;
 	
-	
-	//private final Connection dbConnection;
 	private final NodeIDType myNodeID;
-	//private final HashMap<NodeIDType, SQLNodeInfo> sqlNodeInfoMap;
 	private final DataSource<NodeIDType> mysqlDataSource;
 	
-	private final HashMap<Integer, SubspaceInfo<NodeIDType>> subspaceInfo;
-	
-	//public static final int NUM_PARALLEL_CLIENTS					= 100;
-	//private Connection[] dbConnectionArray						= new Connection[NUM_PARALLEL_CLIENTS];
-	//private final ConcurrentLinkedQueue<Connection> freedbConnQueue;
-	//private final Object dbConnFreeMonitor						= new Object();
-	//private final Object storeFullObjMonitor						= new Object();
-	
-	//TriggerInfo table columns
-	//groupGUID VARCHAR(100) , userIP VARCHAR(20) , "+ "userPort INTEGER
+	private final HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;
+
 	public static final String userQuery = "userQuery";
 	public static final String groupGUID = "groupGUID";
 	public static final String userIP = "userIP";
 	public static final String userPort = "userPort";
 	
 	
-	public HyperspaceMySQLDB(NodeIDType myNodeID, HashMap<Integer, SubspaceInfo<NodeIDType>> subspaceInfo)
+	public HyperspaceMySQLDB(NodeIDType myNodeID, 
+			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap)
 			throws Exception
 	{
 		this.myNodeID = myNodeID;
-		//sqlNodeInfoMap = new HashMap<NodeIDType, SQLNodeInfo>();
-		//readDBNodeSetup();
 		this.mysqlDataSource = new DataSource<NodeIDType>(myNodeID);
-		this.subspaceInfo = subspaceInfo;
-		
-		/*freedbConnQueue = new ConcurrentLinkedQueue<Connection>();
-		for(int i=0;i<NUM_PARALLEL_CLIENTS;i++)
-		{
-			dbConnectionArray[i] = getConnection();
-			freedbConnQueue.add(dbConnectionArray[i]);
-		}*/
-		// create necessary tables
+		this.subspaceInfoMap = subspaceInfoMap;
 		createTables();
+	}
+	
+	/**
+	 * checks if the subspace nodes have my id.
+	 * Only then the tables are created in mysql.
+	 * @return
+	 */
+	public boolean checkIfSubspaceHasMyID(Vector<NodeIDType> subspaceNodes)
+	{
+		for(int i=0;i<subspaceNodes.size();i++)
+		{
+			NodeIDType currID = subspaceNodes.get(i);
+			if(currID == this.myNodeID)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	/**
@@ -88,76 +86,96 @@ public class HyperspaceMySQLDB<NodeIDType>
 		{
 			myConn = this.mysqlDataSource.getConnection();
 			stmt   =  myConn.createStatement();
-			
-			for( int i=0;i<subspaceInfo.size();i++ )
+			Iterator<Integer> subspaceIter = this.subspaceInfoMap.keySet().iterator();
+			//TODO: reduce creation of extra tables on nodes that don't need it
+			while(subspaceIter.hasNext())
+			//for( int i=0;i<subspaceInfo.size();i++ )
 			{
-				SubspaceInfo<NodeIDType> subInfo = subspaceInfo.get(i);
-				int subspaceNum = subInfo.getSubspaceNum();
-				HashMap<String, AttributePartitionInfo> subspaceAttributes = subInfo.getAttributesOfSubspace();
+				int subspaceId = subspaceIter.next();
+				Vector<SubspaceInfo<NodeIDType>> replicasOfSubspace 
+										= subspaceInfoMap.get(subspaceId);
 				
-				// partition info storage info
-				String tableName = "subspace"+subspaceNum+"PartitionInfo";
-				
-				String newTableCommand = "create table "+tableName+" ( hashCode INTEGER PRIMARY KEY , "
-					      + "   respNodeID INTEGER ";
-				
-				//	      + ", upperRange DOUBLE NOT NULL, nodeID INT NOT NULL, "
-				//	      + "   partitionNum INT AUTO_INCREMENT, INDEX USING BTREE (lowerRange, upperRange) )";
-				//FIXME: which indexing scheme is better, indexing two attribute once or creating a index over all 
-				// attributes
-				Iterator<String> attrIter = subspaceAttributes.keySet().iterator();
-				while( attrIter.hasNext() )
-				{
-					String attrName = attrIter.next();
-					String attrDataType = subspaceAttributes.get(attrName).getAttrMetaInfo().getDataType();
-					String mySQLDataType = AttributeTypes.mySQLDataType.get(attrDataType);
-					// lower range of this attribute in this subspace
-					String lowerAttrName = "lower"+attrName;
-					String upperAttrName = "upper"+attrName;
+				for(int i = 0; i<replicasOfSubspace.size(); i++)
+				{				
+					SubspaceInfo<NodeIDType> subInfo = replicasOfSubspace.get(i);
 					
-					newTableCommand = newTableCommand + " , "+lowerAttrName+" "+mySQLDataType+" , "+upperAttrName+" "+mySQLDataType+" , "
-							+ "INDEX USING BTREE("+lowerAttrName+" , "+upperAttrName+")";
-				}
-				
-				newTableCommand = newTableCommand +" )";
-				//ContextServiceLogger.getLogger().fine("newTableCommand "+newTableCommand);
-				stmt.executeUpdate(newTableCommand);
-				
-				//FIXME: which indexing scheme is better, indexing two attribute once or creating a index over all 
-				// attributes
-				// datastorage table of each subspace
-				tableName = "subspace"+subspaceNum+"DataStorage";
-				
-				newTableCommand = "create table "+tableName+" ( "
-					      + "   nodeGUID CHAR(100) PRIMARY KEY";
-				
-				//	      + ", upperRange DOUBLE NOT NULL, nodeID INT NOT NULL, "
-				//	      + "   partitionNum INT AUTO_INCREMENT, INDEX USING BTREE (lowerRange, upperRange) )";
-				attrIter = AttributeTypes.attributeMap.keySet().iterator();
-				while(attrIter.hasNext())
-				{
-					String attrName = attrIter.next();
-					AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-					String dataType = attrMetaInfo.getDataType();
-					String defaultVal = attrMetaInfo.getDefaultValue();
-					String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
-					newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
-							+" , INDEX USING BTREE("+attrName+")";
-				}
-				newTableCommand = newTableCommand +" )";
-				stmt.executeUpdate(newTableCommand);
-				
-				
-				if( ContextServiceConfig.TRIGGER_ENABLED )
-				{
-					// creating trigger guid storage
-					tableName = "subspace"+subspaceNum+"TriggerInfo";
+					int replicaNum = subInfo.getReplicaNum();
 					
-					newTableCommand = "create table "+tableName+" ( hashCode INTEGER , " + 
-					"  userQuery VARCHAR("+HyperspaceMySQLDB.MAX_QUERY_LENGTH+") , groupGUID VARCHAR(100) , userIP VARCHAR(20) , "
-							+ "userPort INTEGER , INDEX USING  HASH(hashCode) )";
+					HashMap<String, AttributePartitionInfo> subspaceAttributes = subInfo.getAttributesOfSubspace();
 					
+					// partition info storage info
+					String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"PartitionInfo";
+					
+					String newTableCommand = "create table "+tableName+" ( hashCode INTEGER PRIMARY KEY , "
+						      + "   respNodeID INTEGER ";
+					
+					//	      + ", upperRange DOUBLE NOT NULL, nodeID INT NOT NULL, "
+					//	      + "   partitionNum INT AUTO_INCREMENT, INDEX USING BTREE (lowerRange, upperRange) )";
+					//FIXME: which indexing scheme is better, indexing two attribute once or creating a index over all 
+					// attributes
+					Iterator<String> attrIter = subspaceAttributes.keySet().iterator();
+					while( attrIter.hasNext() )
+					{
+						String attrName = attrIter.next();
+						String attrDataType = subspaceAttributes.get(attrName).getAttrMetaInfo().getDataType();
+						String mySQLDataType = AttributeTypes.mySQLDataType.get(attrDataType);
+						// lower range of this attribute in this subspace
+						String lowerAttrName = "lower"+attrName;
+						String upperAttrName = "upper"+attrName;
+						
+						newTableCommand = newTableCommand + " , "+lowerAttrName+" "+mySQLDataType+" , "+upperAttrName+" "+mySQLDataType+" , "
+								+ "INDEX USING BTREE("+lowerAttrName+" , "+upperAttrName+")";
+					}
+					
+					newTableCommand = newTableCommand +" )";
+					//ContextServiceLogger.getLogger().fine("newTableCommand "+newTableCommand);
 					stmt.executeUpdate(newTableCommand);
+					
+					// partition info table is created for every node,
+					// whether or not it is in replica, but data storage table
+					// are only created on data storing nodes.
+					// similar for trigger storage
+					if( !this.checkIfSubspaceHasMyID(subInfo.getNodesOfSubspace() ) )
+					{
+						continue;
+					}
+					
+					//FIXME: which indexing scheme is better, indexing two attribute once or creating a index over all 
+					// attributes
+					// datastorage table of each subspace
+					tableName = "subspaceId"+subspaceId+"DataStorage";
+					
+					newTableCommand = "create table "+tableName+" ( "
+						      + "   nodeGUID CHAR(100) PRIMARY KEY";
+					
+					//	      + ", upperRange DOUBLE NOT NULL, nodeID INT NOT NULL, "
+					//	      + "   partitionNum INT AUTO_INCREMENT, INDEX USING BTREE (lowerRange, upperRange) )";
+					attrIter = AttributeTypes.attributeMap.keySet().iterator();
+					while(attrIter.hasNext())
+					{
+						String attrName = attrIter.next();
+						AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
+						String dataType = attrMetaInfo.getDataType();
+						String defaultVal = attrMetaInfo.getDefaultValue();
+						String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
+						newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
+								+" , INDEX USING BTREE("+attrName+")";
+					}
+					newTableCommand = newTableCommand +" )";
+					stmt.executeUpdate(newTableCommand);
+					
+					
+					if( ContextServiceConfig.TRIGGER_ENABLED )
+					{
+						// creating trigger guid storage
+						tableName = "subspaceId"+subspaceId+"TriggerInfo";
+						
+						newTableCommand = "create table "+tableName+" ( hashCode INTEGER , " + 
+						"  userQuery VARCHAR("+HyperspaceMySQLDB.MAX_QUERY_LENGTH+") , groupGUID VARCHAR(100) , userIP VARCHAR(20) , "
+								+ "userPort INTEGER , INDEX USING  HASH(hashCode) )";
+						
+						stmt.executeUpdate(newTableCommand);
+					}
 				}
 			}
 			
@@ -213,13 +231,13 @@ public class HyperspaceMySQLDB<NodeIDType>
 	 * @return
 	 */
 	public HashMap<Integer, OverlappingInfoClass> 
-		getOverlappingRegionsInSubspace(int subspaceNum, Vector<ProcessingQueryComponent> matchingQueryComponents)
+		getOverlappingRegionsInSubspace(int subspaceId, int replicaNum, Vector<ProcessingQueryComponent> matchingQueryComponents)
 	{
 		long t0 = System.currentTimeMillis();
 		HashMap<Integer, OverlappingInfoClass> answerList 
 						= new HashMap<Integer, OverlappingInfoClass>();
 		
-		String tableName = "subspace"+subspaceNum+"PartitionInfo";
+		String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"PartitionInfo";
 		
 		String selectTableSQL = "SELECT hashCode, respNodeID from "+tableName+" WHERE ";
 		
@@ -333,7 +351,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		return isFun;
 	}
 	
-	public JSONArray processSearchQueryInSubspaceRegion(int subspaceNum, String query)
+	public JSONArray processSearchQueryInSubspaceRegion(int subspaceId, String query)
 	{
 		long t0 = System.currentTimeMillis();
 		
@@ -344,7 +362,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		
 		boolean isFun = ifQueryHasFunctions(qcomponents);
 		
-		String tableName = "subspace"+subspaceNum+"DataStorage";
+		String tableName = "subspaceId"+subspaceId+"DataStorage";
 		String mysqlQuery = "";
 		
 		if(isFun)
@@ -469,6 +487,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 				sqlex.printStackTrace();
 			}
 		}
+		
 		if(ContextServiceConfig.DELAY_PROFILER_ON)
 		{
 			DelayProfiler.updateDelay("processSearchQueryInSubspaceRegion", t0);
@@ -477,20 +496,22 @@ public class HyperspaceMySQLDB<NodeIDType>
 	}
 	
 	/**
-	 * inserts a subspace region denoted by subspace vector, integer denotes partition num in partition
-	 * info 
+	 * Inserts a subspace region denoted by subspace vector, 
+	 * integer denotes partition num in partition info 
 	 * @param subspaceNum
 	 * @param subspaceVector
 	 */
-	public void insertIntoSubspacePartitionInfo(int subspaceNum, List<Integer> subspaceVector, NodeIDType respNodeId)
+	public void insertIntoSubspacePartitionInfo(int subspaceId, int replicaNum,
+			List<Integer> subspaceVector, NodeIDType respNodeId)
 	{
 		long t0 			= System.currentTimeMillis();
 		Connection myConn   = null;
 		Statement stmt      = null;
 		
-		String tableName = "subspace"+subspaceNum+"PartitionInfo";
+		String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"PartitionInfo";
 		
-		SubspaceInfo<NodeIDType> currSubInfo = subspaceInfo.get(subspaceNum);
+		SubspaceInfo<NodeIDType> currSubInfo = subspaceInfoMap.
+				get(subspaceId).get(replicaNum);
 		//Vector<AttributePartitionInfo> domainPartInfo = currSubInfo.getDomainPartitionInfo();
 		//Vector<String> attrSubspaceInfo = currSubInfo.getAttributesOfSubspace();
 		HashMap<String, AttributePartitionInfo> attrSubspaceInfo = currSubInfo.getAttributesOfSubspace();
@@ -654,7 +675,8 @@ public class HyperspaceMySQLDB<NodeIDType>
 	 * @param subspaceNum
 	 * @param subspaceVector
 	 */
-	public void insertIntoSubspaceTriggerInfo( int subspaceNum, int hashCode, String userQuery, 
+	public void insertIntoSubspaceTriggerInfo( int subspaceId, 
+			int hashCode, String userQuery, 
 			String groupGUID, String userIP, int userPort )
 	{
 		long t0 			= System.currentTimeMillis();
@@ -663,7 +685,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		
 		// String tableName = "subspace"+subspaceNum+"PartitionInfo";
 		
-		String tableName = "subspace"+subspaceNum+"TriggerInfo";
+		String tableName = "subspaceId"+subspaceId+"TriggerInfo";
 		
 		//newTableCommand = "create table "+tableName+" ( hashCode INTEGER , " + 
 		//		"  userQuery VARCHAR("+HyperspaceMySQLDB.MAX_QUERY_LENGTH+") , groupGUID CHAR(100) , INDEX USING  HASH(hashCode) )";
@@ -719,11 +741,11 @@ public class HyperspaceMySQLDB<NodeIDType>
 	 * @param hashCode
 	 * @return
 	 */
-	public JSONArray getTriggerInfo(int subspaceNum, int hashCode)
+	public JSONArray getTriggerInfo(int subspaceId, int hashCode)
 	{
 		long t0 = System.currentTimeMillis();
 		
-		String tableName 			= "subspace"+subspaceNum+"TriggerInfo";
+		String tableName 			= "subspaceId"+subspaceId+"TriggerInfo";
 		
 		Connection myConn 			= null;
 		Statement stmt 				= null;
