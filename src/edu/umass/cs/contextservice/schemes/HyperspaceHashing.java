@@ -90,8 +90,10 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		// can be changed to basic configurator here
 		subspaceConfigurator = new SubspaceConfigurator<NodeIDType>(messenger.getNodeConfig());
+		ContextServiceLogger.getLogger().fine("configure subspace started");
 		// configure subspaces
 		subspaceConfigurator.configureSubspaceInfo();
+		ContextServiceLogger.getLogger().fine("configure subspace completed");
 		
 		try
 		{
@@ -103,9 +105,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		//ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
 		
 		generateSubspacePartitions();
-		nodeES = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+		//nodeES = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 		//ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
-		//nodeES = Executors.newCachedThreadPool();
+		nodeES = Executors.newCachedThreadPool();
 		
 		new Thread(new ProfilerStatClass()).start();
 	}

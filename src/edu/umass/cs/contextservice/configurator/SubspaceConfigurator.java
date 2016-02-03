@@ -26,7 +26,7 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 {
 	// each domain is at least partitioned into two.
 	//TODO: these values will be determined by the model at some point
-	//private static final double MIN_P = 2;
+	private static final double MIN_P = 2;
 	private static final double MAX_H = 3;
 	
 	public SubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig)
@@ -47,7 +47,10 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 		// so N/S(N) is sqrt(N)
 		double nBySN = Math.sqrt(numNodes);
 		// we need to replicate existing subspaces
-		if( nBySN > numSubspaces )
+		// unless nBySN that is the number of nodes assigned to a subspace is greater 
+		// than MIN_P^attrs, till then no point in replicating. we want p to 
+		// be minimum 2.
+		if( (nBySN > numSubspaces) && (nBySN >= Math.pow(MIN_P, Math.min(numAttrs, MAX_H))) )
 		{
 			// assign sqrt(N) nodes to each subspace and then if more than sqrt(N) 
 			// nodes are remaining then replicate one subspace or if less are remaining 
@@ -104,6 +107,7 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 		}
 		// initializes the domain partitions for an attribute
 		initializePartitionInfo();
+		this.printSubspaceInfo();
 		
 		//TODO: add assertion to check that one node lies in only one replica of a subspace
 		// this is necessary for the remaining code to work.
@@ -282,6 +286,7 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 				
 				int currSubspaceNumPartitions 
 					= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
+				currSubInfo.setNumPartitions(currSubspaceNumPartitions);
 				
 				Iterator<String> subspaceAttrIter
 									= currSubInfo.getAttributesOfSubspace().keySet().iterator();

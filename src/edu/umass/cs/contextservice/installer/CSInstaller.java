@@ -81,7 +81,7 @@ public class CSInstaller
   private static final String ATTR_INFO_FILENAME  			= "attributeInfo.txt";
   private static final String NODE_SETUP_FILENAME 			= "contextServiceNodeSetup.txt";
   private static final String DB_SETUP_FILENAME   			= "dbNodeSetup.txt";
-  private static final String SUBSPACE_INFO_FILENAME   		= "subspaceInfo.txt";
+  //private static final String SUBSPACE_INFO_FILENAME   		= "subspaceInfo.txt";
   
   //private static final String NS_PROPERTIES_FILENAME = "ns.properties";
   //private static final String PAXOS_PROPERTIES_FILENAME = "gigapaxos.gnsApp.properties";
@@ -133,12 +133,12 @@ public class CSInstaller
   private static String localAttrInfoFileLocation;
   private static String localNodeSetupFileLocation;
   private static String localDBSetupFileLocation;
-  private static String localSubspaceInfoFileLocation;
+  //private static String localSubspaceInfoFileLocation;
   
   private static String localAttrInfoFileName;
   private static String localNodeSetupFileName;
   private static String localDBSetupFileName;
-  private static String localSubspaceInfoFileName;
+  //private static String localSubspaceInfoFileName;
 
   private static final String StartCSClass 
   				 = "edu.umass.cs.contextservice.nodeApp.StartContextServiceNode";
@@ -450,8 +450,8 @@ public class CSInstaller
               buildInstallFilePath(relativeCsConfFolder + FILESEPARATOR + localNodeSetupFileName));
       RSync.upload(userName, hostname, keyFileName, localDBSetupFileLocation,
               buildInstallFilePath(relativeCsConfFolder + FILESEPARATOR + localDBSetupFileName));
-      RSync.upload(userName, hostname, keyFileName, localSubspaceInfoFileLocation,
-              buildInstallFilePath(relativeCsConfFolder + FILESEPARATOR + localSubspaceInfoFileName));
+//      RSync.upload(userName, hostname, keyFileName, localSubspaceInfoFileLocation,
+//              buildInstallFilePath(relativeCsConfFolder + FILESEPARATOR + localSubspaceInfoFileName));
     }
   }
 
@@ -520,10 +520,10 @@ public class CSInstaller
     		relativeCsConfFolder + FILESEPARATOR + DB_SETUP_FILENAME, confFolderPath)) {
       System.out.println("csConfig folder " + relativeCsConfFolder + " missing file " + DB_SETUP_FILENAME);
     }
-    if (!fileExistsSomewhere(
-    		relativeCsConfFolder + FILESEPARATOR + SUBSPACE_INFO_FILENAME, confFolderPath)) {
-      System.out.println("csConfig folder " + relativeCsConfFolder + " missing file " + SUBSPACE_INFO_FILENAME);
-    }
+//    if (!fileExistsSomewhere(
+//    		relativeCsConfFolder + FILESEPARATOR + SUBSPACE_INFO_FILENAME, confFolderPath)) {
+//      System.out.println("csConfig folder " + relativeCsConfFolder + " missing file " + SUBSPACE_INFO_FILENAME);
+//    }
     
     //localAttrInfoFileLocation;
     //localNodeSetupFileLocation;
@@ -536,19 +536,19 @@ public class CSInstaller
     		NODE_SETUP_FILENAME, confFolderPath).toString();
     localDBSetupFileLocation = fileSomewhere(relativeCsConfFolder + FILESEPARATOR + 
     		DB_SETUP_FILENAME, confFolderPath).toString();
-    localSubspaceInfoFileLocation = fileSomewhere(relativeCsConfFolder + FILESEPARATOR + 
-    		SUBSPACE_INFO_FILENAME, confFolderPath).toString();
+//    localSubspaceInfoFileLocation = fileSomewhere(relativeCsConfFolder + FILESEPARATOR + 
+//    		SUBSPACE_INFO_FILENAME, confFolderPath).toString();
     
     
     localAttrInfoFileName		= new File(localAttrInfoFileLocation).getName();
     localNodeSetupFileName    	= new File(localNodeSetupFileLocation).getName();
     localDBSetupFileName 		= new File(localDBSetupFileLocation).getName();
-    localSubspaceInfoFileName 	= new File(localSubspaceInfoFileLocation).getName();
+    //localSubspaceInfoFileName 	= new File(localSubspaceInfoFileLocation).getName();
 
     assert(localAttrInfoFileName.equals(ATTR_INFO_FILENAME));
     assert(localNodeSetupFileName.equals(NODE_SETUP_FILENAME));
     assert(localDBSetupFileName.equals(DB_SETUP_FILENAME));
-    assert(localSubspaceInfoFileName.equals(SUBSPACE_INFO_FILENAME));
+    //assert(localSubspaceInfoFileName.equals(SUBSPACE_INFO_FILENAME));
     
     return true;
   }

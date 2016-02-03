@@ -1,8 +1,10 @@
 package edu.umass.cs.contextservice.test;
 
-
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -12,6 +14,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -35,16 +39,16 @@ import edu.umass.cs.nio.JSONNIOTransport;
 import edu.umass.cs.nio.interfaces.NodeConfig;
 import edu.umass.cs.nio.interfaces.PacketDemultiplexer;
 
-public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
+public class LargeNumNodesCSSetup extends ContextServiceNode<Integer>
 {
 	public static final int HYPERSPACE_HASHING							= 1;
 	
 	private static CSNodeConfig<Integer> csNodeConfig					= null;
 	
-	private static FourNodeCSSetupStringAttrs[] nodes					= null;
+	private static ExecutorService eservice;
+	//private static FourNodeCSSetup[] nodes								= null;
 	
-	
-	public FourNodeCSSetupStringAttrs(Integer id, NodeConfig<Integer> nc)
+	public LargeNumNodesCSSetup(Integer id, NodeConfig<Integer> nc)
 			throws IOException
 	{
 		super(id, nc);
@@ -52,34 +56,37 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 	
 	public static void main(String[] args) throws NumberFormatException, UnknownHostException, IOException
 	{
-		ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERSPACE_HASHING;
+		int numNodes = Integer.parseInt(args[0]);
+		
+		eservice = Executors.newCachedThreadPool();
+		
+		ContextServiceConfig.configFileDirectory 
+			= "/home/adipc/Documents/MobilityFirstGitHub/ContextNet/contextnet/conf/singleNodeConf/contextServiceConf";
+		
+		ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERSPACE_HASHING;		
+		
+		writeConfigFiles(numNodes);
+		// create contextServiceNodeConfig.txt and dbNodeConfig.txt
 		
 		readNodeInfo();
 		
 		System.out.println("Number of nodes in the system "+csNodeConfig.getNodeIDs().size());
 		
-		nodes = new FourNodeCSSetupStringAttrs[csNodeConfig.getNodeIDs().size()];
-		
-		System.out.println("Starting context service 0");
-		new Thread(new StartNode(0, 0)).start();
-		
-		System.out.println("Starting context service 1");
-		new Thread(new StartNode(1, 1)).start();
-		
-		System.out.println("Starting context service 2");
-		new Thread(new StartNode(2, 2)).start();
-		
-		System.out.println("Starting context service 3");
-		new Thread(new StartNode(3, 3)).start();
+		for(int i=0; i<numNodes; i++)
+		{
+			System.out.println("Starting context service "+i);
+			eservice.execute(new StartNode(i));
+		}
 		
 		try
 		{
-			Thread.sleep(5000);
+			Thread.sleep(30000);
 		} catch (InterruptedException e) 
 		{
 			e.printStackTrace();
 		}
 		
+		System.out.println("starting request load");
 		try 
 		{
 			RequestClass.startRequests();
@@ -89,11 +96,54 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 		}
 	}
 	
-	private static void readNodeInfo() throws NumberFormatException, UnknownHostException, IOException
+	public static void writeConfigFiles(int numNodes) throws IOException
 	{
+		File file = new File(ContextServiceConfig.configFileDirectory+"/"+
+				"contextServiceNodeSetup.txt");
+		
+		// if file doesnt exists, then create it
+		if (!file.exists()) 
+		{
+			file.createNewFile();
+		}
+		
+		FileWriter fw = new FileWriter(file.getAbsoluteFile());
+		BufferedWriter bw = new BufferedWriter(fw);
+		int initialPort = 8000;
+		for( int i=0; i<numNodes; i++ )
+		{
+			String writeStr = i+" "+"127.0.0.1"+" "+(initialPort+i)+"\n";
+			bw.write(writeStr);
+		}
+		bw.close();
+		
+		
+		file = new File(ContextServiceConfig.configFileDirectory+"/"+
+				"dbNodeSetup.txt");
+		
+		// if file doesnt exists, then create it
+		if (!file.exists()) 
+		{
+			file.createNewFile();
+		}
+		
+		fw = new FileWriter(file.getAbsoluteFile());
+		bw = new BufferedWriter(fw);
+		//initialPort = 6000;
+		for( int i=0; i<numNodes; i++ )
+		{
+			String writeStr = i+" "+"3306"+" contextDB"+i+" root aditya\n";
+			bw.write(writeStr);
+		}
+		bw.close();
+	}
+	
+	private static void readNodeInfo() throws NumberFormatException, UnknownHostException, IOException
+	{	
 		csNodeConfig = new CSNodeConfig<Integer>();
 		
-		BufferedReader reader = new BufferedReader(new FileReader(ContextServiceConfig.nodeSetupFileName));
+		BufferedReader reader = new BufferedReader(new FileReader(
+				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.nodeSetupFileName));
 		String line = null;
 		while ((line = reader.readLine()) != null)
 		{
@@ -110,11 +160,9 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 	private static class StartNode implements Runnable
 	{
 		private final int nodeID;
-		private final int myIndex;
-		public StartNode(Integer givenNodeID, int index)
+		public StartNode(Integer givenNodeID)
 		{
 			this.nodeID = givenNodeID;
-			this.myIndex = index;
 		}
 		
 		@Override
@@ -122,7 +170,7 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 		{
 			try
 			{
-				nodes[myIndex] = new FourNodeCSSetupStringAttrs(nodeID, csNodeConfig);
+				new LargeNumNodesCSSetup(nodeID, csNodeConfig);
 			} catch (IOException e)
 			{
 				e.printStackTrace();
@@ -138,7 +186,7 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 		public static final int GET												= 2;
 		public static final int SEARCH											= 3;
 		
-		public static int NUMGUIDs												= 100;
+		public static int NUMGUIDs												= 10;
 		
 		private final JSONNIOTransport<Integer> niot;
 		private final JSONMessenger<Integer> messenger;
@@ -158,15 +206,16 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 		
 		public static void startRequests() throws Exception
 		{
-			System.out.println("Starting requests");
 			writerName = "writer1";
 			
 			RequestClass basicObj = new RequestClass();
+			//sendAMessage(basicObj, SEARCH);
+			
 			sendAMessage(basicObj, UPDATE);
 			
 			sendAMessage(basicObj, GET);
 			
-			sendAMessage(basicObj, SEARCH);
+			//sendAMessage(basicObj, SEARCH);
 		}
 		
 		private static void sendAMessage(RequestClass basicObj, int reqType)
@@ -186,8 +235,8 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 					try 
 					{
 						Thread.sleep(100);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
+					} catch (InterruptedException e) 
+					{
 						e.printStackTrace();
 					}
 				}
@@ -254,7 +303,7 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 			try
 			{
 				GetMessage<Integer> getMessageObj = 
-						new GetMessage<Integer>(myID, currID, myGUID,  sourceIP, sourcePort );
+						new GetMessage<Integer>(myID, currID, myGUID, sourceIP, sourcePort);
 				
 				niot.sendToAddress(getRandomNodeSock(), getMessageObj.toJSONObject());
 			} catch (JSONException e)
@@ -278,26 +327,19 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 			String realAlias = memberAlias+guidNum;
 			String myGUID = getSHA1(realAlias);
 			Random valRand = new Random();
-			//double latitude = (valRand.nextDouble()-0.5)*180;
-			//double longitude = (valRand.nextDouble()-0.5)*360;
-			String latitude  = "";
-			String longitude = "";
+			double latitude = (valRand.nextDouble()-0.5)*180;
+			double longitude = (valRand.nextDouble()-0.5)*360;
 			if(currID%2 == 0)
 			{
-				latitude  = "a";
-				longitude = "a";
-			}
-			else
-			{
-				latitude  = "d";
-				longitude = "d";
+				latitude = 42.466;
+				longitude = -72.58;
 			}
 			
 			try
 			{
 				JSONObject attrValuePair = new JSONObject();
-				attrValuePair.put("latitude", latitude+"");
-				attrValuePair.put("longitude", longitude+"");
+				attrValuePair.put("geoLocationCurrentLat", latitude);
+				attrValuePair.put("geoLocationCurrentLong", longitude);
 				
 				
 				ValueUpdateFromGNS<Integer> valUpdFromGNS = 
@@ -321,24 +363,22 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 		 */
 		public void sendQuery(long currID)
 		{
-			//String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE latitude >= '-90' AND longitude <= '180'";
-			//String query   = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE latitude >= 'a' AND longitude >= 'b'";
-			//String query   = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE latitude = 'd' AND longitude = 'd'";
-			String query   = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE latitude >= 'a' AND longitude >= 'a'";
-			//JSONObject geoJSONObject = getGeoJSON();
-			//String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE GeojsonOverlap("+geoJSONObject.toString()+")";
+			//String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE latitude >= -90 AND longitude <= 180";
+			JSONObject geoJSONObject = getGeoJSON();
+			String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE GeojsonOverlap(geoLocationCurrentLat, geoLocationCurrentLong, "+geoJSONObject.toString()+")";
 			
 			//eservice.execute(new SendingRequest(currID, SendingRequest.QUERY, query, currNumAttr, "", -1, -1, "") );
-			//currNumAttr  = currNumAttr + 2;
+			//currNumAttr = currNumAttr + 2;
 			
 			QueryMsgFromUser<Integer> qmesgU 
-			= new QueryMsgFromUser<Integer>(myID, query, currID, 300000, sourceIP, sourcePort);
+				= new QueryMsgFromUser<Integer>(myID, query, currID, 300000, sourceIP, sourcePort);
 			
 			InetSocketAddress sockAddr = getRandomNodeSock();
 			//ContextServiceLogger.getLogger().fine("Sending query to "+sockAddr);
 			
 			try 
 			{
+				System.out.println("Sending search query to "+sockAddr);
 				niot.sendToAddress(sockAddr, qmesgU.toJSONObject());
 			} catch (IOException e)
 			{
@@ -415,8 +455,8 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 				
 				long reqID = qmur.getVersionNum();
 				
-			
-				System.out.println("RefreshTrigger completion requestID "+reqID+" time "+System.currentTimeMillis());
+				System.out.println("RefreshTrigger completion requestID "
+				+reqID+" time "+System.currentTimeMillis()+" "+qmur);
 			} catch (JSONException e)
 			{
 				e.printStackTrace();
@@ -472,7 +512,7 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 				} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
 						== ContextServicePacket.PacketType.REFRESH_TRIGGER.getInt() )
 				{
-					//handleRefreshTrigger(jsonObject);
+					handleRefreshTrigger(jsonObject);
 				} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
 						== ContextServicePacket.PacketType.GET_REPLY_MESSAGE.getInt() )
 				{
@@ -506,7 +546,7 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 					 JSONArray coordList = new JSONArray(newArray.getString(i));
 					 ContextServiceLogger.getLogger().fine("i "+i+coordList.getDouble(0) );
 				 }*/
-			} catch (JSONException e) 
+			} catch (JSONException e)
 			{
 				e.printStackTrace();
 			}

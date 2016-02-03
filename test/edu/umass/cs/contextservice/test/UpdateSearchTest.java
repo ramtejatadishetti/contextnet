@@ -44,6 +44,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
 
@@ -154,33 +155,21 @@ public class UpdateSearchTest {
 		  JSONObject recvJSON = contextServiceClient.sendGetRequest(currGUID);
 		  assert(recvJSON.length()>0);
 		  System.out.println("i "+i+" GUID "+currGUID+" JSON "+recvJSON);
-		  
 	  }
 	  
 	  // issue different types of search
 	  // simple search to get all the records
 	  String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE geoLocationCurrentLat >= -90 AND geoLocationCurrentLong <= 180";
 	  //JSONObject geoJSONObject = getGeoJSON();
-	  JSONArray recvArray = contextServiceClient.sendSearchQuery(query);
+	  ConcurrentHashMap<String, Boolean> resultMap = new ConcurrentHashMap<String, Boolean>();
+	  contextServiceClient.sendSearchQuery(query, resultMap, 300000);
 	  
-	  int numGuidsRet = 0;
-	  System.out.println("Search query result length "+recvArray.length());
+	  
+	  System.out.println("Search query result length "+resultMap.size());
 	  // JSONArray is an array of GUIDs
 	  HashMap<String, Boolean> guidsRet = new HashMap<String, Boolean>();
 	  
-	  for(int i=0; i<recvArray.length(); i++)
-	  {
-		  try
-		  {
-			  guidsRet.put(recvArray.getString(i), true);
-			  System.out.println("GUIDs returned "+recvArray.getString(i));
-		  } catch (JSONException e)
-		  {
-			  e.printStackTrace();
-		  }
-	  }
-	  numGuidsRet = guidsRet.size();
-	  System.out.println("Search query num GUIDs "+numGuidsRet);
+	  System.out.println("Search query num GUIDs "+resultMap.size());
 	  // all guids should be there
 	  for(int i=0;i<guidStorage.size();i++)
 	  {
@@ -197,9 +186,11 @@ public class UpdateSearchTest {
 	  System.out.println("GeoJSON created "+geoJSONObject);
 	  query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE GeojsonOverlap(geoLocationCurrentLat, "
 	  		+ "geoLocationCurrentLong, "+geoJSONObject.toString()+")";
-	  recvArray = contextServiceClient.sendSearchQuery(query);
+	  resultMap.clear();
 	  
-	  System.out.println("Num guids returned by geoJSON query "+recvArray.length());
+	  contextServiceClient.sendSearchQuery(query, resultMap, 300000);
+	  
+	  System.out.println("Num guids returned by geoJSON query "+resultMap.size());
   }
   
   private JSONObject getGeoJSON()

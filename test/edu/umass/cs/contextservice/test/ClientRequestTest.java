@@ -4,6 +4,7 @@ package edu.umass.cs.contextservice.test;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -30,12 +31,12 @@ public class ClientRequestTest
 	
 	private ContextServiceClient<String> contextClient						= null;
 	
-	public static void startRequests() throws Exception
+	public static void startRequests(String csHost, int csPort) throws Exception
 	{
 		writerName = "writer1";
 		
 		
-		ClientRequestTest basicObj = new ClientRequestTest();
+		ClientRequestTest basicObj = new ClientRequestTest(csHost, csPort);
 		sendAMessage(basicObj, UPDATE);
 		
 		sendAMessage(basicObj, GET);
@@ -83,17 +84,17 @@ public class ClientRequestTest
 		}
 	}
 	
-	public ClientRequestTest() throws Exception
+	public ClientRequestTest(String csHost, int csPort) throws Exception
 	{
 		requestID = 0;
-		contextClient = new ContextServiceClient<String>("127.0.0.1", 5000);
+		contextClient = new ContextServiceClient<String>(csHost, csPort);
 	}
 	
 	/**
 	 * This function sends update
 	 */
 	public void sendGet(long currID, int guidNum)
-	{	
+	{
 		String memberAlias = CLIENT_GUID_PREFIX;
 		String realAlias = memberAlias+guidNum;
 		String myGUID = getSHA1(realAlias);
@@ -130,7 +131,8 @@ public class ClientRequestTest
 			attrValuePair.put(latitudeAttrName, latitude);
 			attrValuePair.put(longitudeAttrName, longitude);
 			
-			contextClient.sendUpdate(myGUID, attrValuePair, currID);
+			// true fo blocking update
+			contextClient.sendUpdate(myGUID, attrValuePair, currID, true);
 		} catch (JSONException e)
 		{
 			e.printStackTrace();
@@ -147,10 +149,10 @@ public class ClientRequestTest
 		//JSONObject geoJSONObject = getGeoJSON();
 		//String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE GeojsonOverlap("+geoJSONObject.toString()+")";
 		//String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE latitude >= ";
-		
-		JSONArray guidList = contextClient.sendSearchQuery(query);
-		System.out.println("Query result size "+guidList.length());
-		if(guidList.length() == NUMGUIDs)
+		ConcurrentHashMap<String, Boolean> resultMap = new ConcurrentHashMap<String, Boolean>();
+		contextClient.sendSearchQuery(query, resultMap, 300000);
+		System.out.println("Query result size "+resultMap.size());
+		if(resultMap.size() == NUMGUIDs)
 		{
 			System.out.println("Search test pass");
 		}	
@@ -184,10 +186,13 @@ public class ClientRequestTest
 	
 	public static void main(String[] args)
 	{
-		try {
-			ClientRequestTest.startRequests();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
+		String csHost = args[0];
+		int csPort = Integer.parseInt(args[1]);
+		try 
+		{
+			ClientRequestTest.startRequests(csHost, csPort);
+		} catch (Exception e) 
+		{
 			e.printStackTrace();
 		}
 	}

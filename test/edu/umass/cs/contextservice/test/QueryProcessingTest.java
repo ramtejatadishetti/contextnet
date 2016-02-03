@@ -189,7 +189,7 @@ public class QueryProcessingTest implements PacketDemultiplexer<JSONObject>
 	private void sendQueryToContextService(String query, long userReqNum) throws IOException, JSONException
 	{
 		QueryMsgFromUser<Integer> qmesgU 
-			= new QueryMsgFromUser<Integer>(myID, query, sourceIP, sourcePort, userReqNum);
+			= new QueryMsgFromUser<Integer>(myID, query, userReqNum, 300000, sourceIP, sourcePort);
 		
 		InetSocketAddress sockAddr = new InetSocketAddress("127.0.0.1", 8001);
 		//ContextServiceLogger.getLogger().fine("Sending query to "+sockAddr);

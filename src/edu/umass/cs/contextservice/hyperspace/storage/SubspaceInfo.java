@@ -60,8 +60,8 @@ public class SubspaceInfo<NodeIDType>
 	
 	public String toString()
 	{
-		String str = "subspace id "+this.subspaceId+" replica num "+this.replicaNum
-				+" attributes ";
+		String str = "subspace id "+this.subspaceId+" replica num "+this.replicaNum+
+				" num partitions "+ numPartitions +" attributes ";
 		
 		Iterator<String> attrIter = this.attributesOfSubspace.keySet().iterator();
 		
