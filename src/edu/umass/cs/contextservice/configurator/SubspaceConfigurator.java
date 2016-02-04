@@ -46,26 +46,22 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 		// N/S(N) is from the model, we consider S(N) to be sqrt(N)
 		// so N/S(N) is sqrt(N)
 		double nBySN = Math.sqrt(numNodes);
+		int numberOfTotalSubspaces = (int) Math.floor(nBySN);
+		int mimNumOfNodesToSubspace = (int) Math.floor(nBySN);
 		// we need to replicate existing subspaces
 		// unless nBySN that is the number of nodes assigned to a subspace is greater 
 		// than MIN_P^attrs, till then no point in replicating. we want p to 
 		// be minimum 2.
-		if( (nBySN > numSubspaces) && (nBySN >= Math.pow(MIN_P, Math.min(numAttrs, MAX_H))) )
+		if( (numberOfTotalSubspaces > numSubspaces) && (mimNumOfNodesToSubspace >= Math.pow(MIN_P, Math.min(numAttrs, MAX_H))) )
 		{
 			// assign sqrt(N) nodes to each subspace and then if more than sqrt(N) 
 			// nodes are remaining then replicate one subspace or if less are remaining 
 			// then just add it to the current subspaces.
-			int sqrtNumNodes = (int) Math.floor(nBySN);
 			
 			int nodesIdCounter = 
-				assignNodesUniformlyToSubspaces(sqrtNumNodes, (int)numSubspaces);
-			
-			int numRemainingNodes   = (int)numNodes - nodesIdCounter;
-			
-			if( numRemainingNodes >= sqrtNumNodes )
-			{
-				nodesIdCounter = replicateSubspaces(nodesIdCounter, (int) numNodes);
-			}
+				assignNodesUniformlyToSubspaces(mimNumOfNodesToSubspace, (int)numSubspaces);
+
+			nodesIdCounter = replicateSubspaces(nodesIdCounter, (int) numNodes);
 			// all nodes should be assigned by now
 			assert( (numNodes-nodesIdCounter) == 0);
 		}
@@ -177,6 +173,20 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 	}
 	
 	/**
+	 * returns the total number of subspaces, including replica subspaces
+	 * @return
+	 */
+	private int getTotalSubspaces()
+	{
+		int totalSub = 0;
+		Iterator<Integer> mapIter = subspaceInfoMap.keySet().iterator();
+		while( mapIter.hasNext() )
+		{
+			totalSub = totalSub + subspaceInfoMap.get(mapIter.next()).size();
+		}
+		return totalSub;
+	}
+	/**
 	 * Creates a replicated subspace info after 
 	 * initializing subspaces in the beginning.
 	 * 
@@ -187,6 +197,7 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 	private int replicateSubspaces( int nodesIdCounter, int numNodes )
 	{
 		int remainingNodes  = numNodes - nodesIdCounter;
+		int numberOfTotalSubspaces = (int) Math.floor(Math.sqrt(numNodes));
 		int intSqrtNodes    = (int) Math.floor(Math.sqrt(numNodes));
 		
 		Iterator<Integer> mapIter = subspaceInfoMap.keySet().iterator();
@@ -194,6 +205,13 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 		int replicaNum = 1;
 		while( remainingNodes >= intSqrtNodes )
 		{
+			// maximum number of subspaces created, now remaining
+			// nodes will be uniformly distributed.
+			if(getTotalSubspaces() >= numberOfTotalSubspaces)
+			{
+				break;
+			}
+			
 			if( mapIter.hasNext() )
 			{
 				int distinctSubId = mapIter.next();
@@ -266,6 +284,7 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 			}
 		}
 		assert(nodesIdCounter == numNodes);
+		assert(getTotalSubspaces() <= numberOfTotalSubspaces);
 		return nodesIdCounter;
 	}
 	
