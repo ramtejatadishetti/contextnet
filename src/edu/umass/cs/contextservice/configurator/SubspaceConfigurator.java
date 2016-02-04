@@ -52,7 +52,8 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 		// unless nBySN that is the number of nodes assigned to a subspace is greater 
 		// than MIN_P^attrs, till then no point in replicating. we want p to 
 		// be minimum 2.
-		if( (numberOfTotalSubspaces > numSubspaces) && (mimNumOfNodesToSubspace >= Math.pow(MIN_P, Math.min(numAttrs, MAX_H))) )
+		if( (numberOfTotalSubspaces > numSubspaces) 
+				/*&& (mimNumOfNodesToSubspace >= Math.pow(MIN_P, Math.min(numAttrs, MAX_H)))*/ )
 		{
 			// assign sqrt(N) nodes to each subspace and then if more than sqrt(N) 
 			// nodes are remaining then replicate one subspace or if less are remaining 
