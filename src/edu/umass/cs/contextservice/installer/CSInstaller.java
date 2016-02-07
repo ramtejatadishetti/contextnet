@@ -212,7 +212,7 @@ public class CSInstaller
    * @param noopTest
    */
   public static void updateRunSet(String name, InstallerAction action, boolean deleteDatabase,
-           String scriptFile, boolean withGNS) {
+           String scriptFile, boolean withGNS, boolean enableTrigger) {
     ArrayList<Thread> threads = new ArrayList<>();
     
     Enumeration<String> keyIter = hostTable.keys();
@@ -224,7 +224,7 @@ public class CSInstaller
     	String hostname = hostTable.get(nodeId);
     	threads.add(new UpdateThread(hostname, nodeId,
                 action, deleteDatabase, 
-                scriptFile, withGNS));
+                scriptFile, withGNS, enableTrigger));
     }
     
     for (Thread thread : threads) {
@@ -285,7 +285,7 @@ public class CSInstaller
    * @throws java.net.UnknownHostException
    */
   public static void updateAndRunGNS(String nodeId, String hostname, InstallerAction action,
-          boolean deleteDatabase, String scriptFile, boolean withGNS) throws UnknownHostException {
+          boolean deleteDatabase, String scriptFile, boolean withGNS, boolean enableTrigger) throws UnknownHostException {
     if (!action.equals(InstallerAction.STOP)) {
     	System.out.println("**** CSNode nodeId " + nodeId + " on host " + hostname + " starting update ****");
       
@@ -317,7 +317,7 @@ public class CSInstaller
 		assert(false);
 		break;
       }
-      startServers(nodeId, hostname, withGNS);
+      startServers(nodeId, hostname, withGNS, enableTrigger);
       System.out.println("#### CS " + nodeId +" on host " + hostname + " finished update ####"); 
     } else {
       killAllServers(hostname);
@@ -330,14 +330,16 @@ public class CSInstaller
       System.out.println("#### CS " + nodeId + " on host " + hostname + " has been stopped ####");
     }
   }
-
+  
   /**
    * Starts a pair of active replica / reconfigurator on each host in the ns hosts file
    * plus lns servers on each host in the lns hosts file.
    * @param id
    * @param hostname
    */
-  private static void startServers(String nodeId, String hostname, boolean runningWithGNS) {
+  private static void startServers(String nodeId, String hostname, boolean runningWithGNS, 
+		  boolean enableTrigger) 
+  {
     File keyFileName = getKeyFile();
     System.out.println("Starting context service on "+hostname+" with nodeId "+ nodeId);
     ExecuteBash.executeBashScriptNoSudo(userName, hostname, keyFileName, 
@@ -352,10 +354,11 @@ public class CSInstaller
             + nodeId + " "
             + "-csConfDir "
             + CONF_FOLDER_NAME + FILESEPARATOR + CS_CONF_FOLDERNAME + " "
+            + (enableTrigger?":-enableTrigger":"")
             + " > CSlogfileId"+nodeId+" 2>&1 &");
     System.out.println("Starting context service on "+hostname+" with nodeId "+ nodeId);
   }
-
+  
   /**
    * Runs the script file on the remote host.
    * @param id
@@ -379,7 +382,7 @@ public class CSInstaller
       SSHClient.exec(userName, hostname, getKeyFile(), "mkdir -p " + installPath);
     }
   }
-
+  
   /**
    * Deletes the database on the remote host.
    *
@@ -611,7 +614,9 @@ public class CSInstaller
             .create("stop");
     Option withGNS = new Option("withGNS", "run CS along with GNS.jar, GNS.jar and contextService.jar should be in the same folder");
     //Option noopTest = new Option("noopTest", "starts noop test servers instead of GNS APP servers");
-
+    
+    Option enableTrigger = new Option("enableTrigger", "enables trigger in CS, be default that is set to false");
+    
     commandLineOptions = new Options();
     commandLineOptions.addOption(update);
     commandLineOptions.addOption(restart);
@@ -621,6 +626,7 @@ public class CSInstaller
     //commandLineOptions.addOption(dataStore);
     commandLineOptions.addOption(scriptFile);
     commandLineOptions.addOption(withGNS);
+    commandLineOptions.addOption(enableTrigger);
     //commandLineOptions.addOption(noopTest);
     commandLineOptions.addOption(help);
 
@@ -643,11 +649,13 @@ public class CSInstaller
    */
   public static void main(String[] args) throws NumberFormatException, UnknownHostException, IOException {
     try {
+    	
       CommandLine parser = initializeOptions(args);
       if (parser.hasOption("help") || args.length == 0) {
         printUsage();
         System.exit(1);
       }
+      
       String runsetUpdate = parser.getOptionValue("update");
       String runsetRestart = parser.getOptionValue("restart");
       String runsetStop = parser.getOptionValue("stop");
@@ -655,8 +663,9 @@ public class CSInstaller
       boolean deleteDatabase = parser.hasOption("deleteDatabase");
       String scriptFile = parser.getOptionValue("scriptFile");
       boolean withGNS = parser.hasOption("withGNS");
+      boolean enableTrigger = parser.hasOption("enableTrigger");
       //boolean noopTest = parser.hasOption("noopTest");
-
+      
       /*if (dataStoreName != null) {
         try {
           dataStoreType = DataStoreType.valueOf(dataStoreName);
@@ -670,39 +679,36 @@ public class CSInstaller
               : runsetRestart != null ? runsetRestart
                       : runsetStop != null ? runsetStop
                               : null;
-
+      
       System.out.println("Config name: " + configName);
       System.out.println("Current directory: " + System.getProperty("user.dir"));
-
+      
       determineJarAndMasterPaths();
       if (!checkAndSetConfFilePaths(configName)) {
         System.exit(1);
       }
       
       loadConfig(configName);
-
+      
       if (getKeyFile() == null) {
         System.out.println("Can't find keyfile: " + keyFile + "; exiting.");
         System.exit(1);
       }
-
+      
       loadCSConfFiles(configName);
-
-      //String lnsHostFile = fileSomewhere(configName + FILESEPARATOR + LNS_HOSTS_FILENAME, confFolderPath).toString();
-      //String nsHostFile = fileSomewhere(configName + FILESEPARATOR + NS_HOSTS_FILENAME, confFolderPath).toString();
-
+      
       SSHClient.setVerbose(true);
       RSync.setVerbose(true);
-
+      
       if (runsetUpdate != null) {
         updateRunSet(runsetUpdate, InstallerAction.UPDATE, deleteDatabase
-        		, scriptFile, withGNS);
+        		, scriptFile, withGNS, enableTrigger);
       } else if (runsetRestart != null) {
         updateRunSet(runsetRestart, InstallerAction.RESTART, deleteDatabase
-        		, scriptFile, withGNS);
+        		, scriptFile, withGNS, enableTrigger);
       } else if (runsetStop != null) {
         updateRunSet(runsetStop, InstallerAction.STOP, deleteDatabase,
-                null, withGNS);
+                null, withGNS, enableTrigger);
       } else {
         printUsage();
         System.exit(1);
@@ -714,7 +720,7 @@ public class CSInstaller
     }
     System.exit(0);
   }
-
+  
   /**
    * The thread we use to run a copy of the updater for each host we're updating.
    */
@@ -725,22 +731,25 @@ public class CSInstaller
     private final boolean deleteDatabase;
     private final String scriptFile;
     private final boolean withGNS;
+    private final boolean enableTrigger;
 
     public UpdateThread(String hostname, String nodeId, InstallerAction action
-    		, boolean deleteDatabase, String scriptFile, boolean withGNS) {
+    		, boolean deleteDatabase, String scriptFile, boolean withGNS, boolean enableTrigger)
+    {
       this.hostname = hostname;
       this.nodeId = nodeId;
       this.action = action;
       this.deleteDatabase = deleteDatabase;
       this.scriptFile = scriptFile;
       this.withGNS = withGNS;
+      this.enableTrigger = enableTrigger;
     }
-
+    
     @Override
     public void run() {
       try {
         CSInstaller.updateAndRunGNS(nodeId, hostname, action, deleteDatabase,
-                scriptFile, withGNS);
+                scriptFile, withGNS, enableTrigger);
       } catch (UnknownHostException e) {
         ContextServiceLogger.getLogger().info("Unknown hostname while updating " + hostname + ": " + e);
       }
