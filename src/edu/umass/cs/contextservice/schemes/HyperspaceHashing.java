@@ -436,7 +436,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		HashMap<Integer, Vector<ProcessingQueryComponent>> overlappingSubspaces =
     			new HashMap<Integer, Vector<ProcessingQueryComponent>>();
-    	getAllOverlappingSubspaces( currReq.getProcessingQC(), overlappingSubspaces );
+		getAllUniqueOverlappingSubspaces( currReq.getProcessingQC(), overlappingSubspaces );
     	
     	Iterator<Integer> overlapSubspaceIter = overlappingSubspaces.keySet().iterator();
     	HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subapceInfoMap = 
@@ -1617,12 +1617,16 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	
 	
 	/**
-	 * returns subspacenum of all the subspaces a query overlaps with
+	 * returns subspacenum of all the subspaces a query overlaps with. 
+	 * But returns only uniquer subspaces, not all the replicas of the overlapiing subspaces.
 	 * @return
 	 */
-	private void getAllOverlappingSubspaces( HashMap<String, ProcessingQueryComponent> pqueryComponents, 
+	private void getAllUniqueOverlappingSubspaces( HashMap<String, ProcessingQueryComponent> pqueryComponents, 
 			HashMap<Integer, Vector<ProcessingQueryComponent>> overlappingSubspaces )
 	{
+		assert(pqueryComponents != null);
+		assert(overlappingSubspaces != null);
+		
 		HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap 
 			= this.subspaceConfigurator.getSubspaceInfoMap();
 		
@@ -1662,7 +1666,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		public int subspaceId;
 		public Vector<ProcessingQueryComponent> currMatchingComponents;
 	}
-	
 	
 	private class HandleEventThread implements Runnable
 	{

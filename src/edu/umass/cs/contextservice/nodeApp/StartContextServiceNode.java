@@ -105,6 +105,10 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 		
 		String nodeId = parser.getOptionValue("id");
 		String csConfDir = parser.getOptionValue("csConfDir");
+		if(parser.hasOption("enableTrigger"))
+		{
+			ContextServiceConfig.TRIGGER_ENABLED = true;
+		}
 		
 		System.out.println("StartContextServiceNode starting with nodeId "
 				+nodeId+" csConfDir "+csConfDir);
@@ -144,11 +148,14 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 		Option csConfDir = OptionBuilder.withArgName("cs Conf directory").hasArg()
 	         .withDescription("conf directory path relative to top level dir")
 	         .create("csConfDir");
+		
+		Option enableTrigger = new Option("enableTrigger", "triggers are enabled");
 
 		commandLineOptions = new Options();
 		commandLineOptions.addOption(nodeid);
 		commandLineOptions.addOption(csConfDir);
 		commandLineOptions.addOption(help);
+		commandLineOptions.addOption(enableTrigger);
 		
 		CommandLineParser parser = new GnuParser();
 		return parser.parse(commandLineOptions, args);
