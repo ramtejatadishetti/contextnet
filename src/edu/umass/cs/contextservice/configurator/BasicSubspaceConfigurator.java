@@ -71,6 +71,10 @@ public class BasicSubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfi
 				subspaceKeyIter = subspaceInfoMap.keySet().iterator();
 			}
 		}
+		
+		// initializes the domain partitions for an attribute
+		initializePartitionInfo();
+		this.printSubspaceInfo();
 	}
 	
 	/**
