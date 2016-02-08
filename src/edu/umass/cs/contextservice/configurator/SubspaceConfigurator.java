@@ -26,7 +26,7 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 {
 	// each domain is at least partitioned into two.
 	//TODO: these values will be determined by the model at some point
-	private static final double MIN_P = 2;
+	//private static final double MIN_P = 2;
 	private static final double MAX_H = 3;
 	
 	public SubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig)
@@ -187,6 +187,7 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 		}
 		return totalSub;
 	}
+	
 	/**
 	 * Creates a replicated subspace info after 
 	 * initializing subspaces in the beginning.
@@ -289,38 +290,6 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 		return nodesIdCounter;
 	}
 	
-	private void initializePartitionInfo()
-	{
-		Iterator<Integer> keyIter = subspaceInfoMap.keySet().iterator();
-		
-		while( keyIter.hasNext() )
-		{
-			Vector<SubspaceInfo<NodeIDType>> currSubVect 
-		 		= subspaceInfoMap.get(keyIter.next());
-			
-			for(int i=0; i<currSubVect.size(); i++)
-			{
-				SubspaceInfo<NodeIDType> currSubInfo = currSubVect.get(i);
-				int currSubspaceNumNodes = currSubInfo.getNodesOfSubspace().size();
-				int currSubspaceNumAttrs = currSubInfo.getAttributesOfSubspace().size();
-				
-				int currSubspaceNumPartitions 
-					= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
-				currSubInfo.setNumPartitions(currSubspaceNumPartitions);
-				
-				Iterator<String> subspaceAttrIter
-									= currSubInfo.getAttributesOfSubspace().keySet().iterator();
-				while( subspaceAttrIter.hasNext() )
-				{
-					String attrName = subspaceAttrIter.next();
-					AttributePartitionInfo attrPartInfo 
-							= currSubInfo.getAttributesOfSubspace().get(attrName);
-					attrPartInfo.initializePartitionInfo(currSubspaceNumPartitions);
-				}
-			}
-		}
-	}
-	
 	// test the above class. 
 	public static void main(String[] args)
 	{
@@ -345,3 +314,35 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 		subspaceConfigurator.printSubspaceInfo();
 	}
 }
+
+
+/*private void initializePartitionInfo()
+{
+	Iterator<Integer> keyIter = subspaceInfoMap.keySet().iterator();
+	while( keyIter.hasNext() )
+	{
+		Vector<SubspaceInfo<NodeIDType>> currSubVect 
+	 		= subspaceInfoMap.get(keyIter.next());
+		
+		for( int i=0; i<currSubVect.size(); i++ )
+		{
+			SubspaceInfo<NodeIDType> currSubInfo = currSubVect.get(i);
+			int currSubspaceNumNodes = currSubInfo.getNodesOfSubspace().size();
+			int currSubspaceNumAttrs = currSubInfo.getAttributesOfSubspace().size();
+			
+			int currSubspaceNumPartitions 
+				= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
+			currSubInfo.setNumPartitions(currSubspaceNumPartitions);
+			
+			Iterator<String> subspaceAttrIter
+								= currSubInfo.getAttributesOfSubspace().keySet().iterator();
+			while( subspaceAttrIter.hasNext() )
+			{
+				String attrName = subspaceAttrIter.next();
+				AttributePartitionInfo attrPartInfo 
+						= currSubInfo.getAttributesOfSubspace().get(attrName);
+				attrPartInfo.initializePartitionInfo(currSubspaceNumPartitions);
+			}
+		}
+	}
+}*/

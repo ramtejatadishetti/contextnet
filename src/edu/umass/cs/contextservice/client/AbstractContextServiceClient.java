@@ -1,18 +1,14 @@
 package edu.umass.cs.contextservice.client;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.client.storage.GetStorage;
@@ -20,7 +16,6 @@ import edu.umass.cs.contextservice.client.storage.SearchQueryStorage;
 import edu.umass.cs.contextservice.client.storage.UpdateStorage;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.common.ContextServiceDemultiplexer;
-import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ContextServicePacket;
 import edu.umass.cs.contextservice.utils.Utils;
@@ -132,8 +127,8 @@ public abstract class AbstractContextServiceClient<NodeIDType> implements Packet
 	 * @param resultGUIDMap
 	 * @param expiryTime
 	 */
-	public abstract void sendSearchQuery(String searchQuery, 
-			ConcurrentHashMap<String, Boolean> resultGUIDMap, long expiryTime);
+	public abstract void sendSearchQuery(String searchQuery, JSONArray replyArray, 
+			long expiryTime);
 	
 	// blocking call
 	/**
@@ -142,6 +137,14 @@ public abstract class AbstractContextServiceClient<NodeIDType> implements Packet
 	 * @return
 	 */
 	public abstract JSONObject sendGetRequest(String GUID);
+	
+	/**
+	 * Returns query update triggers as a JSONArray,
+	 * Each JSONObject in the trigger is a RefreshTrigger meesage in
+	 * JSONObject form
+	 * @return
+	 */
+	public abstract void getQueryUpdateTriggers(JSONArray triggerArray);
 	
 	// non blocking call
 	//public abstract void expireSearchQuery(String searchQuery);

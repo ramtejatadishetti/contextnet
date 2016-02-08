@@ -4,7 +4,6 @@ package edu.umass.cs.contextservice.test;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -149,10 +148,10 @@ public class ClientRequestTest
 		//JSONObject geoJSONObject = getGeoJSON();
 		//String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE GeojsonOverlap("+geoJSONObject.toString()+")";
 		//String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE latitude >= ";
-		ConcurrentHashMap<String, Boolean> resultMap = new ConcurrentHashMap<String, Boolean>();
-		contextClient.sendSearchQuery(query, resultMap, 300000);
-		System.out.println("Query result size "+resultMap.size());
-		if(resultMap.size() == NUMGUIDs)
+		JSONArray resultArray = new JSONArray();
+		contextClient.sendSearchQuery(query, resultArray, 300000);
+		System.out.println("Query result size "+resultArray.length());
+		if(resultArray.length() == NUMGUIDs)
 		{
 			System.out.println("Search test pass");
 		}	

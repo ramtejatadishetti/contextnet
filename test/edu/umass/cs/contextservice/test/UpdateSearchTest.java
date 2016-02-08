@@ -44,7 +44,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
 
@@ -160,16 +159,15 @@ public class UpdateSearchTest {
 	  // issue different types of search
 	  // simple search to get all the records
 	  String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE geoLocationCurrentLat >= -90 AND geoLocationCurrentLong <= 180";
-	  //JSONObject geoJSONObject = getGeoJSON();
-	  ConcurrentHashMap<String, Boolean> resultMap = new ConcurrentHashMap<String, Boolean>();
-	  contextServiceClient.sendSearchQuery(query, resultMap, 300000);
+	  JSONArray resultArray = new JSONArray();
+	  contextServiceClient.sendSearchQuery(query, resultArray, 300000);
 	  
 	  
-	  System.out.println("Search query result length "+resultMap.size());
+	  System.out.println("Search query result length "+resultArray.length());
 	  // JSONArray is an array of GUIDs
 	  HashMap<String, Boolean> guidsRet = new HashMap<String, Boolean>();
 	  
-	  System.out.println("Search query num GUIDs "+resultMap.size());
+	  System.out.println("Search query num GUIDs "+resultArray.length());
 	  // all guids should be there
 	  for(int i=0;i<guidStorage.size();i++)
 	  {
@@ -186,11 +184,11 @@ public class UpdateSearchTest {
 	  System.out.println("GeoJSON created "+geoJSONObject);
 	  query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE GeojsonOverlap(geoLocationCurrentLat, "
 	  		+ "geoLocationCurrentLong, "+geoJSONObject.toString()+")";
-	  resultMap.clear();
+	  resultArray = new JSONArray();
 	  
-	  contextServiceClient.sendSearchQuery(query, resultMap, 300000);
+	  contextServiceClient.sendSearchQuery(query, resultArray, 300000);
 	  
-	  System.out.println("Num guids returned by geoJSON query "+resultMap.size());
+	  System.out.println("Num guids returned by geoJSON query "+resultArray.length());
   }
   
   private JSONObject getGeoJSON()

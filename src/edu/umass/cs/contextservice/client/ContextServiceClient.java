@@ -4,7 +4,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Iterator;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.LinkedList;
+import java.util.Queue;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -36,9 +37,15 @@ import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
  */
 public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClient<NodeIDType>
 {
+	private Queue<JSONObject> refreshTriggerQueue;
+	//private final Object refreshQueueLock 						= new Object();
+	
+	private final Object refreshTriggerClientWaitLock 			= new Object();
+	
 	public ContextServiceClient(String hostName, int portNum) throws IOException
 	{
 		super(hostName, portNum);
+		refreshTriggerQueue = new LinkedList<JSONObject>();
 		sendConfigRequest();
 	}
 	
@@ -128,9 +135,15 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 	
 	@Override
-	public void sendSearchQuery(String searchQuery, 
-			ConcurrentHashMap<String, Boolean> resultGUIDMap, long expiryTime)
+	public void sendSearchQuery(String searchQuery, JSONArray replyArray, long expiryTime)
 	{
+		if(replyArray == null)
+		{
+			ContextServiceLogger.getLogger().warning("null passsed "
+					+ "as replyArray in sendSearchQuery");
+			return;
+		}
+		
 		long currId;
 		synchronized(this.searchIdLock)
 		{
@@ -147,7 +160,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 		this.pendingSearches.put(currId, searchQ);
 		InetSocketAddress sockAddr = this.csNodeAddresses.get(rand.nextInt(csNodeAddresses.size()));
-		//ContextServiceLogger.getLogger().fine("Sending query to "+sockAddr);
 		
 		try 
 		{
@@ -185,7 +197,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				JSONArray jsoArr1 = result.getJSONArray(i);
 				for(int j=0; j<jsoArr1.length(); j++)
 				{
-					resultGUIDMap.put(jsoArr1.getString(j), true);
+					//resultGUIDMap.put(jsoArr1.getString(j), true);
+					replyArray.put(jsoArr1.getString(j));
 				}
 			} catch (JSONException e)
 			{
@@ -265,7 +278,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
 					== ContextServicePacket.PacketType.REFRESH_TRIGGER.getInt() )
 			{
-				//handleRefreshTrigger(jsonObject);
+				handleRefreshTrigger(jsonObject);
 			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
 					== ContextServicePacket.PacketType.GET_REPLY_MESSAGE.getInt() )
 			{
@@ -438,16 +451,49 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	{
 		try
 		{
-			RefreshTrigger<NodeIDType> qmur;
-			qmur = new RefreshTrigger<NodeIDType>(jso);
+			RefreshTrigger<NodeIDType> qmur 
+						= new RefreshTrigger<NodeIDType>(jso);
 			
-			long reqID = qmur.getVersionNum();
-			
-			
-			System.out.println("RefreshTrigger completion requestID "+reqID+" time "+System.currentTimeMillis());
+			synchronized(refreshTriggerClientWaitLock)
+			{
+				refreshTriggerQueue.add(qmur.toJSONObject());
+				refreshTriggerClientWaitLock.notify();
+			}
 		} catch (JSONException e)
 		{
 			e.printStackTrace();
+		}
+	}
+	
+	@Override
+	/**
+	 * blocking call to return the current triggers.
+	 * This call is also thread safe, only one thread will be notified though.
+	 */
+	public void getQueryUpdateTriggers(JSONArray triggerArray)
+	{
+		if(triggerArray == null)
+		{
+			assert(false);
+			return;
+		}
+		
+		synchronized( refreshTriggerClientWaitLock )
+		{
+			while( refreshTriggerQueue.size() == 0 )
+			{
+				try 
+				{
+					refreshTriggerClientWaitLock.wait();
+				} catch (InterruptedException e) 
+				{
+					e.printStackTrace();
+				}
+			}
+			while(!refreshTriggerQueue.isEmpty())
+			{
+				triggerArray.put(refreshTriggerQueue.poll());
+			}
 		}
 	}
 }

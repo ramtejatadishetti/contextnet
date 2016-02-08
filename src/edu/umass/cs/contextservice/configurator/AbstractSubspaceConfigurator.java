@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
 
+import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.nio.interfaces.NodeConfig;
 
@@ -48,4 +49,37 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 	{
 		return this.subspaceInfoMap;
 	}
+	
+	protected void initializePartitionInfo()
+	{
+		Iterator<Integer> keyIter = subspaceInfoMap.keySet().iterator();
+		
+		while( keyIter.hasNext() )
+		{
+			Vector<SubspaceInfo<NodeIDType>> currSubVect 
+		 		= subspaceInfoMap.get(keyIter.next());
+			
+			for(int i=0; i<currSubVect.size(); i++)
+			{
+				SubspaceInfo<NodeIDType> currSubInfo = currSubVect.get(i);
+				int currSubspaceNumNodes = currSubInfo.getNodesOfSubspace().size();
+				int currSubspaceNumAttrs = currSubInfo.getAttributesOfSubspace().size();
+				
+				int currSubspaceNumPartitions 
+					= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
+				currSubInfo.setNumPartitions(currSubspaceNumPartitions);
+				
+				Iterator<String> subspaceAttrIter
+									= currSubInfo.getAttributesOfSubspace().keySet().iterator();
+				while( subspaceAttrIter.hasNext() )
+				{
+					String attrName = subspaceAttrIter.next();
+					AttributePartitionInfo attrPartInfo 
+							= currSubInfo.getAttributesOfSubspace().get(attrName);
+					attrPartInfo.initializePartitionInfo(currSubspaceNumPartitions);
+				}
+			}
+		}
+	}
+	
 }

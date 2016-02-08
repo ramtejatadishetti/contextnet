@@ -25,6 +25,7 @@ import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.configurator.AbstractSubspaceConfigurator;
+import edu.umass.cs.contextservice.configurator.BasicSubspaceConfigurator;
 import edu.umass.cs.contextservice.configurator.SubspaceConfigurator;
 import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
 import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
@@ -88,7 +89,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		//subspaceInfoVector = new HashMap<Integer, SubspaceInfo<NodeIDType>>();
 		
 		// can be changed to basic configurator here
-		subspaceConfigurator = new SubspaceConfigurator<NodeIDType>(messenger.getNodeConfig());
+		//subspaceConfigurator = new SubspaceConfigurator<NodeIDType>(messenger.getNodeConfig());
+		subspaceConfigurator = new BasicSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig());
+		
 		ContextServiceLogger.getLogger().fine("configure subspace started");
 		// configure subspaces
 		subspaceConfigurator.configureSubspaceInfo();
