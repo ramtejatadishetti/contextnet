@@ -356,8 +356,8 @@ public class CSInstaller
             + nodeId + " "
             + "-csConfDir "
             + CONF_FOLDER_NAME + FILESEPARATOR + CS_CONF_FOLDERNAME + " "
-            + (enableTrigger?":-enableTrigger":"") +" "
-            + (basicSubspaceConfig?":-basicSubspaceConfig":"") +" "
+            + (enableTrigger?"-enableTrigger":"") +" "
+            + (basicSubspaceConfig?"-basicSubspaceConfig":"") +" "
             + " > CSlogfileId"+nodeId+" 2>&1 &");
     System.out.println("Starting context service on "+hostname+" with nodeId "+ nodeId);
   }
@@ -671,6 +671,14 @@ public class CSInstaller
       boolean withGNS = parser.hasOption("withGNS");
       boolean enableTrigger = parser.hasOption("enableTrigger");
       boolean basicSubspaceConfig = parser.hasOption("basicSubspaceConfig");
+      if(basicSubspaceConfig)
+      {
+    	  System.out.println("basicSubspaceConfig set to true");
+      }
+      else
+      {
+    	  System.out.println("basicSubspaceConfig set to false");
+      }
       //boolean noopTest = parser.hasOption("noopTest");
       
       /*if (dataStoreName != null) {
