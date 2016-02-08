@@ -67,6 +67,9 @@ public class ContextServiceConfig
 	
 	// if true group update trigger is enabled, not enabled if false
 	public static boolean TRIGGER_ENABLED							= false;
+
+	// if set to true basic subspace config is enabled.
+	public static boolean basicSubspaceConfig						= false;
 	
 	//public static final int startNodeID							= 0;
 	

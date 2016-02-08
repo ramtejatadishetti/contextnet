@@ -110,6 +110,11 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 			ContextServiceConfig.TRIGGER_ENABLED = true;
 		}
 		
+		if(parser.hasOption("basicSubspaceConfig"))
+		{
+			ContextServiceConfig.basicSubspaceConfig = true;
+		}
+		
 		System.out.println("StartContextServiceNode starting with nodeId "
 				+nodeId+" csConfDir "+csConfDir);
 		
@@ -150,12 +155,18 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 	         .create("csConfDir");
 		
 		Option enableTrigger = new Option("enableTrigger", "triggers are enabled");
-
+		
+		Option basicSubspaceConfig = new Option("basicSubspaceConfig", "This option enables basic subspace "
+				+ "config, which assigns equal nodes to all subsapces, with out any subspace replcation for high performance,"
+				+ "according to the model. If this option is not set then subspaces will be replicated if needed for performance");
+		
 		commandLineOptions = new Options();
 		commandLineOptions.addOption(nodeid);
 		commandLineOptions.addOption(csConfDir);
 		commandLineOptions.addOption(help);
 		commandLineOptions.addOption(enableTrigger);
+		commandLineOptions.addOption(basicSubspaceConfig);
+		
 		
 		CommandLineParser parser = new GnuParser();
 		return parser.parse(commandLineOptions, args);

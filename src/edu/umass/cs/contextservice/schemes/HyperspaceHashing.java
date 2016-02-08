@@ -85,12 +85,15 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		replicaChoosingRand = new Random();
 		guidUpdateInfoMap = new HashMap<String, GUIDUpdateInfo<NodeIDType>>();
-		
-		//subspaceInfoVector = new HashMap<Integer, SubspaceInfo<NodeIDType>>();
-		
-		// can be changed to basic configurator here
-		//subspaceConfigurator = new SubspaceConfigurator<NodeIDType>(messenger.getNodeConfig());
-		subspaceConfigurator = new BasicSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig());
+			
+		if( ContextServiceConfig.basicSubspaceConfig )
+		{
+			subspaceConfigurator = new BasicSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig());
+		}
+		else
+		{
+			subspaceConfigurator = new SubspaceConfigurator<NodeIDType>(messenger.getNodeConfig());
+		}
 		
 		ContextServiceLogger.getLogger().fine("configure subspace started");
 		// configure subspaces

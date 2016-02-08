@@ -212,7 +212,7 @@ public class CSInstaller
    * @param noopTest
    */
   public static void updateRunSet(String name, InstallerAction action, boolean deleteDatabase,
-           String scriptFile, boolean withGNS, boolean enableTrigger) {
+           String scriptFile, boolean withGNS, boolean enableTrigger, boolean basicSubspaceConfig) {
     ArrayList<Thread> threads = new ArrayList<>();
     
     Enumeration<String> keyIter = hostTable.keys();
@@ -224,7 +224,7 @@ public class CSInstaller
     	String hostname = hostTable.get(nodeId);
     	threads.add(new UpdateThread(hostname, nodeId,
                 action, deleteDatabase, 
-                scriptFile, withGNS, enableTrigger));
+                scriptFile, withGNS, enableTrigger, basicSubspaceConfig));
     }
     
     for (Thread thread : threads) {
@@ -285,7 +285,9 @@ public class CSInstaller
    * @throws java.net.UnknownHostException
    */
   public static void updateAndRunGNS(String nodeId, String hostname, InstallerAction action,
-          boolean deleteDatabase, String scriptFile, boolean withGNS, boolean enableTrigger) throws UnknownHostException {
+          boolean deleteDatabase, String scriptFile, boolean withGNS, boolean enableTrigger, 
+          boolean basicSubspaceConfig) throws UnknownHostException 
+  {
     if (!action.equals(InstallerAction.STOP)) {
     	System.out.println("**** CSNode nodeId " + nodeId + " on host " + hostname + " starting update ****");
       
@@ -317,7 +319,7 @@ public class CSInstaller
 		assert(false);
 		break;
       }
-      startServers(nodeId, hostname, withGNS, enableTrigger);
+      startServers(nodeId, hostname, withGNS, enableTrigger, basicSubspaceConfig);
       System.out.println("#### CS " + nodeId +" on host " + hostname + " finished update ####"); 
     } else {
       killAllServers(hostname);
@@ -338,7 +340,7 @@ public class CSInstaller
    * @param hostname
    */
   private static void startServers(String nodeId, String hostname, boolean runningWithGNS, 
-		  boolean enableTrigger) 
+		  boolean enableTrigger, boolean basicSubspaceConfig) 
   {
     File keyFileName = getKeyFile();
     System.out.println("Starting context service on "+hostname+" with nodeId "+ nodeId);
@@ -354,7 +356,8 @@ public class CSInstaller
             + nodeId + " "
             + "-csConfDir "
             + CONF_FOLDER_NAME + FILESEPARATOR + CS_CONF_FOLDERNAME + " "
-            + (enableTrigger?":-enableTrigger":"")
+            + (enableTrigger?":-enableTrigger":"") +" "
+            + (basicSubspaceConfig?":-basicSubspaceConfig":"") +" "
             + " > CSlogfileId"+nodeId+" 2>&1 &");
     System.out.println("Starting context service on "+hostname+" with nodeId "+ nodeId);
   }
@@ -664,6 +667,7 @@ public class CSInstaller
       String scriptFile = parser.getOptionValue("scriptFile");
       boolean withGNS = parser.hasOption("withGNS");
       boolean enableTrigger = parser.hasOption("enableTrigger");
+      boolean basicSubspaceConfig = parser.hasOption("basicSubspaceConfig");
       //boolean noopTest = parser.hasOption("noopTest");
       
       /*if (dataStoreName != null) {
@@ -702,13 +706,13 @@ public class CSInstaller
       
       if (runsetUpdate != null) {
         updateRunSet(runsetUpdate, InstallerAction.UPDATE, deleteDatabase
-        		, scriptFile, withGNS, enableTrigger);
+        		, scriptFile, withGNS, enableTrigger, basicSubspaceConfig);
       } else if (runsetRestart != null) {
         updateRunSet(runsetRestart, InstallerAction.RESTART, deleteDatabase
-        		, scriptFile, withGNS, enableTrigger);
+        		, scriptFile, withGNS, enableTrigger, basicSubspaceConfig);
       } else if (runsetStop != null) {
         updateRunSet(runsetStop, InstallerAction.STOP, deleteDatabase,
-                null, withGNS, enableTrigger);
+                null, withGNS, enableTrigger, basicSubspaceConfig);
       } else {
         printUsage();
         System.exit(1);
@@ -732,9 +736,11 @@ public class CSInstaller
     private final String scriptFile;
     private final boolean withGNS;
     private final boolean enableTrigger;
-
+    private final boolean basicSubspaceConfig;
+    
     public UpdateThread(String hostname, String nodeId, InstallerAction action
-    		, boolean deleteDatabase, String scriptFile, boolean withGNS, boolean enableTrigger)
+    		, boolean deleteDatabase, String scriptFile, boolean withGNS, 
+    		boolean enableTrigger, boolean basicSubspaceConfig)
     {
       this.hostname = hostname;
       this.nodeId = nodeId;
@@ -743,13 +749,14 @@ public class CSInstaller
       this.scriptFile = scriptFile;
       this.withGNS = withGNS;
       this.enableTrigger = enableTrigger;
+      this.basicSubspaceConfig = basicSubspaceConfig;
     }
     
     @Override
     public void run() {
       try {
         CSInstaller.updateAndRunGNS(nodeId, hostname, action, deleteDatabase,
-                scriptFile, withGNS, enableTrigger);
+                scriptFile, withGNS, enableTrigger, basicSubspaceConfig);
       } catch (UnknownHostException e) {
         ContextServiceLogger.getLogger().info("Unknown hostname while updating " + hostname + ": " + e);
       }
