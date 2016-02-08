@@ -620,6 +620,8 @@ public class CSInstaller
     
     Option enableTrigger = new Option("enableTrigger", "enables trigger in CS, be default that is set to false");
     
+    Option basicSubspaceConfig = new Option("basicSubspaceConfig", "enabled basic subapce config in CS");
+    
     commandLineOptions = new Options();
     commandLineOptions.addOption(update);
     commandLineOptions.addOption(restart);
@@ -630,9 +632,10 @@ public class CSInstaller
     commandLineOptions.addOption(scriptFile);
     commandLineOptions.addOption(withGNS);
     commandLineOptions.addOption(enableTrigger);
+    commandLineOptions.addOption(basicSubspaceConfig);
     //commandLineOptions.addOption(noopTest);
     commandLineOptions.addOption(help);
-
+    
     CommandLineParser parser = new GnuParser();
     return parser.parse(commandLineOptions, args);
   }
