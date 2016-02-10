@@ -316,9 +316,9 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 		 */
 		public void sendQuery(long currID)
 		{
-			//String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE latitude >= -90 AND longitude <= 180";
-			JSONObject geoJSONObject = getGeoJSON();
-			String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE GeojsonOverlap(geoLocationCurrentLat, geoLocationCurrentLong, "+geoJSONObject.toString()+")";
+			String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE geoLocationCurrentLat >= 45 AND geoLocationCurrentLat <= 44";
+			//JSONObject geoJSONObject = getGeoJSON();
+			//String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE GeojsonOverlap(geoLocationCurrentLat, geoLocationCurrentLong, "+geoJSONObject.toString()+")";
 			
 			//eservice.execute(new SendingRequest(currID, SendingRequest.QUERY, query, currNumAttr, "", -1, -1, "") );
 			//currNumAttr = currNumAttr + 2;

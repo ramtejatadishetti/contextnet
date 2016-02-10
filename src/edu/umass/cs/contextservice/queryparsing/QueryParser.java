@@ -106,8 +106,7 @@ public class QueryParser
 		{
 			String curr = ANDParsed[startInd].trim();
 			
-			//int startInd2 = lastStartingIndex;
-			
+			//int startInd2 = lastStartingIndex;	
 			//String operOrFunString = ANDParsed[startInd];
 			//QueryComponent> toGetFunctionName = new Vector<QueryComponent>();
 			QueryComponent currCompo = parsePredicate(curr);

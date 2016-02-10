@@ -252,25 +252,49 @@ public class HyperspaceMySQLDB<NodeIDType>
 			AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
 			String dataType = attrMetaInfo.getDataType();
 			
+			if(AttributeTypes.compareTwoValues(qcomponent.getLowerBound(),
+					qcomponent.getUpperBound(), dataType))
+			{
+				String queryMin  =  AttributeTypes.convertStringToDataTypeForMySQL(qcomponent.getLowerBound(), dataType) + "";
+				String queryMax  =  AttributeTypes.convertStringToDataTypeForMySQL(qcomponent.getUpperBound(), dataType) + "";
+				
+				// three cases to check, documentation
+				// trying to find if there is an overlap in the ranges, 
+				// the range specified by user and the range in database.
+				// overlap is there if queryMin lies between the range in database
+				// or queryMax lies between the range in database.
+				// So, we specify two or conditions.
+				// for right side value, it can't be equal to rangestart, 
+				// but it can be equal to rangeEnd, although even then it doesn't include
+				// rangeEnd.
+				// or the range lies in between the queryMin and queryMax
+				
+				selectTableSQL = selectTableSQL +" ( "
+						+ "( "+lowerAttr+" <= "+queryMin +" AND "+upperAttr+" > "+queryMin+" ) OR "
+						+ "( "+lowerAttr+" < "+queryMax +" AND "+upperAttr+" >= "+queryMax+" ) OR "
+						+ "( "+lowerAttr+" >= "+queryMin +" AND "+upperAttr+" < "+queryMax+" ) "+" ) ";
+			}
+			else // when lower value in query predicate is greater than upper value, meaning circular query, 
+				// it is done mostly for generating uniform workload for experiments
+			{
+				// first case from lower to max value
+				String queryMin  =  AttributeTypes.convertStringToDataTypeForMySQL(qcomponent.getLowerBound(), dataType) + "";
+				String queryMax  =  AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMaxValue(), dataType) + "";
+				
+				selectTableSQL = selectTableSQL +"( ( "
+						+ "( "+lowerAttr+" <= "+queryMin +" AND "+upperAttr+" > "+queryMin+" ) OR "
+						+ "( "+lowerAttr+" < "+queryMax +" AND "+upperAttr+" >= "+queryMax+" ) OR "
+						+ "( "+lowerAttr+" >= "+queryMin +" AND "+upperAttr+" < "+queryMax+" ) "+" ) OR ";
+				
+				// second case from minvalue to upper val
+				queryMin  =  AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMinValue(), dataType) + "";
+				queryMax  =  AttributeTypes.convertStringToDataTypeForMySQL(qcomponent.getUpperBound(), dataType) + "";
+				selectTableSQL = selectTableSQL +"( "
+						+ "( "+lowerAttr+" <= "+queryMin +" AND "+upperAttr+" > "+queryMin+" ) OR "
+						+ "( "+lowerAttr+" < "+queryMax +" AND "+upperAttr+" >= "+queryMax+" ) OR "
+						+ "( "+lowerAttr+" >= "+queryMin +" AND "+upperAttr+" < "+queryMax+" ) "+" )  )";
+			}
 			
-			String queryMin  =  AttributeTypes.convertStringToDataTypeForMySQL(qcomponent.getLowerBound(), dataType) + "";
-			String queryMax  =  AttributeTypes.convertStringToDataTypeForMySQL(qcomponent.getUpperBound(), dataType) + "";
-			
-			// three cases to check, documentation
-			// trying to find if there is an overlap in the ranges, 
-			// the range specified by user and the range in database.
-			// overlap is there if queryMin lies between the range in database
-			// or queryMax lies between the range in database.
-			// So, we specify two or conditions.
-			// for right side value, it can't be equal to rangestart, 
-			// but it can be equal to rangeEnd, although even then it doesn't include
-			// rangeEnd.
-			// or the range lies in between the queryMin and queryMax
-			
-			selectTableSQL = selectTableSQL +" ( "
-					+ "( "+lowerAttr+" <= "+queryMin +" AND "+upperAttr+" > "+queryMin+" ) OR "
-					+ "( "+lowerAttr+" < "+queryMax +" AND "+upperAttr+" >= "+queryMax+" ) OR "
-					+ "( "+lowerAttr+" >= "+queryMin +" AND "+upperAttr+" < "+queryMax+" ) "+" ) ";
 			if( i != (matchingQueryComponents.size()-1) )
 			{
 				selectTableSQL = selectTableSQL + " AND ";
@@ -394,22 +418,61 @@ public class HyperspaceMySQLDB<NodeIDType>
 			ContextServiceLogger.getLogger().fine("attrName "+attrName+" dataType "+dataType+
 					" pqc.getLowerBound() "+pqc.getLowerBound()+" pqc.getUpperBound() "+pqc.getUpperBound()+" pqComponents "+pqComponents.size());
 			
-			String queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getLowerBound(), dataType)+"";
-			String queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getUpperBound(), dataType)+"";
 			
 			
-			if(counter == (pqComponents.size()-1) )
+			// normal case of lower value being lesser than the upper value
+			if(AttributeTypes.compareTwoValues(pqc.getLowerBound(), pqc.getUpperBound(), dataType))
 			{
-				// it is assumed that the strings in query(pqc.getLowerBound() or pqc.getUpperBound()) 
-				// will have single or double quotes in them so we don't need to them separately in mysql query
-				mysqlQuery = mysqlQuery + " ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
-						+pqc.getAttributeName() +" <= "+queryMax+" ) )";
+				String queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getLowerBound(), dataType)+"";
+				String queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getUpperBound(), dataType)+"";
+				
+				if(counter == (pqComponents.size()-1) )
+				{
+					// it is assumed that the strings in query(pqc.getLowerBound() or pqc.getUpperBound()) 
+					// will have single or double quotes in them so we don't need to them separately in mysql query
+					mysqlQuery = mysqlQuery + " ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
+							+pqc.getAttributeName() +" <= "+queryMax+" ) )";
+				}
+				else
+				{
+					mysqlQuery = mysqlQuery + " ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
+							+pqc.getAttributeName() +" <= "+queryMax+" ) AND ";
+				}
 			}
 			else
 			{
-				mysqlQuery = mysqlQuery + " ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
-						+pqc.getAttributeName() +" <= "+queryMax+" ) AND ";
+				if(counter == (pqComponents.size()-1) )
+				{
+					String queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMinValue(), dataType)+"";
+					String queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getUpperBound(), dataType)+"";
+					
+					mysqlQuery = mysqlQuery + " ( "
+							+" ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
+							+pqc.getAttributeName() +" <= "+queryMax+" ) OR ";
+							
+					queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getLowerBound(), dataType)+"";
+					queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMaxValue(), dataType)+"";
+					
+					mysqlQuery = mysqlQuery +" ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
+							+pqc.getAttributeName() +" <= "+queryMax+" ) ) )";
+				}
+				else
+				{
+					String queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMinValue(), dataType)+"";
+					String queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getUpperBound(), dataType)+"";
+					
+					mysqlQuery = mysqlQuery + " ( "
+							+" ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
+							+pqc.getAttributeName() +" <= "+queryMax+" ) OR ";
+							
+					queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getLowerBound(), dataType)+"";
+					queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMaxValue(), dataType)+"";
+					
+					mysqlQuery = mysqlQuery +" ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
+							+pqc.getAttributeName() +" <= "+queryMax+" ) ) AND ";
+				}
 			}
+			
 			counter++;
 			ContextServiceLogger.getLogger().fine(mysqlQuery);
 		}

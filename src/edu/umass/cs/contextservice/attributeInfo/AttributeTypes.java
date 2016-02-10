@@ -188,6 +188,46 @@ public class AttributeTypes
 		return null;
 	}
 	
+	/**
+	 * Compare first and second argument and returns true if
+	 * first argument is smaller than the second argument.
+	 * @return
+	 */
+	public static boolean compareTwoValues(String lowerValue, String upperValue, String dataType)
+	{
+		switch(dataType)
+		{
+			case IntType:
+			{
+				int val1 = Integer.parseInt(lowerValue);
+				int val2 = Integer.parseInt(upperValue);
+				return (val2 >= val1);
+				//break;
+			}
+			case LongType:
+			{
+				long val1 = Long.parseLong(lowerValue);
+				long val2 = Long.parseLong(upperValue);
+				
+				return (val2 >= val1);
+				//break;
+			}
+			case DoubleType:
+			{
+				double val1 = Double.parseDouble(lowerValue);
+				double val2 = Double.parseDouble(upperValue);
+				
+				return (val2 >= val1);
+				//break;
+			}
+			case StringType:
+			{
+				return (lowerValue.compareTo(upperValue) <= 0);
+			}
+		}
+		return false;
+	}
+	
 	public static Object convertStringToDataTypeForMySQL(String value, String dataType)
 	{
 		switch(dataType)

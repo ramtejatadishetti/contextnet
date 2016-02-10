@@ -319,7 +319,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		userIP  = queryMsgFromUser.getSourceIP();
 		userPort   = queryMsgFromUser.getSourcePort();
 		
-		
 		ContextServiceLogger.getLogger().fine("QUERY RECVD: QUERY_MSG recvd query recvd "+query);
 		
 		// create the empty group in GNS
