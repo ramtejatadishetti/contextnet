@@ -59,7 +59,7 @@ public class ContextServiceConfig
 	//control if full guids are sent in the search query
 	// reply, if false only sends the number of guids, not
 	// the actual guids
-	public static final boolean sendFullReplies						= true;
+	public static final boolean sendFullReplies						= false;
 	
 	//if false, replies for any update messages will not be sent
 	// just for measuring update throughout and time in experiments

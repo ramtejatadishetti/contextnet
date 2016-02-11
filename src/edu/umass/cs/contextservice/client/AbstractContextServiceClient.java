@@ -127,7 +127,7 @@ public abstract class AbstractContextServiceClient<NodeIDType> implements Packet
 	 * @param resultGUIDMap
 	 * @param expiryTime
 	 */
-	public abstract void sendSearchQuery(String searchQuery, JSONArray replyArray, 
+	public abstract int sendSearchQuery(String searchQuery, JSONArray replyArray, 
 			long expiryTime);
 	
 	// blocking call

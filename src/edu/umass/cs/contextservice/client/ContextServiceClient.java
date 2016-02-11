@@ -135,13 +135,13 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 	
 	@Override
-	public void sendSearchQuery(String searchQuery, JSONArray replyArray, long expiryTime)
+	public int sendSearchQuery(String searchQuery, JSONArray replyArray, long expiryTime)
 	{
 		if(replyArray == null)
 		{
 			ContextServiceLogger.getLogger().warning("null passsed "
 					+ "as replyArray in sendSearchQuery");
-			return;
+			return -1;
 		}
 		
 		long currId;
@@ -186,6 +186,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			}
 		}
 		JSONArray result = searchQ.queryMsgFromUserReply.getResultGUIDs();
+		int resultSize = searchQ.queryMsgFromUserReply.getReplySize();
 		pendingSearches.remove(currId);
 		
 		// convert result to list of GUIDs, currently is is list of JSONArrays 
@@ -205,6 +206,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				e.printStackTrace();
 			}
 		}
+		return resultSize;
 	}
 
 	@Override
