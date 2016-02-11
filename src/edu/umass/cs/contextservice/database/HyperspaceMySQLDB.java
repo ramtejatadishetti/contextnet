@@ -375,7 +375,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		return isFun;
 	}
 	
-	public JSONArray processSearchQueryInSubspaceRegion(int subspaceId, String query)
+	public int processSearchQueryInSubspaceRegion(int subspaceId, String query, JSONArray resultArray)
 	{
 		long t0 = System.currentTimeMillis();
 		
@@ -483,8 +483,8 @@ public class HyperspaceMySQLDB<NodeIDType>
 		
 		Connection myConn  = null;
 		Statement stmt     = null;
-		JSONArray jsoArray = new JSONArray();
-		
+		//JSONArray jsoArray = new JSONArray();
+		int resultSize = 0;
 		try
 		{
 			myConn = this.mysqlDataSource.getConnection();
@@ -518,7 +518,15 @@ public class HyperspaceMySQLDB<NodeIDType>
 					}
 					if(satisfies)
 					{
-						jsoArray.put(nodeGUID);
+						if(ContextServiceConfig.sendFullReplies)
+						{
+							resultArray.put(nodeGUID);
+							resultSize++;
+						}
+						else
+						{
+							resultSize++;
+						}
 					}
 				}
 				else
@@ -527,7 +535,15 @@ public class HyperspaceMySQLDB<NodeIDType>
 					
 					//ValueTableInfo valobj = new ValueTableInfo(value, nodeGUID);
 					//answerList.add(valobj);
-					jsoArray.put(nodeGUID);
+					if(ContextServiceConfig.sendFullReplies)
+					{
+						resultArray.put(nodeGUID);
+						resultSize++;
+					}
+					else
+					{
+						resultSize++;
+					}
 				}
 			}
 		
@@ -555,7 +571,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		{
 			DelayProfiler.updateDelay("processSearchQueryInSubspaceRegion", t0);
 		}
-		return jsoArray;
+		return resultSize;
 	}
 	
 	/**

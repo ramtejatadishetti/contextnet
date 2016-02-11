@@ -534,12 +534,12 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		//String userIP       	= queryMesgToSubspaceRegion.getUserIP();
 		//int userPort        	= queryMesgToSubspaceRegion.getUserPort();
 		//int hashCode        	= queryMesgToSubspaceRegion.getHashCode();
-		
-		JSONArray resultGUIDs = this.hyperspaceDB.processSearchQueryInSubspaceRegion(subspaceId, query);
+		JSONArray resultGUIDs = new JSONArray();
+		int resultSize = this.hyperspaceDB.processSearchQueryInSubspaceRegion(subspaceId, query, resultGUIDs);
 		
 		QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply = 
 				new QueryMesgToSubspaceRegionReply<NodeIDType>( getMyID(), queryMesgToSubspaceRegion.getRequestId(), 
-						groupGUID, resultGUIDs );
+						groupGUID, resultGUIDs, resultSize);
 		
 		try
 		{

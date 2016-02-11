@@ -4,9 +4,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import edu.umass.cs.contextservice.config.ContextServiceConfig;
-
-
 public class QueryMesgToSubspaceRegionReply<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 {
 	private enum Keys {REQUESTID, GROUP_GUID, RESULT_GUIDS, REPLY_SIZE};
@@ -33,7 +30,7 @@ public class QueryMesgToSubspaceRegionReply<NodeIDType> extends BasicContextServ
 	 * sourceID will be the ID of the node that 
 	 * recvd query from the user.
 	 */
-	public QueryMesgToSubspaceRegionReply(NodeIDType initiator, long requestId, String groupGUID, JSONArray resultGUIDs)
+	public QueryMesgToSubspaceRegionReply(NodeIDType initiator, long requestId, String groupGUID, JSONArray resultGUIDs, int resultSize)
 	{
 		super(initiator, ContextServicePacket.PacketType.QUERY_MESG_TO_SUBSPACE_REGION_REPLY);
 		//this.predicate = predicate;
@@ -41,16 +38,8 @@ public class QueryMesgToSubspaceRegionReply<NodeIDType> extends BasicContextServ
 		this.requestID = requestId;
 		this.groupGUID = groupGUID;
 		
-		if(ContextServiceConfig.sendFullReplies)
-		{
-			this.resultGUIDs = resultGUIDs;
-			this.replySize = resultGUIDs.length();
-		}
-		else
-		{
-			this.resultGUIDs = new JSONArray();
-			this.replySize = resultGUIDs.length();
-		}
+		this.resultGUIDs = resultGUIDs;
+		this.replySize = resultSize;
 	}
 	
 	public QueryMesgToSubspaceRegionReply(JSONObject json) throws JSONException
@@ -99,21 +88,4 @@ public class QueryMesgToSubspaceRegionReply<NodeIDType> extends BasicContextServ
 	public static void main(String[] args)
 	{
 	}
-	
-	/*public QueryComponent getQueryComponent()
-	{
-		return predicate;
-	}
-	public NodeIDType getSourceId()
-	{
-		return sourceNodeId;
-	}
-	public String getQuery()
-	{
-		return this.query;
-	}
-	public int getSubspaceNum()
-	{
-		return this.subspaceNum;
-	}*/
 }
