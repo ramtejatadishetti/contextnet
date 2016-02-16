@@ -44,11 +44,11 @@ public class ContextServiceConfig
 	
 	public static final boolean USESQL								= true;
 	
-	public static boolean DELAY_MEASURE_PRINTS						= true;
+	public static boolean DELAY_MEASURE_PRINTS						= false;
 	
-	public static boolean DELAY_PROFILER_ON							= true;
+	public static boolean DELAY_PROFILER_ON							= false;
 	
-	public static boolean DATABASE_SIZE_PRINT						= true;
+	public static boolean DATABASE_SIZE_PRINT						= false;
 	
 	// config files
 	public static String subspaceInfoFileName						= "subspaceInfo.txt";
@@ -67,21 +67,7 @@ public class ContextServiceConfig
 	
 	// if true group update trigger is enabled, not enabled if false
 	public static boolean TRIGGER_ENABLED							= false;
-
+	
 	// if set to true basic subspace config is enabled.
 	public static boolean basicSubspaceConfig						= false;
-	
-	//public static final int startNodeID							= 0;
-	
-	//public static enum DatabaseTypes {INMEMORY, MONGODB};
-	
-	//public static enum SchemeTypes {CONTEXTNET, REPLICATE_ALL, QUERY_ALL, MERCURY, HYPERDEX, 
-	//	MERCURYNEW, MERCURYCONSISTENT};
-	//public static final DatabaseTypes DATABASE_TYPE				= DatabaseTypes.INMEMORY;
-	
-	// attributes configurations
-	//public static final String CONTEXT_ATTR_PREFIX				= "contextATT";
-	// num of attributes
-	//public static int NUM_ATTRIBUTES								= 100;
-	//public static int NUM_RANGE_PARTITIONS						= 3;
 }
