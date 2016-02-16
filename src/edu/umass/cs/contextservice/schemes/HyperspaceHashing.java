@@ -62,7 +62,9 @@ import edu.umass.cs.protocoltask.ProtocolTask;
 
 public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 {
-	public static final int THREAD_POOL_SIZE											= 20;
+	// because d710 Exp nodes have 8 processors with 4 cores each
+	public static final int THREAD_POOL_SIZE											= 32;
+	
 	private final ExecutorService nodeES;
 	
 	private long numberOfQueryFromUser													= 0;
@@ -110,9 +112,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		//ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
 		
 		generateSubspacePartitions();
-		//nodeES = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+		nodeES = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 		//ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
-		nodeES = Executors.newCachedThreadPool();
+		//nodeES = Executors.newCachedThreadPool();
 		
 		new Thread(new ProfilerStatClass()).start();
 	}
