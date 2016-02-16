@@ -57,7 +57,7 @@ public class DataSource<NodeIDType>
         //the settings below are optional -- c3p0 can work with defaults
         //cpds.setMinPoolSize(5);
         //cpds.setAcquireIncrement(5);
-        cpds.setMaxPoolSize(150);
+        //cpds.setMaxPoolSize(150);
         cpds.setAutoCommitOnClose(false);
         //cpds.setMaxStatements(180);
     }

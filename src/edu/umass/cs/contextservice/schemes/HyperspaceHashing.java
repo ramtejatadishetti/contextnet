@@ -304,6 +304,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
+	
 	@SuppressWarnings("unchecked")
 	private void processQueryMsgFromUser
 		(QueryMsgFromUser<NodeIDType> queryMsgFromUser)

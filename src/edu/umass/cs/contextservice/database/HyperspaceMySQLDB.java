@@ -403,79 +403,80 @@ public class HyperspaceMySQLDB<NodeIDType>
 		
 		Iterator<String> attrIter = pqComponents.keySet().iterator();
 		int counter = 0;
-		try{
-		while(attrIter.hasNext())
+		try
 		{
-			String attrName = attrIter.next();
-			ProcessingQueryComponent pqc = pqComponents.get(attrName);
-			 
-			AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-			
-			assert(attrMetaInfo != null);
-			
-			String dataType = attrMetaInfo.getDataType();
-			
-			ContextServiceLogger.getLogger().fine("attrName "+attrName+" dataType "+dataType+
-					" pqc.getLowerBound() "+pqc.getLowerBound()+" pqc.getUpperBound() "+pqc.getUpperBound()+" pqComponents "+pqComponents.size());
-			
-			
-			
-			// normal case of lower value being lesser than the upper value
-			if(AttributeTypes.compareTwoValues(pqc.getLowerBound(), pqc.getUpperBound(), dataType))
+			while(attrIter.hasNext())
 			{
-				String queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getLowerBound(), dataType)+"";
-				String queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getUpperBound(), dataType)+"";
+				String attrName = attrIter.next();
+				ProcessingQueryComponent pqc = pqComponents.get(attrName);
+				 
+				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
 				
-				if(counter == (pqComponents.size()-1) )
+				assert(attrMetaInfo != null);
+				
+				String dataType = attrMetaInfo.getDataType();
+				
+				ContextServiceLogger.getLogger().fine("attrName "+attrName+" dataType "+dataType+
+						" pqc.getLowerBound() "+pqc.getLowerBound()+" pqc.getUpperBound() "+pqc.getUpperBound()+" pqComponents "+pqComponents.size());
+				
+				
+				
+				// normal case of lower value being lesser than the upper value
+				if(AttributeTypes.compareTwoValues(pqc.getLowerBound(), pqc.getUpperBound(), dataType))
 				{
-					// it is assumed that the strings in query(pqc.getLowerBound() or pqc.getUpperBound()) 
-					// will have single or double quotes in them so we don't need to them separately in mysql query
-					mysqlQuery = mysqlQuery + " ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
-							+pqc.getAttributeName() +" <= "+queryMax+" ) )";
+					String queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getLowerBound(), dataType)+"";
+					String queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getUpperBound(), dataType)+"";
+					
+					if(counter == (pqComponents.size()-1) )
+					{
+						// it is assumed that the strings in query(pqc.getLowerBound() or pqc.getUpperBound()) 
+						// will have single or double quotes in them so we don't need to them separately in mysql query
+						mysqlQuery = mysqlQuery + " ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
+								+pqc.getAttributeName() +" <= "+queryMax+" ) )";
+					}
+					else
+					{
+						mysqlQuery = mysqlQuery + " ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
+								+pqc.getAttributeName() +" <= "+queryMax+" ) AND ";
+					}
 				}
 				else
 				{
-					mysqlQuery = mysqlQuery + " ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
-							+pqc.getAttributeName() +" <= "+queryMax+" ) AND ";
+					if(counter == (pqComponents.size()-1) )
+					{
+						String queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMinValue(), dataType)+"";
+						String queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getUpperBound(), dataType)+"";
+						
+						mysqlQuery = mysqlQuery + " ( "
+								+" ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
+								+pqc.getAttributeName() +" <= "+queryMax+" ) OR ";
+								
+						queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getLowerBound(), dataType)+"";
+						queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMaxValue(), dataType)+"";
+						
+						mysqlQuery = mysqlQuery +" ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
+								+pqc.getAttributeName() +" <= "+queryMax+" ) ) )";
+					}
+					else
+					{
+						String queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMinValue(), dataType)+"";
+						String queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getUpperBound(), dataType)+"";
+						
+						mysqlQuery = mysqlQuery + " ( "
+								+" ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
+								+pqc.getAttributeName() +" <= "+queryMax+" ) OR ";
+								
+						queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getLowerBound(), dataType)+"";
+						queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMaxValue(), dataType)+"";
+						
+						mysqlQuery = mysqlQuery +" ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
+								+pqc.getAttributeName() +" <= "+queryMax+" ) ) AND ";
+					}
 				}
+				
+				counter++;
+				ContextServiceLogger.getLogger().fine(mysqlQuery);
 			}
-			else
-			{
-				if(counter == (pqComponents.size()-1) )
-				{
-					String queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMinValue(), dataType)+"";
-					String queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getUpperBound(), dataType)+"";
-					
-					mysqlQuery = mysqlQuery + " ( "
-							+" ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
-							+pqc.getAttributeName() +" <= "+queryMax+" ) OR ";
-							
-					queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getLowerBound(), dataType)+"";
-					queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMaxValue(), dataType)+"";
-					
-					mysqlQuery = mysqlQuery +" ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
-							+pqc.getAttributeName() +" <= "+queryMax+" ) ) )";
-				}
-				else
-				{
-					String queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMinValue(), dataType)+"";
-					String queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getUpperBound(), dataType)+"";
-					
-					mysqlQuery = mysqlQuery + " ( "
-							+" ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
-							+pqc.getAttributeName() +" <= "+queryMax+" ) OR ";
-							
-					queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getLowerBound(), dataType)+"";
-					queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMaxValue(), dataType)+"";
-					
-					mysqlQuery = mysqlQuery +" ( "+pqc.getAttributeName() +" >= "+queryMin +" AND " 
-							+pqc.getAttributeName() +" <= "+queryMax+" ) ) AND ";
-				}
-			}
-			
-			counter++;
-			ContextServiceLogger.getLogger().fine(mysqlQuery);
-		}
 		} catch(Exception | Error ex)
 		{
 			ex.printStackTrace();
@@ -492,7 +493,6 @@ public class HyperspaceMySQLDB<NodeIDType>
 			ContextServiceLogger.getLogger().fine("processSearchQueryInSubspaceRegion: "+mysqlQuery);
 			
 			ResultSet rs = stmt.executeQuery(mysqlQuery);
-			
 			while( rs.next() )
 			{
 				//Retrieve by column name
@@ -546,7 +546,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 					}
 				}
 			}
-		
+			
 			rs.close();
 			stmt.close();
 		} catch(SQLException sqlex)

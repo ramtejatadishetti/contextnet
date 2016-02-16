@@ -2,4 +2,4 @@ userName=ayadavum
 keyFile=id_rsa
 hostType=linux
 installPath=/home/GNSDir/gns
-javaCommand=java -ea
+javaCommand=java -ea -Xmx4048M
