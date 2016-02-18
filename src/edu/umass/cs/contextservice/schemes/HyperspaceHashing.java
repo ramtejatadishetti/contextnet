@@ -881,12 +881,11 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				ex.printStackTrace();
 			}
 			
-			this.hyperspaceDB.storeGUIDInSubspace(tableName, GUID, attrValuePairs, updateOrInsert);
+			//this.hyperspaceDB.storeGUIDInSubspace(tableName, GUID, attrValuePairs, updateOrInsert);
 			//JSONObject oldValueJSON 	= this.hyperspaceDB.storeGUIDInSubspace(tableName, GUID, attrValuePairs);
 			// process update at other subspaces.
 			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap
 					= this.subspaceConfigurator.getSubspaceInfoMap();
-			
 			
 			Iterator<Integer> keyIter   = subspaceInfoMap.keySet().iterator();
 			//int maxMatchingAttrs 		= 0;
@@ -1043,6 +1042,10 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					}
 				}
 			}
+			
+			// FIXME: just for test check, need to add condition for completion of this step before assuming
+			// udpate completion and removal of updateInfo and starting next update of this GUID
+			this.hyperspaceDB.storeGUIDInSubspace(tableName, GUID, attrValuePairs, updateOrInsert);
 		} catch (JSONException e)
 		{
 			e.printStackTrace();
