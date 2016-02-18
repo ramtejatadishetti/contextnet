@@ -62,7 +62,7 @@ public class DataSource<NodeIDType>
         // definitely set it, don't leave it for default. default gives very bad
         // update performance. 
         // TODO: need to find its optimal value. 
-        cpds.setMaxPoolSize(150);
+        cpds.setMaxPoolSize(200);
         cpds.setAutoCommitOnClose(false);
         //cpds.setMaxStatements(180);
         ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB datasource "
