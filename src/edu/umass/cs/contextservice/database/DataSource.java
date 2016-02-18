@@ -12,6 +12,7 @@ import java.util.HashMap;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 
 public class DataSource<NodeIDType>
 {
@@ -57,9 +58,15 @@ public class DataSource<NodeIDType>
         //the settings below are optional -- c3p0 can work with defaults
         //cpds.setMinPoolSize(5);
         //cpds.setAcquireIncrement(5);
+        // NOTE: max pool size of DB affects the performance alot
+        // definitely set it, don't leave it for default. default gives very bad
+        // update performance. 
+        // TODO: need to find its optimal value. 
         cpds.setMaxPoolSize(150);
         cpds.setAutoCommitOnClose(false);
         //cpds.setMaxStatements(180);
+        ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB datasource "
+        		+ "max pool size "+cpds.getMaxPoolSize());
     }
     
     private void createDB(SQLNodeInfo sqlInfo)
