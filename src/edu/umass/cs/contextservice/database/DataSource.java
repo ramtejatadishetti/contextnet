@@ -61,7 +61,9 @@ public class DataSource<NodeIDType>
         // NOTE: max pool size of DB affects the performance alot
         // definitely set it, don't leave it for default. default gives very bad
         // update performance. 
-        // TODO: need to find its optimal value. 
+        // TODO: need to find its optimal value.
+        // on d710 cluster 150 gives the best performance, after that performance remains same.
+        // should be at least same as the hyperspace hashing pool size.
         cpds.setMaxPoolSize(300);
         cpds.setAutoCommitOnClose(false);
         //cpds.setMaxStatements(180);
