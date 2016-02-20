@@ -63,7 +63,7 @@ import edu.umass.cs.protocoltask.ProtocolTask;
 public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 {
 	// because d710 Exp nodes have 8 processors with 4 cores each
-	public static final int THREAD_POOL_SIZE											= 80;
+	public static final int THREAD_POOL_SIZE											= 150;
 	
 	private final ExecutorService nodeES;
 	
