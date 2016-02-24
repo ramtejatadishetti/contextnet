@@ -493,7 +493,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 			// set in memory. http://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html
 			stmt   = myConn.createStatement(java.sql.ResultSet.TYPE_FORWARD_ONLY, 
 					java.sql.ResultSet.CONCUR_READ_ONLY);
-			stmt.setFetchSize(Integer.MIN_VALUE);
+			stmt.setFetchSize(ContextServiceConfig.MYSQL_CURSOR_FETCH_SIZE);
 			
 			ContextServiceLogger.getLogger().fine("processSearchQueryInSubspaceRegion: "+mysqlQuery);
 			
