@@ -84,5 +84,5 @@ public class ContextServiceConfig
 	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 214;
 	
 	// mysql result cursor fetches 500 guids at once and stores in memory
-	public static final int MYSQL_CURSOR_FETCH_SIZE					= 500;
+	public static final int MYSQL_CURSOR_FETCH_SIZE					= 1;
 }

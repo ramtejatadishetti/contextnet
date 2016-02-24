@@ -24,6 +24,7 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
+import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.utils.DelayProfiler;
 
 public class HyperspaceMySQLDB<NodeIDType>
@@ -146,7 +147,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 					tableName = "subspaceId"+subspaceId+"DataStorage";
 					
 					newTableCommand = "create table "+tableName+" ( "
-						      + "   nodeGUID CHAR(42) PRIMARY KEY";
+						      + "   nodeGUID Binary(20) PRIMARY KEY";
 					
 					//	      + ", upperRange DOUBLE NOT NULL, nodeID INT NOT NULL, "
 					//	      + "   partitionNum INT AUTO_INCREMENT, INDEX USING BTREE (lowerRange, upperRange) )";
@@ -182,7 +183,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 			String tableName = "primarySubspaceDataStorage";
 			
 			String newTableCommand = "create table "+tableName+" ( "
-				      + "   nodeGUID CHAR(42) PRIMARY KEY";
+				      + "   nodeGUID Binary(20) PRIMARY KEY";
 			
 			//	      + ", upperRange DOUBLE NOT NULL, nodeID INT NOT NULL, "
 			//	      + "   partitionNum INT AUTO_INCREMENT, INDEX USING BTREE (lowerRange, upperRange) )";
@@ -393,6 +394,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		{
 			// get all fields as function might need to check them
 			// for post processing
+			// FIXME: need to add support for hex
 			mysqlQuery = "SELECT * from "+tableName+" WHERE ( ";
 		}
 		else
@@ -504,8 +506,8 @@ public class HyperspaceMySQLDB<NodeIDType>
 				//double value  	 = rs.getDouble("value");
 				if(isFun)
 				{
-					String nodeGUID = rs.getString("nodeGUID");
-					
+					//String nodeGUID = rs.getString("nodeGUID");
+					byte[] nodeGUIDBytes = rs.getBytes("nodeGUID");
 					boolean satisfies = true;
 					// checks against all such functions
 					for(int i=0; i<qcomponents.size(); i++)
@@ -525,6 +527,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 					{
 						if(ContextServiceConfig.sendFullReplies)
 						{
+							String nodeGUID = Utils.bytArrayToHex(nodeGUIDBytes);
 							resultArray.put(nodeGUID);
 							resultSize++;
 						}
@@ -536,12 +539,14 @@ public class HyperspaceMySQLDB<NodeIDType>
 				}
 				else
 				{
-					String nodeGUID = rs.getString("nodeGUID");
+					//String nodeGUID = rs.getString("nodeGUID");
+					byte[] nodeGUIDBytes = rs.getBytes("nodeGUID");
 					
 					//ValueTableInfo valobj = new ValueTableInfo(value, nodeGUID);
 					//answerList.add(valobj);
 					if(ContextServiceConfig.sendFullReplies)
 					{
+						String nodeGUID = Utils.bytArrayToHex(nodeGUIDBytes);
 						resultArray.put(nodeGUID);
 						resultSize++;
 					}
@@ -699,7 +704,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		
 		JSONObject oldValueJSON = new JSONObject();
 		
-		selectQuery = selectQuery + " FROM "+tableName+" WHERE nodeGUID = '"+guid+"'";
+		selectQuery = selectQuery + " FROM "+tableName+" WHERE nodeGUID = UNHEX("+guid+")";
 		
 		try
 		{
@@ -949,7 +954,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 	        }
        
 	        //selectQuery = selectQuery + " FROM "+tableName+" WHERE nodeGUID = '"+nodeGUID+"'";
-	        updateSqlQuery = updateSqlQuery + " WHERE nodeGUID = '"+nodeGUID+"'";
+	        updateSqlQuery = updateSqlQuery + " WHERE nodeGUID = UNHEX("+nodeGUID+")";
 	        insertQuery = insertQuery + ", nodeGUID) " + "VALUES"+ "(";
                 //+ ",'"+nodeGUID+"' )
 	        //double oldValue = Double.MIN_VALUE;
@@ -981,7 +986,7 @@ public class HyperspaceMySQLDB<NodeIDType>
                 }
                 i++;
             }
-            insertQuery = insertQuery +", '"+nodeGUID+"')";
+            insertQuery = insertQuery +", UNHEX("+nodeGUID+") )";
             
             myConn = this.mysqlDataSource.getConnection();
             stmt = myConn.createStatement();   
@@ -1060,7 +1065,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 	public void deleteGUIDFromSubspaceRegion(String tableName, String nodeGUID)
 	{
 		long t0 = System.currentTimeMillis();
-		String deleteCommand = "DELETE FROM "+tableName+" WHERE nodeGUID='"+nodeGUID+"'";
+		String deleteCommand = "DELETE FROM "+tableName+" WHERE nodeGUID=UNHEX("+nodeGUID+")";
 		Connection myConn 	= null;
 		Statement stmt 		= null;
 		
@@ -1110,7 +1115,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		
 		JSONObject oldValueJSON 	= new JSONObject();
 		
-		selectQuery = selectQuery + " FROM "+tableName+" WHERE nodeGUID = '"+GUID+"'";
+		selectQuery = selectQuery + " FROM "+tableName+" WHERE nodeGUID = UNHEX("+GUID+")";
 		
 		try
 		{
