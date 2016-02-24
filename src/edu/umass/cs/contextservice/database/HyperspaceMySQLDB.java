@@ -146,7 +146,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 					tableName = "subspaceId"+subspaceId+"DataStorage";
 					
 					newTableCommand = "create table "+tableName+" ( "
-						      + "   nodeGUID CHAR(100) PRIMARY KEY";
+						      + "   nodeGUID CHAR(42) PRIMARY KEY";
 					
 					//	      + ", upperRange DOUBLE NOT NULL, nodeID INT NOT NULL, "
 					//	      + "   partitionNum INT AUTO_INCREMENT, INDEX USING BTREE (lowerRange, upperRange) )";
@@ -171,7 +171,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 						tableName = "subspaceId"+subspaceId+"TriggerInfo";
 						
 						newTableCommand = "create table "+tableName+" ( hashCode INTEGER , " + 
-						"  userQuery VARCHAR("+HyperspaceMySQLDB.MAX_QUERY_LENGTH+") , groupGUID VARCHAR(100) , userIP VARCHAR(20) , "
+						"  userQuery VARCHAR("+HyperspaceMySQLDB.MAX_QUERY_LENGTH+") , groupGUID VARCHAR(42) , userIP VARCHAR(20) , "
 								+ "userPort INTEGER , INDEX USING  HASH(hashCode) )";
 						
 						stmt.executeUpdate(newTableCommand);
@@ -182,7 +182,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 			String tableName = "primarySubspaceDataStorage";
 			
 			String newTableCommand = "create table "+tableName+" ( "
-				      + "   nodeGUID CHAR(100) PRIMARY KEY";
+				      + "   nodeGUID CHAR(42) PRIMARY KEY";
 			
 			//	      + ", upperRange DOUBLE NOT NULL, nodeID INT NOT NULL, "
 			//	      + "   partitionNum INT AUTO_INCREMENT, INDEX USING BTREE (lowerRange, upperRange) )";
