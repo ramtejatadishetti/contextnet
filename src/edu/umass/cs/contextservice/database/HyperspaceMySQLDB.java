@@ -704,7 +704,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		
 		JSONObject oldValueJSON = new JSONObject();
 		
-		selectQuery = selectQuery + " FROM "+tableName+" WHERE nodeGUID = UNHEX("+guid+")";
+		selectQuery = selectQuery + " FROM "+tableName+" WHERE nodeGUID = X'"+guid+"'";
 		
 		try
 		{
@@ -954,7 +954,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 	        }
        
 	        //selectQuery = selectQuery + " FROM "+tableName+" WHERE nodeGUID = '"+nodeGUID+"'";
-	        updateSqlQuery = updateSqlQuery + " WHERE nodeGUID = UNHEX("+nodeGUID+")";
+	        updateSqlQuery = updateSqlQuery + " WHERE nodeGUID = X'"+nodeGUID+"'";
 	        insertQuery = insertQuery + ", nodeGUID) " + "VALUES"+ "(";
                 //+ ",'"+nodeGUID+"' )
 	        //double oldValue = Double.MIN_VALUE;
@@ -986,7 +986,7 @@ public class HyperspaceMySQLDB<NodeIDType>
                 }
                 i++;
             }
-            insertQuery = insertQuery +", UNHEX("+nodeGUID+") )";
+            insertQuery = insertQuery +", X'"+nodeGUID+"' )";
             
             myConn = this.mysqlDataSource.getConnection();
             stmt = myConn.createStatement();   
@@ -1065,7 +1065,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 	public void deleteGUIDFromSubspaceRegion(String tableName, String nodeGUID)
 	{
 		long t0 = System.currentTimeMillis();
-		String deleteCommand = "DELETE FROM "+tableName+" WHERE nodeGUID=UNHEX("+nodeGUID+")";
+		String deleteCommand = "DELETE FROM "+tableName+" WHERE nodeGUID= X'"+nodeGUID+"'";
 		Connection myConn 	= null;
 		Statement stmt 		= null;
 		
@@ -1115,7 +1115,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		
 		JSONObject oldValueJSON 	= new JSONObject();
 		
-		selectQuery = selectQuery + " FROM "+tableName+" WHERE nodeGUID = UNHEX("+GUID+")";
+		selectQuery = selectQuery + " FROM "+tableName+" WHERE nodeGUID = X'"+GUID+"'";
 		
 		try
 		{
