@@ -61,11 +61,7 @@ import edu.umass.cs.protocoltask.ProtocolEvent;
 import edu.umass.cs.protocoltask.ProtocolTask;
 
 public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
-{
-	// because d710 Exp nodes have 8 processors with 4 cores each
-	// it is also important to set this at least the size of the database connection pool.
-	public static final int THREAD_POOL_SIZE											= 150;
-	
+{	
 	private final ExecutorService nodeES;
 	
 	private long numberOfQueryFromUser													= 0;
@@ -105,7 +101,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		try
 		{
-			hyperspaceDB = new HyperspaceMySQLDB<NodeIDType>(this.getMyID(), subspaceConfigurator.getSubspaceInfoMap());
+			hyperspaceDB = new HyperspaceMySQLDB<NodeIDType>(this.getMyID(), 
+					subspaceConfigurator.getSubspaceInfoMap());
 		} catch (Exception e)
 		{
 			e.printStackTrace();
@@ -113,7 +110,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		//ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
 		
 		generateSubspacePartitions();
-		nodeES = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+		nodeES = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
 		//ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
 		//nodeES = Executors.newCachedThreadPool();
 		

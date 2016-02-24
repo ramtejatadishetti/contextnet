@@ -70,4 +70,16 @@ public class ContextServiceConfig
 	
 	// if set to true basic subspace config is enabled.
 	public static boolean basicSubspaceConfig						= false;
+	
+	
+	
+    // on d710 cluster 150 gives the best performance, after that performance remains same.
+    // should be at least same as the hyperspace hashing pool size.
+    // actually default mysql server max connection is 151. So this should be
+    // set in conjuction with that. and also the hyperpsace hashing thread pool
+    // size should be set greater than that. These things affect system performance a lot.
+	public static final int MYSQL_MAX_CONNECTIONS					= 214;
+	
+	// it is also important to set this at least the size of the database connection pool.
+	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 214;
 }

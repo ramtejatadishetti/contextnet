@@ -64,7 +64,10 @@ public class DataSource<NodeIDType>
         // TODO: need to find its optimal value.
         // on d710 cluster 150 gives the best performance, after that performance remains same.
         // should be at least same as the hyperspace hashing pool size.
-        cpds.setMaxPoolSize(300);
+        // actually default mysql server max connection is 151. So this should be
+        // set in conjuction with that. and also the hyperpsace hashing thread pool
+        // size should be set greater than that. These things affect system performance a lot.
+        cpds.setMaxPoolSize(ContextServiceConfig.MYSQL_MAX_CONNECTIONS);
         cpds.setAutoCommitOnClose(false);
         //cpds.setMaxStatements(180);
         ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB datasource "
