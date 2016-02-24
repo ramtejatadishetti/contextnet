@@ -38,7 +38,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 	private final DataSource<NodeIDType> mysqlDataSource;
 	
 	private final HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;
-
+	
 	public static final String userQuery = "userQuery";
 	public static final String groupGUID = "groupGUID";
 	public static final String userIP = "userIP";
@@ -489,7 +489,12 @@ public class HyperspaceMySQLDB<NodeIDType>
 		try
 		{
 			myConn = this.mysqlDataSource.getConnection();
-			stmt   = myConn.createStatement();
+			// for row by row fetching, oterwise default is fetching whole result
+			// set in memory. http://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html
+			stmt   = myConn.createStatement(java.sql.ResultSet.TYPE_FORWARD_ONLY, 
+					java.sql.ResultSet.CONCUR_READ_ONLY);
+			stmt.setFetchSize(Integer.MIN_VALUE);
+			
 			ContextServiceLogger.getLogger().fine("processSearchQueryInSubspaceRegion: "+mysqlQuery);
 			
 			ResultSet rs = stmt.executeQuery(mysqlQuery);
@@ -881,7 +886,6 @@ public class HyperspaceMySQLDB<NodeIDType>
 		}
 		return tableRows;
 	}
-	
 	
 	
 	/**
