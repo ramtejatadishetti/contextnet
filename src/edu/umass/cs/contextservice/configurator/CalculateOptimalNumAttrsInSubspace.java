@@ -1,7 +1,11 @@
 package edu.umass.cs.contextservice.configurator;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
@@ -66,7 +70,10 @@ public class CalculateOptimalNumAttrsInSubspace
 	
 	private void executeOptimizerScript() throws IOException
 	{
-		Process p = Runtime.getRuntime().exec("python conf/optimizerScript/HOptimizerJavaCallable.py "
+		extractTheScript();
+		Process p = Runtime.getRuntime().exec("chmod +x HOptimizerJavaCallable.py");
+		
+		p = Runtime.getRuntime().exec("python HOptimizerJavaCallable.py "
 	+ContextServiceConfig.modelRho+" "+numNodes+" "+ContextServiceConfig.modelCsByC
 	+" "+ContextServiceConfig.modelCuByC+" "+numAttrs+" "+ContextServiceConfig.modelAavg);
 		
@@ -104,5 +111,35 @@ public class CalculateOptimalNumAttrsInSubspace
 			}
 			currline = in.readLine();
 		}
+	}
+	
+	
+	private void extractTheScript() throws IOException
+	{
+		InputStream in = getClass().getResourceAsStream("/HOptimizerJavaCallable.py");
+		BufferedReader input = new BufferedReader(new InputStreamReader(in));
+		
+		File file = new File("HOptimizerJavaCallable.py");
+
+		// if file doesnt exists, then create it
+		if ( !file.exists() ) 
+		{
+			file.createNewFile();
+		}
+		
+		FileWriter fw = new FileWriter(file.getAbsoluteFile());
+		BufferedWriter bw = new BufferedWriter(fw);
+		
+		
+
+		String line = input.readLine();
+		while(line != null)
+		{
+			bw.write(line+"\n");
+			line = input.readLine();
+		}
+		bw.close();
+		input.close();
+		in.close();
 	}
 }

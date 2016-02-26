@@ -47,7 +47,7 @@
   <fileset dir="${build.dir}/">
   </fileset>
   <fileset dir="${basedir}">
-  	<include name="nodesInfo.txt" />
+  	<include name="HOptimizerJavaCallable.py" />
   </fileset>
   <zipgroupfileset dir="${lib.dir}/" includes="combinatoricslib-2.1.jar, commons-cli-1.1.jar, com.jcraft.jsch-all-1.0.6.release.jar,gigapaxos-1.0.jar"/>
   <manifest>
