@@ -22,11 +22,12 @@ import edu.umass.cs.nio.interfaces.NodeConfig;
  */
 public class BasicSubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurator<NodeIDType>
 {
-	private static final double MAX_H = 3;
+	private final int optimalH;
 	
-	public BasicSubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig) 
+	public BasicSubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig, int optimalH) 
 	{
 		super(nodeConfig);
+		this.optimalH = optimalH;
 	}
 
 	@Override
@@ -35,7 +36,7 @@ public class BasicSubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfi
 		double numNodes = nodeConfig.getNodeIDs().size();
 		double numAttrs = AttributeTypes.attributeMap.size();
 		//TODO: later on h value, num of attrs in a subspace will be calculated by the model
-		double numSubspaces = Math.ceil(numAttrs/MAX_H);
+		double numSubspaces = Math.ceil(numAttrs/optimalH);
 		
 		Vector<AttributeMetaInfo> attrVector 
 				= new Vector<AttributeMetaInfo>();
@@ -114,7 +115,7 @@ public class BasicSubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfi
 			
 			int numCurrAttr = 0;
 			
-			while( (numCurrAttr < MAX_H) && (attrIndexCounter < attrVector.size()) )
+			while( (numCurrAttr < optimalH) && (attrIndexCounter < attrVector.size()) )
 			{
 				AttributeMetaInfo currAttrMetaInfo = attrVector.get(attrIndexCounter);
 				String attrName = currAttrMetaInfo.getAttrName();
@@ -158,7 +159,7 @@ public class BasicSubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfi
 		}
 		
 		AbstractSubspaceConfigurator<Integer> basicSubspaceConfigurator 
-								= new BasicSubspaceConfigurator<Integer>(testNodeConfig);
+								= new BasicSubspaceConfigurator<Integer>(testNodeConfig, 2);
 		
 		basicSubspaceConfigurator.configureSubspaceInfo();
 		basicSubspaceConfigurator.printSubspaceInfo();

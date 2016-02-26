@@ -1,5 +1,7 @@
 package edu.umass.cs.contextservice.config;
 
+
+
 /**
  * Context service config file.
  * It contains all configuration parameters.
@@ -69,7 +71,7 @@ public class ContextServiceConfig
 	public static boolean TRIGGER_ENABLED							= false;
 	
 	// if set to true basic subspace config is enabled.
-	public static boolean basicSubspaceConfig						= false;
+	//public static boolean basicSubspaceConfig						= false;
 	
 	
 	
@@ -78,11 +80,22 @@ public class ContextServiceConfig
     // actually default mysql server max connection is 151. So this should be
     // set in conjuction with that. and also the hyperpsace hashing thread pool
     // size should be set greater than that. These things affect system performance a lot.
-	public static final int MYSQL_MAX_CONNECTIONS					= 214;
+	public static final int MYSQL_MAX_CONNECTIONS					= 150;
 	
 	// it is also important to set this at least the size of the database connection pool.
-	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 214;
+	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 150;
 	
 	// mysql result cursor fetches 500 guids at once and stores in memory
 	public static final int MYSQL_CURSOR_FETCH_SIZE					= 1;
+	
+	
+	//  model paramters
+	// search/(search+update) ratio
+	public static double modelRho										= 0.5;
+	// single node search throughput inverse
+	public static double modelCsByC            							= 1.0/(69.55366816958512 * 4.0);
+	// single node udpate throughput inverse
+	public static double modelCuByC            							= 1.0/(153.74028685197356 * 4.0);
+	
+	public static double modelAavg             							= 4.0;
 }

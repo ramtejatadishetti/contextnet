@@ -26,7 +26,8 @@ import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.configurator.AbstractSubspaceConfigurator;
 import edu.umass.cs.contextservice.configurator.BasicSubspaceConfigurator;
-import edu.umass.cs.contextservice.configurator.SubspaceConfigurator;
+import edu.umass.cs.contextservice.configurator.CalculateOptimalNumAttrsInSubspace;
+import edu.umass.cs.contextservice.configurator.ReplicatedSubspaceConfigurator;
 import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
 import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.gns.GNSCalls;
@@ -75,6 +76,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	
 	private final Random replicaChoosingRand;
 	
+	private final CalculateOptimalNumAttrsInSubspace optimalHCalculator;
+	
 	public static final Logger log 														= ContextServiceLogger.getLogger();
 	
 	public HyperspaceHashing(NodeConfig<NodeIDType> nc,
@@ -82,16 +85,21 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	{
 		super(nc, m);
 		
-		replicaChoosingRand = new Random();
+		replicaChoosingRand = new Random(this.getMyID().hashCode());
 		guidUpdateInfoMap = new HashMap<String, GUIDUpdateInfo<NodeIDType>>();
-			
-		if( ContextServiceConfig.basicSubspaceConfig )
+		
+		optimalHCalculator = new CalculateOptimalNumAttrsInSubspace(nc.getNodeIDs().size(),
+					AttributeTypes.attributeMap.size());
+		
+		if( optimalHCalculator.getBasicOrReplicated() )
 		{
-			subspaceConfigurator = new BasicSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig());
+			subspaceConfigurator 
+			= new BasicSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), optimalHCalculator.getOptimalH() );
 		}
 		else
 		{
-			subspaceConfigurator = new SubspaceConfigurator<NodeIDType>(messenger.getNodeConfig());
+			subspaceConfigurator 
+			= new ReplicatedSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), optimalHCalculator.getOptimalH() );
 		}
 		
 		ContextServiceLogger.getLogger().fine("configure subspace started");

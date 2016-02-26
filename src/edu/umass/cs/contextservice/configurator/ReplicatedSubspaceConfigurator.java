@@ -22,16 +22,19 @@ import edu.umass.cs.nio.interfaces.NodeConfig;
  * go into which subspaces.
  * @author adipc
  */
-public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurator<NodeIDType>
+public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurator<NodeIDType>
 {
 	// each domain is at least partitioned into two.
 	//TODO: these values will be determined by the model at some point
 	//private static final double MIN_P = 2;
-	private static final double MAX_H = 3;
+	//private static final double MAX_H = 3;
 	
-	public SubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig)
+	private final int optimalH;
+	public ReplicatedSubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig, 
+			int optimalH)
 	{
 		super(nodeConfig);
+		this.optimalH = optimalH;
 	}
 	
 	@Override
@@ -40,7 +43,7 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 		double numNodes = nodeConfig.getNodeIDs().size();
 		double numAttrs = AttributeTypes.attributeMap.size();
 		//TODO: later on h value, num of attrs in a subspace will be calculated by the model
-		double numSubspaces = Math.ceil(numAttrs/MAX_H);
+		double numSubspaces = Math.ceil(numAttrs/optimalH);
 		
 		
 		// N/S(N) is from the model, we consider S(N) to be sqrt(N)
@@ -147,7 +150,7 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 			
 			int numCurrAttr = 0;
 			
-			while( (numCurrAttr < MAX_H) && (attrIndexCounter < attrVector.size()) )
+			while( (numCurrAttr < optimalH) && (attrIndexCounter < attrVector.size()) )
 			{
 				AttributeMetaInfo currAttrMetaInfo = attrVector.get(attrIndexCounter);
 				String attrName = currAttrMetaInfo.getAttrName();
@@ -307,8 +310,8 @@ public class SubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurat
 			testNodeConfig.add(i, sockAddr);
 		}
 		
-		SubspaceConfigurator<Integer> subspaceConfigurator 
-								= new SubspaceConfigurator<Integer>(testNodeConfig);
+		ReplicatedSubspaceConfigurator<Integer> subspaceConfigurator 
+								= new ReplicatedSubspaceConfigurator<Integer>(testNodeConfig, 2);
 		subspaceConfigurator.configureSubspaceInfo();
 		
 		subspaceConfigurator.printSubspaceInfo();

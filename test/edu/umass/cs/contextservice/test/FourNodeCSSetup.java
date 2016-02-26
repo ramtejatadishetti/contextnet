@@ -80,12 +80,12 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 			e.printStackTrace();
 		}
 		
-		try {
-			RequestClass.startRequests();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//		try {
+//			RequestClass.startRequests();
+//		} catch (Exception e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 	}
 	
 	
