@@ -1,7 +1,5 @@
 package edu.umass.cs.contextservice.config;
 
-
-
 /**
  * Context service config file.
  * It contains all configuration parameters.
@@ -9,6 +7,14 @@ package edu.umass.cs.contextservice.config;
  */
 public class ContextServiceConfig
 {
+	// properties name, these are read from properties file
+	public static final String modelRhoString 						= "modelRho";
+	public static final String modelCsByCString 					= "modelCsByC";
+	public static final String modelCuByCString 					= "modelCuByC";
+	public static final String modelAavgString  					= "modelAavg";
+	public static final String triggerEnableString					= "triggerEnable";
+	
+	
 	// path where all config files are stored, like node setup, attribute info, subspace info
 	public static String configFileDirectory;
 	
@@ -53,6 +59,7 @@ public class ContextServiceConfig
 	public static boolean DATABASE_SIZE_PRINT						= false;
 	
 	// config files
+	public static String csConfigFileName							= "csConfigFile.txt";
 	public static String subspaceInfoFileName						= "subspaceInfo.txt";
 	public static String attributeInfoFileName						= "attributeInfo.txt";
 	public static String nodeSetupFileName							= "contextServiceNodeSetup.txt";
@@ -85,7 +92,9 @@ public class ContextServiceConfig
 	// it is also important to set this at least the size of the database connection pool.
 	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 150;
 	
-	// mysql result cursor fetches 500 guids at once and stores in memory
+	// mysql result cursor fetches 1 guid at once and stores in memory
+	// need this becuase otherwise in large guids case , all the result 
+	// is stored in memory by default.
 	public static final int MYSQL_CURSOR_FETCH_SIZE					= 1;
 	
 	

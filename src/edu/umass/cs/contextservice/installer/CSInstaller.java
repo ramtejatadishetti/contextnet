@@ -60,7 +60,7 @@ import org.apache.commons.cli.ParseException;
  * java -cp jars/GNS.jar edu.umass.cs.gnsserver.installer.GNSInstaller -update kittens.name
  *
  *
- * @author westy
+ * @author ayadav
  */
 public class CSInstaller 
 {
@@ -81,6 +81,8 @@ public class CSInstaller
   private static final String ATTR_INFO_FILENAME  			= "attributeInfo.txt";
   private static final String NODE_SETUP_FILENAME 			= "contextServiceNodeSetup.txt";
   private static final String DB_SETUP_FILENAME   			= "dbNodeSetup.txt";
+  private static final String CS_CONFIG_FILENAME   			= "csConfigFile.txt";
+  
   //private static final String SUBSPACE_INFO_FILENAME   		= "subspaceInfo.txt";
   
   //private static final String NS_PROPERTIES_FILENAME = "ns.properties";
@@ -117,13 +119,6 @@ public class CSInstaller
   //private static String csConfFolderPath;
   // these are mostly for convienence; could compute them when needed
   private static String csJarFileName;
-//  private static String nsConfFileLocation;
-//  //private static String ccpConfFileLocation;
-//  private static String lnsConfFileLocation;
-//  private static String paxosConfFileLocation;
-//  private static String nsConfFileName;
-//  private static String lnsConfFileName;
-//  private static String paxosConfFileName;
   
   //ATTR_INFO_FILENAME  			= "attributeInfo.txt";
   //NODE_SETUP_FILENAME 			= "contextServiceNodeSetup.txt";
@@ -133,12 +128,13 @@ public class CSInstaller
   private static String localAttrInfoFileLocation;
   private static String localNodeSetupFileLocation;
   private static String localDBSetupFileLocation;
+  private static String localCSConfigFileLocation;
   //private static String localSubspaceInfoFileLocation;
   
   private static String localAttrInfoFileName;
   private static String localNodeSetupFileName;
   private static String localDBSetupFileName;
-  //private static String localSubspaceInfoFileName;
+  private static String localCSConfigFileName;
 
   private static final String StartCSClass 
   				 = "edu.umass.cs.contextservice.nodeApp.StartContextServiceNode";
@@ -212,7 +208,7 @@ public class CSInstaller
    * @param noopTest
    */
   public static void updateRunSet(String name, InstallerAction action, boolean deleteDatabase,
-           String scriptFile, boolean withGNS, boolean enableTrigger, boolean basicSubspaceConfig) {
+           String scriptFile, boolean withGNS) {
     ArrayList<Thread> threads = new ArrayList<>();
     
     Enumeration<String> keyIter = hostTable.keys();
@@ -224,7 +220,7 @@ public class CSInstaller
     	String hostname = hostTable.get(nodeId);
     	threads.add(new UpdateThread(hostname, nodeId,
                 action, deleteDatabase, 
-                scriptFile, withGNS, enableTrigger, basicSubspaceConfig));
+                scriptFile, withGNS));
     }
     
     for (Thread thread : threads) {
@@ -285,8 +281,7 @@ public class CSInstaller
    * @throws java.net.UnknownHostException
    */
   public static void updateAndRunGNS(String nodeId, String hostname, InstallerAction action,
-          boolean deleteDatabase, String scriptFile, boolean withGNS, boolean enableTrigger, 
-          boolean basicSubspaceConfig) throws UnknownHostException 
+          boolean deleteDatabase, String scriptFile, boolean withGNS) throws UnknownHostException 
   {
     if (!action.equals(InstallerAction.STOP)) {
     	System.out.println("**** CSNode nodeId " + nodeId + " on host " + hostname + " starting update ****");
@@ -319,7 +314,7 @@ public class CSInstaller
 		assert(false);
 		break;
       }
-      startServers(nodeId, hostname, withGNS, enableTrigger, basicSubspaceConfig);
+      startServers(nodeId, hostname, withGNS);
       System.out.println("#### CS " + nodeId +" on host " + hostname + " finished update ####"); 
     } else {
       killAllServers(hostname);
@@ -339,8 +334,7 @@ public class CSInstaller
    * @param id
    * @param hostname
    */
-  private static void startServers(String nodeId, String hostname, boolean runningWithGNS, 
-		  boolean enableTrigger, boolean basicSubspaceConfig) 
+  private static void startServers(String nodeId, String hostname, boolean runningWithGNS) 
   {
     File keyFileName = getKeyFile();
     System.out.println("Starting context service on "+hostname+" with nodeId "+ nodeId);
@@ -356,8 +350,6 @@ public class CSInstaller
             + nodeId + " "
             + "-csConfDir "
             + CONF_FOLDER_NAME + FILESEPARATOR + CS_CONF_FOLDERNAME + " "
-            + (enableTrigger?"-enableTrigger":"") +" "
-            + (basicSubspaceConfig?"-basicSubspaceConfig":"") +" "
             + " > CSlogfileId"+nodeId+" 2>&1 &");
     System.out.println("Starting context service on "+hostname+" with nodeId "+ nodeId);
   }
@@ -456,8 +448,8 @@ public class CSInstaller
               buildInstallFilePath(relativeCsConfFolder + FILESEPARATOR + localNodeSetupFileName));
       RSync.upload(userName, hostname, keyFileName, localDBSetupFileLocation,
               buildInstallFilePath(relativeCsConfFolder + FILESEPARATOR + localDBSetupFileName));
-//      RSync.upload(userName, hostname, keyFileName, localSubspaceInfoFileLocation,
-//              buildInstallFilePath(relativeCsConfFolder + FILESEPARATOR + localSubspaceInfoFileName));
+      RSync.upload(userName, hostname, keyFileName, localCSConfigFileLocation,
+              buildInstallFilePath(relativeCsConfFolder + FILESEPARATOR + localCSConfigFileName));
     }
   }
 
@@ -542,6 +534,8 @@ public class CSInstaller
     		NODE_SETUP_FILENAME, confFolderPath).toString();
     localDBSetupFileLocation = fileSomewhere(relativeCsConfFolder + FILESEPARATOR + 
     		DB_SETUP_FILENAME, confFolderPath).toString();
+    localCSConfigFileLocation = fileSomewhere(relativeCsConfFolder + FILESEPARATOR + 
+    		CS_CONFIG_FILENAME, confFolderPath).toString();
 //    localSubspaceInfoFileLocation = fileSomewhere(relativeCsConfFolder + FILESEPARATOR + 
 //    		SUBSPACE_INFO_FILENAME, confFolderPath).toString();
     
@@ -549,11 +543,13 @@ public class CSInstaller
     localAttrInfoFileName		= new File(localAttrInfoFileLocation).getName();
     localNodeSetupFileName    	= new File(localNodeSetupFileLocation).getName();
     localDBSetupFileName 		= new File(localDBSetupFileLocation).getName();
+    localCSConfigFileName		= new File(localCSConfigFileLocation).getName();
     //localSubspaceInfoFileName 	= new File(localSubspaceInfoFileLocation).getName();
 
     assert(localAttrInfoFileName.equals(ATTR_INFO_FILENAME));
     assert(localNodeSetupFileName.equals(NODE_SETUP_FILENAME));
     assert(localDBSetupFileName.equals(DB_SETUP_FILENAME));
+    assert(localCSConfigFileName.equals(CS_CONFIG_FILENAME));
     //assert(localSubspaceInfoFileName.equals(SUBSPACE_INFO_FILENAME));
     
     return true;
@@ -618,10 +614,6 @@ public class CSInstaller
     Option withGNS = new Option("withGNS", "run CS along with GNS.jar, GNS.jar and contextService.jar should be in the same folder");
     //Option noopTest = new Option("noopTest", "starts noop test servers instead of GNS APP servers");
     
-    Option enableTrigger = new Option("enableTrigger", "enables trigger in CS, be default that is set to false");
-    
-    Option basicSubspaceConfig = new Option("basicSubspaceConfig", "enabled basic subapce config in CS");
-    
     commandLineOptions = new Options();
     commandLineOptions.addOption(update);
     commandLineOptions.addOption(restart);
@@ -631,8 +623,6 @@ public class CSInstaller
     //commandLineOptions.addOption(dataStore);
     commandLineOptions.addOption(scriptFile);
     commandLineOptions.addOption(withGNS);
-    commandLineOptions.addOption(enableTrigger);
-    commandLineOptions.addOption(basicSubspaceConfig);
     //commandLineOptions.addOption(noopTest);
     commandLineOptions.addOption(help);
     
@@ -669,16 +659,6 @@ public class CSInstaller
       boolean deleteDatabase = parser.hasOption("deleteDatabase");
       String scriptFile = parser.getOptionValue("scriptFile");
       boolean withGNS = parser.hasOption("withGNS");
-      boolean enableTrigger = parser.hasOption("enableTrigger");
-      boolean basicSubspaceConfig = parser.hasOption("basicSubspaceConfig");
-      if(basicSubspaceConfig)
-      {
-    	  System.out.println("basicSubspaceConfig set to true");
-      }
-      else
-      {
-    	  System.out.println("basicSubspaceConfig set to false");
-      }
       //boolean noopTest = parser.hasOption("noopTest");
       
       /*if (dataStoreName != null) {
@@ -717,18 +697,19 @@ public class CSInstaller
       
       if (runsetUpdate != null) {
         updateRunSet(runsetUpdate, InstallerAction.UPDATE, deleteDatabase
-        		, scriptFile, withGNS, enableTrigger, basicSubspaceConfig);
+        		, scriptFile, withGNS);
       } else if (runsetRestart != null) {
         updateRunSet(runsetRestart, InstallerAction.RESTART, deleteDatabase
-        		, scriptFile, withGNS, enableTrigger, basicSubspaceConfig);
+        		, scriptFile, withGNS);
       } else if (runsetStop != null) {
         updateRunSet(runsetStop, InstallerAction.STOP, deleteDatabase,
-                null, withGNS, enableTrigger, basicSubspaceConfig);
+                null, withGNS);
       } else {
         printUsage();
         System.exit(1);
       }
-    } catch (ParseException e1) {
+    } catch (ParseException e1) 
+    {
       e1.printStackTrace();
       printUsage();
       System.exit(1);
@@ -746,12 +727,9 @@ public class CSInstaller
     private final boolean deleteDatabase;
     private final String scriptFile;
     private final boolean withGNS;
-    private final boolean enableTrigger;
-    private final boolean basicSubspaceConfig;
     
     public UpdateThread(String hostname, String nodeId, InstallerAction action
-    		, boolean deleteDatabase, String scriptFile, boolean withGNS, 
-    		boolean enableTrigger, boolean basicSubspaceConfig)
+    		, boolean deleteDatabase, String scriptFile, boolean withGNS)
     {
       this.hostname = hostname;
       this.nodeId = nodeId;
@@ -759,15 +737,14 @@ public class CSInstaller
       this.deleteDatabase = deleteDatabase;
       this.scriptFile = scriptFile;
       this.withGNS = withGNS;
-      this.enableTrigger = enableTrigger;
-      this.basicSubspaceConfig = basicSubspaceConfig;
     }
     
     @Override
-    public void run() {
+    public void run() 
+    {
       try {
         CSInstaller.updateAndRunGNS(nodeId, hostname, action, deleteDatabase,
-                scriptFile, withGNS, enableTrigger, basicSubspaceConfig);
+                scriptFile, withGNS);
       } catch (UnknownHostException e) {
         ContextServiceLogger.getLogger().info("Unknown hostname while updating " + hostname + ": " + e);
       }

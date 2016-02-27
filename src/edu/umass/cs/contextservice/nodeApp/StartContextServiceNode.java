@@ -18,6 +18,7 @@ import org.apache.commons.cli.ParseException;
 
 import edu.umass.cs.contextservice.ContextServiceNode;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
+import edu.umass.cs.contextservice.config.CSConfigFileLoader;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.nio.interfaces.NodeConfig;
@@ -105,15 +106,6 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 		
 		String nodeId = parser.getOptionValue("id");
 		String csConfDir = parser.getOptionValue("csConfDir");
-		if(parser.hasOption("enableTrigger"))
-		{
-			ContextServiceConfig.TRIGGER_ENABLED = true;
-		}
-		
-//		if(parser.hasOption("basicSubspaceConfig"))
-//		{
-//			ContextServiceConfig.basicSubspaceConfig = true;
-//		}
 		
 		System.out.println("StartContextServiceNode starting with nodeId "
 				+nodeId+" csConfDir "+csConfDir);
@@ -126,6 +118,9 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 		Integer myID = Integer.parseInt(nodeId);
 		
 		ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERSPACE_HASHING;
+		
+		CSConfigFileLoader configFileLoader = new CSConfigFileLoader(
+				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.csConfigFileName);
 		
 		readNodeInfo();
 		
@@ -154,8 +149,6 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 	         .withDescription("conf directory path relative to top level dir")
 	         .create("csConfDir");
 		
-		Option enableTrigger = new Option("enableTrigger", "triggers are enabled");
-		
 //		Option basicSubspaceConfig = new Option("basicSubspaceConfig", "This option enables basic subspace "
 //				+ "config, which assigns equal nodes to all subsapces, with out any subspace replcation for high performance,"
 //				+ "according to the model. If this option is not set then subspaces will be replicated if needed for performance");
@@ -164,8 +157,6 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 		commandLineOptions.addOption(nodeid);
 		commandLineOptions.addOption(csConfDir);
 		commandLineOptions.addOption(help);
-		commandLineOptions.addOption(enableTrigger);
-//		commandLineOptions.addOption(basicSubspaceConfig);
 		
 		
 		CommandLineParser parser = new GnuParser();
