@@ -15,7 +15,7 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
  * Calculates the optimal number of attributes in a subspace
  * by minimizing the throughput equation in the model.
  * Calls the python script internally
- * 
+ * sudo apt-get install python-scipy needs to be installed
  * @author adipc
  */
 public class CalculateOptimalNumAttrsInSubspace 

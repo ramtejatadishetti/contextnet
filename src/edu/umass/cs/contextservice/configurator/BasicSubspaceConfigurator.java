@@ -16,22 +16,21 @@ import edu.umass.cs.nio.interfaces.NodeConfig;
 /**
  * Basic subspace configurator partitions attributes into
  * subspaces and assigns each subspace to all available nodes.
- * 
  * @author adipc
  *
  */
 public class BasicSubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurator<NodeIDType>
 {
-	private final int optimalH;
+	private final double optimalH;
 	
-	public BasicSubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig, int optimalH) 
+	public BasicSubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig, int optimalH)
 	{
 		super(nodeConfig);
 		this.optimalH = optimalH;
 	}
-
+	
 	@Override
-	public void configureSubspaceInfo() 
+	public void configureSubspaceInfo()
 	{
 		double numNodes = nodeConfig.getNodeIDs().size();
 		double numAttrs = AttributeTypes.attributeMap.size();
@@ -42,6 +41,12 @@ public class BasicSubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfi
 				= new Vector<AttributeMetaInfo>();
 
 		attrVector.addAll(AttributeTypes.attributeMap.values());
+		// handling the case if somehow numSubspaces 
+		// becomes greater than numNodes, specially in 1 node case
+		if(numSubspaces > numNodes)
+		{
+			numSubspaces = numNodes;
+		}
 
 		double numberNodesForSubspace = Math.floor(numNodes/numSubspaces);
 

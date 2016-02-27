@@ -26,10 +26,8 @@ public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspace
 {
 	// each domain is at least partitioned into two.
 	//TODO: these values will be determined by the model at some point
-	//private static final double MIN_P = 2;
-	//private static final double MAX_H = 3;
 	
-	private final int optimalH;
+	private final double optimalH;
 	public ReplicatedSubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig, 
 			int optimalH)
 	{
@@ -45,12 +43,18 @@ public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspace
 		//TODO: later on h value, num of attrs in a subspace will be calculated by the model
 		double numSubspaces = Math.ceil(numAttrs/optimalH);
 		
+		// number of subspaces can't be greater than number of nodes.
+		// this case happens mostly when number of nodes=1
+		if( numSubspaces > numNodes )
+		{
+			numSubspaces = numNodes;
+		}
 		
 		// N/S(N) is from the model, we consider S(N) to be sqrt(N)
 		// so N/S(N) is sqrt(N)
 		double nBySN = Math.sqrt(numNodes);
 		int numberOfTotalSubspaces = (int) Math.floor(nBySN);
-		int mimNumOfNodesToSubspace = (int) Math.floor(nBySN);
+		int minNumOfNodesToSubspace = (int) Math.floor(nBySN);
 		// we need to replicate existing subspaces
 		// unless nBySN that is the number of nodes assigned to a subspace is greater 
 		// than MIN_P^attrs, till then no point in replicating. we want p to 
@@ -63,7 +67,7 @@ public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspace
 			// then just add it to the current subspaces.
 			
 			int nodesIdCounter = 
-				assignNodesUniformlyToSubspaces(mimNumOfNodesToSubspace, (int)numSubspaces);
+				assignNodesUniformlyToSubspaces(minNumOfNodesToSubspace, (int)numSubspaces);
 
 			nodesIdCounter = replicateSubspaces(nodesIdCounter, (int) numNodes);
 			// all nodes should be assigned by now
