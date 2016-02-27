@@ -27,7 +27,7 @@ public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspace
 	// each domain is at least partitioned into two.
 	//TODO: these values will be determined by the model at some point
 	
-	private final double optimalH;
+	private double optimalH;
 	public ReplicatedSubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig, 
 			int optimalH)
 	{
@@ -48,6 +48,7 @@ public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspace
 		if( numSubspaces > numNodes )
 		{
 			numSubspaces = numNodes;
+			optimalH = Math.ceil(numAttrs/numSubspaces);
 		}
 		
 		// N/S(N) is from the model, we consider S(N) to be sqrt(N)
