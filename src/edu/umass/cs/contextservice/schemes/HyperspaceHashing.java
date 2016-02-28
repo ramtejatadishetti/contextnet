@@ -259,6 +259,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	 */
 	private void generateSubspacePartitions()
 	{
+		ContextServiceLogger.getLogger().fine(" generateSubspacePartitions() entering " );
 		HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap 
 			= this.subspaceConfigurator.getSubspaceInfoMap();
 		
@@ -280,6 +281,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				
 				double numAttr  = attrsOfSubspace.size();
 				//double numNodes = nodesOfSubspace.size();
+				ContextServiceLogger.getLogger().fine(" NumPartitions "
+												+subspaceInfo.getNumPartitions() );
 				
 				Integer[] partitionNumArray = new Integer[subspaceInfo.getNumPartitions()];
 				for(int j = 0; j<partitionNumArray.length; j++)
@@ -303,14 +306,15 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				for( ICombinatoricsVector<Integer> perm : gen )
 				{
 					NodeIDType respNodeId = nodesOfSubspace.get(nodeIdCounter%sizeOfNumNodes);
-					//ContextServiceLogger.getLogger().fine("perm.getVector() "+perm.getVector());
+					ContextServiceLogger.getLogger().fine("perm.getVector() "+perm.getVector());
 					hyperspaceDB.insertIntoSubspacePartitionInfo(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
 							perm.getVector(), respNodeId);
-					//ContextServiceLogger.getLogger().fine("hyperspaceDB.insertIntoSubspacePartitionInfo complete");
+					ContextServiceLogger.getLogger().fine("hyperspaceDB.insertIntoSubspacePartitionInfo complete");
 					nodeIdCounter++;
 				}
 			}
 		}
+		ContextServiceLogger.getLogger().fine(" generateSubspacePartitions() completed " );
 	}
 	
 	
