@@ -699,8 +699,11 @@ public class HyperspaceMySQLDB<NodeIDType>
 	{
 		assert(subspaceVectorList.size() == respNodeIdList.size());
 		
-		long t0 						= System.currentTimeMillis();
-		Connection myConn   			= null;
+		ContextServiceLogger.getLogger().fine("bulkInsertIntoSubspacePartitionInfo called subspaceId "
+				+subspaceId + " replicaNum "+replicaNum+" "+subspaceVectorList.size()+" "+respNodeIdList.size() );
+		
+		long t0 							= System.currentTimeMillis();
+		Connection myConn   				= null;
 		PreparedStatement prepStmt      	= null;
 		
 		String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"PartitionInfo";
@@ -742,12 +745,15 @@ public class HyperspaceMySQLDB<NodeIDType>
 		attrIter = attrSubspaceInfo.keySet().iterator();
 		while(attrIter.hasNext())
 		{
+			// just  that the loop moves on
+			String attrName = attrIter.next();
 			// for lower and upper value of each attribute of this subspace
 			insertTableSQL = insertTableSQL + " , "+"?"+" , "+ 
 					"?";
 		}
 		insertTableSQL = insertTableSQL + " ) ";
 		
+		//ContextServiceLogger.getLogger().fine("insertTableSQL "+insertTableSQL);
 		try
 		{
 			myConn = this.mysqlDataSource.getConnection();
@@ -810,6 +816,9 @@ public class HyperspaceMySQLDB<NodeIDType>
 				sqex.printStackTrace();
 			}
 		}
+		
+		ContextServiceLogger.getLogger().fine("bulkInsertIntoSubspacePartitionInfo completed "
+				+ subspaceVectorList.size()+" "+respNodeIdList.size() );
 		
 		if( ContextServiceConfig.DELAY_PROFILER_ON )
 		{

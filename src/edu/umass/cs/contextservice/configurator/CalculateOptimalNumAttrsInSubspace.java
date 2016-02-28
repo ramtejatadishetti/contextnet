@@ -70,7 +70,7 @@ public class CalculateOptimalNumAttrsInSubspace
 	
 	private void executeOptimizerScript() throws IOException
 	{
-		extractTheScript();
+		//extractTheScript();
 		Process p = Runtime.getRuntime().exec("chmod +x HOptimizerJavaCallable.py");
 		
 		p = Runtime.getRuntime().exec("python HOptimizerJavaCallable.py "
@@ -112,8 +112,7 @@ public class CalculateOptimalNumAttrsInSubspace
 			currline = in.readLine();
 		}
 	}
-	
-	
+		
 	private void extractTheScript() throws IOException
 	{
 		InputStream in = getClass().getResourceAsStream("/HOptimizerJavaCallable.py");

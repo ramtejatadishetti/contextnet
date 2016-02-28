@@ -331,6 +331,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						
 						DatabaseOperationClass dbOper = new DatabaseOperationClass(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
 								subspaceVectList, respNodeIdList);
+						//dbOper.run();
 						nodeES.execute(dbOper);
 						// repointing it to a new list, and the pointer to the old list is passed to the DatabaseOperation class
 						subspaceVectList = new LinkedList<List<Integer>>();
@@ -1951,7 +1952,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	 * This class implements runnable 
 	 * to perform database insert operation. 
 	 * This called by an executor service.
-	 * 
 	 * @author adipc
 	 */
 	public class DatabaseOperationClass implements Runnable 
