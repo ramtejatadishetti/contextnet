@@ -1,6 +1,7 @@
 package edu.umass.cs.contextservice.database;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -680,6 +681,129 @@ public class HyperspaceMySQLDB<NodeIDType>
 				if( stmt != null )
 				{
 					stmt.close();
+				}
+			} catch(SQLException sqex)
+			{
+				sqex.printStackTrace();
+			}
+		}
+		
+		if( ContextServiceConfig.DELAY_PROFILER_ON )
+		{
+			DelayProfiler.updateDelay("insertIntoSubspacePartitionInfo", t0);
+		}
+	}
+	
+	public void bulkInsertIntoSubspacePartitionInfo( int subspaceId, int replicaNum,
+			List<List<Integer>> subspaceVectorList, List<NodeIDType> respNodeIdList )
+	{
+		assert(subspaceVectorList.size() == respNodeIdList.size());
+		
+		long t0 						= System.currentTimeMillis();
+		Connection myConn   			= null;
+		PreparedStatement prepStmt      	= null;
+		
+		String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"PartitionInfo";
+		
+		SubspaceInfo<NodeIDType> currSubInfo = subspaceInfoMap.
+				get(subspaceId).get(replicaNum);
+		//Vector<AttributePartitionInfo> domainPartInfo = currSubInfo.getDomainPartitionInfo();
+		//Vector<String> attrSubspaceInfo = currSubInfo.getAttributesOfSubspace();
+		HashMap<String, AttributePartitionInfo> attrSubspaceInfo = currSubInfo.getAttributesOfSubspace();
+		
+		// subspace vector denotes parition num for each attribute 
+		// in this subspace and attrSubspaceInfo.size denotes total 
+		// number of attributes. The size of both should be same
+		// as both denote number of attributes in this subspace.
+		if(attrSubspaceInfo.size() != subspaceVectorList.get(0).size())
+		{
+			assert(false);
+		}
+		
+		String insertTableSQL = " INSERT INTO "+tableName 
+				+" ( hashCode, respNodeID ";
+				//+ "nodeID) " + "VALUES"
+				//+ "("+lowerRange+","+upperRange+","+nodeID +")";
+		
+		Iterator<String> attrIter = attrSubspaceInfo.keySet().iterator();
+		while(attrIter.hasNext())
+		{
+			String attrName = attrIter.next();
+			
+			String lowerAtt = "lower"+attrName;
+			String upperAtt = "upper"+attrName;
+			
+			insertTableSQL = insertTableSQL + ", "+lowerAtt+" , "+upperAtt;
+		}
+		
+		insertTableSQL = insertTableSQL + " ) VALUES ( "+"?" + 
+				" , "+"?";
+		
+		attrIter = attrSubspaceInfo.keySet().iterator();
+		while(attrIter.hasNext())
+		{
+			// for lower and upper value of each attribute of this subspace
+			insertTableSQL = insertTableSQL + " , "+"?"+" , "+ 
+					"?";
+		}
+		insertTableSQL = insertTableSQL + " ) ";
+		
+		try
+		{
+			myConn = this.mysqlDataSource.getConnection();
+			
+			prepStmt = myConn.prepareStatement(insertTableSQL);
+			for( int i=0; i<subspaceVectorList.size(); i++ )
+			{
+				List<Integer> subspaceVector = subspaceVectorList.get(i);
+				NodeIDType respNodeId = respNodeIdList.get(i);
+				prepStmt.setInt(1, subspaceVector.hashCode());
+				prepStmt.setInt(2, (int) respNodeId);
+				
+				attrIter = attrSubspaceInfo.keySet().iterator();
+				int counter =0;
+				int parameterIndex = 2;
+				while(attrIter.hasNext())
+				{
+					String attrName = attrIter.next();
+					AttributePartitionInfo attrPartInfo = attrSubspaceInfo.get(attrName);
+					int partitionNum = subspaceVector.get(counter);
+					DomainPartitionInfo domainPartInfo = attrPartInfo.getDomainPartitionInfo().get(partitionNum);
+					// if it is a String then single quotes needs to be added
+					
+					AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
+					String dataType = attrMetaInfo.getDataType();
+					
+					AttributeTypes.insertStringToDataTypeForMySQLPrepStmt
+					(domainPartInfo.lowerbound, dataType, prepStmt, ++parameterIndex);
+					
+					AttributeTypes.insertStringToDataTypeForMySQLPrepStmt
+					(domainPartInfo.upperbound, dataType, prepStmt, ++parameterIndex);
+					
+//					insertTableSQL = insertTableSQL + " , "+"?"+" , "+ 
+//							"?";
+					counter++;
+				}
+				prepStmt.addBatch();
+			}
+			//stmt = myConn.createStatement();
+			// execute insert SQL stetement
+			prepStmt.executeBatch();
+		} catch(SQLException sqlex)
+		{
+			sqlex.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if( myConn != null )
+				{
+					myConn.close();
+				}
+				if( prepStmt != null )
+				{
+					prepStmt.close();
 				}
 			} catch(SQLException sqex)
 			{

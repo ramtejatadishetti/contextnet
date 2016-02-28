@@ -6,6 +6,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Vector;
@@ -309,26 +310,57 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				// Print the result
 				int nodeIdCounter = 0;
 				int sizeOfNumNodes = nodesOfSubspace.size();
+				List<List<Integer>> subspaceVectList = new LinkedList<List<Integer>>();
+				List<NodeIDType> respNodeIdList = new LinkedList<NodeIDType>();
+				long counter = 0;
 				for( ICombinatoricsVector<Integer> perm : gen )
 				{
 					NodeIDType respNodeId = nodesOfSubspace.get(nodeIdCounter%sizeOfNumNodes);
 					//ContextServiceLogger.getLogger().fine("perm.getVector() "+perm.getVector());
+					counter++;
 					
+					if(counter % ContextServiceConfig.SUBSPACE_PARTITION_INSERT_BATCH_SIZE == 0)
+					{
+						subspaceVectList.add(perm.getVector());
+						respNodeIdList.add(respNodeId);
+						
+						synchronized(this.subspacePartitionInsertLock)
+						{
+							this.subspacePartitionInsertSent++;
+						}
+						
+						DatabaseOperationClass dbOper = new DatabaseOperationClass(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
+								subspaceVectList, respNodeIdList);
+						nodeES.execute(dbOper);
+						// repointing it to a new list, and the pointer to the old list is passed to the DatabaseOperation class
+						subspaceVectList = new LinkedList<List<Integer>>();
+						respNodeIdList = new LinkedList<NodeIDType>();
+						
+						
+						nodeIdCounter++;
+					}
+					else
+					{
+						subspaceVectList.add(perm.getVector());
+						respNodeIdList.add(respNodeId);
+						nodeIdCounter++;
+					}
+				}
+				// adding the remaning ones
+				if(subspaceVectList.size() > 0)
+				{
 					synchronized(this.subspacePartitionInsertLock)
 					{
 						this.subspacePartitionInsertSent++;
 					}
 					
 					DatabaseOperationClass dbOper = new DatabaseOperationClass(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
-							perm.getVector(), respNodeId);
+							subspaceVectList, respNodeIdList);
 					nodeES.execute(dbOper);
 					
-//					hyperspaceDB.insertIntoSubspacePartitionInfo(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
-//							perm.getVector(), respNodeId);
-					
-					
-					//ContextServiceLogger.getLogger().fine("hyperspaceDB.insertIntoSubspacePartitionInfo complete");
-					nodeIdCounter++;
+					// repointing it to a new list, and the pointer to the old list is passed to the DatabaseOperation class
+					subspaceVectList = new LinkedList<List<Integer>>();
+					respNodeIdList = new LinkedList<NodeIDType>();
 				}
 			}
 		}
@@ -1926,24 +1958,26 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	{
 		private final int subspaceId;
 		private final int replicaNum;
-		private final List<Integer> permVector;
-		private final NodeIDType respNodeId;
+		private final List<List<Integer>> permVectorList;
+		private final List<NodeIDType> respNodeIdList;
 		
-		public DatabaseOperationClass(int subspaceId, int replicaNum, List<Integer> permVector
-				, NodeIDType respNodeId)
+		public DatabaseOperationClass(int subspaceId, int replicaNum, 
+				List<List<Integer>> permVectorList
+				, List<NodeIDType> respNodeIdList)
 		{
 			this.subspaceId = subspaceId;
 			this.replicaNum = replicaNum;
-			this.permVector = permVector;
-			this.respNodeId = respNodeId;
+			this.permVectorList = permVectorList;
+			this.respNodeIdList = respNodeIdList;
 		}
 		
 		@Override
 		public void run() 
 		{
-			hyperspaceDB.insertIntoSubspacePartitionInfo(subspaceId, replicaNum, 
-					permVector, respNodeId);
-			
+//			hyperspaceDB.insertIntoSubspacePartitionInfo(subspaceId, replicaNum, 
+//					permVector, respNodeId);
+			hyperspaceDB.bulkInsertIntoSubspacePartitionInfo(subspaceId, replicaNum, 
+					permVectorList, respNodeIdList);
 			synchronized(subspacePartitionInsertLock)
 			{
 				subspacePartitionInsertCompl++;

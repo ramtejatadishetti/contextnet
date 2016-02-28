@@ -97,6 +97,9 @@ public class ContextServiceConfig
 	// is stored in memory by default.
 	public static final int MYSQL_CURSOR_FETCH_SIZE					= 1;
 	
+	// 1000 inserts are batched in one prepared stmt for 
+	// inserting subspace partition info
+	public static final int SUBSPACE_PARTITION_INSERT_BATCH_SIZE	= 1000;
 	
 	//  model paramters
 	// search/(search+update) ratio

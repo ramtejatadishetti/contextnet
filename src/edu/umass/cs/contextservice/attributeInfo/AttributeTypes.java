@@ -3,6 +3,8 @@ package edu.umass.cs.contextservice.attributeInfo;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -257,6 +259,36 @@ public class AttributeTypes
 		}
 		return null;
 	}
+
+	
+	public static void insertStringToDataTypeForMySQLPrepStmt(String value, String dataType
+			, PreparedStatement prepStmt, int parameterIndex) throws NumberFormatException, SQLException
+	{
+		switch(dataType)
+		{
+			case IntType:
+			{
+				prepStmt.setInt(parameterIndex, Integer.parseInt(value));
+				break;
+			}
+			case LongType:
+			{
+				prepStmt.setLong(parameterIndex, Long.parseLong(value));
+				break;
+			}
+			case DoubleType:
+			{
+				prepStmt.setDouble(parameterIndex, Double.parseDouble(value));
+				break;
+			}
+			case StringType:
+			{
+				prepStmt.setString(parameterIndex, value);
+				break;
+			}
+		}
+	}
+	
 	
 	public static Vector<DomainPartitionInfo> partitionDomain(int numPartitions, String minValue, String maxValue, String dataType)
 	{
