@@ -758,7 +758,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 				List<Integer> subspaceVector = subspaceVectorList.get(i);
 				NodeIDType respNodeId = respNodeIdList.get(i);
 				prepStmt.setInt(1, subspaceVector.hashCode());
-				prepStmt.setInt(2, (int) respNodeId);
+				prepStmt.setInt(2, Integer.parseInt(respNodeId.toString()));
 				
 				attrIter = attrSubspaceInfo.keySet().iterator();
 				int counter =0;
