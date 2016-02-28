@@ -1974,17 +1974,28 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		@Override
 		public void run() 
 		{
-//			hyperspaceDB.insertIntoSubspacePartitionInfo(subspaceId, replicaNum, 
-//					permVector, respNodeId);
-			hyperspaceDB.bulkInsertIntoSubspacePartitionInfo(subspaceId, replicaNum, 
-					permVectorList, respNodeIdList);
-			synchronized(subspacePartitionInsertLock)
+			try
 			{
-				subspacePartitionInsertCompl++;
-				if(subspacePartitionInsertCompl == subspacePartitionInsertSent)
+	//			hyperspaceDB.insertIntoSubspacePartitionInfo(subspaceId, replicaNum, 
+	//					permVector, respNodeId);
+				hyperspaceDB.bulkInsertIntoSubspacePartitionInfo(subspaceId, replicaNum, 
+						permVectorList, respNodeIdList);
+				synchronized(subspacePartitionInsertLock)
 				{
-					subspacePartitionInsertLock.notify();
+					subspacePartitionInsertCompl++;
+					if(subspacePartitionInsertCompl == subspacePartitionInsertSent)
+					{
+						subspacePartitionInsertLock.notify();
+					}
 				}
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+			}
+			catch(Error ex)
+			{
+				ex.printStackTrace();
 			}
 		}
 	}
