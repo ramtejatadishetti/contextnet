@@ -101,6 +101,10 @@ public class ContextServiceConfig
 	// inserting subspace partition info
 	public static final int SUBSPACE_PARTITION_INSERT_BATCH_SIZE	= 1000;
 	
+	// this gives minimum of 2^10 subspace partitions if there are 10 
+	// attributes and each parititioned twice. 
+	public static final int MAXIMUM_NUM_ATTRS_IN_SUBSPACE			= 10;
+	
 	//  model paramters
 	// search/(search+update) ratio
 	public static double modelRho										= 0.5;

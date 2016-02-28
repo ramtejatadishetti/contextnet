@@ -20,7 +20,7 @@ import edu.umass.cs.nio.interfaces.NodeConfig;
  */
 public class BasicSubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurator<NodeIDType>
 {
-	private double optimalH;
+	private final double optimalH;
 	
 	public BasicSubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig, int optimalH)
 	{
@@ -42,39 +42,68 @@ public class BasicSubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfi
 		attrVector.addAll(AttributeTypes.attributeMap.values());
 		// handling the case if somehow numSubspaces 
 		// becomes greater than numNodes, specially in 1 node case
-		if(numSubspaces > numNodes)
-		{
-			numSubspaces = numNodes;
-			optimalH = Math.ceil(numAttrs/numSubspaces);
-		}
+//		if(numSubspaces > numNodes)
+//		{
+//			numSubspaces = numNodes;
+//			optimalH = Math.ceil(numAttrs/numSubspaces);
+//		}
 
 		double numberNodesForSubspace = Math.floor(numNodes/numSubspaces);
-
-		// first the basic nodes are assigned then remaining nodes are assigned 
-		// uniformly to the existing subspaces.
-
-		int nodesIdCounter = assignNodesUniformlyToSubspaces(numberNodesForSubspace, (int)numSubspaces);
-
-		//double remainingNodes = numNodes - numberNodesForSubspace*numSubspaces;
-
-		Iterator<Integer> subspaceKeyIter = subspaceInfoMap.keySet().iterator();
-
-		while( nodesIdCounter < numNodes )
+		
+		if(numberNodesForSubspace > 0)
 		{
-			int subspaceKey = -1;
-			
-			if( subspaceKeyIter.hasNext() )
+			// first the basic nodes are assigned then remaining nodes are assigned 
+			// uniformly to the existing subspaces.
+	
+			int nodesIdCounter = assignNodesUniformlyToSubspaces(numberNodesForSubspace, (int)numSubspaces);
+	
+			//double remainingNodes = numNodes - numberNodesForSubspace*numSubspaces;
+	
+			Iterator<Integer> subspaceKeyIter = subspaceInfoMap.keySet().iterator();
+	
+			while( nodesIdCounter < numNodes )
 			{
-				subspaceKey = subspaceKeyIter.next();
-				Vector<SubspaceInfo<NodeIDType>> currSubVect
-									= subspaceInfoMap.get(subspaceKey);
-				assert( currSubVect.size() > 0 );
-				currSubVect.get(0).getNodesOfSubspace().add( (NodeIDType)(Integer)nodesIdCounter );
-				nodesIdCounter++;
+				int subspaceKey = -1;
+				
+				if( subspaceKeyIter.hasNext() )
+				{
+					subspaceKey = subspaceKeyIter.next();
+					Vector<SubspaceInfo<NodeIDType>> currSubVect
+										= subspaceInfoMap.get(subspaceKey);
+					assert( currSubVect.size() > 0 );
+					currSubVect.get(0).getNodesOfSubspace().add( (NodeIDType)(Integer)nodesIdCounter );
+					nodesIdCounter++;
+				}
+				else
+				{
+					subspaceKeyIter = subspaceInfoMap.keySet().iterator();
+				}
 			}
-			else
+		}
+		else // numnodes are less than number of subspaces, so just assign each node to each subspace
+		{
+			// first the basic nodes are assigned then remaining nodes are assigned 
+			// uniformly to the existing subspaces.
+				
+			int nodesIdCounter = assignNodesUniformlyToSubspaces(numberNodesForSubspace, (int)numSubspaces);
+			// above will not be able to assign any nodes
+			assert(nodesIdCounter == 0);
+			
+			Iterator<Integer> subspaceKeyIter = subspaceInfoMap.keySet().iterator();
+	
+			while( nodesIdCounter < numNodes )
 			{
-				subspaceKeyIter = subspaceInfoMap.keySet().iterator();
+				int subspaceKey = -1;
+				// assigning each node to each subspace
+				while( subspaceKeyIter.hasNext() )
+				{
+					subspaceKey = subspaceKeyIter.next();
+					Vector<SubspaceInfo<NodeIDType>> currSubVect
+										= subspaceInfoMap.get(subspaceKey);
+					assert( currSubVect.size() > 0 );
+					currSubVect.get(0).getNodesOfSubspace().add( (NodeIDType)(Integer)nodesIdCounter );
+				}
+				nodesIdCounter++;
 			}
 		}
 		// initializes the domain partitions for an attribute

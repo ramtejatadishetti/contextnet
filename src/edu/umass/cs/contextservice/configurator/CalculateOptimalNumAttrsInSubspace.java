@@ -111,6 +111,11 @@ public class CalculateOptimalNumAttrsInSubspace
 			}
 			currline = in.readLine();
 		}
+		
+		if(optimalH > ContextServiceConfig.MAXIMUM_NUM_ATTRS_IN_SUBSPACE)
+		{
+			optimalH = ContextServiceConfig.MAXIMUM_NUM_ATTRS_IN_SUBSPACE;
+		}
 	}
 		
 	private void extractTheScript() throws IOException
