@@ -6,6 +6,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
@@ -78,6 +79,10 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	
 	private final CalculateOptimalNumAttrsInSubspace optimalHCalculator;
 	
+	private final Object subspacePartitionInsertLock									= new Object();
+	// this can be a huge number, it is exponential in numebr of attributes.
+	private long subspacePartitionInsertSent											= 0;
+	private long subspacePartitionInsertCompl											= 0;
 	public static final Logger log 														= ContextServiceLogger.getLogger();
 	
 	public HyperspaceHashing(NodeConfig<NodeIDType> nc,
@@ -116,10 +121,11 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			e.printStackTrace();
 		}
 		ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
+		nodeES = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
 		
 		generateSubspacePartitions();
 		ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
-		nodeES = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
+		
 		//ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
 		//nodeES = Executors.newCachedThreadPool();
 		
@@ -306,14 +312,40 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				for( ICombinatoricsVector<Integer> perm : gen )
 				{
 					NodeIDType respNodeId = nodesOfSubspace.get(nodeIdCounter%sizeOfNumNodes);
-					ContextServiceLogger.getLogger().fine("perm.getVector() "+perm.getVector());
-					hyperspaceDB.insertIntoSubspacePartitionInfo(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
+					//ContextServiceLogger.getLogger().fine("perm.getVector() "+perm.getVector());
+					
+					synchronized(this.subspacePartitionInsertLock)
+					{
+						this.subspacePartitionInsertSent++;
+					}
+					
+					DatabaseOperationClass dbOper = new DatabaseOperationClass(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
 							perm.getVector(), respNodeId);
-					ContextServiceLogger.getLogger().fine("hyperspaceDB.insertIntoSubspacePartitionInfo complete");
+					nodeES.execute(dbOper);
+					
+//					hyperspaceDB.insertIntoSubspacePartitionInfo(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
+//							perm.getVector(), respNodeId);
+					
+					
+					//ContextServiceLogger.getLogger().fine("hyperspaceDB.insertIntoSubspacePartitionInfo complete");
 					nodeIdCounter++;
 				}
 			}
 		}
+		
+		while(this.subspacePartitionInsertSent != this.subspacePartitionInsertCompl)
+		{
+			synchronized(this.subspacePartitionInsertLock)
+			{
+				try {
+					this.subspacePartitionInsertLock.wait();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+		
 		ContextServiceLogger.getLogger().fine(" generateSubspacePartitions() completed " );
 	}
 	
@@ -1637,7 +1669,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		return maxMatchingSubspaceNumVector.get(returnIndex).subspaceId;
 	}
 	
-	
 	/**
 	 * returns subspacenum of all the subspaces a query overlaps with. 
 	 * But returns only uniquer subspaces, not all the replicas of the overlapiing subspaces.
@@ -1884,6 +1915,47 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	{
 	}
 	
+	/**
+	 * This class implements runnable 
+	 * to perform database insert operation. 
+	 * This called by an executor service.
+	 * 
+	 * @author adipc
+	 */
+	public class DatabaseOperationClass implements Runnable 
+	{
+		private final int subspaceId;
+		private final int replicaNum;
+		private final List<Integer> permVector;
+		private final NodeIDType respNodeId;
+		
+		public DatabaseOperationClass(int subspaceId, int replicaNum, List<Integer> permVector
+				, NodeIDType respNodeId)
+		{
+			this.subspaceId = subspaceId;
+			this.replicaNum = replicaNum;
+			this.permVector = permVector;
+			this.respNodeId = respNodeId;
+		}
+		
+		@Override
+		public void run() 
+		{
+			hyperspaceDB.insertIntoSubspacePartitionInfo(subspaceId, replicaNum, 
+					permVector, respNodeId);
+			
+			synchronized(subspacePartitionInsertLock)
+			{
+				subspacePartitionInsertCompl++;
+				if(subspacePartitionInsertCompl == subspacePartitionInsertSent)
+				{
+					subspacePartitionInsertLock.notify();
+				}
+			}
+		}
+	}
+	
+	
 	private class ProfilerStatClass implements Runnable
 	{
 		private long localNumberOfQueryFromUser							= 0;
@@ -1933,7 +2005,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		//double numNodes = nodesOfSubspace.size();
 		
 		Integer[] partitionNumArray = new Integer[2];
-		for(int j = 0; j<2; j++)
+		for( int j = 0; j<2; j++ )
 		{
 			partitionNumArray[j] = j;
 			ContextServiceLogger.getLogger().fine("partitionNumArray[j] "+j+" "+partitionNumArray[j]);
@@ -1952,68 +2024,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		for( ICombinatoricsVector<Integer> perm : gen )
 		{
 			ContextServiceLogger.getLogger().fine("perm.getVector() "+perm.getVector());
-			ContextServiceLogger.getLogger().fine("hyperspaceDB.insertIntoSubspacePartitionInfo complete");
+			ContextServiceLogger.getLogger().fine("hyperspaceDB."
+					+ "insertIntoSubspacePartitionInfo complete");
 		}
 	}
-	
-	/*@SuppressWarnings("unchecked")
-	private void readSubspaceInfo() throws NumberFormatException, IOException
-	{
-		FileReader freader 	  = new FileReader(
-				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.subspaceInfoFileName);
-		BufferedReader reader = new BufferedReader( freader );
-		String line 		  = null;
-		
-		while ( (line = reader.readLine()) != null )
-		{
-			String [] parsed = line.split(",");
-			Integer subspaceNum = Integer.parseInt(parsed[0]);
-			Vector<NodeIDType> subspaceNodes = new Vector<NodeIDType>();
-			
-			for(int i=1;i<parsed.length;i++)
-			{
-				subspaceNodes.add((NodeIDType)((Integer)Integer.parseInt(parsed[i])));
-			}
-			
-			line = reader.readLine();
-			parsed = line.split(",");
-			Integer newSubspaceNum = Integer.parseInt(parsed[0]);
-			
-			HashMap<String, AttributePartitionInfo> subspaceAttrs = new HashMap<String, AttributePartitionInfo>();
-			if(subspaceNum == newSubspaceNum)
-			{
-				for( int i=1;i<parsed.length;i++ )
-				{
-					String attrName = parsed[i].trim();
-					assert(AttributeTypes.attributeMap.get(attrName) != null);
-					AttributePartitionInfo attrPartInfo = new AttributePartitionInfo
-							( AttributeTypes.attributeMap.get(attrName) );
-					subspaceAttrs.put(attrName, attrPartInfo);
-				}
-			}
-			else
-			{
-				assert(false);
-			}	
-			
-			double numAttr  = subspaceAttrs.size();
-			double numNodes = subspaceNodes.size();
-			
-			int numPartitions = (int)Math.ceil(Math.pow(numNodes, 1.0/numAttr));
-			
-			Iterator<String> subspaceAttrIter = subspaceAttrs.keySet().iterator();
-			while( subspaceAttrIter.hasNext() )
-			{
-				String attrName = subspaceAttrIter.next();
-				AttributePartitionInfo attrPartInfo = subspaceAttrs.get(attrName);
-				attrPartInfo.initializePartitionInfo(numPartitions);
-			}
-			
-			SubspaceInfo<NodeIDType> subspaceInfo = new 
-					SubspaceInfo<NodeIDType>(subspaceNum, subspaceAttrs, subspaceNodes, numPartitions);
-			this.subspaceInfoVector.put(subspaceInfo.getSubspaceNum(), subspaceInfo);
-		}
-		reader.close();
-		freader.close();
-	}*/
 }
