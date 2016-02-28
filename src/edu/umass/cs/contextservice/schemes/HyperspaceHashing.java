@@ -115,9 +115,10 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		{
 			e.printStackTrace();
 		}
-		//ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
+		ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
 		
 		generateSubspacePartitions();
+		ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
 		nodeES = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
 		//ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
 		//nodeES = Executors.newCachedThreadPool();
