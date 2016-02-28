@@ -1955,7 +1955,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
-	
 	private class ProfilerStatClass implements Runnable
 	{
 		private long localNumberOfQueryFromUser							= 0;

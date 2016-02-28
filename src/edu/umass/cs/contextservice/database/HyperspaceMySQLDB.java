@@ -614,7 +614,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 			assert(false);
 		}
 		
-		String insertTableSQL = "INSERT INTO "+tableName 
+		String insertTableSQL = "SET unique_checks=0; INSERT INTO "+tableName 
 				+" ( hashCode, respNodeID ";
 				//+ "nodeID) " + "VALUES"
 				//+ "("+lowerRange+","+upperRange+","+nodeID +")";
