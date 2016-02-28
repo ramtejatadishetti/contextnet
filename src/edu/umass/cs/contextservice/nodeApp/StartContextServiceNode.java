@@ -98,41 +98,54 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 	
 	public static void main(String[] args) throws NumberFormatException, UnknownHostException, IOException, ParseException
 	{
-		CommandLine parser = initializeOptions(args);
-		if (parser.hasOption("help") || args.length == 0) {
-			printUsage();
-	        System.exit(1);
-	    }
-		
-		String nodeId = parser.getOptionValue("id");
-		String csConfDir = parser.getOptionValue("csConfDir");
-		
-		System.out.println("StartContextServiceNode starting with nodeId "
-				+nodeId+" csConfDir "+csConfDir);
-		
-		assert(nodeId != null);
-		assert(csConfDir != null);
-		
-		ContextServiceConfig.configFileDirectory = csConfDir;
-		
-		Integer myID = Integer.parseInt(nodeId);
-		
-		ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERSPACE_HASHING;
-		
-		CSConfigFileLoader configFileLoader = new CSConfigFileLoader(
-				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.csConfigFileName);
-		
-		readNodeInfo();
-		
-		ContextServiceLogger.getLogger().fine("Number of nodes in the system "+csNodeConfig.getNodeIDs().size());
-		
-		//nodes = new StartContextServiceNode[csNodeConfig.getNodeIDs().size()];
-		
-		ContextServiceLogger.getLogger().fine("Starting context service");
-		//new Thread(new StartNode(myID)).start();
-		
-		myObj = new StartContextServiceNode(myID, csNodeConfig);
-		new Thread(new NumMessagesPerSec(myObj)).start();
+		// we want to catch everything
+		// because things run through executir service don't print exceptions on terminals
+		try
+		{
+			CommandLine parser = initializeOptions(args);
+			if (parser.hasOption("help") || args.length == 0) {
+				printUsage();
+		        System.exit(1);
+		    }
+			
+			String nodeId = parser.getOptionValue("id");
+			String csConfDir = parser.getOptionValue("csConfDir");
+			
+			System.out.println("StartContextServiceNode starting with nodeId "
+					+nodeId+" csConfDir "+csConfDir);
+			
+			assert(nodeId != null);
+			assert(csConfDir != null);
+			
+			ContextServiceConfig.configFileDirectory = csConfDir;
+			
+			Integer myID = Integer.parseInt(nodeId);
+			
+			ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERSPACE_HASHING;
+			
+			CSConfigFileLoader configFileLoader = new CSConfigFileLoader(
+					ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.csConfigFileName);
+			
+			readNodeInfo();
+			
+			ContextServiceLogger.getLogger().fine("Number of nodes in the system "+csNodeConfig.getNodeIDs().size());
+			
+			//nodes = new StartContextServiceNode[csNodeConfig.getNodeIDs().size()];
+			
+			ContextServiceLogger.getLogger().fine("Starting context service");
+			//new Thread(new StartNode(myID)).start();
+			
+			myObj = new StartContextServiceNode(myID, csNodeConfig);
+			new Thread(new NumMessagesPerSec(myObj)).start();
+		}
+		catch(Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		catch(Error ex)
+		{
+			ex.printStackTrace();
+		}
 	}
 
 	//COMMAND LINE STUFF
