@@ -547,6 +547,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	    		
 	    		Iterator<String> subspaceAttrIter = attrsSubspaceInfo.keySet().iterator();
 				
+	    		//FIXME: same problem as update can happen here
+	    		// as request completion state is being stored while sending out the message.
+	    		// quick replies can result in false completion of the request.
 	    		Vector<ProcessingQueryComponent> triggerStorageComp = new Vector<ProcessingQueryComponent>();
 				while( subspaceAttrIter.hasNext() )
 				{
@@ -863,7 +866,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			
 			synchronized( this.pendingUpdateLock )
 			{
-				updReq = new UpdateInfo<NodeIDType>(valueUpdateFromGNS, updateIdCounter++);
+				updReq = new UpdateInfo<NodeIDType>(valueUpdateFromGNS, updateIdCounter++, 
+						this.subspaceConfigurator.getSubspaceInfoMap());
 				pendingUpdateRequests.put(updReq.getRequestId(), updReq);
 				requestID = updReq.getRequestId();
 				
@@ -1054,7 +1058,11 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					{
 						// add entry for reply
 						// 1 reply as both old and new goes to same node
-						updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
+						// NOTE: doing this here was a bug, as we are also sending the message out
+						// and sometimes replies were coming back quickly before initialization for all 
+						// subspaces and the request completion code was assuming that the request was complte
+						// before recv replies from all subspaces.
+						//updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
 						
 						ValueUpdateToSubspaceRegionMessage<NodeIDType>  valueUpdateToSubspaceRegionMessage 
 							= new ValueUpdateToSubspaceRegionMessage<NodeIDType>(this.getMyID(), -1, GUID, attrValuePairs,
@@ -1076,7 +1084,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					{
 						// add entry for reply
 						// 2 reply as both old and new goes to different node
-						updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
+						//updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
 						
 						ValueUpdateToSubspaceRegionMessage<NodeIDType>  oldValueUpdateToSubspaceRegionMessage 
 							= new ValueUpdateToSubspaceRegionMessage<NodeIDType>(this.getMyID(), -1, GUID, attrValuePairs,
@@ -1111,6 +1119,11 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					
 					//getting group GUIDs that are affected
 					//FIXME: check how triggers can be affected by replica of subspaces
+					// FIXME: check this for trigger thing too.  
+					// Doing this here was a bug, as we are also sending the message out
+					// and sometimes replies were coming back quickly before initialization for all 
+					// subspaces and the request completion code was assuming that the request was complte
+					// before recv replies from all subspaces.
 					if( ContextServiceConfig.TRIGGER_ENABLED )
 					{
 						triggerProcessingOnUpdate( attrValuePairs, attrsSubspaceInfo, 

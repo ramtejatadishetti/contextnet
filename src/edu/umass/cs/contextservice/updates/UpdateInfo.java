@@ -1,6 +1,8 @@
 package edu.umass.cs.contextservice.updates;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Vector;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -8,6 +10,7 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
+import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 
 public class UpdateInfo<NodeIDType>
@@ -15,14 +18,6 @@ public class UpdateInfo<NodeIDType>
 	private final ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS;
 	private final long updateRequestId;
 	
-	// just for debugging the large update times.
-	//private final long updateStartTime;
-	//private final long contextStartTime;
-	
-	// stores the replies recvd from the value nodes for the query
-	// Hash map indexed by componentId, and Vector<String> stores 
-	// the GUIDs
-	//public final HashMap<Integer, LinkedList<String>> repliesMap;
 	int numReplyRecvd;
 	
 	private boolean updateReqCompl;
@@ -45,7 +40,8 @@ public class UpdateInfo<NodeIDType>
 	private HashMap<String, JSONObject> toBeAddedGroupsMap										= null;
 	
 	
-	public UpdateInfo(ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS, long updateRequestId)
+	public UpdateInfo(ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS, long updateRequestId, 
+			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap)
 	{
 		this.valUpdMsgFromGNS = valUpdMsgFromGNS;
 		this.updateRequestId = updateRequestId;
@@ -61,6 +57,21 @@ public class UpdateInfo<NodeIDType>
 		{
 			toBeRemovedGroupsMap = new HashMap<String, JSONObject>();
 			toBeAddedGroupsMap = new HashMap<String, JSONObject>();
+		}
+		
+		// initialize updates
+		Iterator<Integer> keyIter = subspaceInfoMap.keySet().iterator();
+		
+		while( keyIter.hasNext() )
+		{
+			int subspaceId = keyIter.next();
+			Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
+			
+			for( int i=0; i<replicaVector.size(); i++ )
+			{
+				SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(i);
+				this.initializeSubspaceEntry(subspaceId, currSubspaceReplica.getReplicaNum());	
+			}
 		}
 	}
 	
@@ -94,7 +105,7 @@ public class UpdateInfo<NodeIDType>
 		this.updateReqCompl = true;
 	}
 	
-	public void initializeSubspaceEntry(int subspaceId, int replicaNum)
+	private void initializeSubspaceEntry(int subspaceId, int replicaNum)
 	{
 		hyperspaceHashingReplies.put(subspaceId+"-"+replicaNum, 0);
 	}
