@@ -1389,7 +1389,16 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		int numReply = valueUpdateToSubspaceRegionReplyMessage.getNumReply();
 		int replicaNum = valueUpdateToSubspaceRegionReplyMessage.getReplicaNum();
 		
+		
 		UpdateInfo<NodeIDType> updInfo = pendingUpdateRequests.get(requestID);
+		
+		if( updInfo == null)
+		{
+			ContextServiceLogger.getLogger().severe("updInfo null, update already removed from "
+					+ " the pending queue before recv all replies requestID "+requestID
+					+" valueUpdateToSubspaceRegionReplyMessage "+valueUpdateToSubspaceRegionReplyMessage);
+			assert(false);
+		}
 		boolean completion = updInfo.setUpdateReply(subspaceId, replicaNum, numReply);
 		
 		if( completion )
@@ -1399,7 +1408,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			
 			ContextServiceLogger.getLogger().fine("reply IP Port "+updInfo.getValueUpdateFromGNS().getSourceIP()
 					+":"+updInfo.getValueUpdateFromGNS().getSourcePort()+ " ValueUpdateFromGNSReply for requestId "+requestID
-					+" "+valueUpdateFromGNSReply);
+					+" "+valueUpdateFromGNSReply+" ValueUpdateToSubspaceRegionReplyMessage "+valueUpdateToSubspaceRegionReplyMessage);
 			try
 			{
 				this.messenger.sendToAddress( new InetSocketAddress(updInfo.getValueUpdateFromGNS().getSourceIP()
