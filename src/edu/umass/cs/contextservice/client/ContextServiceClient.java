@@ -95,7 +95,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			
 			InetSocketAddress sockAddr = this.csNodeAddresses.get(rand.nextInt(csNodeAddresses.size()));
 			
-			ContextServiceLogger.getLogger().fine("ContextClient sending update to "+sockAddr+" json "+
+			ContextServiceLogger.getLogger().fine("ContextClient sending update requestID "+currId+" to "+sockAddr+" json "+
 					valUpdFromGNS);		
 			//niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
 			niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
