@@ -76,6 +76,13 @@ def calculateExpectedNumNodesASearchGoesTo(numNodesForSubspace, currH, currM):
         expectedNumNodes = expectedNumNodes * math.pow(numNodesForSubspace, 1-mByH)        
         return expectedNumNodes
 
+def calcluateExpectedNumNodesAnUpdateGoesTo(numNodesForSubspace, currH):
+    currP = math.pow(numNodesForSubspace, 1.0/currH)
+    oneByP = 1.0/currP
+    numNodesUpd = oneByP*1 + (1-oneByP)*2
+    return numNodesUpd
+    
+    
 def maxBallsFun(currH, Aavg, B):
     # optimizer sometimes sends negative values
     if(currH < 0):
@@ -154,15 +161,24 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType):
     if ( (currX > 0) ):
         numNodesSubspace = getNumNodesForASubspace(B, H, N, configType)
         numNodesSearch = calculateExpectedNumNodesASearchGoesTo(numNodesSubspace, H, currX)
+        numNodesUpdate = calcluateExpectedNumNodesAnUpdateGoesTo(numNodesSubspace, H)
         numTotalSubspsaces = N/numNodesSubspace
-        return rho*numNodesSearch*CsByC + (1-rho) * numTotalSubspsaces * CuByC
+        # assuming basic, will be inaccurate in replciated
+        # only one subsapce will have more than 1 node, others will be jsut 1
+        totalUpdLoad = numTotalSubspsaces - 1.0 + numNodesUpdate
+        return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
     else:
         currX = (Aavg*H)/B
         print "Not a good value "
         numNodesSubspace = getNumNodesForASubspace(B, H, N, configType)
         numNodesSearch = calculateExpectedNumNodesASearchGoesTo(numNodesSubspace, H, currX)
+        numNodesUpdate = calcluateExpectedNumNodesAnUpdateGoesTo(numNodesForSubspace, H)
         numTotalSubspsaces = N/numNodesSubspace
-        return rho*numNodesSearch*CsByC + (1-rho) * numTotalSubspsaces * CuByC
+
+        # assuming basic, will be inaccurate in replicated
+        # only one subspace will have more than 1 node, others will be just 1
+        totalUpdLoad = numTotalSubspsaces - 1.0 + numNodesUpdate
+        return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
     
 # loops through all H values to check for optimal value of H
 def loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, configType):
