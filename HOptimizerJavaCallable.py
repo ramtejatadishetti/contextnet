@@ -24,6 +24,8 @@ Aavg                            = 2.0
 BASIC_SUBSPACE_CONFIG           = 1
 REPLICATED_SUBSPACE_CONFIG      = 2
 
+MAXIMUM_H_VALUE                 = 10
+
 # keys in the returned dictionary
 functionValKey                  = 'funcValKey'
 optimalHKey                     = 'optimalHKey'
@@ -168,7 +170,7 @@ def loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, configType):
     optimalH  = -1.0
     minValue  = -1.0
     currH     = 2.0
-    while( currH <= B ):
+    while( currH <= MAXIMUM_H_VALUE ):
         currValue = hyperspaceHashingModel(currH, rho, N, CsByC, B, CuByC, Aavg, configType)
         valueDict[currH] = currValue
         if( currH == 2.0 ):
@@ -187,7 +189,7 @@ def loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, configType):
     print "rho "+ str(rho)+" optimalH "+str(optimalH)+" minValue "+str(minValue)+"\n"
     return returnDict
     
-#if(len(sys.argv) == 6):    
+#if(len(sys.argv) == 6):
 rho              = float(sys.argv[1])
 N                = float(sys.argv[2])
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
