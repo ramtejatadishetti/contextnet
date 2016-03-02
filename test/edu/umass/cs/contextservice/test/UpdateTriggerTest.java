@@ -17,6 +17,7 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.ContextServiceNode;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
+import edu.umass.cs.contextservice.config.CSConfigFileLoader;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.geodesy.GlobalCoordinate;
 import edu.umass.cs.contextservice.messages.ContextServicePacket;
@@ -53,6 +54,8 @@ public class UpdateTriggerTest extends ContextServiceNode<Integer>
 		ContextServiceConfig.configFileDirectory 
 		= "/home/adipc/Documents/MobilityFirstGitHub/ContextNet/contextnet/conf/singleNodeConf/contextServiceConf";
 		ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERSPACE_HASHING;		
+		CSConfigFileLoader configFileLoader = new CSConfigFileLoader(
+				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.csConfigFileName);
 		
 		readNodeInfo();
 		
@@ -443,6 +446,10 @@ public class UpdateTriggerTest extends ContextServiceNode<Integer>
 					{
 						assert(false);
 					}
+					else
+					{
+						System.out.println("addition trigger revcd");
+					}
 				}
 				
 				if(qmur.getAddRemove() == RefreshTrigger.REMOVE)
@@ -451,6 +458,10 @@ public class UpdateTriggerTest extends ContextServiceNode<Integer>
 					if(checkForTrigger)
 					{
 						assert(false);
+					}
+					else
+					{
+						System.out.println("removal trigger revcd");
 					}
 				}
 			} catch (JSONException e)

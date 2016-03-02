@@ -11,6 +11,7 @@ import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
+import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.nio.interfaces.NodeConfig;
 
 /**
@@ -33,7 +34,7 @@ public class BasicSubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfi
 	{
 		double numNodes = nodeConfig.getNodeIDs().size();
 		double numAttrs = AttributeTypes.attributeMap.size();
-		//System.out.println("double divice "+numAttrs/optimalH);
+		ContextServiceLogger.getLogger().fine("double divice "+numAttrs/optimalH);
 		double numSubspaces = Math.ceil(numAttrs/optimalH);
 		
 		Vector<AttributeMetaInfo> attrVector 

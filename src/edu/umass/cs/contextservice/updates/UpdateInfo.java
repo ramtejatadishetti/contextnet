@@ -11,6 +11,7 @@ import org.json.JSONObject;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
+import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 
 public class UpdateInfo<NodeIDType>
@@ -75,12 +76,13 @@ public class UpdateInfo<NodeIDType>
 				{
 					int subspaceId = keyIter.next();
 					Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
+			
 					for( int i=0; i<replicaVector.size(); i++ )
 					{
 						SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(i);
 						if(currSubspaceReplica.getAttributesOfSubspace().containsKey(attrName))
 						{
-							hyperspaceHashingReplies.put(subspaceId+"-"+currSubspaceReplica.getReplicaNum(), 0);
+							triggerReplyCounter.put(subspaceId+"-"+currSubspaceReplica.getReplicaNum(), 0);
 						}
 						else
 						{
@@ -199,7 +201,9 @@ public class UpdateInfo<NodeIDType>
 				}
 			}		
 			valueTriggerReplyCounter++;
-			
+			ContextServiceLogger.getLogger().finest("valueTriggerReplyCounter "+valueTriggerReplyCounter +" for compl "
+					+ (valUpdMsgFromGNS.getAttrValuePairs().length()*2*
+							this.triggerReplyCounter.size() ) );
 			// twice because reply comes from old and new value both
 			// it can be just empty, but a reply always comes
 			// two reply for each attribute from the replicated subsapces.
