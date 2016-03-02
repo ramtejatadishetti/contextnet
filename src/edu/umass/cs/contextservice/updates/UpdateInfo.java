@@ -39,6 +39,7 @@ public class UpdateInfo<NodeIDType>
 	
 	private HashMap<String, JSONObject> toBeAddedGroupsMap										= null;
 	
+	private HashMap<String, Integer> triggerReplyCounter 										= null;
 	
 	public UpdateInfo(ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS, long updateRequestId, 
 			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap)
@@ -55,8 +56,40 @@ public class UpdateInfo<NodeIDType>
 		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
+			triggerReplyCounter = new HashMap<String, Integer>();
 			toBeRemovedGroupsMap = new HashMap<String, JSONObject>();
 			toBeAddedGroupsMap = new HashMap<String, JSONObject>();
+			
+			JSONObject attrValuePairs = valUpdMsgFromGNS.getAttrValuePairs();
+	
+			// initilizating reply set
+			Iterator<String> attrIter = attrValuePairs.keys();
+			while(attrIter.hasNext())
+			{
+				String attrName = attrIter.next();
+				
+				// initialize updates
+				Iterator<Integer> keyIter = subspaceInfoMap.keySet().iterator();
+				
+				while( keyIter.hasNext() )
+				{
+					int subspaceId = keyIter.next();
+					Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
+					for( int i=0; i<replicaVector.size(); i++ )
+					{
+						SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(i);
+						if(currSubspaceReplica.getAttributesOfSubspace().containsKey(attrName))
+						{
+							hyperspaceHashingReplies.put(subspaceId+"-"+currSubspaceReplica.getReplicaNum(), 0);
+						}
+						else
+						{
+							// if not, then none of the replicas will have it.
+							break;
+						}
+					}
+				}
+			}
 		}
 		
 		// initialize updates
@@ -70,7 +103,7 @@ public class UpdateInfo<NodeIDType>
 			for( int i=0; i<replicaVector.size(); i++ )
 			{
 				SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(i);
-				this.initializeSubspaceEntry(subspaceId, currSubspaceReplica.getReplicaNum());	
+				this.initializeSubspaceEntry(subspaceId, currSubspaceReplica.getReplicaNum());
 			}
 		}
 	}
@@ -123,15 +156,6 @@ public class UpdateInfo<NodeIDType>
 				this.numRepliesCounter++;
 			}
 			
-			/*if( numRepliesCounter == this.hyperspaceHashingReplies.size() )
-			{
-				return true;
-			}
-			else
-			{
-				return false;
-			}*/
-			
 			if( numRepliesCounter == this.hyperspaceHashingReplies.size() )
 			{
 				return true;
@@ -178,7 +202,9 @@ public class UpdateInfo<NodeIDType>
 			
 			// twice because reply comes from old and new value both
 			// it can be just empty, but a reply always comes
-			if(valueTriggerReplyCounter == (valUpdMsgFromGNS.getAttrValuePairs().length()*2) )
+			// two reply for each attribute from the replicated subsapces.
+			if(valueTriggerReplyCounter == (valUpdMsgFromGNS.getAttrValuePairs().length()*2*
+					this.triggerReplyCounter.size() ) )
 			{
 				return true;
 			}

@@ -517,7 +517,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	
 	private void processTriggerOnQueryMsgFromUser(QueryInfo<NodeIDType> currReq)
 	{
-		
 		HashMap<Integer, Vector<ProcessingQueryComponent>> overlappingSubspaces =
     			new HashMap<Integer, Vector<ProcessingQueryComponent>>();
 		getAllUniqueOverlappingSubspaces( currReq.getProcessingQC(), overlappingSubspaces );
@@ -547,9 +546,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	    		
 	    		Iterator<String> subspaceAttrIter = attrsSubspaceInfo.keySet().iterator();
 				
-	    		//FIXME: same problem as update can happen here
-	    		// as request completion state is being stored while sending out the message.
-	    		// quick replies can result in false completion of the request.
 	    		Vector<ProcessingQueryComponent> triggerStorageComp = new Vector<ProcessingQueryComponent>();
 				while( subspaceAttrIter.hasNext() )
 				{
@@ -1204,6 +1200,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				}
 				else
 				{
+					//TODO: can be optmized, and only one message sent when both old and new one
+					// lie on same node.
 					Integer respNodeID = oldOverlappingRegion.keySet().iterator().next();
 					OverlappingInfoClass overlapInfoObj = oldOverlappingRegion.get(respNodeID);
 					// using JSONObject so that later on
@@ -1258,7 +1256,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						e.printStackTrace();
 					}
 				}
-				
 			}
 		}
 	}

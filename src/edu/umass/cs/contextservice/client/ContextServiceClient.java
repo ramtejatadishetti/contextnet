@@ -57,6 +57,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		try
 		{
 			long currId;
+			
 			synchronized(this.updateIdLock)
 			{
 				currId = this.updateReqId++;
@@ -208,7 +209,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 		return resultSize;
 	}
-
+	
 	@Override
 	public JSONObject sendGetRequest(String GUID) 
 	{			
@@ -492,6 +493,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 					e.printStackTrace();
 				}
 			}
+			
 			while(!refreshTriggerQueue.isEmpty())
 			{
 				triggerArray.put(refreshTriggerQueue.poll());

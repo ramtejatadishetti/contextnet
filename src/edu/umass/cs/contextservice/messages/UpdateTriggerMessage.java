@@ -5,10 +5,15 @@ import org.json.JSONObject;
 
 public class UpdateTriggerMessage<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 {
-	// On update, if an old value of an attribute was sent 
+	// On update, if an old value of an attribute was sent
+	// old value sent to different node than new value
 	public static final int OLD_VALUE				= 1;
 	// On update, if a new value of an attribute was sent
+	// new value sent to different node than old value
 	public static final int NEW_VALUE				= 2;
+	
+	// both the old and new are on the same node
+	public static final int BOTH					= 3;
 	
 	private enum Keys {REQUESTID, SUBSPACENUM, OLD_UPDATE_VALUE, OLD_NEW_VAL, 
 		HASHCODE, NEW_UPDATE_VALUE};

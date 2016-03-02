@@ -73,7 +73,9 @@ def calculateExpectedNumNodesASearchGoesTo(numNodesForSubspace, currH, currM):
         mByH = (currM * 1.0)/(currH * 1.0)
         
         # calculating expected value of the second term
-        expectedNumNodes = expectedNumNodes * math.pow(numNodesForSubspace, 1-mByH)        
+        expectedNumNodes = expectedNumNodes * math.pow(numNodesForSubspace, 1-mByH)
+        print "numNodesForSubspace "+str(numNodesForSubspace)+" currH "+str(currH)
+        +" currM "+str(currM)+" expectedNumSearchNodes "+str(expectedNumNodes) 
         return expectedNumNodes
 
 def calcluateExpectedNumNodesAnUpdateGoesTo(numNodesForSubspace, currH):
