@@ -17,6 +17,7 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.ContextServiceNode;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
+import edu.umass.cs.contextservice.config.CSConfigFileLoader;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.geodesy.GlobalCoordinate;
 import edu.umass.cs.contextservice.messages.ContextServicePacket;
@@ -54,6 +55,9 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 		= "/home/adipc/Documents/MobilityFirstGitHub/ContextNet/contextnet/conf/singleNodeConf/contextServiceConf";
 		ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERSPACE_HASHING;		
 		
+		CSConfigFileLoader configFileLoader = new CSConfigFileLoader(
+				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.csConfigFileName);
+		
 		readNodeInfo();
 		
 		System.out.println("Number of nodes in the system "+csNodeConfig.getNodeIDs().size());
@@ -80,12 +84,12 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 			e.printStackTrace();
 		}
 		
-//		try {
-//			RequestClass.startRequests();
-//		} catch (Exception e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+		try {
+			RequestClass.startRequests();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	

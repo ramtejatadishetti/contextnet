@@ -120,30 +120,40 @@ public class CalculateOptimalNumAttrsInSubspace
 		
 	private void extractTheScript() throws IOException
 	{
-		InputStream in = getClass().getResourceAsStream("/HOptimizerJavaCallable.py");
-		BufferedReader input = new BufferedReader(new InputStreamReader(in));
-		
-		File file = new File("HOptimizerJavaCallable.py");
-
-		// if file doesnt exists, then create it
-		if ( !file.exists() ) 
+		// just catching here so that it can run even from without jar
+		try
 		{
-			file.createNewFile();
+			InputStream in = getClass().getResourceAsStream("/HOptimizerJavaCallable.py");
+			BufferedReader input = new BufferedReader(new InputStreamReader(in));
+			
+			File file = new File("HOptimizerJavaCallable.py");
+	
+			// if file doesnt exists, then create it
+			if ( !file.exists() ) 
+			{
+				file.createNewFile();
+			}
+			
+			FileWriter fw = new FileWriter(file.getAbsoluteFile());
+			BufferedWriter bw = new BufferedWriter(fw);
+			
+			String line = input.readLine();
+			while(line != null)
+			{
+				bw.write(line+"\n");
+				line = input.readLine();
+			}
+			bw.close();
+			input.close();
+			in.close();
 		}
-		
-		FileWriter fw = new FileWriter(file.getAbsoluteFile());
-		BufferedWriter bw = new BufferedWriter(fw);
-		
-		
-
-		String line = input.readLine();
-		while(line != null)
+		catch(Exception ex)
 		{
-			bw.write(line+"\n");
-			line = input.readLine();
+			ex.printStackTrace();
 		}
-		bw.close();
-		input.close();
-		in.close();
+		catch(Error er)
+		{
+			er.printStackTrace();
+		}
 	}
 }

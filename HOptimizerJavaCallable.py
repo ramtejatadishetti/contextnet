@@ -206,15 +206,15 @@ def loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, configType):
     print "rho "+ str(rho)+" optimalH "+str(optimalH)+" minValue "+str(minValue)+"\n"
     return returnDict
     
-#if(len(sys.argv) == 6):
-rho              = float(sys.argv[1])
-N                = float(sys.argv[2])
-# calculated by single node throughput, not very accurate estimation but let's go with that for now.
-# specially if result size increases then estimation error might increase.
-CsByC            = float(sys.argv[3])
-CuByC            = float(sys.argv[4])
-B                = float(sys.argv[5])
-Aavg             = float(sys.argv[6])
+if(len(sys.argv) >= 6):
+    rho              = float(sys.argv[1])
+    N                = float(sys.argv[2])
+    # calculated by single node throughput, not very accurate estimation but let's go with that for now.
+    # specially if result size increases then estimation error might increase.
+    CsByC            = float(sys.argv[3])
+    CuByC            = float(sys.argv[4])
+    B                = float(sys.argv[5])
+    Aavg             = float(sys.argv[6])
 
 # 1 for basic config, 2 replicated config
 #configType       = float(sys.argv[7])

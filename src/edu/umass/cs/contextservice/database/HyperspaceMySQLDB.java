@@ -169,6 +169,9 @@ public class HyperspaceMySQLDB<NodeIDType>
 					
 					if( ContextServiceConfig.TRIGGER_ENABLED )
 					{
+						ContextServiceLogger.getLogger().fine( "HyperspaceMySQLDB "
+								+ " TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED );
+						
 						// creating trigger guid storage
 						tableName = "subspaceId"+subspaceId+"TriggerInfo";
 						

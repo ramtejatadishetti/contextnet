@@ -203,6 +203,7 @@ public class UpdateInfo<NodeIDType>
 			// twice because reply comes from old and new value both
 			// it can be just empty, but a reply always comes
 			// two reply for each attribute from the replicated subsapces.
+			// it can be optimized to reduce 2 replies to 1 but that is a TODO
 			if(valueTriggerReplyCounter == (valUpdMsgFromGNS.getAttrValuePairs().length()*2*
 					this.triggerReplyCounter.size() ) )
 			{
@@ -221,7 +222,10 @@ public class UpdateInfo<NodeIDType>
 		{
 			// twice because reply comes from old and new value both
 			// it can be just empty, but a reply always comes
-			if(valueTriggerReplyCounter == (valUpdMsgFromGNS.getAttrValuePairs().length()*2) )
+			// two reply for each attribute from the replicated subsapces.
+			// it can be optimized to reduce 2 replies to 1 but that is a TODO
+			if(valueTriggerReplyCounter == (valUpdMsgFromGNS.getAttrValuePairs().length()*2*
+					this.triggerReplyCounter.size() ) )
 			{
 				return true;
 			}

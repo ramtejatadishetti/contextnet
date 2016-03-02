@@ -40,7 +40,8 @@ public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspace
 	{
 		double numNodes = nodeConfig.getNodeIDs().size();
 		double numAttrs = AttributeTypes.attributeMap.size();
-		//TODO: later on h value, num of attrs in a subspace will be calculated by the model
+		
+		//System.out.println("double divice "+numAttrs/optimalH);
 		double numSubspaces = Math.ceil(numAttrs/optimalH);
 		
 		// number of subspaces can't be greater than number of nodes.
