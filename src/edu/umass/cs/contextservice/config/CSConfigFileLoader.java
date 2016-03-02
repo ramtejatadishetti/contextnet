@@ -72,6 +72,11 @@ public class CSConfigFileLoader
     
     ContextServiceConfig.TRIGGER_ENABLED = Boolean.parseBoolean(
     		properties.getProperty(ContextServiceConfig.triggerEnableString, "false") );
+    System.out.println("read props ContextServiceConfig.modelRho "+ContextServiceConfig.modelRho
+    		+" ContextServiceConfig.modelCsByC "+ContextServiceConfig.modelCsByC
+    		+" ContextServiceConfig.modelCuByC "+ContextServiceConfig.modelCuByC
+    		+" ContextServiceConfig.modelAavg "+ContextServiceConfig.modelAavg
+    		+" ContextServiceConfig.TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED);
   }
   
   /**
