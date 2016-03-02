@@ -40,7 +40,9 @@ public class UpdateInfo<NodeIDType>
 	
 	private HashMap<String, JSONObject> toBeAddedGroupsMap										= null;
 	
-	private HashMap<String, Integer> triggerReplyCounter 										= null;
+	// String attrName, with number of replies to expect from replicated subspaces
+	//private HashMap<String, Integer> triggerReplyCounter 										= null;
+	private int numberOfTriggerRepliesToExpect													= 0;
 	
 	public UpdateInfo(ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS, long updateRequestId, 
 			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap)
@@ -57,7 +59,7 @@ public class UpdateInfo<NodeIDType>
 		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
-			triggerReplyCounter = new HashMap<String, Integer>();
+			//triggerReplyCounter = new HashMap<String, Integer>();
 			toBeRemovedGroupsMap = new HashMap<String, JSONObject>();
 			toBeAddedGroupsMap = new HashMap<String, JSONObject>();
 			
@@ -82,7 +84,9 @@ public class UpdateInfo<NodeIDType>
 						SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(i);
 						if(currSubspaceReplica.getAttributesOfSubspace().containsKey(attrName))
 						{
-							triggerReplyCounter.put(subspaceId+"-"+currSubspaceReplica.getReplicaNum(), 0);
+							//triggerReplyCounter.put(subspaceId+"-"+currSubspaceReplica.getReplicaNum(), 0);
+							// two replies from each subpace, TODO; will be optimzied later on to reduce from 2
+							numberOfTriggerRepliesToExpect = numberOfTriggerRepliesToExpect +2;
 						}
 						else
 						{
@@ -201,15 +205,13 @@ public class UpdateInfo<NodeIDType>
 				}
 			}		
 			valueTriggerReplyCounter++;
-			ContextServiceLogger.getLogger().finest("valueTriggerReplyCounter "+valueTriggerReplyCounter +" for compl "
-					+ (valUpdMsgFromGNS.getAttrValuePairs().length()*2*
-							this.triggerReplyCounter.size() ) );
+			ContextServiceLogger.getLogger().fine("valueTriggerReplyCounter "+valueTriggerReplyCounter +" for compl "
+					+ numberOfTriggerRepliesToExpect +" attr len "+valUpdMsgFromGNS.getAttrValuePairs().length());
 			// twice because reply comes from old and new value both
 			// it can be just empty, but a reply always comes
 			// two reply for each attribute from the replicated subsapces.
 			// it can be optimized to reduce 2 replies to 1 but that is a TODO
-			if(valueTriggerReplyCounter == (valUpdMsgFromGNS.getAttrValuePairs().length()*2*
-					this.triggerReplyCounter.size() ) )
+			if(valueTriggerReplyCounter == numberOfTriggerRepliesToExpect )
 			{
 				return true;
 			}
@@ -228,8 +230,7 @@ public class UpdateInfo<NodeIDType>
 			// it can be just empty, but a reply always comes
 			// two reply for each attribute from the replicated subsapces.
 			// it can be optimized to reduce 2 replies to 1 but that is a TODO
-			if(valueTriggerReplyCounter == (valUpdMsgFromGNS.getAttrValuePairs().length()*2*
-					this.triggerReplyCounter.size() ) )
+			if(valueTriggerReplyCounter == numberOfTriggerRepliesToExpect )
 			{
 				return true;
 			}

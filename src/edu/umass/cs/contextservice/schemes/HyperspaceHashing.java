@@ -853,7 +853,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		else
 		{
 			ContextServiceLogger.getLogger().fine("primary node case souceIp "+valueUpdateFromGNS.getSourceIP()
-			+" sourcePort "+valueUpdateFromGNS.getSourcePort());
+				+" sourcePort "+valueUpdateFromGNS.getSourcePort());
 			
 			UpdateInfo<NodeIDType> updReq  	= null;
 			long requestID 					= -1;
