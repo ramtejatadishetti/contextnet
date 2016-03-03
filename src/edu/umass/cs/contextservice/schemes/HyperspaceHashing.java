@@ -377,8 +377,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					e.printStackTrace();
 				}
 			}
-		}
-		
+		}	
 		ContextServiceLogger.getLogger().fine(" generateSubspacePartitions() completed " );
 	}
 	
@@ -646,8 +645,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		boolean allRepRecvd = 
 				queryInfo.setRegionalReply((Integer)senderID, queryMesgToSubspaceRegionReply);
 		
-		//ContextServiceLogger.getLogger().fine("processQueryMesgToSubspaceRegionReply redId "+requestId);
-		
 		if( allRepRecvd )
 		{
 			JSONArray concatResult 							 = new JSONArray();
@@ -698,7 +695,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ContextServiceLogger.getLogger().info("Sending queryMsgFromUserReply mesg from " 
 					+ getMyID() +" to node "+new InetSocketAddress(queryInfo.getUserIP(), queryInfo.getUserPort()));
 			
-			
 			pendingQueryRequests.remove(requestId);
 		}
 	}
@@ -724,89 +720,124 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		int subspaceId = updateTriggerMessage.getSubspaceNum();
 		JSONObject oldValJSON = updateTriggerMessage.getOldUpdateValPair();
 		JSONObject newUpdateVal = updateTriggerMessage.getNewUpdateValPair();
-		
 		//int oldNewVal = updateTriggerMessage.getOldNewVal();
-		int hashCode  = updateTriggerMessage.getHashCode();
 		
-		JSONArray allGroups = this.hyperspaceDB.getTriggerInfo(subspaceId, hashCode);
+		//(int subspaceId, JSONObject oldValJSON, JSONObject newUpdateVal
+		//		, HashMap<String, JSONObject> oldValGroupGUIDMap, HashMap<String, JSONObject> newValGroupGUIDMap)
+		
+		//int hashCode  = updateTriggerMessage.getHashCode();
+		
+		HashMap<String, JSONObject> oldValGroupGUIDMap = new HashMap<String, JSONObject>();
+		HashMap<String, JSONObject> newValGroupGUIDMap = new HashMap<String, JSONObject>();
+		
+		ContextServiceLogger.getLogger().fine("processUpdateTriggerMessage oldValGroupGUIDMap size "
+				+oldValGroupGUIDMap.size()+" newValGroupGUIDMap size "+newValGroupGUIDMap.size() );
+		
+		this.hyperspaceDB.getTriggerInfo(subspaceId, oldValJSON, 
+				newUpdateVal, oldValGroupGUIDMap, newValGroupGUIDMap);
 		
 		JSONArray toBeRemoved = new JSONArray();
 		JSONArray toBeAdded = new JSONArray();
 		
-		// now check each group
-		for( int i=0;i<allGroups.length();i++ )
+		
+		Iterator<String> oldValGrpGUIDIter = oldValGroupGUIDMap.keySet().iterator();
+		while( oldValGrpGUIDIter.hasNext() )
 		{
-			JSONObject currGroup;
-			try 
+			String currGrpGUID = oldValGrpGUIDIter.next();
+			// if grp guid not satisfied with new group then a 
+			// removed notificated to be sent
+			if( !newValGroupGUIDMap.containsKey(currGrpGUID) )
 			{
-				currGroup = allGroups.getJSONObject(i);
-				String groupQuery = currGroup.getString("userQuery");
-				// just creating a dummy queryinfo for parsing query
-				QueryInfo<NodeIDType> qinfo = new QueryInfo<NodeIDType>(groupQuery);
-				HashMap<String, ProcessingQueryComponent> pqcMap = qinfo.getProcessingQC();
-				// first check if satisfied by old values
-				Iterator<String> attrIter = pqcMap.keySet().iterator();
-				boolean oldSatisfied = true;
-				while( attrIter.hasNext() )
-				{
-					String attrName = attrIter.next();
-					
-					ProcessingQueryComponent qcomponent = pqcMap.get(attrName);
-					
-					boolean retValue = AttributeTypes.checkForComponent(qcomponent, oldValJSON);
-					
-					if(!retValue)
-					{
-						oldSatisfied = false;
-						break;
-					}	
-				}
-				
-				boolean newSatisfied = true;
-				
-				attrIter = pqcMap.keySet().iterator();
-				while( attrIter.hasNext() )
-				{
-					String attrName = attrIter.next();
-					ProcessingQueryComponent qcomponent = pqcMap.get(attrName);
-					
-					String currrValue;
-					if( newUpdateVal.has( qcomponent.getAttributeName() ) )
-					{
-						currrValue = newUpdateVal.getString( qcomponent.getAttributeName() );
-					}
-					else
-					{
-						currrValue = oldValJSON.getString( qcomponent.getAttributeName() );
-					}
-					JSONObject valueJSON = new JSONObject();
-					valueJSON.put(qcomponent.getAttributeName(), currrValue);
-					
-					boolean retValue = AttributeTypes.checkForComponent(qcomponent, valueJSON);
-					
-					if(!retValue)
-					{
-						newSatisfied = false;
-						break;
-					}
-				}
-				
-				// trigger needs to be snet when oldval is satisfied but not new value
-				// or old not satisfied but new value is satisfied.
-				
-				if(oldSatisfied && !newSatisfied)
-				{
-					toBeRemoved.put(currGroup);
-				}
-				if(!oldSatisfied && newSatisfied)
-				{
-					toBeAdded.put(currGroup);
-				}
-			} catch (JSONException e)
-			{
-				e.printStackTrace();
+				toBeRemoved.put(oldValGroupGUIDMap.get(currGrpGUID));
 			}
 		}
+		
+		Iterator<String> newValGrpGUIDIter = newValGroupGUIDMap.keySet().iterator();
+		while( newValGrpGUIDIter.hasNext() )
+		{
+			String currGrpGUID = newValGrpGUIDIter.next();
+			// if grp guid not satisfied with the old group then a 
+			// addition notificated to be sent
+			if( !oldValGroupGUIDMap.containsKey(currGrpGUID) )
+			{
+				toBeAdded.put(newValGroupGUIDMap.get(currGrpGUID));
+			}
+		}
+		
+		// now check each group
+//		for( int i=0;i<allGroups.length();i++ )
+//		{
+//			JSONObject currGroup;
+//			try 
+//			{
+//				currGroup = allGroups.getJSONObject(i);
+//				String groupQuery = currGroup.getString("userQuery");
+//				// just creating a dummy queryinfo for parsing query
+//				QueryInfo<NodeIDType> qinfo = new QueryInfo<NodeIDType>(groupQuery);
+//				HashMap<String, ProcessingQueryComponent> pqcMap = qinfo.getProcessingQC();
+//				// first check if satisfied by old values
+//				Iterator<String> attrIter = pqcMap.keySet().iterator();
+//				boolean oldSatisfied = true;
+//				while( attrIter.hasNext() )
+//				{
+//					String attrName = attrIter.next();
+//					
+//					ProcessingQueryComponent qcomponent = pqcMap.get(attrName);
+//					
+//					boolean retValue = AttributeTypes.checkForComponent(qcomponent, oldValJSON);
+//					
+//					if(!retValue)
+//					{
+//						oldSatisfied = false;
+//						break;
+//					}	
+//				}
+//				
+//				boolean newSatisfied = true;
+//				
+//				attrIter = pqcMap.keySet().iterator();
+//				while( attrIter.hasNext() )
+//				{
+//					String attrName = attrIter.next();
+//					ProcessingQueryComponent qcomponent = pqcMap.get(attrName);
+//					
+//					String currrValue;
+//					if( newUpdateVal.has( qcomponent.getAttributeName() ) )
+//					{
+//						currrValue = newUpdateVal.getString( qcomponent.getAttributeName() );
+//					}
+//					else
+//					{
+//						currrValue = oldValJSON.getString( qcomponent.getAttributeName() );
+//					}
+//					JSONObject valueJSON = new JSONObject();
+//					valueJSON.put(qcomponent.getAttributeName(), currrValue);
+//					
+//					boolean retValue = AttributeTypes.checkForComponent(qcomponent, valueJSON);
+//					
+//					if(!retValue)
+//					{
+//						newSatisfied = false;
+//						break;
+//					}
+//				}
+//				
+//				// trigger needs to be snet when oldval is satisfied but not new value
+//				// or old not satisfied but new value is satisfied.
+//				
+//				if(oldSatisfied && !newSatisfied)
+//				{
+//					toBeRemoved.put(currGroup);
+//				}
+//				if(!oldSatisfied && newSatisfied)
+//				{
+//					toBeAdded.put(currGroup);
+//				}
+//			} catch (JSONException e)
+//			{
+//				e.printStackTrace();
+//			}
+//		}
 		
 		ContextServiceLogger.getLogger().fine("toBeRemoved size "+toBeRemoved.length()
 			+" toBeAdded size "+toBeAdded.length());
@@ -1126,8 +1157,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 								subspaceId, replicaNum, oldValueJSON, requestID );
 					}
 				}
-			}
-			
+			}		
 			// FIXME: just for test check, need to add condition for completion of this step before assuming
 			// udpate completion and removal of updateInfo and starting next update of this GUID
 			//this.hyperspaceDB.storeGUIDInSubspace(tableName, GUID, attrValuePairs, updateOrInsert);
@@ -1514,18 +1544,18 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				String groupGUID = iter.next();
 				JSONObject groupInfo = toBeRemovedGroupsMap.get(groupGUID);
 				
-				try 
+				try
 				{
-					String queryString = groupInfo.getString(HyperspaceMySQLDB.userQuery);
+					//String queryString = groupInfo.getString(HyperspaceMySQLDB.userQuery);
 					RefreshTrigger<NodeIDType> refTrig = new RefreshTrigger<NodeIDType>
-					(this.getMyID(), queryString, groupGUID, updInfo.getValueUpdateFromGNS().getVersionNum(),
+					(this.getMyID(), groupGUID, updInfo.getValueUpdateFromGNS().getVersionNum(),
 							updInfo.getValueUpdateFromGNS().getGUID(), RefreshTrigger.REMOVE);
 					
 					String userIP = groupInfo.getString(HyperspaceMySQLDB.userIP);
 					int userPort  = groupInfo.getInt(HyperspaceMySQLDB.userPort);
 					
-					ContextServiceLogger.getLogger().fine("processUpdateTriggerReply removed grps queryString "
-							+queryString+" userIP "+userIP+" userPort "+userPort);
+					ContextServiceLogger.getLogger().fine("processUpdateTriggerReply removed grps "
+							+" userIP "+userIP+" userPort "+userPort);
 					
 					try
 					{
@@ -1553,10 +1583,10 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				
 				try
 				{
-					String queryString = groupInfo.getString(HyperspaceMySQLDB.userQuery);
+					//String queryString = groupInfo.getString(HyperspaceMySQLDB.userQuery);
 					
 					RefreshTrigger<NodeIDType> refTrig = new RefreshTrigger<NodeIDType>
-					(this.getMyID(), queryString, groupGUID, updInfo.getValueUpdateFromGNS().getVersionNum(),
+					(this.getMyID(), groupGUID, updInfo.getValueUpdateFromGNS().getVersionNum(),
 							updInfo.getValueUpdateFromGNS().getGUID(), RefreshTrigger.ADD);
 					
 					String userIP = groupInfo.getString(HyperspaceMySQLDB.userIP);
@@ -1564,7 +1594,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					
 					
 					ContextServiceLogger.getLogger().fine("processUpdateTriggerReply added grps queryString "
-							+queryString+" userIP "+userIP+" userPort "+userPort);
+							+" userIP "+userIP+" userPort "+userPort);
 					
 					try
 					{

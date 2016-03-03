@@ -1,5 +1,7 @@
 package edu.umass.cs.contextservice.database;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -41,7 +43,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 	
 	private final HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;
 	
-	public static final String userQuery = "userQuery";
+	//public static final String userQuery = "userQuery";
 	public static final String groupGUID = "groupGUID";
 	public static final String userIP = "userIP";
 	public static final String userPort = "userPort";
@@ -90,7 +92,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 			stmt   =  myConn.createStatement();
 			Iterator<Integer> subspaceIter = this.subspaceInfoMap.keySet().iterator();
 			//TODO: reduce creation of extra tables on nodes that don't need it
-			while(subspaceIter.hasNext())
+			while( subspaceIter.hasNext() )
 			//for( int i=0;i<subspaceInfo.size();i++ )
 			{
 				int subspaceId = subspaceIter.next();
@@ -166,26 +168,47 @@ public class HyperspaceMySQLDB<NodeIDType>
 					newTableCommand = newTableCommand +" )";
 					stmt.executeUpdate(newTableCommand);
 					
-					
 					if( ContextServiceConfig.TRIGGER_ENABLED )
 					{
+						// currently it is assumed that there are only conjunctive queries
+						// DNF form queries can be added by inserting its multiple conjunctive components.
+						
 						ContextServiceLogger.getLogger().fine( "HyperspaceMySQLDB "
-								+ " TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED );
+								+ " TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED );					
 						
 						// creating trigger guid storage
 						tableName = "subspaceId"+subspaceId+"TriggerInfo";
 						
-						newTableCommand = "create table "+tableName+" ( hashCode INTEGER , " + 
-						"  userQuery VARCHAR("+HyperspaceMySQLDB.MAX_QUERY_LENGTH+") , groupGUID VARCHAR(42) , userIP VARCHAR(20) , "
-								+ "userPort INTEGER , INDEX USING  HASH(hashCode) )";
+						newTableCommand = "create table "+tableName+" ( hashCode INTEGER , "
+								+ " groupGUID BINARY(20),  userIP Binary(4),  userPort INTEGER ";
 						
+						//FIXME: which indexing scheme is better, indexing two attribute once or creating a index over all 
+						// attributes
+						attrIter = subspaceAttributes.keySet().iterator();
+						while( attrIter.hasNext() )
+						{
+							String attrName = attrIter.next();
+							String attrDataType  = subspaceAttributes.get(attrName).getAttrMetaInfo().getDataType();
+							String mySQLDataType = AttributeTypes.mySQLDataType.get(attrDataType);
+							String defaultValue  = subspaceAttributes.get(attrName).getAttrMetaInfo().getDefaultValue();
+							// lower range of this attribute in this subspace
+							String lowerAttrName = "lower"+attrName;
+							String upperAttrName = "upper"+attrName;
+							
+							newTableCommand = newTableCommand + " , "+lowerAttrName+" "+mySQLDataType
+									+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultValue, attrDataType)
+									+ " , "+upperAttrName+" "+mySQLDataType+" DEFAULT "
+									+AttributeTypes.convertStringToDataTypeForMySQL(defaultValue, attrDataType)
+									+ " , INDEX USING BTREE("+lowerAttrName+" , "+upperAttrName+")";
+						}
+						newTableCommand = newTableCommand +" )";
+						//ContextServiceLogger.getLogger().fine("newTableCommand "+newTableCommand);
 						stmt.executeUpdate(newTableCommand);
 					}
 				}
 			}
 			
 			String tableName = "primarySubspaceDataStorage";
-			
 			String newTableCommand = "create table "+tableName+" ( "
 				      + "   nodeGUID Binary(20) PRIMARY KEY";
 			
@@ -749,7 +772,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		while(attrIter.hasNext())
 		{
 			// just  that the loop moves on
-			String attrName = attrIter.next();
+			attrIter.next();
 			// for lower and upper value of each attribute of this subspace
 			insertTableSQL = insertTableSQL + " , "+"?"+" , "+ 
 					"?";
@@ -912,20 +935,74 @@ public class HyperspaceMySQLDB<NodeIDType>
 		
 		String tableName = "subspaceId"+subspaceId+"TriggerInfo";
 		
-		//newTableCommand = "create table "+tableName+" ( hashCode INTEGER , " + 
-		//		"  userQuery VARCHAR("+HyperspaceMySQLDB.MAX_QUERY_LENGTH+") , groupGUID CHAR(100) , INDEX USING  HASH(hashCode) )";
+//		newTableCommand = "create table "+tableName+" ( hashCode INTEGER , "
+//				+ " groupGUID BINARY(20),  userIP Binary(4),  userPort INTEGER ";
 		
-		//newTableCommand = "create table "+tableName+" ( hashCode INTEGER , " + 
-		//		"  userQuery VARCHAR("+HyperspaceMySQLDB.MAX_QUERY_LENGTH+") , groupGUID VARCHAR(100) , userIP VARCHAR(20) , "
-		//				+ "userPort INTEGER , INDEX USING  HASH(hashCode) )";
+		QueryInfo<NodeIDType> processedQInfo = new QueryInfo<NodeIDType>(userQuery);
+		HashMap<String, ProcessingQueryComponent> pqcMap = processedQInfo.getProcessingQC();
 		
-		String insertTableSQL = "INSERT INTO "+tableName 
-				+" ( hashCode, userQuery, groupGUID, userIP, userPort ) VALUES ("+hashCode+", '"+userQuery+"', '"+groupGUID+"',"
-						+ " '"+userIP+"', "+userPort+" ) ";
-				//+ "nodeID) " + "VALUES"
-				//+ "("+lowerRange+","+upperRange+","+nodeID +")";
+		String hexIP;
 		try
 		{
+			hexIP = Utils.bytArrayToHex(InetAddress.getByName(userIP).getAddress());	
+			
+			String insertTableSQL = " INSERT INTO "+tableName 
+					+" ( hashCode, groupGUID, userIP, userPort ";
+					//+ "nodeID) " + "VALUES"
+					//+ "("+lowerRange+","+upperRange+","+nodeID +")";
+
+			// there is always at least one replica
+			SubspaceInfo<NodeIDType> currSubInfo = subspaceInfoMap.get(subspaceId).get(0);
+			
+			HashMap<String, AttributePartitionInfo> attrSubspaceInfo = currSubInfo.getAttributesOfSubspace();
+			
+			Iterator<String> qattrIter = pqcMap.keySet().iterator();
+			
+			while( qattrIter.hasNext() )
+			{
+				String qattrName = qattrIter.next();
+				
+				// only attributes/predicate of the query that are in this
+				// subspace are stored in this subspace's trigger info.
+				if( attrSubspaceInfo.containsKey(qattrName) )
+				{
+					String lowerAtt = "lower"+qattrName;
+					String upperAtt = "upper"+qattrName;
+					
+					insertTableSQL = insertTableSQL + ", "+lowerAtt+" , "+upperAtt;
+				}
+			}
+			
+			insertTableSQL = insertTableSQL + " ) VALUES ("+hashCode+", X'"+groupGUID+"', "+
+							 " X'"+hexIP+"', "+userPort+" ";
+			
+			// assuming the order of iterator over attributes to be same in above and here
+			qattrIter = pqcMap.keySet().iterator();
+			while( qattrIter.hasNext() )
+			{
+				String qattrName = qattrIter.next();
+				
+				// only attributes/predicate of the query that are in this
+				// subspace are stored in this subspace's trigger info.
+				if( attrSubspaceInfo.containsKey(qattrName) )
+				{
+					ProcessingQueryComponent pqc = pqcMap.get(qattrName);
+					
+					AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(qattrName);
+					String dataType = attrMetaInfo.getDataType();
+					
+					String lowerBound  
+					= AttributeTypes.convertStringToDataTypeForMySQL(pqc.getLowerBound(), dataType)+"";
+					String upperBound  
+					= AttributeTypes.convertStringToDataTypeForMySQL(pqc.getUpperBound(), dataType)+"";
+					
+					insertTableSQL = insertTableSQL + " , "+lowerBound+" , "+ 
+							upperBound;
+				}
+			}
+			insertTableSQL = insertTableSQL + " ) ";
+			
+			
 			myConn = this.mysqlDataSource.getConnection();
 			stmt = myConn.createStatement();
 
@@ -935,6 +1012,9 @@ public class HyperspaceMySQLDB<NodeIDType>
 		} catch(SQLException sqlex)
 		{
 			sqlex.printStackTrace();
+		} catch (UnknownHostException e) 
+		{
+			e.printStackTrace();
 		}
 		finally
 		{
@@ -966,8 +1046,15 @@ public class HyperspaceMySQLDB<NodeIDType>
 	 * @param hashCode
 	 * @return
 	 */
-	public JSONArray getTriggerInfo(int subspaceId, int hashCode)
+	public void getTriggerInfo(int subspaceId, JSONObject oldValJSON, JSONObject newUpdateVal
+			, HashMap<String, JSONObject> oldValGroupGUIDMap, HashMap<String, JSONObject> newValGroupGUIDMap)
 	{
+		assert(oldValGroupGUIDMap != null);
+		assert(newValGroupGUIDMap != null);
+		// oldValJSON should contain all attribtues.
+		// newUpdateVal contains only updated attr:val pairs
+		assert(oldValJSON.length() == AttributeTypes.attributeMap.size());
+		
 		long t0 = System.currentTimeMillis();
 		
 		String tableName 			= "subspaceId"+subspaceId+"TriggerInfo";
@@ -975,16 +1062,45 @@ public class HyperspaceMySQLDB<NodeIDType>
 		Connection myConn 			= null;
 		Statement stmt 				= null;
 		
-		String selectQuery 			= "SELECT * ";
+		// there is always at least one replica
+		SubspaceInfo<NodeIDType> currSubInfo = subspaceInfoMap.get(subspaceId).get(0);
+					
+		HashMap<String, AttributePartitionInfo> attrSubspaceInfo 
+												= currSubInfo.getAttributesOfSubspace();
 		
-		//JSONArray hashCodeGroups 	= new JSONArray();
+		Iterator<String> subspaceAttrIter = attrSubspaceInfo.keySet().iterator();
 		
-		selectQuery = selectQuery + " FROM "+tableName+" WHERE hashCode = "+hashCode;
-		
-		JSONArray tableRows = new JSONArray();
-		
+		// for groups associated with old value
 		try
 		{
+			boolean first = true;
+			String selectQuery = "SELECT groupGUID, userIP, userPort FROM "+tableName+" WHERE ";
+			while( subspaceAttrIter.hasNext() )
+			{
+				String attrName = subspaceAttrIter.next();
+				String dataType = AttributeTypes.attributeMap.get(attrName).getDataType();
+				String attrValForMysql = 
+				AttributeTypes.convertStringToDataTypeForMySQL(oldValJSON.getString(attrName), dataType)+"";
+				
+				String lowerValCol = "lower"+attrName;
+				String upperValCol = "upper"+attrName;
+				//FIXME: for circular queries, this won't work.
+				if( first )
+				{
+					// <= and >= both to handle the == case of the default value
+					selectQuery = selectQuery + lowerValCol+" <= "+attrValForMysql
+							+" AND "+upperValCol+" >= "+attrValForMysql;
+					first = false;
+				}
+				else
+				{
+					selectQuery = selectQuery+" AND "+lowerValCol+" <= "+attrValForMysql
+							+" AND "+upperValCol+" >= "+attrValForMysql;
+				}
+			}
+			
+			//oldValGroupGUIDs = new JSONArray();
+			ContextServiceLogger.getLogger().fine("getTriggerInfo "+selectQuery);
 			myConn 	     = this.mysqlDataSource.getConnection();
 			stmt   		 = myConn.createStatement();
 			ResultSet rs = stmt.executeQuery(selectQuery);
@@ -992,11 +1108,15 @@ public class HyperspaceMySQLDB<NodeIDType>
 			while( rs.next() )
 			{
 				JSONObject tableRow = new JSONObject();
-				tableRow.put( "userQuery", rs.getString("userQuery") );
-				tableRow.put( "groupGUID", rs.getString("groupGUID") );
-				tableRow.put( "userIP", rs.getString("userIP") );
+				byte[] groupGUIDBytes = rs.getBytes("groupGUID");
+				String groupGUIDString = Utils.bytArrayToHex(groupGUIDBytes);
+				byte[] ipAddressBytes = rs.getBytes("userIP");
+				String userIPStirng = InetAddress.getByAddress(ipAddressBytes).getHostAddress();
+				//tableRow.put( "userQuery", rs.getString("userQuery") );
+				tableRow.put( "groupGUID", groupGUIDString );
+				tableRow.put( "userIP", userIPStirng );
 				tableRow.put( "userPort", rs.getInt("userPort") );
-				tableRows.put(tableRow);
+				oldValGroupGUIDMap.put(groupGUIDString, tableRow);
 			}
 			//ContextServiceLogger.getLogger().fine("NodeId "+this.myNodeID+" getGUIDRecordFromPrimarySubspace guid "
 			//		+ ""+GUID+" oldValueJSON size "+oldValueJSON.length()+"oldValueJSON "+oldValueJSON);
@@ -1005,6 +1125,92 @@ public class HyperspaceMySQLDB<NodeIDType>
 		{
 			e.printStackTrace();
 		} catch (JSONException e) {
+			e.printStackTrace();
+		} catch (UnknownHostException e) 
+		{
+			e.printStackTrace();
+		} finally
+		{
+			try
+			{
+				if (stmt != null)
+					stmt.close();
+				if (myConn != null)
+					myConn.close();
+			}
+			catch(SQLException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		subspaceAttrIter = attrSubspaceInfo.keySet().iterator();
+		// for groups associated with the new value
+		try
+		{
+			boolean first = true;
+			String selectQuery = "SELECT groupGUID, userIP, userPort FROM "+tableName+" WHERE ";
+			while( subspaceAttrIter.hasNext() )
+			{
+				String attrName = subspaceAttrIter.next();
+				String dataType = AttributeTypes.attributeMap.get(attrName).getDataType();
+				
+				String attrValForMysql = "";
+				if( newUpdateVal.has(attrName) )
+				{
+					attrValForMysql =
+					AttributeTypes.convertStringToDataTypeForMySQL(newUpdateVal.getString(attrName), dataType)+"";
+				}
+				else
+				{
+					attrValForMysql =
+							AttributeTypes.convertStringToDataTypeForMySQL(oldValJSON.getString(attrName), dataType)+"";	
+				}
+				
+				String lowerValCol = "lower"+attrName;
+				String upperValCol = "upper"+attrName;
+				if( first )
+				{
+					// <= and >= both to handle the == case of the default value
+					selectQuery = selectQuery + lowerValCol+" <= "+attrValForMysql
+							+" AND "+upperValCol+" >= "+attrValForMysql;
+					first = false;
+				}
+				else
+				{
+					selectQuery = selectQuery+" AND "+lowerValCol+" <= "+attrValForMysql
+							+" AND "+upperValCol+" >= "+attrValForMysql;
+				}
+			}
+			//oldValGroupGUIDs = new JSONArray();
+		
+			myConn 	     = this.mysqlDataSource.getConnection();
+			stmt   		 = myConn.createStatement();
+			ResultSet rs = stmt.executeQuery(selectQuery);
+			
+			while( rs.next() )
+			{
+				JSONObject tableRow = new JSONObject();
+				byte[] groupGUIDBytes = rs.getBytes("groupGUID");
+				String groupGUIDString = Utils.bytArrayToHex(groupGUIDBytes);
+				byte[] ipAddressBytes = rs.getBytes("userIP");
+				String userIPStirng = InetAddress.getByAddress(ipAddressBytes).getHostAddress();
+				//tableRow.put( "userQuery", rs.getString("userQuery") );
+				tableRow.put( "groupGUID", groupGUIDString );
+				tableRow.put( "userIP", userIPStirng );
+				tableRow.put( "userPort", rs.getInt("userPort") );
+				newValGroupGUIDMap.put(groupGUIDString, tableRow);
+			}
+			//ContextServiceLogger.getLogger().fine("NodeId "+this.myNodeID+" getGUIDRecordFromPrimarySubspace guid "
+			//		+ ""+GUID+" oldValueJSON size "+oldValueJSON.length()+"oldValueJSON "+oldValueJSON);
+			rs.close();
+		} catch (SQLException e)
+		{
+			e.printStackTrace();
+		} catch (JSONException e) {
+			e.printStackTrace();
+		} catch (UnknownHostException e) 
+		{
 			e.printStackTrace();
 		} finally
 		{
@@ -1025,13 +1231,11 @@ public class HyperspaceMySQLDB<NodeIDType>
 		{
 			DelayProfiler.updateDelay("getTriggerInfo", t0);
 		}
-		return tableRows;
 	}
-	
 	
 	/**
      * stores GUID in a subspace. The decision to store a guid on this node
-     * in this subspace is not made in this fucntion.
+     * in this subspace is not made in this function.
      * @param subspaceNum
      * @param nodeGUID
      * @param attrValuePairs

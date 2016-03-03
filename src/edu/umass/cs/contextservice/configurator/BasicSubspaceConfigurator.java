@@ -34,7 +34,10 @@ public class BasicSubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfi
 	{
 		double numNodes = nodeConfig.getNodeIDs().size();
 		double numAttrs = AttributeTypes.attributeMap.size();
-		ContextServiceLogger.getLogger().fine("double divice "+numAttrs/optimalH);
+		
+		ContextServiceLogger.getLogger().fine("double divide "+numAttrs/optimalH+
+				" numAttrs "+numAttrs+" optimalH "+optimalH);
+		
 		double numSubspaces = Math.ceil(numAttrs/optimalH);
 		
 		Vector<AttributeMetaInfo> attrVector 

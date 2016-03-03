@@ -44,19 +44,11 @@ public class AttributeTypes
 	public static final String DoubleType 									= "Double";
 	public static final String StringType 									= "String";
 	
-	/*public static final HashMap<String, String> mySQLDataType 			= new HashMap<String, String>()
-	{
-		{
-			mySQLDataType.put(IntType, "INTEGER");
-			mySQLDataType.put(LongType, "BIGINT");
-			mySQLDataType.put(DoubleType, "DOUBLE");
-			mySQLDataType.put(StringType, "VARCHAR("+MAX_STRING_SIZE+")");
-		}
-	};*/
-	
 	
 	public static Map<String, AttributeMetaInfo> attributeMap 				= null;
 	public static HashMap<String, String> mySQLDataType 					= null;
+	
+	
 	
 	/**
 	 * checks if the passed value is an attribute or not
@@ -72,7 +64,12 @@ public class AttributeTypes
 		return attributeMap.containsKey(attribute);
 	}
 	
-	public static void initialize()
+	/**
+	 * making it synchronized because many tests
+	 * run form eclipse start multiple instances of context service 
+	 * nodes sharing this same static class.
+	 */
+	public static synchronized void initialize()
 	{
 		attributeMap 	= new HashMap<String, AttributeMetaInfo>();
 		mySQLDataType 	= new HashMap<String, String>();
@@ -505,7 +502,8 @@ public class AttributeTypes
 		
 		String dataType = attributeMap.get(attrName).getDataType();
 		String valueToCheck;
-		try {
+		try 
+		{
 			valueToCheck = attrValueJSON.getString(attrName);
 		} catch (JSONException e)
 		{
