@@ -717,14 +717,16 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	private void processUpdateTriggerMessage(UpdateTriggerMessage<NodeIDType> updateTriggerMessage)
 	{
 		long requestID  = updateTriggerMessage.getRequestId();
-		int subspaceId = updateTriggerMessage.getSubspaceNum();
+		int subspaceId  = updateTriggerMessage.getSubspaceNum();
+		int replicaNum  = updateTriggerMessage.getReplicaNum();
 		JSONObject oldValJSON = updateTriggerMessage.getOldUpdateValPair();
 		JSONObject newUpdateVal = updateTriggerMessage.getNewUpdateValPair();
-		//int oldNewVal = updateTriggerMessage.getOldNewVal();
+		int oldOrNewOrBoth = updateTriggerMessage.getOldNewVal();
+		String attrName    = updateTriggerMessage.getAttrName();
 		
+		//int oldNewVal = updateTriggerMessage.getOldNewVal();
 		//(int subspaceId, JSONObject oldValJSON, JSONObject newUpdateVal
 		//		, HashMap<String, JSONObject> oldValGroupGUIDMap, HashMap<String, JSONObject> newValGroupGUIDMap)
-		
 		//int hashCode  = updateTriggerMessage.getHashCode();
 		
 		HashMap<String, JSONObject> oldValGroupGUIDMap = new HashMap<String, JSONObject>();
@@ -734,117 +736,65 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				+oldValGroupGUIDMap.size()+" newValGroupGUIDMap size "+newValGroupGUIDMap.size() );
 		
 		this.hyperspaceDB.getTriggerInfo(subspaceId, oldValJSON, 
-				newUpdateVal, oldValGroupGUIDMap, newValGroupGUIDMap);
+				newUpdateVal, oldValGroupGUIDMap, newValGroupGUIDMap, oldOrNewOrBoth);
 		
 		JSONArray toBeRemoved = new JSONArray();
 		JSONArray toBeAdded = new JSONArray();
 		
-		
-		Iterator<String> oldValGrpGUIDIter = oldValGroupGUIDMap.keySet().iterator();
-		while( oldValGrpGUIDIter.hasNext() )
+		// if both then get the real trigger group guids
+		// otherwise it can only be computed when the sender 
+		// recvs replies for both old and new values.
+		if( oldOrNewOrBoth == UpdateTriggerMessage.BOTH )
 		{
-			String currGrpGUID = oldValGrpGUIDIter.next();
-			// if grp guid not satisfied with new group then a 
-			// removed notificated to be sent
-			if( !newValGroupGUIDMap.containsKey(currGrpGUID) )
+			Iterator<String> oldValGrpGUIDIter = oldValGroupGUIDMap.keySet().iterator();
+			while( oldValGrpGUIDIter.hasNext() )
 			{
+				String currGrpGUID = oldValGrpGUIDIter.next();
+				// if grp guid not satisfied with new group then a 
+				// removed notificated to be sent
+				if( !newValGroupGUIDMap.containsKey(currGrpGUID) )
+				{
+					toBeRemoved.put(oldValGroupGUIDMap.get(currGrpGUID));
+				}
+			}
+			
+			Iterator<String> newValGrpGUIDIter = newValGroupGUIDMap.keySet().iterator();
+			while( newValGrpGUIDIter.hasNext() )
+			{
+				String currGrpGUID = newValGrpGUIDIter.next();
+				// if grp guid not satisfied with the old group then a 
+				// addition notificated to be sent
+				if( !oldValGroupGUIDMap.containsKey(currGrpGUID) )
+				{
+					toBeAdded.put(newValGroupGUIDMap.get(currGrpGUID));
+				}
+			}
+		}
+		else if( oldOrNewOrBoth == UpdateTriggerMessage.OLD_VALUE )
+		{
+			Iterator<String> oldValGrpGUIDIter = oldValGroupGUIDMap.keySet().iterator();
+			while( oldValGrpGUIDIter.hasNext() )
+			{
+				String currGrpGUID = oldValGrpGUIDIter.next();
 				toBeRemoved.put(oldValGroupGUIDMap.get(currGrpGUID));
 			}
 		}
-		
-		Iterator<String> newValGrpGUIDIter = newValGroupGUIDMap.keySet().iterator();
-		while( newValGrpGUIDIter.hasNext() )
+		else if( oldOrNewOrBoth == UpdateTriggerMessage.NEW_VALUE )
 		{
-			String currGrpGUID = newValGrpGUIDIter.next();
-			// if grp guid not satisfied with the old group then a 
-			// addition notificated to be sent
-			if( !oldValGroupGUIDMap.containsKey(currGrpGUID) )
+			Iterator<String> newValGrpGUIDIter = newValGroupGUIDMap.keySet().iterator();
+			while( newValGrpGUIDIter.hasNext() )
 			{
+				String currGrpGUID = newValGrpGUIDIter.next();
 				toBeAdded.put(newValGroupGUIDMap.get(currGrpGUID));
 			}
 		}
-		
-		// now check each group
-//		for( int i=0;i<allGroups.length();i++ )
-//		{
-//			JSONObject currGroup;
-//			try 
-//			{
-//				currGroup = allGroups.getJSONObject(i);
-//				String groupQuery = currGroup.getString("userQuery");
-//				// just creating a dummy queryinfo for parsing query
-//				QueryInfo<NodeIDType> qinfo = new QueryInfo<NodeIDType>(groupQuery);
-//				HashMap<String, ProcessingQueryComponent> pqcMap = qinfo.getProcessingQC();
-//				// first check if satisfied by old values
-//				Iterator<String> attrIter = pqcMap.keySet().iterator();
-//				boolean oldSatisfied = true;
-//				while( attrIter.hasNext() )
-//				{
-//					String attrName = attrIter.next();
-//					
-//					ProcessingQueryComponent qcomponent = pqcMap.get(attrName);
-//					
-//					boolean retValue = AttributeTypes.checkForComponent(qcomponent, oldValJSON);
-//					
-//					if(!retValue)
-//					{
-//						oldSatisfied = false;
-//						break;
-//					}	
-//				}
-//				
-//				boolean newSatisfied = true;
-//				
-//				attrIter = pqcMap.keySet().iterator();
-//				while( attrIter.hasNext() )
-//				{
-//					String attrName = attrIter.next();
-//					ProcessingQueryComponent qcomponent = pqcMap.get(attrName);
-//					
-//					String currrValue;
-//					if( newUpdateVal.has( qcomponent.getAttributeName() ) )
-//					{
-//						currrValue = newUpdateVal.getString( qcomponent.getAttributeName() );
-//					}
-//					else
-//					{
-//						currrValue = oldValJSON.getString( qcomponent.getAttributeName() );
-//					}
-//					JSONObject valueJSON = new JSONObject();
-//					valueJSON.put(qcomponent.getAttributeName(), currrValue);
-//					
-//					boolean retValue = AttributeTypes.checkForComponent(qcomponent, valueJSON);
-//					
-//					if(!retValue)
-//					{
-//						newSatisfied = false;
-//						break;
-//					}
-//				}
-//				
-//				// trigger needs to be snet when oldval is satisfied but not new value
-//				// or old not satisfied but new value is satisfied.
-//				
-//				if(oldSatisfied && !newSatisfied)
-//				{
-//					toBeRemoved.put(currGroup);
-//				}
-//				if(!oldSatisfied && newSatisfied)
-//				{
-//					toBeAdded.put(currGroup);
-//				}
-//			} catch (JSONException e)
-//			{
-//				e.printStackTrace();
-//			}
-//		}
 		
 		ContextServiceLogger.getLogger().fine("toBeRemoved size "+toBeRemoved.length()
 			+" toBeAdded size "+toBeAdded.length());
 		
 		UpdateTriggerReply<NodeIDType> updTriggerRep = 
-				new UpdateTriggerReply<NodeIDType>( this.getMyID(), requestID, subspaceId, 
-						toBeRemoved, toBeAdded);
+				new UpdateTriggerReply<NodeIDType>( this.getMyID(), requestID, subspaceId, replicaNum, 
+						toBeRemoved, toBeAdded, updateTriggerMessage.getNumReplies(), oldOrNewOrBoth, attrName );
 		
 		try
 		{
@@ -1220,6 +1170,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					newTriggerComponents.add(newQcomponent);
 				}
 				
+				Integer oldRespNodeId = -1, newRespNodeId = -1;
+				
 				HashMap<Integer, OverlappingInfoClass> oldOverlappingRegion = 
 							this.hyperspaceDB.getOverlappingRegionsInSubspace(subspaceId, replicaNum, oldTriggerComponents);
 				
@@ -1232,26 +1184,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				{
 					//TODO: can be optmized, and only one message sent when both old and new one
 					// lie on same node.
-					Integer respNodeID = oldOverlappingRegion.keySet().iterator().next();
-					OverlappingInfoClass overlapInfoObj = oldOverlappingRegion.get(respNodeID);
-					// using JSONObject so that later on
-					// values can be generalized to other datatypes
-					// compared to double now.
-					
-					UpdateTriggerMessage<NodeIDType>  updateTriggerMessage 
-					 = new UpdateTriggerMessage<NodeIDType>( this.getMyID(), requestID, subspaceId, 
-							 oldValueJSON, attrValuePairs, UpdateTriggerMessage.OLD_VALUE, overlapInfoObj.hashCode);
-					
-					try
-					{
-						this.messenger.sendToID((NodeIDType) respNodeID, updateTriggerMessage.toJSONObject());
-					} catch (IOException e)
-					{
-						e.printStackTrace();
-					} catch (JSONException e)
-					{
-						e.printStackTrace();
-					}
+					oldRespNodeId = oldOverlappingRegion.keySet().iterator().next();
 				}
 				// find new overlapping groups
 				
@@ -1265,19 +1198,55 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				}
 				else
 				{
-					Integer respNodeID = newOverlappingRegion.keySet().iterator().next();
-					OverlappingInfoClass overlapInfoObj = newOverlappingRegion.get(respNodeID);
-					// using JSONObject so that later on
-					// values can be generalized to other datatypes
-					// compared to double now.
-					
+					newRespNodeId = newOverlappingRegion.keySet().iterator().next();
+				}
+				
+				// old and new both lie on same node
+				if( oldRespNodeId == newRespNodeId )
+				{
+					// 1 reply to expect as both old and new go to same ndoe
 					UpdateTriggerMessage<NodeIDType>  updateTriggerMessage 
-					 = new UpdateTriggerMessage<NodeIDType>( this.getMyID(), requestID, subspaceId, 
-							 oldValueJSON, attrValuePairs, UpdateTriggerMessage.NEW_VALUE, overlapInfoObj.hashCode);
+					 = new UpdateTriggerMessage<NodeIDType>( this.getMyID(), requestID, subspaceId, replicaNum, 
+							 oldValueJSON, attrValuePairs, UpdateTriggerMessage.BOTH, 1, currAttrName);
 					
 					try
 					{
-						this.messenger.sendToID((NodeIDType) respNodeID, updateTriggerMessage.toJSONObject());
+						this.messenger.sendToID((NodeIDType) oldRespNodeId, updateTriggerMessage.toJSONObject());
+					} catch (IOException e)
+					{
+						e.printStackTrace();
+					} catch (JSONException e)
+					{
+						e.printStackTrace();
+					}
+				}
+				else
+				{
+					// 2 replies to expect as old and new go to different nodes
+					UpdateTriggerMessage<NodeIDType>  oldUpdateTriggerMessage 
+					 = new UpdateTriggerMessage<NodeIDType>( this.getMyID(), requestID, subspaceId, replicaNum, 
+							 oldValueJSON, attrValuePairs, UpdateTriggerMessage.OLD_VALUE, 2, currAttrName);
+					
+					try
+					{
+						this.messenger.sendToID((NodeIDType) oldRespNodeId, 
+								oldUpdateTriggerMessage.toJSONObject());
+					} catch (IOException e)
+					{
+						e.printStackTrace();
+					} catch (JSONException e)
+					{
+						e.printStackTrace();
+					}
+					
+					UpdateTriggerMessage<NodeIDType>  newUpdateTriggerMessage 
+					 = new UpdateTriggerMessage<NodeIDType>( this.getMyID(), requestID, subspaceId, replicaNum, 
+							 oldValueJSON, attrValuePairs, UpdateTriggerMessage.NEW_VALUE, 2, currAttrName);
+					
+					try
+					{
+						this.messenger.sendToID( (NodeIDType) newRespNodeId, 
+								newUpdateTriggerMessage.toJSONObject() );
 					} catch (IOException e)
 					{
 						e.printStackTrace();
@@ -1524,138 +1493,21 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	private void processUpdateTriggerReply(
 			UpdateTriggerReply<NodeIDType> updateTriggerReply) 
 	{
-		long requestID              	= updateTriggerReply.getRequestId();
-		JSONArray toBeAddedGroups  		= updateTriggerReply.getToBeAddedGroups();
-		JSONArray toBeRemovedGroups 	= updateTriggerReply.getToBeRemovedGroups();
-		
+		long requestID              	= updateTriggerReply.getRequestId();		
 		UpdateInfo<NodeIDType> updInfo  = pendingUpdateRequests.get(requestID);
-		boolean triggerCompl = updInfo.setUpdateTriggerReply(toBeRemovedGroups, toBeAddedGroups);
+		boolean triggerCompl = updInfo.setUpdateTriggerReply(updateTriggerReply);
 		//boolean triggerCompl = updInfo.checkAllTriggerRepRecvd();
 		
 		if(triggerCompl)
-		{
+		{	
 			try
 			{
-				HashMap<String, JSONObject> toBeRemovedGroupsMap = updInfo.getToBeRemovedGroups();
-				HashMap<String, JSONObject> toBeAddedGroupsMap   = updInfo.getToBeAddedGroups();
-				
-				Iterator<String> iter = toBeRemovedGroupsMap.keySet().iterator();
-				
-				// just batching trigger for the same client with same ipAddr:Port
-				
-				HashMap<String, JSONArray> sameClientRemovedTrigger = new HashMap<String, JSONArray>();
-				
-				while( iter.hasNext() )
-				{
-					String groupGUID = iter.next();
-					JSONObject groupInfo = toBeRemovedGroupsMap.get(groupGUID);
-					String userIP = groupInfo.getString(HyperspaceMySQLDB.userIP);
-					int userPort  = groupInfo.getInt(HyperspaceMySQLDB.userPort);
-					String ipPort = userIP+":"+userPort;
-					
-					if( sameClientRemovedTrigger.containsKey(ipPort) )
-					{
-						sameClientRemovedTrigger.get(ipPort).put(groupGUID);
-					}
-					else
-					{
-						JSONArray groupGUIDArr = new JSONArray();
-						groupGUIDArr.put(groupGUID);
-						sameClientRemovedTrigger.put( ipPort, groupGUIDArr );
-					}
-				}
-				
-				Iterator<String> sameClientIter = sameClientRemovedTrigger.keySet().iterator();
-				
-				while( sameClientIter.hasNext() )
-				{
-					String ipPort = sameClientIter.next();
-					
-					RefreshTrigger<NodeIDType> refTrig = new RefreshTrigger<NodeIDType>
-					(this.getMyID(), sameClientRemovedTrigger.get(ipPort), updInfo.getValueUpdateFromGNS().getVersionNum(),
-							updInfo.getValueUpdateFromGNS().getGUID(), RefreshTrigger.REMOVE);
-					
-					String[] parsed = ipPort.split(":");
-					
-					String userIP 	= parsed[0];
-					int userPort  	= Integer.parseInt(parsed[1]);
-					
-					ContextServiceLogger.getLogger().fine("processUpdateTriggerReply removed grps "
-							+" userIP "+userIP+" userPort "+userPort);
-					
-					try
-					{
-						this.messenger.sendToAddress( new InetSocketAddress(userIP, userPort), 
-								refTrig.toJSONObject() );
-					} catch (IOException e)
-					{
-						e.printStackTrace();
-					} catch (JSONException e)
-					{
-						e.printStackTrace();
-					}
-				}
-				
-				HashMap<String, JSONArray> sameClientAddedTrigger = new HashMap<String, JSONArray>();
-				iter = toBeAddedGroupsMap.keySet().iterator();
-				
-				while( iter.hasNext() )
-				{
-					String groupGUID = iter.next();
-					JSONObject groupInfo = toBeAddedGroupsMap.get(groupGUID);
-					String userIP = groupInfo.getString(HyperspaceMySQLDB.userIP);
-					int userPort = groupInfo.getInt(HyperspaceMySQLDB.userPort);
-					String ipPort = userIP+":"+userPort;
-					
-					if( sameClientAddedTrigger.containsKey(ipPort) )
-					{
-						sameClientAddedTrigger.get(ipPort).put(groupGUID);
-					}
-					else
-					{
-						JSONArray groupGUIDArr = new JSONArray();
-						groupGUIDArr.put(groupGUID);
-						sameClientAddedTrigger.put( ipPort, groupGUIDArr );
-					}
-				}
-				
-				sameClientIter = sameClientAddedTrigger.keySet().iterator();
-				
-				while( sameClientIter.hasNext() )
-				{
-					String ipPort = sameClientIter.next();
-					
-					RefreshTrigger<NodeIDType> refTrig = new RefreshTrigger<NodeIDType>
-					(this.getMyID(), sameClientAddedTrigger.get(ipPort), updInfo.getValueUpdateFromGNS().getVersionNum(),
-							updInfo.getValueUpdateFromGNS().getGUID(), RefreshTrigger.ADD);
-					
-					String[] parsed = ipPort.split(":");
-					
-					String userIP 	= parsed[0];
-					int userPort  	= Integer.parseInt(parsed[1]);
-					
-					ContextServiceLogger.getLogger().fine("processUpdateTriggerReply removed grps "
-							+" userIP "+userIP+" userPort "+userPort);
-					
-					try
-					{
-						this.messenger.sendToAddress( new InetSocketAddress(userIP, userPort), 
-								refTrig.toJSONObject() );
-					} catch (IOException e)
-					{
-						e.printStackTrace();
-					} catch (JSONException e)
-					{
-						e.printStackTrace();
-					}
-				}
+				sendOutAggregatedRefreshTrigger( updInfo);
 			}
 			catch(Exception ex)
 			{
 				ex.printStackTrace();
 			}
-			
-			
 			
 			// removing here, because updInfo only gets removed 
 			// when both trigger and update replies are recvd.
@@ -1674,6 +1526,124 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			}
 		}
 	}
+	
+	private void sendOutAggregatedRefreshTrigger(UpdateInfo<NodeIDType> updInfo) throws JSONException
+	{
+		JSONObject updatedAttrValuePairs = updInfo.getValueUpdateFromGNS().getAttrValuePairs();
+		Iterator<String> attrIter = updatedAttrValuePairs.keys();
+		HashMap<String, JSONArray> sameClientRemovedTrigger = new HashMap<String, JSONArray>();
+		HashMap<String, JSONArray> sameClientAddedTrigger = new HashMap<String, JSONArray>();
+		
+		while(attrIter.hasNext())
+		{
+			String currAttrName = attrIter.next();
+			JSONArray removedGrpForAttr = updInfo.getRemovedGroupsForAttr(currAttrName);
+			JSONArray addedGrpForAttr = updInfo.getToBeAddedGroupsForAttr(currAttrName);
+			
+			// just batching trigger for the same client with same ipAddr:Port	
+			for(int i=0;i<removedGrpForAttr.length();i++)
+			{
+				JSONObject groupInfo = removedGrpForAttr.getJSONObject(i);
+				String userIP = groupInfo.getString(HyperspaceMySQLDB.userIP);
+				int userPort  = groupInfo.getInt(HyperspaceMySQLDB.userPort);
+				String ipPort = userIP+":"+userPort;
+				String groupGUID = groupInfo.getString(HyperspaceMySQLDB.groupGUID);
+				
+				if( sameClientRemovedTrigger.containsKey(ipPort) )
+				{
+					sameClientRemovedTrigger.get(ipPort).put(groupGUID);
+				}
+				else
+				{
+					JSONArray groupGUIDArr = new JSONArray();
+					groupGUIDArr.put(groupGUID);
+					sameClientRemovedTrigger.put( ipPort, groupGUIDArr );
+				}
+			}
+						
+			for(int i=0;i<addedGrpForAttr.length();i++)
+			{
+				JSONObject groupInfo = addedGrpForAttr.getJSONObject(i);
+				String userIP = groupInfo.getString(HyperspaceMySQLDB.userIP);
+				int userPort = groupInfo.getInt(HyperspaceMySQLDB.userPort);
+				String ipPort = userIP+":"+userPort;
+				String groupGUID = groupInfo.getString(HyperspaceMySQLDB.groupGUID);
+				
+				if( sameClientAddedTrigger.containsKey(ipPort) )
+				{
+					sameClientAddedTrigger.get(ipPort).put(groupGUID);
+				}
+				else
+				{
+					JSONArray groupGUIDArr = new JSONArray();
+					groupGUIDArr.put(groupGUID);
+					sameClientAddedTrigger.put( ipPort, groupGUIDArr );
+				}
+			}
+		}
+		
+		Iterator<String> sameClientIter = sameClientRemovedTrigger.keySet().iterator();
+		
+		while( sameClientIter.hasNext() )
+		{
+			String ipPort = sameClientIter.next();
+			
+			RefreshTrigger<NodeIDType> refTrig = new RefreshTrigger<NodeIDType>
+			(this.getMyID(), sameClientRemovedTrigger.get(ipPort), updInfo.getValueUpdateFromGNS().getVersionNum(),
+					updInfo.getValueUpdateFromGNS().getGUID(), RefreshTrigger.REMOVE);
+			
+			String[] parsed = ipPort.split(":");
+			
+			String userIP 	= parsed[0];
+			int userPort  	= Integer.parseInt(parsed[1]);
+			
+			ContextServiceLogger.getLogger().fine("processUpdateTriggerReply removed grps "
+					+" userIP "+userIP+" userPort "+userPort);
+			
+			try
+			{
+				this.messenger.sendToAddress( new InetSocketAddress(userIP, userPort), 
+						refTrig.toJSONObject() );
+			} catch (IOException e)
+			{
+				e.printStackTrace();
+			} catch (JSONException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		sameClientIter = sameClientAddedTrigger.keySet().iterator();
+		while( sameClientIter.hasNext() )
+		{
+			String ipPort = sameClientIter.next();
+			
+			RefreshTrigger<NodeIDType> refTrig = new RefreshTrigger<NodeIDType>
+			(this.getMyID(), sameClientAddedTrigger.get(ipPort), updInfo.getValueUpdateFromGNS().getVersionNum(),
+					updInfo.getValueUpdateFromGNS().getGUID(), RefreshTrigger.ADD);
+			
+			String[] parsed = ipPort.split(":");
+			
+			String userIP 	= parsed[0];
+			int userPort  	= Integer.parseInt(parsed[1]);
+			
+			ContextServiceLogger.getLogger().fine("processUpdateTriggerReply removed grps "
+					+" userIP "+userIP+" userPort "+userPort);
+			
+			try
+			{
+				this.messenger.sendToAddress( new InetSocketAddress(userIP, userPort), 
+						refTrig.toJSONObject() );
+			} catch (IOException e)
+			{
+				e.printStackTrace();
+			} catch (JSONException e)
+			{
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	
 	private void processClientConfigRequest(ClientConfigRequest<NodeIDType> clientConfigRequest)
 	{

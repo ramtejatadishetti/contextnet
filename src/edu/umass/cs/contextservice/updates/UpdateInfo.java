@@ -12,11 +12,13 @@ import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
+import edu.umass.cs.contextservice.messages.UpdateTriggerReply;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 
 public class UpdateInfo<NodeIDType>
 {
 	private final ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS;
+	
 	private final long updateRequestId;
 	
 	int numReplyRecvd;
@@ -31,21 +33,25 @@ public class UpdateInfo<NodeIDType>
 	
 	private final Object regionalRepliesLock 													= new Object();
 	
-	private int valueTriggerReplyCounter														= 0;
+	//private int valueTriggerReplyCounter														= 0;
 	
 	private final Object triggerRepliesLock 													= new Object();
 	
-	// indexed by groupGUID
-	private HashMap<String, JSONObject> toBeRemovedGroupsMap									= null;
-	
-	private HashMap<String, JSONObject> toBeAddedGroupsMap										= null;
-	
+//	// indexed by groupGUID
+//	private HashMap<String, JSONObject> toBeRemovedGroupsMap									= null;
+//	private HashMap<String, JSONObject> toBeAddedGroupsMap										= null;
 	// String attrName, with number of replies to expect from replicated subspaces
 	//private HashMap<String, Integer> triggerReplyCounter 										= null;
-	private int numberOfTriggerRepliesToExpect													= 0;
+	//private int numberOfTriggerRepliesToExpect												= 0;
+	// key is attrName
+	private HashMap<String, UpdateTriggerInfo<NodeIDType>>	attrKeyTriggerInfo					= null;
 	
-	public UpdateInfo(ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS, long updateRequestId, 
-			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap)
+	private int numAttrsTriggerCompl															= 0;
+
+	
+	
+	public UpdateInfo( ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS, long updateRequestId, 
+			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap )
 	{
 		this.valUpdMsgFromGNS = valUpdMsgFromGNS;
 		this.updateRequestId = updateRequestId;
@@ -57,11 +63,14 @@ public class UpdateInfo<NodeIDType>
 		
 		hyperspaceHashingReplies = new HashMap<String, Integer>();
 		
+		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
-			//triggerReplyCounter = new HashMap<String, Integer>();
-			toBeRemovedGroupsMap = new HashMap<String, JSONObject>();
-			toBeAddedGroupsMap = new HashMap<String, JSONObject>();
+			attrKeyTriggerInfo = new HashMap<String, UpdateTriggerInfo<NodeIDType>>();
+			
+//			triggerReplyCounter = new HashMap<String, Integer>();
+//			toBeRemovedGroupsMap = new HashMap<String, JSONObject>();
+//			toBeAddedGroupsMap = new HashMap<String, JSONObject>();
 			
 			JSONObject attrValuePairs = valUpdMsgFromGNS.getAttrValuePairs();
 	
@@ -71,30 +80,8 @@ public class UpdateInfo<NodeIDType>
 			{
 				String attrName = attrIter.next();
 				
-				// initialize updates
-				Iterator<Integer> keyIter = subspaceInfoMap.keySet().iterator();
-				
-				while( keyIter.hasNext() )
-				{
-					int subspaceId = keyIter.next();
-					Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
-			
-					for( int i=0; i<replicaVector.size(); i++ )
-					{
-						SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(i);
-						if(currSubspaceReplica.getAttributesOfSubspace().containsKey(attrName))
-						{
-							//triggerReplyCounter.put(subspaceId+"-"+currSubspaceReplica.getReplicaNum(), 0);
-							// two replies from each subpace, TODO; will be optimzied later on to reduce from 2
-							numberOfTriggerRepliesToExpect = numberOfTriggerRepliesToExpect +2;
-						}
-						else
-						{
-							// if not, then none of the replicas will have it.
-							break;
-						}
-					}
-				}
+				UpdateTriggerInfo<NodeIDType> attrUpdTriggerInfo = new UpdateTriggerInfo<NodeIDType>(attrName, subspaceInfoMap);
+				attrKeyTriggerInfo.put(attrName, attrUpdTriggerInfo);	
 			}
 		}
 		
@@ -173,64 +160,39 @@ public class UpdateInfo<NodeIDType>
 		}
 	}
 	
-	public boolean setUpdateTriggerReply(JSONArray toBeRemovedGroups, JSONArray toBeAddedGroups)
+	public boolean setUpdateTriggerReply(UpdateTriggerReply<NodeIDType> updateTriggerReply)
 	{
+		String attrName 				= updateTriggerReply.getAttrName();
+		
 		synchronized(triggerRepliesLock)
 		{
-			for(int i=0; i<toBeRemovedGroups.length();i++)
+			boolean compl = this.attrKeyTriggerInfo.get(attrName).addTriggerReply(updateTriggerReply);
+//			System.out.println("Trigger arrvd  numAttrsTriggerCompl "
+//					+numAttrsTriggerCompl +" for compl "+ this.attrKeyTriggerInfo.size() );
+			if(compl)
 			{
-				try 
+				numAttrsTriggerCompl++;
+				
+				// overall compl
+				if(numAttrsTriggerCompl == this.attrKeyTriggerInfo.size() )
 				{
-					JSONObject currGroup = toBeRemovedGroups.getJSONObject(i);
-					//tableRow.put( "groupGUID", rs.getString("groupGUID") );
-					String groupGUID = currGroup.getString(HyperspaceMySQLDB.groupGUID);
-					toBeRemovedGroupsMap.put(groupGUID, currGroup);
-				} catch (JSONException e)
-				{
-					e.printStackTrace();
+					ContextServiceLogger.getLogger().fine("overall trigger compl numAttrsTriggerCompl "
+				+numAttrsTriggerCompl +" for compl "+ this.attrKeyTriggerInfo.size() );
+					
+					
+					return true;
 				}
 			}
-			
-			for(int i=0; i<toBeAddedGroups.length(); i++)
-			{
-				try 
-				{
-					JSONObject currGroup = toBeAddedGroups.getJSONObject(i);
-					//tableRow.put( "groupGUID", rs.getString("groupGUID") );
-					String groupGUID = currGroup.getString(HyperspaceMySQLDB.groupGUID);
-					toBeAddedGroupsMap.put(groupGUID, currGroup);
-				} catch (JSONException e)
-				{
-					e.printStackTrace();
-				}
-			}		
-			valueTriggerReplyCounter++;
-			ContextServiceLogger.getLogger().fine("valueTriggerReplyCounter "+valueTriggerReplyCounter +" for compl "
-					+ numberOfTriggerRepliesToExpect +" attr len "+valUpdMsgFromGNS.getAttrValuePairs().length());
-			// twice because reply comes from old and new value both
-			// it can be just empty, but a reply always comes
-			// two reply for each attribute from the replicated subsapces.
-			// it can be optimized to reduce 2 replies to 1 but that is a TODO
-			if(valueTriggerReplyCounter == numberOfTriggerRepliesToExpect )
-			{
-				return true;
-			}
-			else
-			{
-				return false;
-			}
+			return false;
 		}
 	}
+	
 	
 	public boolean checkAllTriggerRepRecvd()
 	{
 		synchronized(triggerRepliesLock)
 		{
-			// twice because reply comes from old and new value both
-			// it can be just empty, but a reply always comes
-			// two reply for each attribute from the replicated subsapces.
-			// it can be optimized to reduce 2 replies to 1 but that is a TODO
-			if(valueTriggerReplyCounter == numberOfTriggerRepliesToExpect )
+			if(numAttrsTriggerCompl == this.attrKeyTriggerInfo.size() )
 			{
 				return true;
 			}
@@ -256,13 +218,13 @@ public class UpdateInfo<NodeIDType>
 		}
 	}
 	
-	public HashMap<String, JSONObject> getToBeRemovedGroups()
+	public JSONArray getRemovedGroupsForAttr(String attrName)
 	{
-		return this.toBeRemovedGroupsMap;
+		return this.attrKeyTriggerInfo.get(attrName).getRemovedTriggersForAttr();
 	}
 	
-	public HashMap<String, JSONObject> getToBeAddedGroups()
+	public JSONArray getToBeAddedGroupsForAttr(String attrName)
 	{
-		return this.toBeAddedGroupsMap;
+		return this.attrKeyTriggerInfo.get(attrName).getAddedTriggersForAttr();
 	}
 }

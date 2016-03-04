@@ -15,8 +15,8 @@ public class UpdateTriggerMessage<NodeIDType> extends BasicContextServicePacket<
 	// both the old and new are on the same node
 	public static final int BOTH					= 3;
 	
-	private enum Keys {REQUESTID, SUBSPACENUM, OLD_UPDATE_VALUE, OLD_NEW_VAL, 
-		HASHCODE, NEW_UPDATE_VALUE};
+	private enum Keys {REQUESTID, SUBSPACENUM, REPLICA_NUM, OLD_UPDATE_VALUE, OLD_NEW_VAL, 
+		NEW_UPDATE_VALUE, NUM_REPLIES, ATTR_NAME};
 	
 	//update requestID of the update mesg
 	private final long requestID;
@@ -32,22 +32,31 @@ public class UpdateTriggerMessage<NodeIDType> extends BasicContextServicePacket<
 	// old value or a new value
 	private final int oldNewVal;
 	
-	private final int hashCode;
+	// number of trigger replies that will come back.
+	// it can be either 1 or 2 depending on if old and new value fall 
+	// on same node or not.
+	private final int numReplies;
+	
+	private final int replicaNum;
+	
+	private final String attrName;
 	
 	/*
 	 * sourceID will be the ID of the node that 
 	 * recvd query from the user.
 	 */
-	public UpdateTriggerMessage( NodeIDType initiator, long requestId, int subspaceNum, 
-			JSONObject oldUpdateValPair, JSONObject newUpdateValPair, int oldNewVal, int hashCode )
+	public UpdateTriggerMessage( NodeIDType initiator, long requestId, int subspaceNum, int replicaNum,
+			JSONObject oldUpdateValPair, JSONObject newUpdateValPair, int oldNewVal, int numReplies, String attrName )
 	{
 		super(initiator, ContextServicePacket.PacketType.UPDATE_TRIGGER_MESSAGE);
 		this.requestID = requestId;
 		this.subspaceNum = subspaceNum;
+		this.replicaNum = replicaNum;
 		this.oldUpdateValPair = oldUpdateValPair;
 		this.newUpdateValPair = newUpdateValPair;
 		this.oldNewVal = oldNewVal;
-		this.hashCode = hashCode;
+		this.numReplies = numReplies;
+		this.attrName = attrName;
 	}
 	
 	public UpdateTriggerMessage(JSONObject json) throws JSONException
@@ -55,10 +64,12 @@ public class UpdateTriggerMessage<NodeIDType> extends BasicContextServicePacket<
 		super(json);
 		this.requestID = json.getLong(Keys.REQUESTID.toString());
 		this.subspaceNum = json.getInt(Keys.SUBSPACENUM.toString());
+		this.replicaNum = json.getInt(Keys.REPLICA_NUM.toString());
 		this.oldUpdateValPair = json.getJSONObject(Keys.OLD_UPDATE_VALUE.toString());
 		this.newUpdateValPair = json.getJSONObject(Keys.NEW_UPDATE_VALUE.toString());
 		this.oldNewVal = json.getInt(Keys.OLD_NEW_VAL.toString());
-		this.hashCode = json.getInt(Keys.HASHCODE.toString());
+		this.numReplies = json.getInt(Keys.NUM_REPLIES.toString());
+		this.attrName = json.getString(Keys.ATTR_NAME.toString());
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException
@@ -66,10 +77,12 @@ public class UpdateTriggerMessage<NodeIDType> extends BasicContextServicePacket<
 		JSONObject json = super.toJSONObjectImpl();
 		json.put(Keys.REQUESTID.toString(), requestID);
 		json.put(Keys.SUBSPACENUM.toString(), this.subspaceNum);
+		json.put(Keys.REPLICA_NUM.toString(), this.replicaNum);
 		json.put(Keys.OLD_UPDATE_VALUE.toString(), this.oldUpdateValPair);
 		json.put(Keys.NEW_UPDATE_VALUE.toString(), this.newUpdateValPair);
 		json.put(Keys.OLD_NEW_VAL.toString(), this.oldNewVal);
-		json.put(Keys.HASHCODE.toString(), this.hashCode);
+		json.put(Keys.NUM_REPLIES.toString(), this.numReplies);
+		json.put(Keys.ATTR_NAME.toString(), this.attrName);
 		return json;
 	}
 	
@@ -81,6 +94,11 @@ public class UpdateTriggerMessage<NodeIDType> extends BasicContextServicePacket<
 	public int getSubspaceNum()
 	{
 		return this.subspaceNum;
+	}
+	
+	public int getReplicaNum()
+	{
+		return this.replicaNum;
 	}
 	
 	public JSONObject getOldUpdateValPair()
@@ -98,9 +116,14 @@ public class UpdateTriggerMessage<NodeIDType> extends BasicContextServicePacket<
 		return this.oldNewVal;
 	}
 	
-	public int getHashCode()
+	public int getNumReplies()
 	{
-		return this.hashCode;
+		return this.numReplies;
+	}
+	
+	public String getAttrName()
+	{
+		return this.attrName;
 	}
 	
 	public static void main(String[] args)

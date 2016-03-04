@@ -24,6 +24,7 @@ import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
+import edu.umass.cs.contextservice.messages.UpdateTriggerMessage;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
@@ -1047,7 +1048,8 @@ public class HyperspaceMySQLDB<NodeIDType>
 	 * @return
 	 */
 	public void getTriggerInfo(int subspaceId, JSONObject oldValJSON, JSONObject newUpdateVal
-			, HashMap<String, JSONObject> oldValGroupGUIDMap, HashMap<String, JSONObject> newValGroupGUIDMap)
+			, HashMap<String, JSONObject> oldValGroupGUIDMap, 
+			HashMap<String, JSONObject> newValGroupGUIDMap, int oldOrNewOrBoth)
 	{
 		assert(oldValGroupGUIDMap != null);
 		assert(newValGroupGUIDMap != null);
@@ -1057,6 +1059,34 @@ public class HyperspaceMySQLDB<NodeIDType>
 		
 		long t0 = System.currentTimeMillis();
 		
+		
+		if( oldOrNewOrBoth == UpdateTriggerMessage.OLD_VALUE )
+		{
+			returnOldValueGroupGUIDs(subspaceId, oldValJSON, oldValGroupGUIDMap);
+		}
+		else if( oldOrNewOrBoth == UpdateTriggerMessage.NEW_VALUE )
+		{
+			returnNewValueGroupGUIDs( subspaceId, oldValJSON, 
+					newUpdateVal, newValGroupGUIDMap );
+		}
+		else if( oldOrNewOrBoth == UpdateTriggerMessage.BOTH )
+		{
+			// both old and new value GUIDs stored at same nodes,
+			// makes it possible to find which groupGUIDs needs to be triggered.
+			returnOldValueGroupGUIDs(subspaceId, oldValJSON, oldValGroupGUIDMap);
+			returnNewValueGroupGUIDs( subspaceId, oldValJSON, 
+					newUpdateVal, newValGroupGUIDMap );
+		}
+		
+		if( ContextServiceConfig.DELAY_PROFILER_ON )
+		{
+			DelayProfiler.updateDelay("getTriggerInfo", t0);
+		}
+	}
+	
+	private void returnOldValueGroupGUIDs( int subspaceId, JSONObject oldValJSON,
+			HashMap<String, JSONObject> oldValGroupGUIDMap )
+	{
 		String tableName 			= "subspaceId"+subspaceId+"TriggerInfo";
 		
 		Connection myConn 			= null;
@@ -1064,12 +1094,11 @@ public class HyperspaceMySQLDB<NodeIDType>
 		
 		// there is always at least one replica
 		SubspaceInfo<NodeIDType> currSubInfo = subspaceInfoMap.get(subspaceId).get(0);
-					
+		
 		HashMap<String, AttributePartitionInfo> attrSubspaceInfo 
 												= currSubInfo.getAttributesOfSubspace();
 		
 		Iterator<String> subspaceAttrIter = attrSubspaceInfo.keySet().iterator();
-		
 		// for groups associated with old value
 		try
 		{
@@ -1118,13 +1147,12 @@ public class HyperspaceMySQLDB<NodeIDType>
 				tableRow.put( "userPort", rs.getInt("userPort") );
 				oldValGroupGUIDMap.put(groupGUIDString, tableRow);
 			}
-			//ContextServiceLogger.getLogger().fine("NodeId "+this.myNodeID+" getGUIDRecordFromPrimarySubspace guid "
-			//		+ ""+GUID+" oldValueJSON size "+oldValueJSON.length()+"oldValueJSON "+oldValueJSON);
 			rs.close();
 		} catch (SQLException e)
 		{
 			e.printStackTrace();
-		} catch (JSONException e) {
+		} catch (JSONException e) 
+		{
 			e.printStackTrace();
 		} catch (UnknownHostException e) 
 		{
@@ -1143,8 +1171,23 @@ public class HyperspaceMySQLDB<NodeIDType>
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	private void returnNewValueGroupGUIDs( int subspaceId, JSONObject oldValJSON, 
+			JSONObject newUpdateVal, HashMap<String, JSONObject> newValGroupGUIDMap )
+	{
+		String tableName 			= "subspaceId"+subspaceId+"TriggerInfo";
 		
-		subspaceAttrIter = attrSubspaceInfo.keySet().iterator();
+		Connection myConn 			= null;
+		Statement stmt 				= null;
+		
+		// there is always at least one replica
+		SubspaceInfo<NodeIDType> currSubInfo = subspaceInfoMap.get(subspaceId).get(0);
+		
+		HashMap<String, AttributePartitionInfo> attrSubspaceInfo 
+												= currSubInfo.getAttributesOfSubspace();
+		
+		Iterator<String> subspaceAttrIter = attrSubspaceInfo.keySet().iterator();
 		// for groups associated with the new value
 		try
 		{
@@ -1169,6 +1212,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 				
 				String lowerValCol = "lower"+attrName;
 				String upperValCol = "upper"+attrName;
+				//FIXME: will not work for cicular queries
 				if( first )
 				{
 					// <= and >= both to handle the == case of the default value
@@ -1182,7 +1226,6 @@ public class HyperspaceMySQLDB<NodeIDType>
 							+" AND "+upperValCol+" >= "+attrValForMysql;
 				}
 			}
-			//oldValGroupGUIDs = new JSONArray();
 		
 			myConn 	     = this.mysqlDataSource.getConnection();
 			stmt   		 = myConn.createStatement();
@@ -1207,7 +1250,8 @@ public class HyperspaceMySQLDB<NodeIDType>
 		} catch (SQLException e)
 		{
 			e.printStackTrace();
-		} catch (JSONException e) {
+		} catch (JSONException e) 
+		{
 			e.printStackTrace();
 		} catch (UnknownHostException e) 
 		{
@@ -1225,11 +1269,6 @@ public class HyperspaceMySQLDB<NodeIDType>
 			{
 				e.printStackTrace();
 			}
-		}
-		
-		if( ContextServiceConfig.DELAY_PROFILER_ON )
-		{
-			DelayProfiler.updateDelay("getTriggerInfo", t0);
 		}
 	}
 	
@@ -1395,7 +1434,7 @@ public class HyperspaceMySQLDB<NodeIDType>
                 e.printStackTrace();
             }
         }
-       
+        
         if(ContextServiceConfig.DELAY_PROFILER_ON)
         {
             DelayProfiler.updateDelay("storeGUIDInSubspace", t0);
