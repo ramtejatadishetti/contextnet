@@ -1534,25 +1534,51 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		if(triggerCompl)
 		{
-			HashMap<String, JSONObject> toBeRemovedGroupsMap = updInfo.getToBeRemovedGroups();
-			HashMap<String, JSONObject> toBeAddedGroupsMap   = updInfo.getToBeAddedGroups();
-			
-			Iterator<String> iter = toBeRemovedGroupsMap.keySet().iterator();
-			
-			while( iter.hasNext() )
+			try
 			{
-				String groupGUID = iter.next();
-				JSONObject groupInfo = toBeRemovedGroupsMap.get(groupGUID);
+				HashMap<String, JSONObject> toBeRemovedGroupsMap = updInfo.getToBeRemovedGroups();
+				HashMap<String, JSONObject> toBeAddedGroupsMap   = updInfo.getToBeAddedGroups();
 				
-				try
+				Iterator<String> iter = toBeRemovedGroupsMap.keySet().iterator();
+				
+				// just batching trigger for the same client with same ipAddr:Port
+				
+				HashMap<String, JSONArray> sameClientRemovedTrigger = new HashMap<String, JSONArray>();
+				
+				while( iter.hasNext() )
 				{
-					//String queryString = groupInfo.getString(HyperspaceMySQLDB.userQuery);
-					RefreshTrigger<NodeIDType> refTrig = new RefreshTrigger<NodeIDType>
-					(this.getMyID(), groupGUID, updInfo.getValueUpdateFromGNS().getVersionNum(),
-							updInfo.getValueUpdateFromGNS().getGUID(), RefreshTrigger.REMOVE);
-					
+					String groupGUID = iter.next();
+					JSONObject groupInfo = toBeRemovedGroupsMap.get(groupGUID);
 					String userIP = groupInfo.getString(HyperspaceMySQLDB.userIP);
 					int userPort  = groupInfo.getInt(HyperspaceMySQLDB.userPort);
+					String ipPort = userIP+":"+userPort;
+					
+					if( sameClientRemovedTrigger.containsKey(ipPort) )
+					{
+						sameClientRemovedTrigger.get(ipPort).put(groupGUID);
+					}
+					else
+					{
+						JSONArray groupGUIDArr = new JSONArray();
+						groupGUIDArr.put(groupGUID);
+						sameClientRemovedTrigger.put( ipPort, groupGUIDArr );
+					}
+				}
+				
+				Iterator<String> sameClientIter = sameClientRemovedTrigger.keySet().iterator();
+				
+				while( sameClientIter.hasNext() )
+				{
+					String ipPort = sameClientIter.next();
+					
+					RefreshTrigger<NodeIDType> refTrig = new RefreshTrigger<NodeIDType>
+					(this.getMyID(), sameClientRemovedTrigger.get(ipPort), updInfo.getValueUpdateFromGNS().getVersionNum(),
+							updInfo.getValueUpdateFromGNS().getGUID(), RefreshTrigger.REMOVE);
+					
+					String[] parsed = ipPort.split(":");
+					
+					String userIP 	= parsed[0];
+					int userPort  	= Integer.parseInt(parsed[1]);
 					
 					ContextServiceLogger.getLogger().fine("processUpdateTriggerReply removed grps "
 							+" userIP "+userIP+" userPort "+userPort);
@@ -1568,32 +1594,47 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					{
 						e.printStackTrace();
 					}
-				} catch (JSONException e) 
-				{
-					e.printStackTrace();
 				}
-			}
-			
-			iter = toBeAddedGroupsMap.keySet().iterator();
-			
-			while( iter.hasNext() )
-			{
-				String groupGUID = iter.next();
-				JSONObject groupInfo = toBeAddedGroupsMap.get(groupGUID);
 				
-				try
+				HashMap<String, JSONArray> sameClientAddedTrigger = new HashMap<String, JSONArray>();
+				iter = toBeAddedGroupsMap.keySet().iterator();
+				
+				while( iter.hasNext() )
 				{
-					//String queryString = groupInfo.getString(HyperspaceMySQLDB.userQuery);
-					
-					RefreshTrigger<NodeIDType> refTrig = new RefreshTrigger<NodeIDType>
-					(this.getMyID(), groupGUID, updInfo.getValueUpdateFromGNS().getVersionNum(),
-							updInfo.getValueUpdateFromGNS().getGUID(), RefreshTrigger.ADD);
-					
+					String groupGUID = iter.next();
+					JSONObject groupInfo = toBeAddedGroupsMap.get(groupGUID);
 					String userIP = groupInfo.getString(HyperspaceMySQLDB.userIP);
 					int userPort = groupInfo.getInt(HyperspaceMySQLDB.userPort);
+					String ipPort = userIP+":"+userPort;
 					
+					if( sameClientAddedTrigger.containsKey(ipPort) )
+					{
+						sameClientAddedTrigger.get(ipPort).put(groupGUID);
+					}
+					else
+					{
+						JSONArray groupGUIDArr = new JSONArray();
+						groupGUIDArr.put(groupGUID);
+						sameClientAddedTrigger.put( ipPort, groupGUIDArr );
+					}
+				}
+				
+				sameClientIter = sameClientAddedTrigger.keySet().iterator();
+				
+				while( sameClientIter.hasNext() )
+				{
+					String ipPort = sameClientIter.next();
 					
-					ContextServiceLogger.getLogger().fine("processUpdateTriggerReply added grps queryString "
+					RefreshTrigger<NodeIDType> refTrig = new RefreshTrigger<NodeIDType>
+					(this.getMyID(), sameClientAddedTrigger.get(ipPort), updInfo.getValueUpdateFromGNS().getVersionNum(),
+							updInfo.getValueUpdateFromGNS().getGUID(), RefreshTrigger.ADD);
+					
+					String[] parsed = ipPort.split(":");
+					
+					String userIP 	= parsed[0];
+					int userPort  	= Integer.parseInt(parsed[1]);
+					
+					ContextServiceLogger.getLogger().fine("processUpdateTriggerReply removed grps "
 							+" userIP "+userIP+" userPort "+userPort);
 					
 					try
@@ -1607,11 +1648,14 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					{
 						e.printStackTrace();
 					}
-				} catch (JSONException e) 
-				{
-					e.printStackTrace();
 				}
 			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+			}
+			
+			
 			
 			// removing here, because updInfo only gets removed 
 			// when both trigger and update replies are recvd.
@@ -1624,9 +1668,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			// starts the queues serialized updates for that guid
 			// null is checked becuase it can also be remove on
 			// update completion. So only one can start the new update
-			if(removedUpdate != null)
+			if( removedUpdate != null )
 			{
-					startANewUpdate(removedUpdate, requestID);
+				startANewUpdate(removedUpdate, requestID);
 			}
 		}
 	}

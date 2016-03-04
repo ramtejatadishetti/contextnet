@@ -1,5 +1,6 @@
 package edu.umass.cs.contextservice.messages;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -13,17 +14,17 @@ public class RefreshTrigger<NodeIDType> extends BasicContextServicePacket<NodeID
 	private enum Keys {GROUP_GUID, VERSION_NUM, GUID, ADD_REMOVE};
 	
 	//private final String query;  // original query sent by the user.
-	private final String groupGUID;
+	private final JSONArray groupGUIDArr;
 	private final long versionNum;
 	private final String updateInGUID;
 	private final int addRemove;
 	
-	public RefreshTrigger(NodeIDType initiator, String groupGUID, long versionNum,
+	public RefreshTrigger(NodeIDType initiator, JSONArray groupGUIDArr, long versionNum,
 			String GUID, int addRemove)
 	{
 		super(initiator, ContextServicePacket.PacketType.REFRESH_TRIGGER);
 		
-		this.groupGUID = groupGUID;
+		this.groupGUIDArr = groupGUIDArr;
 		//this.query = query;
 		this.versionNum = versionNum;
 		this.updateInGUID = GUID;
@@ -34,7 +35,7 @@ public class RefreshTrigger<NodeIDType> extends BasicContextServicePacket<NodeID
 	{
 		super(json);
 		
-		this.groupGUID = json.getString(Keys.GROUP_GUID.toString());
+		this.groupGUIDArr = json.getJSONArray(Keys.GROUP_GUID.toString());
 		//this.query = json.getString(Keys.QUERY.toString());
 		this.versionNum = json.getLong(Keys.VERSION_NUM.toString());
 		this.updateInGUID = json.getString(Keys.GUID.toString());
@@ -44,7 +45,7 @@ public class RefreshTrigger<NodeIDType> extends BasicContextServicePacket<NodeID
 	public JSONObject toJSONObjectImpl() throws JSONException
 	{
 		JSONObject json = super.toJSONObjectImpl();
-		json.put(Keys.GROUP_GUID.toString(), groupGUID);
+		json.put(Keys.GROUP_GUID.toString(), groupGUIDArr);
 		//json.put(Keys.QUERY.toString(), query);
 		json.put(Keys.VERSION_NUM.toString(), versionNum);
 		json.put(Keys.GUID.toString(), updateInGUID);
@@ -52,9 +53,9 @@ public class RefreshTrigger<NodeIDType> extends BasicContextServicePacket<NodeID
 		return json;
 	}
 	
-	public String getGroupGUID()
+	public JSONArray getGroupGUID()
 	{
-		return this.groupGUID;
+		return this.groupGUIDArr;
 	}
 	
 	public long getVersionNum()
