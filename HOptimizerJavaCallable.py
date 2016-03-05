@@ -191,7 +191,13 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, trigger
             basicSum = rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
             overlappingPartition = calculateOverlapingNodesForSearch(numNodesSubspace, H)
             numPartitions = math.pow(numNodesSubspace, 1.0/H)
-            triggerGuidsRead = math.ceil(math.log( overlappingPartition * ((Aq * Aavg)/(numPartitions*B)) ) ) + overlappingPartition * ((Aq * Aavg)/(numPartitions*B)) * math.pow(0.5, Aavg-1)
+            
+            numActiveQueriesOnNode = overlappingPartition * ((Aq * Aavg)/(numPartitions*B))
+            logTerm = math.log(numActiveQueriesOnNode)
+            if(logTerm < 1):
+                logTerm = 1
+            
+            triggerGuidsRead = logTerm + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)
             triggerSum = rho * Aavg * overlappingPartition * CuByC + (1-rho) * 2 * (numTotalSubspsaces/(B/H)) * triggerGuidsRead*CtByC
              
             return basicSum + triggerSum
@@ -213,7 +219,14 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, trigger
             basicSum = rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
             overlappingPartition = calculateOverlapingNodesForSearch(numNodesSubspace, H)
             numPartitions = math.pow(numNodesSubspace, 1.0/H)
-            triggerGuidsRead = math.ceil(math.log( overlappingPartition * ((Aq * Aavg)/(numPartitions*B)) ) ) + overlappingPartition * ((Aq * Aavg)/(numPartitions*B)) * math.pow(0.5, Aavg-1)
+
+            numActiveQueriesOnNode = overlappingPartition * ((Aq * Aavg)/(numPartitions*B))
+            logTerm = math.log(numActiveQueriesOnNode)
+            if(logTerm < 1):
+                logTerm = 1
+            
+            triggerGuidsRead = logTerm + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)
+
             triggerSum = rho * Aavg * overlappingPartition * CuByC + (1-rho) * 2 * (numTotalSubspsaces/(B/H)) * triggerGuidsRead*CtByC
              
             return basicSum + triggerSum
