@@ -89,7 +89,7 @@ public class ContextServiceConfig
 	public static final int MYSQL_MAX_CONNECTIONS					= 214;
 	
 	// it is also important to set this at least the size of the database connection pool.
-	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 300;
+	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 214;
 	
 	// mysql result cursor fetches 1 guid at once and stores in memory
 	// need this becuase otherwise in large guids case , all the result 
