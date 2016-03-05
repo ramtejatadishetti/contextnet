@@ -1,7 +1,7 @@
 # script that is called by the contextnet java system/program.
 # it returns the optimal value of H, considering both the replicated 
 # and basic subspace configurations.
-# refer to http://www14.in.tum.de/personen/raab/publ/balls.pdf for maximum balls and bins function
+# refer to contextnet modelling section and http://www14.in.tum.de/personen/raab/publ/balls.pdf for maximum balls and bins function
 
 import math
 #from scipy.optimize import minimize
@@ -11,15 +11,21 @@ import sys
 
 #result = minimize(f, [1])
 #print(result.x)
-rho                             = 0.1
+rho                             = 0.5
 #Yc                             = 1.0
 N                               = 36.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
 # specially if result size increases then estimation error might increase.
-CsByC                           = 1.0/(69.55366816958512 * 4.0)
-CuByC                           = 1.0/(153.74028685197356 * 4.0)
-B                               = 2.0
-Aavg                            = 2.0
+CsByC                           = 0.005319149
+CuByC                           = 0.001388889
+B                               = 20.0
+Aavg                            = 4.0
+
+# if 0 then trigger not enable
+# 1 if enable
+triggerEnable                   = 1
+CtByC                           = 0.000000054
+Aq                              = 190.0*100.0*4.0
 
 BASIC_SUBSPACE_CONFIG           = 1
 REPLICATED_SUBSPACE_CONFIG      = 2
@@ -60,6 +66,18 @@ def solveDAlpha(c):
     # approximate it as c as paper says one root should be greater than c, i
     # if solver fails to find the root in 100 iterations
     return c
+
+def calculateOverlapingNodesForSearch(numNodesForSubspace, currH):  
+        expectedNumNodes = 0.0
+        # calculating expected value of the first term
+        for ybdi in YByDArray:
+            expectedNumNodes = expectedNumNodes + \
+                ( math.ceil(ybdi * math.pow(numNodesForSubspace, (1.0/currH)) ) )
+        prob = 1.0/(1.0*len(YByDArray))
+        expectedNumNodes = expectedNumNodes * prob
+        
+        print "Overlap for a predicate numNodesForSubspace "+str(numNodesForSubspace)+" currH "+str(currH)+" expectedNumOverlapNodes "+str(expectedNumNodes) 
+        return expectedNumNodes
 
 def calculateExpectedNumNodesASearchGoesTo(numNodesForSubspace, currH, currM):  
         expectedNumNodes = 0.0
@@ -154,7 +172,7 @@ def getNumNodesForASubspace(B, currH, N, configType):
             print "\n B = "+str(B)+" currH "+str(currH)+" N= "+str(N)+" choosing replicated config \n"
             return math.ceil(math.sqrt(N))
     
-def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType):
+def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtByC, Aq):
     #H = round(H)
     currX= maxBallsFun(H, Aavg, B)
     #currX = Aavg
@@ -167,7 +185,16 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType):
         # assuming basic, will be inaccurate in replciated
         # only one subsapce will have more than 1 node, others will be jsut 1
         totalUpdLoad = numTotalSubspsaces - 1.0 + numNodesUpdate
-        return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
+        if(triggerEnable == 0):
+            return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
+        else:
+            basicSum = rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
+            overlappingPartition = calculateOverlapingNodesForSearch(numNodesSubspace, H)
+            numPartitions = math.pow(numNodesSubspace, 1.0/H)
+            triggerGuidsRead = overlappingPartition * ((Aq * Aavg)/(numPartitions*B)) * math.pow(0.5, Aavg-1)
+            triggerSum = rho * Aavg * overlappingPartition * CuByC + (1-rho) * 2 * (numTotalSubspsaces/(B/H)) * triggerGuidsRead*CtByC
+             
+            return basicSum + triggerSum
     else:
         currX = (Aavg*H)/B
         print "Not a good value "
@@ -179,16 +206,27 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType):
         # assuming basic, will be inaccurate in replicated
         # only one subspace will have more than 1 node, others will be just 1
         totalUpdLoad = numTotalSubspsaces - 1.0 + numNodesUpdate
-        return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
+        
+        if(triggerEnable == 0):
+            return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
+        else:
+            basicSum = rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
+            overlappingPartition = calculateOverlapingNodesForSearch(numNodesSubspace, H)
+            numPartitions = math.pow(numNodesSubspace, 1.0/H)
+            triggerGuidsRead = overlappingPartition * ((Aq * Aavg)/(numPartitions*B)) * math.pow(0.5, Aavg-1)
+            triggerSum = rho * Aavg * overlappingPartition * CuByC + (1-rho) * 2 * (numTotalSubspsaces/(B/H)) * triggerGuidsRead*CtByC
+             
+            return basicSum + triggerSum
+        #return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
     
 # loops through all H values to check for optimal value of H
-def loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, configType):
+def loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtByC, Aq):
     valueDict = {}
     optimalH  = -1.0
     minValue  = -1.0
     currH     = 2.0
     while( currH <= MAXIMUM_H_VALUE ):
-        currValue = hyperspaceHashingModel(currH, rho, N, CsByC, B, CuByC, Aavg, configType)
+        currValue = hyperspaceHashingModel(currH, rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtByC, Aq)
         valueDict[currH] = currValue
         if( currH == 2.0 ):
             optimalH = currH
@@ -215,15 +253,20 @@ if(len(sys.argv) >= 6):
     CuByC            = float(sys.argv[4])
     B                = float(sys.argv[5])
     Aavg             = float(sys.argv[6])
+    triggerEnable    = int(sys.argv[7])
+    CtByC            = float(sys.argv[8])
+    Aq               = float(sys.argv[9])
+            
 
+print "rho "+str(rho)+" N "+str(N)+" CsByC "+str(CsByC)+" CuByC "+str(CuByC)+" B "+str(B)+" Aavg "+str(Aavg)+" triggerEnable "+str(triggerEnable)+" CtByC "+str(CtByC)+" Aq "+str(Aq)
 # 1 for basic config, 2 replicated config
 #configType       = float(sys.argv[7])
 
 # BASIC_SUBSPACE_CONFIG           = 1
 # REPLICATED_SUBSPACE_CONFIG      = 2
 
-basicResultDict = loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, BASIC_SUBSPACE_CONFIG)
-repResultDict = loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, REPLICATED_SUBSPACE_CONFIG)
+basicResultDict = loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, BASIC_SUBSPACE_CONFIG, triggerEnable, CtByC, Aq)
+repResultDict = loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, REPLICATED_SUBSPACE_CONFIG, triggerEnable, CtByC, Aq)
 
 # compare which scheme is better, replicated or basic configuration
 #functionValKey                  = 'funcValKey'

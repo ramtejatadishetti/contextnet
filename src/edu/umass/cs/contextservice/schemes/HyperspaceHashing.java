@@ -521,6 +521,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		getAllUniqueOverlappingSubspaces( currReq.getProcessingQC(), overlappingSubspaces );
     	
     	Iterator<Integer> overlapSubspaceIter = overlappingSubspaces.keySet().iterator();
+    	
     	HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subapceInfoMap = 
     			this.subspaceConfigurator.getSubspaceInfoMap();
     	while( overlapSubspaceIter.hasNext() )
@@ -1784,6 +1785,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		while( keyIter.hasNext() )
 		{
 			int subspaceId = keyIter.next();
+			//FIXME: add randomization here otherwise all queries triggers will go to same replica
 			SubspaceInfo<NodeIDType> currSubInfo = subspaceInfoMap.get(subspaceId).get(0);
 			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo = currSubInfo.getAttributesOfSubspace();
 			

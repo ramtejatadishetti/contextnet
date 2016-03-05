@@ -71,11 +71,18 @@ public class CalculateOptimalNumAttrsInSubspace
 	private void executeOptimizerScript() throws IOException
 	{
 		extractTheScript();
+		int triggerEnable = 0;
+		
+		if(ContextServiceConfig.TRIGGER_ENABLED)
+		{
+			triggerEnable = 1;
+		}
 		Process p = Runtime.getRuntime().exec("chmod +x HOptimizerJavaCallable.py");
 		
 		p = Runtime.getRuntime().exec("python HOptimizerJavaCallable.py "
 	+ContextServiceConfig.modelRho+" "+numNodes+" "+ContextServiceConfig.modelCsByC
-	+" "+ContextServiceConfig.modelCuByC+" "+numAttrs+" "+ContextServiceConfig.modelAavg);
+	+" "+ContextServiceConfig.modelCuByC+" "+numAttrs+" "+ContextServiceConfig.modelAavg
+	+" "+triggerEnable+" "+ContextServiceConfig.modelCtByC+" "+ContextServiceConfig.modelAq);
 		
 		BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
 		String currline = in.readLine();

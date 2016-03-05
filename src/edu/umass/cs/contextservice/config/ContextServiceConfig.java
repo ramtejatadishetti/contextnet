@@ -13,7 +13,8 @@ public class ContextServiceConfig
 	public static final String modelCuByCString 					= "modelCuByC";
 	public static final String modelAavgString  					= "modelAavg";
 	public static final String triggerEnableString					= "triggerEnable";
-	
+	public static final String modelCtByCString						= "modelCtByC";
+	public static final String modelAqString						= "modelAq";
 	
 	// path where all config files are stored, like node setup, attribute info, subspace info
 	public static String configFileDirectory;
@@ -81,7 +82,6 @@ public class ContextServiceConfig
 	//public static boolean basicSubspaceConfig						= false;
 	
 	
-	
     // on d710 cluster 150 gives the best performance, after that performance remains same.
     // should be at least same as the hyperspace hashing pool size.
     // actually default mysql server max connection is 151. So this should be
@@ -114,4 +114,8 @@ public class ContextServiceConfig
 	public static double modelCuByC            							= 1.0/(153.74028685197356 * 4.0);
 	
 	public static double modelAavg             							= 4.0;
+	
+	public static double modelCtByC             						= 0.000000054;
+	
+	public static double modelAq             							= 76000;
 }

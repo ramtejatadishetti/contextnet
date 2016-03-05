@@ -36,7 +36,6 @@ public class CSConfigFileLoader
 {
   /**
    * Creates an instance of InstallConfig.
-   * 
    * @param filename
    */
   public CSConfigFileLoader(String filename) {
@@ -49,34 +48,45 @@ public class CSConfigFileLoader
 
   private void loadPropertiesFile(String filename) throws IOException 
   {
-	Properties properties = new Properties();
+	  Properties properties = new Properties();
 
-    File f = new File(filename);
-    if (f.exists() == false) {
-      throw new FileNotFoundException("CS config file not found:" + filename);
-    }
-    InputStream input = new FileInputStream(filename);
-    properties.load(input);
+	  File f = new File(filename);
+	  if (f.exists() == false) 
+	  {
+		  throw new FileNotFoundException("CS config file not found:" + filename);
+	  }
+	  
+	  InputStream input = new FileInputStream(filename);
+	  properties.load(input);
     
-    ContextServiceConfig.modelRho = Double.parseDouble(
+	  ContextServiceConfig.modelRho = Double.parseDouble(
     		properties.getProperty(ContextServiceConfig.modelRhoString, ContextServiceConfig.modelRho+"") );
     
-    ContextServiceConfig.modelCsByC = Double.parseDouble(
+	  ContextServiceConfig.modelCsByC = Double.parseDouble(
     		properties.getProperty(ContextServiceConfig.modelCsByCString, ContextServiceConfig.modelCsByC+"") );
     
-    ContextServiceConfig.modelCuByC = Double.parseDouble(
+	  ContextServiceConfig.modelCuByC = Double.parseDouble(
     		properties.getProperty(ContextServiceConfig.modelCuByCString, ContextServiceConfig.modelCuByC+"") );
     
-    ContextServiceConfig.modelAavg = Double.parseDouble(
+	  ContextServiceConfig.modelAavg = Double.parseDouble(
     		properties.getProperty(ContextServiceConfig.modelAavgString, ContextServiceConfig.modelAavg+"") );
     
-    ContextServiceConfig.TRIGGER_ENABLED = Boolean.parseBoolean(
+	  ContextServiceConfig.TRIGGER_ENABLED = Boolean.parseBoolean(
     		properties.getProperty(ContextServiceConfig.triggerEnableString, "false") );
-    System.out.println("read props ContextServiceConfig.modelRho "+ContextServiceConfig.modelRho
+    
+	  ContextServiceConfig.modelCtByC = Double.parseDouble(
+    		properties.getProperty(ContextServiceConfig.modelCtByCString, ContextServiceConfig.modelCtByC+"") );
+    
+	  ContextServiceConfig.modelAq = Double.parseDouble(
+    		properties.getProperty(ContextServiceConfig.modelAqString, ContextServiceConfig.modelAq+"") );
+    
+	  System.out.println("read props ContextServiceConfig.modelRho "+ContextServiceConfig.modelRho
     		+" ContextServiceConfig.modelCsByC "+ContextServiceConfig.modelCsByC
     		+" ContextServiceConfig.modelCuByC "+ContextServiceConfig.modelCuByC
     		+" ContextServiceConfig.modelAavg "+ContextServiceConfig.modelAavg
-    		+" ContextServiceConfig.TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED);
+    		+" ContextServiceConfig.TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED
+    		+" ContextServiceConfig.modelCtByC "+ContextServiceConfig.modelCtByC 
+    		+" ContextServiceConfig.modelAq "+ContextServiceConfig.modelAq);
   }
   
   /**
