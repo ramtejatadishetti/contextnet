@@ -11,7 +11,7 @@ import sys
 
 #result = minimize(f, [1])
 #print(result.x)
-rho                             = 0.5
+rho                             = 0.0
 #Yc                             = 1.0
 N                               = 36.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
@@ -26,6 +26,7 @@ Aavg                            = 4.0
 triggerEnable                   = 1
 CtByC                           = 0.000000054
 Aq                              = 190.0*100.0*4.0
+Aq                              = 0
 
 BASIC_SUBSPACE_CONFIG           = 1
 REPLICATED_SUBSPACE_CONFIG      = 2
@@ -193,8 +194,11 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, trigger
             numPartitions = math.pow(numNodesSubspace, 1.0/H)
             
             numActiveQueriesOnNode = overlappingPartition * ((Aq * Aavg)/(numPartitions*B))
-            logTerm = math.log(numActiveQueriesOnNode)
-            if(logTerm < 1):
+            if(Aq > 0):
+                logTerm = math.log(numActiveQueriesOnNode)
+                if(logTerm < 1):
+                    logTerm = 1
+            else:
                 logTerm = 1
             
             triggerGuidsRead = logTerm + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)
@@ -221,8 +225,12 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, trigger
             numPartitions = math.pow(numNodesSubspace, 1.0/H)
 
             numActiveQueriesOnNode = overlappingPartition * ((Aq * Aavg)/(numPartitions*B))
-            logTerm = math.log(numActiveQueriesOnNode)
-            if(logTerm < 1):
+            
+            if(Aq > 0):
+                logTerm = math.log(numActiveQueriesOnNode)
+                if(logTerm < 1):
+                    logTerm = 1
+            else:
                 logTerm = 1
             
             triggerGuidsRead = logTerm + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)
