@@ -115,8 +115,8 @@ public class AttributeTypes
 				String attrName = parsed[0].trim();
 				String minValue = parsed[1].trim();
 				String maxValue = parsed[2].trim();
-				String defaultValue = parsed[3].trim();
-				String dataType = parsed[4].trim();
+//				String defaultValue = parsed[3].trim();
+				String dataType = parsed[3].trim();
 				
 				
 				// to calculate minValue, maxValue in case not directly 
@@ -134,19 +134,19 @@ public class AttributeTypes
 						maxValue = AttributeTypes.getMaximumStringOfArgLength(maxStrLen);
 						
 						// default value just needs double quotes removal
-						String tempDefaultVal = "";
-						// removing the double quotes
-						for(int i=1;i<defaultValue.length()-1;i++)
-						{
-							tempDefaultVal = tempDefaultVal + defaultValue.charAt(i);
-						}
-						defaultValue = tempDefaultVal;
+//						String tempDefaultVal = "";
+//						// removing the double quotes
+//						for(int i=1;i<defaultValue.length()-1;i++)
+//						{
+//							tempDefaultVal = tempDefaultVal + defaultValue.charAt(i);
+//						}
+//						defaultValue = tempDefaultVal;
 						break;
 					}
 				}
 				
 				AttributeMetaInfo attrInfo =
-						new AttributeMetaInfo(attrName, minValue, maxValue, defaultValue, dataType);
+						new AttributeMetaInfo(attrName, minValue, maxValue, dataType);
 				
 				attributeMap.put(attrInfo.getAttrName(), attrInfo);
 			}
@@ -313,7 +313,7 @@ public class AttributeTypes
 					
 					DomainPartitionInfo partitionInfo = new DomainPartitionInfo(j, currLower+"", currUpper+"");
 					domainParitionInfo.add(partitionInfo);
-				}	
+				}
 				break;
 			}
 			case AttributeTypes.IntType:

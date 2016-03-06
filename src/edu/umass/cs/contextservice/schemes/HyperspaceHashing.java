@@ -23,7 +23,6 @@ import org.paukov.combinatorics.ICombinatoricsVector;
 
 import com.google.common.hash.Hashing;
 
-import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.configurator.AbstractSubspaceConfigurator;
@@ -548,9 +547,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				
 	    		Vector<ProcessingQueryComponent> triggerStorageComp = new Vector<ProcessingQueryComponent>();
 				while( subspaceAttrIter.hasNext() )
-				{
-					//double value = AttributeTypes.NOT_SET;
-					
+				{	
 					String attrName = subspaceAttrIter.next();
 					ProcessingQueryComponent qcomponent = null;
 					if( currMatchingAttr.equals(attrName) )
@@ -560,9 +557,10 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					}
 					else
 					{
-						AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-						qcomponent = new ProcessingQueryComponent( attrName, attrMetaInfo.getDefaultValue(), 
-								attrMetaInfo.getDefaultValue());
+						//AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
+						AttributePartitionInfo attrParInfo =  attrsSubspaceInfo.get(attrName);
+						qcomponent = new ProcessingQueryComponent( attrName, attrParInfo.getDefaultValue(), 
+								attrParInfo.getDefaultValue());
 					}
 					
 					triggerStorageComp.add(qcomponent);
@@ -916,20 +914,32 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				// for subspace hashing
 				if( oldValueJSON.length() != AttributeTypes.attributeMap.size() )
 				{
-					Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
-					while(attrIter.hasNext())
+					HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap = 
+							this.subspaceConfigurator.getSubspaceInfoMap();					
+					
+					Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
+					while(subapceIdIter.hasNext())
 					{
-						String attrName = attrIter.next();
-						AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-						if( !oldValueJSON.has(attrName) )
+						int subspaceId = subapceIdIter.next();
+						// at least one replica and all replica have same default value for each attribute.
+						SubspaceInfo<NodeIDType> currSubspaceInfo = subspaceInfoMap.get(subspaceId).get(0);
+						HashMap<String, AttributePartitionInfo> attrSubspaceMap = currSubspaceInfo.getAttributesOfSubspace();
+						
+						Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
+						while(attrIter.hasNext())
 						{
-							try
+							String attrName = attrIter.next();
+							AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
+							if( !oldValueJSON.has(attrName) )
 							{
-								
-								oldValueJSON.put(attrName, attrMetaInfo.getDefaultValue());
-							} catch (JSONException e)
-							{
-								e.printStackTrace();
+								try
+								{
+									
+									oldValueJSON.put(attrName, attrPartInfo.getDefaultValue());
+								} catch (JSONException e)
+								{
+									e.printStackTrace();
+								}
 							}
 						}
 					}
@@ -1147,6 +1157,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					String attrName = subspaceAttrIter.next();
 					//( String attributeName, String leftOperator, double leftValue, 
 					//		String rightOperator, double rightValue )
+					AttributePartitionInfo attrPartInfo = attrsSubspaceInfo.get(attrName);
 					
 					ProcessingQueryComponent oldQcomponent = null;
 					ProcessingQueryComponent newQcomponent = null;
@@ -1157,14 +1168,12 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						newQcomponent = new ProcessingQueryComponent( attrName, currValue, currValue );
 					}
 					else
-					{
-						AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
+					{						
+						oldQcomponent = new ProcessingQueryComponent( attrName, attrPartInfo.getDefaultValue(), 
+								attrPartInfo.getDefaultValue() );
 						
-						oldQcomponent = new ProcessingQueryComponent( attrName, attrMetaInfo.getDefaultValue(), 
-								attrMetaInfo.getDefaultValue() );
-						
-						newQcomponent = new ProcessingQueryComponent( attrName, attrMetaInfo.getDefaultValue(), 
-								attrMetaInfo.getDefaultValue() );
+						newQcomponent = new ProcessingQueryComponent( attrName, attrPartInfo.getDefaultValue(), 
+								attrPartInfo.getDefaultValue() );
 					}
 					
 					oldTriggerComponents.add(oldQcomponent);

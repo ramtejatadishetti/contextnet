@@ -12,17 +12,17 @@ public class AttributeMetaInfo
 	private final String maxValue;
 	
 	// used as default value in hyperspace if none is specified.
-	public final String defaultValue;
+	//public final String defaultValue;
 	
 	private final String dataType;
 	
-	public AttributeMetaInfo(String attributeName, String minValue, String maxValue, String defaultValue, 
+	public AttributeMetaInfo(String attributeName, String minValue, String maxValue, 
 			String dataType)
 	{
 		this.attributeName = attributeName;
 		this.minValue = minValue;
 		this.maxValue = maxValue;
-		this.defaultValue = defaultValue;
+		//this.defaultValue = defaultValue;
 		this.dataType = dataType;
 	}
 	
@@ -41,13 +41,13 @@ public class AttributeMetaInfo
 		return this.maxValue;
 	}
 	
-	public String getDefaultValue()
-	{
-		return this.defaultValue;
-	}
-	
 	public String getDataType()
 	{
 		return this.dataType;
 	}
+	
+//	public String getDefaultValue()
+//	{
+//		return this.defaultValue;
+//	}
 }

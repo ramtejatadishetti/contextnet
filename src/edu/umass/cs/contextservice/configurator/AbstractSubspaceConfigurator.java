@@ -15,7 +15,8 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 	// stores subspace info
 	// key is the distinct subspace id and it stores all replicas of that subspace.
 	// a replica of a subspace is defined over same attributes but different nodes
-	// this map is written only once, in one thread,  and read many times, by many threads, so no need to make concurrent.
+	// this map is written only once, in one thread,  and read many times, by many threads, 
+	// so no need to make concurrent.
 	protected  HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;
 	
 	public AbstractSubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig)
@@ -69,14 +70,27 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 					= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
 				currSubInfo.setNumPartitions(currSubspaceNumPartitions);
 				
+				Vector<String> sortedAttrNameVect = new Vector<String>();
 				Iterator<String> subspaceAttrIter
 									= currSubInfo.getAttributesOfSubspace().keySet().iterator();
+				
 				while( subspaceAttrIter.hasNext() )
 				{
 					String attrName = subspaceAttrIter.next();
+					sortedAttrNameVect.add(attrName);
+				}
+				sortedAttrNameVect.sort(null);
+				
+				int currPartitionNum = 0;
+				for(int j=0;j<sortedAttrNameVect.size();j++)
+				{
+					String attrName = sortedAttrNameVect.get(j);
+					
 					AttributePartitionInfo attrPartInfo 
-							= currSubInfo.getAttributesOfSubspace().get(attrName);
-					attrPartInfo.initializePartitionInfo(currSubspaceNumPartitions);
+					= currSubInfo.getAttributesOfSubspace().get(attrName);
+					attrPartInfo.initializePartitionInfo(currSubspaceNumPartitions, currPartitionNum);
+					currPartitionNum++;
+					currPartitionNum= currPartitionNum%currSubspaceNumPartitions;
 				}
 			}
 		}

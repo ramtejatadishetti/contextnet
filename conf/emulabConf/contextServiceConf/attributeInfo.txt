@@ -1,21 +1,21 @@
 #attrName, minValue, maxValue, defaultValue, datatype[Integer, Long, Double, String]
-attr0, 1.0, 1500.0, 1.0, Double
-attr1, 1.0, 1500.0, 1.0, Double
-attr2, 1.0, 1500.0, 1.0, Double
-attr3, 1.0, 1500.0, 1.0, Double
-attr4, 1.0, 1500.0, 1.0, Double
-attr5, 1.0, 1500.0, 1.0, Double
-attr6, 1.0, 1500.0, 1.0, Double
-attr7, 1.0, 1500.0, 1.0, Double
-attr8, 1.0, 1500.0, 1.0, Double
-attr9, 1.0, 1500.0, 1.0, Double
-attr10, 1.0, 1500.0, 1.0, Double
-attr11, 1.0, 1500.0, 1.0, Double
-attr12, 1.0, 1500.0, 1.0, Double
-attr13, 1.0, 1500.0, 1.0, Double
-attr14, 1.0, 1500.0, 1.0, Double
-attr15, 1.0, 1500.0, 1.0, Double
-attr16, 1.0, 1500.0, 1.0, Double
-attr17, 1.0, 1500.0, 1.0, Double
-attr18, 1.0, 1500.0, 1.0, Double
-attr19, 1.0, 1500.0, 1.0, Double
+attr0, 1.0, 1500.0, Double
+attr1, 1.0, 1500.0,  Double
+attr2, 1.0, 1500.0,  Double
+attr3, 1.0, 1500.0,  Double
+attr4, 1.0, 1500.0,  Double
+attr5, 1.0, 1500.0,  Double
+attr6, 1.0, 1500.0,  Double
+attr7, 1.0, 1500.0,  Double
+attr8, 1.0, 1500.0,  Double
+attr9, 1.0, 1500.0,  Double
+attr10, 1.0, 1500.0,  Double
+attr11, 1.0, 1500.0,  Double
+attr12, 1.0, 1500.0,  Double
+attr13, 1.0, 1500.0,  Double
+attr14, 1.0, 1500.0,  Double
+attr15, 1.0, 1500.0,  Double
+attr16, 1.0, 1500.0,  Double
+attr17, 1.0, 1500.0,  Double
+attr18, 1.0, 1500.0,  Double
+attr19, 1.0, 1500.0,  Double

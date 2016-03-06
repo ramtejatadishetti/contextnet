@@ -101,7 +101,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 										= subspaceInfoMap.get(subspaceId);
 				
 				for(int i = 0; i<replicasOfSubspace.size(); i++)
-				{				
+				{
 					SubspaceInfo<NodeIDType> subInfo = replicasOfSubspace.get(i);
 					
 					int replicaNum = subInfo.getReplicaNum();
@@ -153,19 +153,8 @@ public class HyperspaceMySQLDB<NodeIDType>
 					newTableCommand = "create table "+tableName+" ( "
 						      + "   nodeGUID Binary(20) PRIMARY KEY";
 					
-					//	      + ", upperRange DOUBLE NOT NULL, nodeID INT NOT NULL, "
-					//	      + "   partitionNum INT AUTO_INCREMENT, INDEX USING BTREE (lowerRange, upperRange) )";
-					attrIter = AttributeTypes.attributeMap.keySet().iterator();
-					while(attrIter.hasNext())
-					{
-						String attrName = attrIter.next();
-						AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-						String dataType = attrMetaInfo.getDataType();
-						String defaultVal = attrMetaInfo.getDefaultValue();
-						String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
-						newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
-								+" , INDEX USING BTREE("+attrName+")";
-					}
+					newTableCommand = getDataStorageString(newTableCommand);
+					
 					newTableCommand = newTableCommand +" )";
 					stmt.executeUpdate(newTableCommand);
 					
@@ -191,7 +180,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 							String attrName = attrIter.next();
 							String attrDataType  = subspaceAttributes.get(attrName).getAttrMetaInfo().getDataType();
 							String mySQLDataType = AttributeTypes.mySQLDataType.get(attrDataType);
-							String defaultValue  = subspaceAttributes.get(attrName).getAttrMetaInfo().getDefaultValue();
+							String defaultValue  = subspaceAttributes.get(attrName).getDefaultValue();
 							// lower range of this attribute in this subspace
 							String lowerAttrName = "lower"+attrName;
 							String upperAttrName = "upper"+attrName;
@@ -213,25 +202,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 			String newTableCommand = "create table "+tableName+" ( "
 				      + "   nodeGUID Binary(20) PRIMARY KEY";
 			
-			//	      + ", upperRange DOUBLE NOT NULL, nodeID INT NOT NULL, "
-			//	      + "   partitionNum INT AUTO_INCREMENT, INDEX USING BTREE (lowerRange, upperRange) )";
-//			for(int k=0; k<ContextServiceConfig.NUM_ATTRIBUTES; k++)
-//			{
-//				newTableCommand = newTableCommand + ", contextATT"+k+" DOUBLE DEFAULT "
-//									+AttributeTypes.NOT_SET+" , INDEX USING BTREE(contextATT"+k+")";
-//			}
-			
-			Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
-			while(attrIter.hasNext())
-			{
-				String attrName = attrIter.next();
-				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-				String dataType = attrMetaInfo.getDataType();
-				String defaultVal = attrMetaInfo.getDefaultValue();
-				String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
-				newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
-						+" , INDEX USING BTREE("+attrName+")";
-			}
+			newTableCommand = getDataStorageString(newTableCommand);
 			
 			newTableCommand = newTableCommand +" )";
 			stmt.executeUpdate(newTableCommand);
@@ -251,6 +222,34 @@ public class HyperspaceMySQLDB<NodeIDType>
 				sqex.printStackTrace();
 			}
 		}
+	}
+	
+	
+	private String getDataStorageString(String newTableCommand)
+	{
+		Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
+		while(subapceIdIter.hasNext())
+		{
+			int subspaceId = subapceIdIter.next();
+			// at least one replica and all replica have same default value for each attribute.
+			SubspaceInfo<NodeIDType> currSubspaceInfo = subspaceInfoMap.get(subspaceId).get(0);
+			HashMap<String, AttributePartitionInfo> attrSubspaceMap = currSubspaceInfo.getAttributesOfSubspace();
+			
+			Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
+			while(attrIter.hasNext())
+			{
+				String attrName = attrIter.next();
+				AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
+				AttributeMetaInfo attrMetaInfo = attrPartInfo.getAttrMetaInfo();
+				String dataType = attrMetaInfo.getDataType();
+				String defaultVal = attrPartInfo.getDefaultValue();
+				String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
+				newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
+						+" , INDEX USING BTREE("+attrName+")";
+				
+			}
+		}
+		return newTableCommand;
 	}
 	
 	/**
@@ -298,10 +297,14 @@ public class HyperspaceMySQLDB<NodeIDType>
 				// rangeEnd.
 				// or the range lies in between the queryMin and queryMax
 				
+				// follwing the convention that the in (lowerVal, upperVal) range lowerVal is included in 
+				// range and upperVal is not included in range. This convnetion is for data storage in mysql
+				// queryMin and queryMax aare always both end points included.
+				// means a query >= queryMin and query <= queryMax, but never query > queryMin and query < queryMax
 				selectTableSQL = selectTableSQL +" ( "
 						+ "( "+lowerAttr+" <= "+queryMin +" AND "+upperAttr+" > "+queryMin+" ) OR "
-						+ "( "+lowerAttr+" < "+queryMax +" AND "+upperAttr+" >= "+queryMax+" ) OR "
-						+ "( "+lowerAttr+" >= "+queryMin +" AND "+upperAttr+" < "+queryMax+" ) "+" ) ";
+						+ "( "+lowerAttr+" <= "+queryMax +" AND "+upperAttr+" > "+queryMax+" ) OR "
+						+ "( "+lowerAttr+" >= "+queryMin +" AND "+upperAttr+" <= "+queryMax+" ) "+" ) ";
 			}
 			else // when lower value in query predicate is greater than upper value, meaning circular query, 
 				// it is done mostly for generating uniform workload for experiments
@@ -312,16 +315,16 @@ public class HyperspaceMySQLDB<NodeIDType>
 				
 				selectTableSQL = selectTableSQL +"( ( "
 						+ "( "+lowerAttr+" <= "+queryMin +" AND "+upperAttr+" > "+queryMin+" ) OR "
-						+ "( "+lowerAttr+" < "+queryMax +" AND "+upperAttr+" >= "+queryMax+" ) OR "
-						+ "( "+lowerAttr+" >= "+queryMin +" AND "+upperAttr+" < "+queryMax+" ) "+" ) OR ";
+						+ "( "+lowerAttr+" <= "+queryMax +" AND "+upperAttr+" > "+queryMax+" ) OR "
+						+ "( "+lowerAttr+" >= "+queryMin +" AND "+upperAttr+" <= "+queryMax+" ) "+" ) OR ";
 				
 				// second case from minvalue to upper val
 				queryMin  =  AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMinValue(), dataType) + "";
 				queryMax  =  AttributeTypes.convertStringToDataTypeForMySQL(qcomponent.getUpperBound(), dataType) + "";
 				selectTableSQL = selectTableSQL +"( "
 						+ "( "+lowerAttr+" <= "+queryMin +" AND "+upperAttr+" > "+queryMin+" ) OR "
-						+ "( "+lowerAttr+" < "+queryMax +" AND "+upperAttr+" >= "+queryMax+" ) OR "
-						+ "( "+lowerAttr+" >= "+queryMin +" AND "+upperAttr+" < "+queryMax+" ) "+" )  )";
+						+ "( "+lowerAttr+" <= "+queryMax +" AND "+upperAttr+" > "+queryMax+" ) OR "
+						+ "( "+lowerAttr+" >= "+queryMin +" AND "+upperAttr+" <= "+queryMax+" ) "+" )  )";
 			}
 			
 			if( i != (matchingQueryComponents.size()-1) )

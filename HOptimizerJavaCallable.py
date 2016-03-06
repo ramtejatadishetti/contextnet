@@ -11,7 +11,7 @@ import sys
 
 #result = minimize(f, [1])
 #print(result.x)
-rho                             = 0.0
+rho                             = 0.5
 #Yc                             = 1.0
 N                               = 36.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
@@ -24,9 +24,10 @@ Aavg                            = 4.0
 # if 0 then trigger not enable
 # 1 if enable
 triggerEnable                   = 1
-CtByC                           = 0.000000054
-Aq                              = 190.0*100.0*4.0
-Aq                              = 0
+CtByC                           = 0.00011169
+Aq                              = 372*0.5*100.0*4.0
+CminByC                         = 0.002013889
+CiByC                           = 0.003727273
 
 BASIC_SUBSPACE_CONFIG           = 1
 REPLICATED_SUBSPACE_CONFIG      = 2
@@ -194,15 +195,9 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, trigger
             numPartitions = math.pow(numNodesSubspace, 1.0/H)
             
             numActiveQueriesOnNode = overlappingPartition * ((Aq * Aavg)/(numPartitions*B))
-            if(Aq > 0):
-                logTerm = math.log(numActiveQueriesOnNode)
-                if(logTerm < 1):
-                    logTerm = 1
-            else:
-                logTerm = 1
             
-            triggerGuidsRead = logTerm + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)
-            triggerSum = rho * Aavg * overlappingPartition * CuByC + (1-rho) * 2 * (numTotalSubspsaces/(B/H)) * triggerGuidsRead*CtByC
+            triggerGuidsRead = CminByC + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)*CtByC
+            triggerSum = rho * Aavg * overlappingPartition * CiByC + (1-rho) * 2 * (numTotalSubspsaces/(B/H)) * triggerGuidsRead
              
             return basicSum + triggerSum
     else:
@@ -225,18 +220,11 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, trigger
             numPartitions = math.pow(numNodesSubspace, 1.0/H)
 
             numActiveQueriesOnNode = overlappingPartition * ((Aq * Aavg)/(numPartitions*B))
+        
             
-            if(Aq > 0):
-                logTerm = math.log(numActiveQueriesOnNode)
-                if(logTerm < 1):
-                    logTerm = 1
-            else:
-                logTerm = 1
-            
-            triggerGuidsRead = logTerm + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)
-
-            triggerSum = rho * Aavg * overlappingPartition * CuByC + (1-rho) * 2 * (numTotalSubspsaces/(B/H)) * triggerGuidsRead*CtByC
-             
+            triggerGuidsRead = CminByC + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)*CtByC
+            triggerSum = rho * Aavg * overlappingPartition * CiByC + (1-rho) * 2 * (numTotalSubspsaces/(B/H)) * triggerGuidsRead
+                         
             return basicSum + triggerSum
         #return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
     
@@ -303,3 +291,10 @@ if( basicFuncValue <= repFuncValue ):
 else:
     print "REPLICATED OPTIMIZATION RESULT H "+str(repResultDict[optimalHKey])+" MINVALUE "+str(repFuncValue) \
     +" OTHERVAL "+str(basicFuncValue)
+    
+
+print "overlapping nodes " +str(calculateOverlapingNodesForSearch(18, 10))
+
+
+
+print "number nodes an update goes to "+str(calcluateExpectedNumNodesAnUpdateGoesTo(18, 10))
