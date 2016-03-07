@@ -11,7 +11,7 @@ import sys
 
 #result = minimize(f, [1])
 #print(result.x)
-rho                             = 0.5
+rho                             = 1.0
 #Yc                             = 1.0
 N                               = 36.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
@@ -27,7 +27,6 @@ triggerEnable                   = 1
 CtByC                           = 0.00011169
 Aq                              = 372*0.5*100.0*4.0
 CminByC                         = 0.002013889
-CiByC                           = 0.003727273
 
 BASIC_SUBSPACE_CONFIG           = 1
 REPLICATED_SUBSPACE_CONFIG      = 2
@@ -80,6 +79,19 @@ def calculateOverlapingNodesForSearch(numNodesForSubspace, currH):
         
         print "Overlap for a predicate numNodesForSubspace "+str(numNodesForSubspace)+" currH "+str(currH)+" expectedNumOverlapNodes "+str(expectedNumNodes) 
         return expectedNumNodes
+    
+    # calculates number fo ndoes for single subspace trigger
+def calculateOverlapingNodesForTrigger(numNodesForSubspace, currH):  
+        expectedNumNodes = 0.0
+        # calculating expected value of the first term
+        for ybdi in YByDArray:
+            expectedNumNodes = expectedNumNodes + math.ceil(ybdi * (numNodesForSubspace/currH)  )
+        prob = 1.0/(1.0*len(YByDArray))
+        expectedNumNodes = expectedNumNodes * prob
+        
+        print "calculateOverlapingNodesForTrigger for numNodesForSubspace "+str(numNodesForSubspace)+" currH "+str(currH)+" expectedNumOverlapNodes "+str(expectedNumNodes) 
+        return expectedNumNodes
+    
 
 def calculateExpectedNumNodesASearchGoesTo(numNodesForSubspace, currH, currM):  
         expectedNumNodes = 0.0
@@ -191,14 +203,14 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, trigger
             return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
         else:
             basicSum = rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
-            overlappingPartition = calculateOverlapingNodesForSearch(numNodesSubspace, H)
-            numPartitions = math.pow(numNodesSubspace, 1.0/H)
+            numNodesTrigger = calculateOverlapingNodesForTrigger(numNodesSubspace, H)
+            numPartitions = math.ceil(numNodesSubspace/H)
             
-            numActiveQueriesOnNode = overlappingPartition * ((Aq * Aavg)/(numPartitions*B))
+            numActiveQueriesOnNode = numNodesTrigger * ((Aq * Aavg)/(numPartitions*B))
             
             triggerGuidsRead = CminByC + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)*CtByC
-            triggerSum = rho * Aavg * overlappingPartition * CiByC + (1-rho) * 2 * (numTotalSubspsaces/(B/H)) * triggerGuidsRead
-             
+            triggerSum = rho * Aavg * numNodesTrigger * CuByC + (1-rho) * 2 * (numTotalSubspsaces/(B/H)) * triggerGuidsRead
+            
             return basicSum + triggerSum
     else:
         currX = (Aavg*H)/B
@@ -216,15 +228,14 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, trigger
             return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
         else:
             basicSum = rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
-            overlappingPartition = calculateOverlapingNodesForSearch(numNodesSubspace, H)
-            numPartitions = math.pow(numNodesSubspace, 1.0/H)
-
-            numActiveQueriesOnNode = overlappingPartition * ((Aq * Aavg)/(numPartitions*B))
-        
+            numNodesTrigger = calculateOverlapingNodesForTrigger(numNodesSubspace, H)
+            numPartitions = math.ceil(numNodesSubspace/H)
+            
+            numActiveQueriesOnNode = numNodesTrigger * ((Aq * Aavg)/(numPartitions*B))
             
             triggerGuidsRead = CminByC + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)*CtByC
-            triggerSum = rho * Aavg * overlappingPartition * CiByC + (1-rho) * 2 * (numTotalSubspsaces/(B/H)) * triggerGuidsRead
-                         
+            triggerSum = rho * Aavg * numNodesTrigger * CuByC + (1-rho) * 2 * (numTotalSubspsaces/(B/H)) * triggerGuidsRead
+            
             return basicSum + triggerSum
         #return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
     
@@ -293,7 +304,7 @@ else:
     +" OTHERVAL "+str(basicFuncValue)
     
 
-print "overlapping nodes " +str(calculateOverlapingNodesForSearch(18, 10))
+print "number of nodes for trigger " +str(calculateOverlapingNodesForTrigger(4, 2))
 
 
 
