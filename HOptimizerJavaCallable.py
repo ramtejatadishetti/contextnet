@@ -11,7 +11,7 @@ import sys
 
 #result = minimize(f, [1])
 #print(result.x)
-rho                             = 1.0
+rho                             = 0.0
 #Yc                             = 1.0
 N                               = 36.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
@@ -24,9 +24,9 @@ Aavg                            = 4.0
 # if 0 then trigger not enable
 # 1 if enable
 triggerEnable                   = 1
-CtByC                           = 0.00011169
-Aq                              = 372*0.5*100.0*4.0
-CminByC                         = 0.002013889
+CtByC                           = 0.000009028
+Aq                              = 100*100*4
+CminByC                         = 0.00063231
 
 BASIC_SUBSPACE_CONFIG           = 1
 REPLICATED_SUBSPACE_CONFIG      = 2
@@ -186,7 +186,7 @@ def getNumNodesForASubspace(B, currH, N, configType):
             print "\n B = "+str(B)+" currH "+str(currH)+" N= "+str(N)+" choosing replicated config \n"
             return math.ceil(math.sqrt(N))
     
-def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtByC, Aq):
+def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtByC, Aq, CminByC):
     #H = round(H)
     currX= maxBallsFun(H, Aavg, B)
     #currX = Aavg
@@ -240,13 +240,13 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, trigger
         #return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
     
 # loops through all H values to check for optimal value of H
-def loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtByC, Aq):
+def loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtByC, Aq, CminByC):
     valueDict = {}
     optimalH  = -1.0
     minValue  = -1.0
     currH     = 2.0
     while( currH <= MAXIMUM_H_VALUE ):
-        currValue = hyperspaceHashingModel(currH, rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtByC, Aq)
+        currValue = hyperspaceHashingModel(currH, rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtByC, Aq, CminByC)
         valueDict[currH] = currValue
         if( currH == 2.0 ):
             optimalH = currH
@@ -264,7 +264,7 @@ def loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtBy
     print "rho "+ str(rho)+" optimalH "+str(optimalH)+" minValue "+str(minValue)+"\n"
     return returnDict
     
-if(len(sys.argv) >= 6):
+if(len(sys.argv) >= 10):
     rho              = float(sys.argv[1])
     N                = float(sys.argv[2])
     # calculated by single node throughput, not very accurate estimation but let's go with that for now.
@@ -276,6 +276,7 @@ if(len(sys.argv) >= 6):
     triggerEnable    = int(sys.argv[7])
     CtByC            = float(sys.argv[8])
     Aq               = float(sys.argv[9])
+    CminByC          = float(sys.argv[10])
             
 
 print "rho "+str(rho)+" N "+str(N)+" CsByC "+str(CsByC)+" CuByC "+str(CuByC)+" B "+str(B)+" Aavg "+str(Aavg)+" triggerEnable "+str(triggerEnable)+" CtByC "+str(CtByC)+" Aq "+str(Aq)
@@ -285,8 +286,8 @@ print "rho "+str(rho)+" N "+str(N)+" CsByC "+str(CsByC)+" CuByC "+str(CuByC)+" B
 # BASIC_SUBSPACE_CONFIG           = 1
 # REPLICATED_SUBSPACE_CONFIG      = 2
 
-basicResultDict = loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, BASIC_SUBSPACE_CONFIG, triggerEnable, CtByC, Aq)
-repResultDict = loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, REPLICATED_SUBSPACE_CONFIG, triggerEnable, CtByC, Aq)
+basicResultDict = loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, BASIC_SUBSPACE_CONFIG, triggerEnable, CtByC, Aq, CminByC)
+repResultDict = loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, REPLICATED_SUBSPACE_CONFIG, triggerEnable, CtByC, Aq, CminByC)
 
 # compare which scheme is better, replicated or basic configuration
 #functionValKey                  = 'funcValKey'
@@ -304,8 +305,5 @@ else:
     +" OTHERVAL "+str(basicFuncValue)
     
 
-print "number of nodes for trigger " +str(calculateOverlapingNodesForTrigger(4, 2))
-
-
-
-print "number nodes an update goes to "+str(calcluateExpectedNumNodesAnUpdateGoesTo(18, 10))
+#print "number of nodes for trigger " +str(calculateOverlapingNodesForTrigger(18, 10))
+#print "number nodes an update goes to "+str(calcluateExpectedNumNodesAnUpdateGoesTo(18, 10))

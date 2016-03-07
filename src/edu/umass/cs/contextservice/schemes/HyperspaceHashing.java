@@ -494,7 +494,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			}
 			return;
 	    }*/
-	    
+		
 		QueryInfo<NodeIDType> currReq  
 			= new QueryInfo<NodeIDType>( query, getMyID(), grpGUID, userReqID, userIP, userPort);
 		

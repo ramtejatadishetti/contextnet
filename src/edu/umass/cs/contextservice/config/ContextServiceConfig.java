@@ -15,6 +15,7 @@ public class ContextServiceConfig
 	public static final String triggerEnableString					= "triggerEnable";
 	public static final String modelCtByCString						= "modelCtByC";
 	public static final String modelAqString						= "modelAq";
+	public static final String modelCminByCString					= "modelCminByC";
 	
 	// path where all config files are stored, like node setup, attribute info, subspace info
 	public static String configFileDirectory;
@@ -108,13 +109,15 @@ public class ContextServiceConfig
 	// search/(search+update) ratio
 	public static double modelRho									= 0.5;
 	// single node search throughput inverse
-	public static double modelCsByC            						= 1.0/(69.55366816958512 * 4.0);
+	public static double modelCsByC            						= 0.005319149;
 	// single node udpate throughput inverse
-	public static double modelCuByC            						= 1.0/(153.74028685197356 * 4.0);
+	public static double modelCuByC            						= 0.001388889;
 	
 	public static double modelAavg             						= 4.0;
 	
-	public static double modelCtByC             					= 0.000000054;
+	public static double modelCtByC             					= 0.000009028;
 	
-	public static double modelAq             						= 76000;
+	public static double modelAq             						= 100*100*4;
+	
+	public static double modelCminByC								= 0.00063231;
 }
