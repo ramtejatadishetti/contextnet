@@ -753,6 +753,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
+	
 	private void processUpdateTriggerMessage(UpdateTriggerMessage<NodeIDType> updateTriggerMessage) throws InterruptedException
 	{
 		long requestID  = updateTriggerMessage.getRequestId();

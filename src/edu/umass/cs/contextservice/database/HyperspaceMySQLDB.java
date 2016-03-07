@@ -259,7 +259,6 @@ public class HyperspaceMySQLDB<NodeIDType>
 			newTableCommand = getPartitionInfoStorageString(newTableCommand);
 						
 			newTableCommand = newTableCommand +" )";
-			//ContextServiceLogger.getLogger().fine("newTableCommand "+newTableCommand);
 			stmt.executeUpdate(newTableCommand);
 		}
 	}
@@ -282,7 +281,9 @@ public class HyperspaceMySQLDB<NodeIDType>
 				AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
 				AttributeMetaInfo attrMetaInfo = attrPartInfo.getAttrMetaInfo();
 				String dataType = attrMetaInfo.getDataType();
-				String defaultVal = attrPartInfo.getDefaultValue();
+				//String defaultVal = attrPartInfo.getDefaultValue();
+				String minVal = attrMetaInfo.getMinValue();
+				String maxVal = attrMetaInfo.getMaxValue();
 				String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
 //				newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
 //						+" , INDEX USING BTREE("+attrName+")";
@@ -290,10 +291,14 @@ public class HyperspaceMySQLDB<NodeIDType>
 				String lowerAttrName = "lower"+attrName;
 				String upperAttrName = "upper"+attrName;
 				
+				
+				// changed it to min max for lower and upper value instead of default 
+				// because we want a query to match for attributes that are not specified 
+				// in the query, as those basically are don't care.
 				newTableCommand = newTableCommand + " , "+lowerAttrName+" "+mySQLDataType
-						+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
+						+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(minVal, dataType)
 						+ " , "+upperAttrName+" "+mySQLDataType+" DEFAULT "
-						+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
+						+AttributeTypes.convertStringToDataTypeForMySQL(maxVal, dataType)
 						+ " , INDEX USING BTREE("+lowerAttrName+" , "+upperAttrName+")";
 				
 			}
