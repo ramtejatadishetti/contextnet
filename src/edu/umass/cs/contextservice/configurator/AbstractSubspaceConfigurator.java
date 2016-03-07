@@ -68,6 +68,9 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 				
 				int currSubspaceNumPartitions 
 					= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
+				
+				int currTriggerNumPartitions = (int)Math.ceil(currSubspaceNumNodes/currSubspaceNumAttrs);
+				
 				currSubInfo.setNumPartitions(currSubspaceNumPartitions);
 				
 				Vector<String> sortedAttrNameVect = new Vector<String>();
@@ -88,7 +91,7 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 					
 					AttributePartitionInfo attrPartInfo 
 					= currSubInfo.getAttributesOfSubspace().get(attrName);
-					attrPartInfo.initializePartitionInfo(currSubspaceNumPartitions, currPartitionNum);
+					attrPartInfo.initializePartitionInfo(currSubspaceNumPartitions, currTriggerNumPartitions, currPartitionNum);
 					currPartitionNum++;
 					currPartitionNum= currPartitionNum%currSubspaceNumPartitions;
 				}

@@ -6,7 +6,8 @@ import org.json.JSONObject;
 
 public class QueryTriggerMessage<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 {
-	private enum Keys {QUERY, REQUESTID, GROUP_GUID, SUBSPACENUM, USER_IP, USER_PORT, HASH_CODE};
+	private enum Keys {QUERY, REQUESTID, GROUP_GUID, SUBSPACENUM, REPLICA_NUM, 
+		ATTR_NAME, USER_IP, USER_PORT};
 	
 	//private final NodeIDType sourceNodeId;
 	private final long requestID;
@@ -19,59 +20,55 @@ public class QueryTriggerMessage<NodeIDType> extends BasicContextServicePacket<N
 	private final String groupGUID;
 
 	private final int subspaceNum;
+	private final int replicaNum;
+	private final String attrName;
 	
 	private final String userIP;
 	
 	private final int userPort;
 	
-	private final int hashCode;
-	
 	/*
 	 * sourceID will be the ID of the node that 
 	 * recvd query from the user.
 	 */
-	public QueryTriggerMessage(NodeIDType initiator, long requestId, String query, String groupGUID, int subspaceNum
-			, String userIP, int userPort, int hashCode)
+	public QueryTriggerMessage(NodeIDType initiator, long requestId, String query, String groupGUID, 
+			int subspaceNum, int replicaNum, String attrName, String userIP, int userPort)
 	{
 		super(initiator, ContextServicePacket.PacketType.QUERY_TRIGGER_MESSAGE);
-		//this.predicate = predicate;
-		//this.sourceNodeId = sourceID;
 		this.requestID = requestId;
 		this.query = query;
 		this.groupGUID = groupGUID;
 		this.subspaceNum = subspaceNum;
-		
+		this.replicaNum = replicaNum;
+		this.attrName = attrName;
 		this.userIP = userIP;
 		this.userPort = userPort;
-		this.hashCode = hashCode;
 	}
 	
 	public QueryTriggerMessage(JSONObject json) throws JSONException
 	{
 		super(json);
-		//this.predicate = QueryComponent.getQueryComponent(json.getJSONObject(Keys.PREDICATE.toString()));
-		//this.sourceNodeId = (NodeIDType)json.get(Keys.SOURCE_ID.toString());
 		this.requestID = json.getLong(Keys.REQUESTID.toString());
 		this.query = json.getString(Keys.QUERY.toString());
 		this.groupGUID = json.getString(Keys.GROUP_GUID.toString());
 		this.subspaceNum = json.getInt(Keys.SUBSPACENUM.toString());
+		this.replicaNum = json.getInt(Keys.REPLICA_NUM.toString());
+		this.attrName = json.getString(Keys.ATTR_NAME.toString());
 		this.userIP = json.getString(Keys.USER_IP.toString());
 		this.userPort = json.getInt(Keys.USER_PORT.toString());
-		this.hashCode = json.getInt(Keys.HASH_CODE.toString());
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException
 	{
 		JSONObject json = super.toJSONObjectImpl();
-		//json.put(Keys.PREDICATE.toString(), predicate.getJSONObject());
-		//json.put(Keys.SOURCE_ID.toString(), sourceNodeId);
 		json.put(Keys.REQUESTID.toString(), requestID);
 		json.put(Keys.QUERY.toString(), this.query);
 		json.put(Keys.GROUP_GUID.toString(), this.groupGUID);
 		json.put(Keys.SUBSPACENUM.toString(), this.subspaceNum);
+		json.put(Keys.REPLICA_NUM.toString(), this.replicaNum);
+		json.put(Keys.ATTR_NAME.toString(), this.attrName);
 		json.put(Keys.USER_IP.toString(), userIP);
 		json.put(Keys.USER_PORT.toString(), userPort);
-		json.put(Keys.HASH_CODE.toString(), hashCode);
 		return json;
 	}
 	
@@ -95,6 +92,16 @@ public class QueryTriggerMessage<NodeIDType> extends BasicContextServicePacket<N
 		return this.subspaceNum;
 	}
 	
+	public int getReplicaNum()
+	{
+		return this.replicaNum;
+	}
+	
+	public String getAttrName()
+	{
+		return this.attrName;
+	}
+	
 	public String getUserIP()
 	{
 		return this.userIP;
@@ -105,21 +112,7 @@ public class QueryTriggerMessage<NodeIDType> extends BasicContextServicePacket<N
 		return this.userPort;
 	}
 	
-	public int getHashCode()
-	{
-		return this.hashCode;
-	}
-	
 	public static void main(String[] args)
 	{
 	}
-	
-	/*public QueryComponent getQueryComponent()
-	{
-		return predicate;
-	}
-	/*public NodeIDType getSourceId()
-	{
-		return sourceNodeId;
-	}*/
 }

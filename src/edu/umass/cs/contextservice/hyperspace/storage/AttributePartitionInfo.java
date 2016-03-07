@@ -9,8 +9,14 @@ import edu.umass.cs.contextservice.attributeInfo.AttributeTypes.DomainPartitionI
 public class AttributePartitionInfo
 {
 	private final AttributeMetaInfo attrMetaInfo;
-	private int numPartitions;
-	Vector<DomainPartitionInfo> domainParitionInfo;
+	
+	// for hyerpspace hashing subspaces;
+	private int subspaceNumPartitions;
+	Vector<DomainPartitionInfo> subspaceDomainParitionInfo;
+	
+	// for triggers
+	private int triggerNumPartitions;
+	Vector<DomainPartitionInfo> triggerDomainParitionInfo;
 	
 	// default value of this attribute.
 	// now default value is chosen uniformly and based on partition.
@@ -32,23 +38,39 @@ public class AttributePartitionInfo
 	 * Initializes the partition info and sets the default value for this attribute
 	 * @param numPartitions
 	 */
-	public void initializePartitionInfo( int numPartitions, int defaultPartitionNum )
+	public void initializePartitionInfo( int numSubspacePartitions, int triggerNumPartitions, 
+			int defaultPartitionNum )
 	{
-		this.numPartitions = numPartitions;
+		this.subspaceNumPartitions = numSubspacePartitions;
+		this.triggerNumPartitions = triggerNumPartitions;
+		
 		assert(this.attrMetaInfo != null);
 		
-		domainParitionInfo = AttributeTypes.partitionDomain(numPartitions, attrMetaInfo.getMinValue(), 
+		subspaceDomainParitionInfo = AttributeTypes.partitionDomain(subspaceNumPartitions, attrMetaInfo.getMinValue(), 
 				attrMetaInfo.getMaxValue(), attrMetaInfo.getDataType());
+		
+		triggerDomainParitionInfo = AttributeTypes.partitionDomain(triggerNumPartitions, attrMetaInfo.getMinValue(), 
+				attrMetaInfo.getMaxValue(), attrMetaInfo.getDataType());
+		
 		//System.out.println(" numPartitions "+numPartitions+" defaultPartitionNum "+defaultPartitionNum+" size "+domainParitionInfo.size());
-		assert( defaultPartitionNum < domainParitionInfo.size() );
-		assert( defaultPartitionNum == domainParitionInfo.get(defaultPartitionNum).partitionNum );
-		partitionDefaultValue = domainParitionInfo.get(defaultPartitionNum).lowerbound;
+		
+		// just ignoring defaultPartitionNum for a while. Did this for earlier trigger scheme, 
+		// that scheme has changed so not sure if we need it now.
+		defaultPartitionNum = 0;
+		assert( defaultPartitionNum < subspaceDomainParitionInfo.size() );
+		assert( defaultPartitionNum == subspaceDomainParitionInfo.get(defaultPartitionNum).partitionNum );
+		partitionDefaultValue = subspaceDomainParitionInfo.get(defaultPartitionNum).lowerbound;
 	}
 	
 	
-	public int getNumPartitions()
+	public int getSubspaceNumPartitions()
 	{
-		return numPartitions;
+		return this.subspaceNumPartitions;
+	}
+	
+	public int getTriggerNumPartitions()
+	{
+		return this.triggerNumPartitions;
 	}
 	
 	public AttributeMetaInfo getAttrMetaInfo()
@@ -56,9 +78,14 @@ public class AttributePartitionInfo
 		return this.attrMetaInfo;
 	}
 	
-	public Vector<DomainPartitionInfo> getDomainPartitionInfo()
+	public Vector<DomainPartitionInfo> getSubspaceDomainPartitionInfo()
 	{
-		return this.domainParitionInfo;
+		return this.subspaceDomainParitionInfo;
+	}
+	
+	public Vector<DomainPartitionInfo> getTriggerDomainPartitionInfo()
+	{
+		return this.triggerDomainParitionInfo;
 	}
 	
 	public String getDefaultValue()

@@ -124,6 +124,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		nodeES = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
 		
 		generateSubspacePartitions();
+		generateTriggerPartitions();
 		ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
 		
 		//ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
@@ -380,6 +381,61 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		ContextServiceLogger.getLogger().fine(" generateSubspacePartitions() completed " );
 	}
 	
+	/**
+	 * generates trigger single attribute partitions
+	 */
+	private void generateTriggerPartitions()
+	{
+		ContextServiceLogger.getLogger().fine(" generateTriggerPartitions() entering " );
+		HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap 
+			= this.subspaceConfigurator.getSubspaceInfoMap();
+		
+		Iterator<Integer> subspaceIter = subspaceInfoMap.keySet().iterator();
+		
+		while( subspaceIter.hasNext() )
+		{
+			int subspaceId = subspaceIter.next();
+			Vector<SubspaceInfo<NodeIDType>> replicaVect 
+								= subspaceInfoMap.get(subspaceId);
+			
+			for( int i=0; i<replicaVect.size(); i++ )
+			{
+				SubspaceInfo<NodeIDType> subspaceInfo = replicaVect.get(i);
+				int replicaNum = subspaceInfo.getReplicaNum();
+				HashMap<String, AttributePartitionInfo> attrsOfSubspace 
+										= subspaceInfo.getAttributesOfSubspace();
+				
+				Vector<NodeIDType> nodesOfSubspace = subspaceInfo.getNodesOfSubspace();
+				
+				Iterator<String> attrIter = attrsOfSubspace.keySet().iterator();
+				// Print the result
+				int nodeIdCounter = 0;
+				int sizeOfNumNodes = nodesOfSubspace.size();
+				
+				while( attrIter.hasNext() )
+				{
+					String attrName = attrIter.next();
+					AttributePartitionInfo currPartInfo = attrsOfSubspace.get(attrName);
+					
+					int numTriggerPartitions = currPartInfo.getTriggerNumPartitions();
+					ContextServiceLogger.getLogger().fine(" numTriggerPartitions "
+							+numTriggerPartitions );
+					
+					int j =0;
+					while(j < numTriggerPartitions)
+					{
+						NodeIDType respNodeId = nodesOfSubspace.get(nodeIdCounter%sizeOfNumNodes);
+						this.hyperspaceDB.insertIntoTriggerPartitionInfo
+						(subspaceId, replicaNum, attrName, j, respNodeId);
+						nodeIdCounter++;
+						j++;
+					}
+				}
+			}
+		}	
+		ContextServiceLogger.getLogger().fine(" generateTriggerPartitions() completed " );
+	}
+	
 	
 	@SuppressWarnings("unchecked")
 	private void processQueryMsgFromUser
@@ -408,7 +464,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 		
 		//Vector<QueryComponent> qcomponents = QueryParser.parseQueryNew(query);
-		//FIXME: for conflicting queries 
+		//FIXME: for conflicting queries , need to be handled sometime
 		/*Vector<QueryComponent> matchingQueryComponents = new Vector<QueryComponent>();
 		int maxMatchingSubspaceNum = getMaxOverlapSubspace(qcomponents, matchingQueryComponents);
 		ContextServiceLogger.getLogger().fine("userReqID "+userReqID+" maxMatchingSubspaceNum "+maxMatchingSubspaceNum+" matchingQueryComponents "
@@ -517,8 +573,10 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	{
 		HashMap<Integer, Vector<ProcessingQueryComponent>> overlappingSubspaces =
     			new HashMap<Integer, Vector<ProcessingQueryComponent>>();
+		
 		getAllUniqueOverlappingSubspaces( currReq.getProcessingQC(), overlappingSubspaces );
-    	
+		
+		
     	Iterator<Integer> overlapSubspaceIter = overlappingSubspaces.keySet().iterator();
     	
     	HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subapceInfoMap = 
@@ -541,47 +599,28 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
     			
     			String currMatchingAttr = matchingQComp.getAttributeName();
     			
-				HashMap<String, AttributePartitionInfo> attrsSubspaceInfo = currSubInfo.getAttributesOfSubspace();
+				//HashMap<String, AttributePartitionInfo> attrsSubspaceInfo = currSubInfo.getAttributesOfSubspace();
 	    		
-	    		Iterator<String> subspaceAttrIter = attrsSubspaceInfo.keySet().iterator();
-				
-	    		Vector<ProcessingQueryComponent> triggerStorageComp = new Vector<ProcessingQueryComponent>();
-				while( subspaceAttrIter.hasNext() )
-				{	
-					String attrName = subspaceAttrIter.next();
-					ProcessingQueryComponent qcomponent = null;
-					if( currMatchingAttr.equals(attrName) )
-					{
-						qcomponent = new ProcessingQueryComponent( attrName, matchingQComp.getLowerBound(), 
-								matchingQComp.getUpperBound() );
-					}
-					else
-					{
-						//AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-						AttributePartitionInfo attrParInfo =  attrsSubspaceInfo.get(attrName);
-						qcomponent = new ProcessingQueryComponent( attrName, attrParInfo.getDefaultValue(), 
-								attrParInfo.getDefaultValue());
-					}
-					
-					triggerStorageComp.add(qcomponent);
-				}
-				
+	    		//Iterator<String> subspaceAttrIter = attrsSubspaceInfo.keySet().iterator();
+    			ProcessingQueryComponent qcomponent = new ProcessingQueryComponent( currMatchingAttr, matchingQComp.getLowerBound(), 
+						matchingQComp.getUpperBound() );
+    			
 				HashMap<Integer, OverlappingInfoClass> overlappingRegion = 
-						this.hyperspaceDB.getOverlappingRegionsInSubspace(subspaceId, replicaNum, 
-								triggerStorageComp);
+						this.hyperspaceDB.getOverlappingPartitionsInTriggers
+						(subspaceId, replicaNum, currMatchingAttr, qcomponent);
 				
 				Iterator<Integer> overlapIter = overlappingRegion.keySet().iterator();
 				
 				while( overlapIter.hasNext() )
 			    {
 			    	Integer respNodeId = overlapIter.next();
-			    	OverlappingInfoClass overlapInfo = overlappingRegion.get(respNodeId);
+			    	//OverlappingInfoClass overlapInfo = overlappingRegion.get(respNodeId);
 			    	
 			    	QueryTriggerMessage<NodeIDType> queryTriggerMessage = 
 							new QueryTriggerMessage<NodeIDType>
-			    				(getMyID(), currReq.getRequestId(), currReq.getQuery(), 
-			    						currReq.getGroupGUID(), subspaceId, 
-			    						currReq.getUserIP(), currReq.getUserPort(), overlapInfo.hashCode);
+			    				( getMyID(), currReq.getRequestId(), currReq.getQuery(), 
+			    						currReq.getGroupGUID(), subspaceId, replicaNum, 
+			    						currMatchingAttr, currReq.getUserIP(), currReq.getUserPort());
 			    	
 					try
 					{
@@ -703,17 +742,19 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		String query 		= queryTriggerMessage.getQuery();
 		String groupGUID 	= queryTriggerMessage.getGroupGUID();
 		int subspaceId 		= queryTriggerMessage.getSubspaceNum();
+		int replicaNum		= queryTriggerMessage.getReplicaNum();
+		String attrName 	= queryTriggerMessage.getAttrName();
 		String userIP       = queryTriggerMessage.getUserIP();
 		int userPort        = queryTriggerMessage.getUserPort();
-		int hashCode        = queryTriggerMessage.getHashCode();
 		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
-			this.hyperspaceDB.insertIntoSubspaceTriggerInfo(subspaceId, hashCode, query, groupGUID, userIP, userPort);
+			this.hyperspaceDB.insertIntoSubspaceTriggerDataInfo( subspaceId, replicaNum, 
+					attrName, query, groupGUID, userIP, userPort );
 		}
 	}
 	
-	private void processUpdateTriggerMessage(UpdateTriggerMessage<NodeIDType> updateTriggerMessage)
+	private void processUpdateTriggerMessage(UpdateTriggerMessage<NodeIDType> updateTriggerMessage) throws InterruptedException
 	{
 		long requestID  = updateTriggerMessage.getRequestId();
 		int subspaceId  = updateTriggerMessage.getSubspaceNum();
@@ -723,18 +764,13 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		int oldOrNewOrBoth = updateTriggerMessage.getOldNewVal();
 		String attrName    = updateTriggerMessage.getAttrName();
 		
-		//int oldNewVal = updateTriggerMessage.getOldNewVal();
-		//(int subspaceId, JSONObject oldValJSON, JSONObject newUpdateVal
-		//		, HashMap<String, JSONObject> oldValGroupGUIDMap, HashMap<String, JSONObject> newValGroupGUIDMap)
-		//int hashCode  = updateTriggerMessage.getHashCode();
-		
 		HashMap<String, JSONObject> oldValGroupGUIDMap = new HashMap<String, JSONObject>();
 		HashMap<String, JSONObject> newValGroupGUIDMap = new HashMap<String, JSONObject>();
 		
 		ContextServiceLogger.getLogger().fine("processUpdateTriggerMessage oldValGroupGUIDMap size "
 				+oldValGroupGUIDMap.size()+" newValGroupGUIDMap size "+newValGroupGUIDMap.size() );
 		
-		this.hyperspaceDB.getTriggerInfo(subspaceId, oldValJSON, 
+		this.hyperspaceDB.getTriggerDataInfo(subspaceId, replicaNum, attrName, oldValJSON, 
 				newUpdateVal, oldValGroupGUIDMap, newValGroupGUIDMap, oldOrNewOrBoth);
 		
 		JSONArray toBeRemoved = new JSONArray();
@@ -811,7 +847,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	{
 		String GUID 			  		= valueUpdateFromGNS.getGUID();
 		NodeIDType respNodeId 	  		= this.getResponsibleNodeId(GUID);
-		// long userRequesID 		  	= valueUpdateFromGNS.getUserRequestID();
 		
 		// just forward the request to the node that has 
 		// guid stored in primary subspace.
@@ -880,7 +915,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		assert(updateReq != null);
 		try
 		{
-			ContextServiceLogger.getLogger().fine("processUpdateSerially called "+updateReq.getRequestId() +" JSON"+updateReq.getValueUpdateFromGNS().toJSONObject().toString());
+			ContextServiceLogger.getLogger().fine
+			("processUpdateSerially called "+updateReq.getRequestId() +" JSON"+updateReq.getValueUpdateFromGNS().toJSONObject().toString());
 		}
 		catch(JSONException jso)
 		{
@@ -1128,6 +1164,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
+	
 	@SuppressWarnings("unchecked")
 	private void triggerProcessingOnUpdate( JSONObject attrValuePairs, HashMap<String, AttributePartitionInfo> attrsSubspaceInfo, 
 			int subspaceId, int replicaNum, JSONObject  oldValueJSON, long requestID ) throws JSONException
@@ -1145,45 +1182,18 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			// in the attribute subspace
 			if( attrsSubspaceInfo.containsKey(currAttrName) )
 			{
-				Iterator<String> subspaceAttrIter = attrsSubspaceInfo.keySet().iterator();
 				//find old overlapping groups
-				Vector<ProcessingQueryComponent> oldTriggerComponents = new Vector<ProcessingQueryComponent>();
+				ProcessingQueryComponent oldTriggerComponent 
+						= new ProcessingQueryComponent( currAttrName, oldValue, oldValue );
 				
-				Vector<ProcessingQueryComponent> newTriggerComponents = new Vector<ProcessingQueryComponent>();
-				
-				
-				while( subspaceAttrIter.hasNext() )
-				{
-					String attrName = subspaceAttrIter.next();
-					//( String attributeName, String leftOperator, double leftValue, 
-					//		String rightOperator, double rightValue )
-					AttributePartitionInfo attrPartInfo = attrsSubspaceInfo.get(attrName);
-					
-					ProcessingQueryComponent oldQcomponent = null;
-					ProcessingQueryComponent newQcomponent = null;
-					
-					if( currAttrName.equals(attrName) )
-					{
-						oldQcomponent = new ProcessingQueryComponent( attrName, oldValue, oldValue );
-						newQcomponent = new ProcessingQueryComponent( attrName, currValue, currValue );
-					}
-					else
-					{						
-						oldQcomponent = new ProcessingQueryComponent( attrName, attrPartInfo.getDefaultValue(), 
-								attrPartInfo.getDefaultValue() );
-						
-						newQcomponent = new ProcessingQueryComponent( attrName, attrPartInfo.getDefaultValue(), 
-								attrPartInfo.getDefaultValue() );
-					}
-					
-					oldTriggerComponents.add(oldQcomponent);
-					newTriggerComponents.add(newQcomponent);
-				}
+				ProcessingQueryComponent newTriggerComponent 
+						= new ProcessingQueryComponent( currAttrName, currValue, currValue );
 				
 				Integer oldRespNodeId = -1, newRespNodeId = -1;
 				
 				HashMap<Integer, OverlappingInfoClass> oldOverlappingRegion = 
-							this.hyperspaceDB.getOverlappingRegionsInSubspace(subspaceId, replicaNum, oldTriggerComponents);
+							this.hyperspaceDB.getOverlappingPartitionsInTriggers
+							(subspaceId, replicaNum, currAttrName, oldTriggerComponent);
 				
 				if( oldOverlappingRegion.size() != 1 )
 				{
@@ -1192,14 +1202,13 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				}
 				else
 				{
-					//TODO: can be optmized, and only one message sent when both old and new one
-					// lie on same node.
 					oldRespNodeId = oldOverlappingRegion.keySet().iterator().next();
 				}
 				// find new overlapping groups
 				
 				HashMap<Integer, OverlappingInfoClass> newOverlappingRegion = 
-						this.hyperspaceDB.getOverlappingRegionsInSubspace(subspaceId, replicaNum, newTriggerComponents);
+				this.hyperspaceDB.getOverlappingPartitionsInTriggers
+					(subspaceId, replicaNum, currAttrName, newTriggerComponent);
 				
 				
 				if( newOverlappingRegion.size() != 1 )
@@ -1794,8 +1803,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		while( keyIter.hasNext() )
 		{
 			int subspaceId = keyIter.next();
-			//FIXME: add randomization here otherwise all queries triggers will go to same replica
-			SubspaceInfo<NodeIDType> currSubInfo = subspaceInfoMap.get(subspaceId).get(0);
+			Vector<SubspaceInfo<NodeIDType>> replicaVect = subspaceInfoMap.get(subspaceId);
+			SubspaceInfo<NodeIDType> currSubInfo 
+			= replicaVect.get(replicaChoosingRand.nextInt(replicaVect.size()));
 			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo = currSubInfo.getAttributesOfSubspace();
 			
 			int currMaxMatch = 0;
