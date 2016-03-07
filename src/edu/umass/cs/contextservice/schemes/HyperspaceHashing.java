@@ -599,9 +599,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
     			
     			String currMatchingAttr = matchingQComp.getAttributeName();
     			
-				//HashMap<String, AttributePartitionInfo> attrsSubspaceInfo = currSubInfo.getAttributesOfSubspace();
-	    		
-	    		//Iterator<String> subspaceAttrIter = attrsSubspaceInfo.keySet().iterator();
+    			
     			ProcessingQueryComponent qcomponent = new ProcessingQueryComponent( currMatchingAttr, matchingQComp.getLowerBound(), 
 						matchingQComp.getUpperBound() );
     			
@@ -614,7 +612,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				while( overlapIter.hasNext() )
 			    {
 			    	Integer respNodeId = overlapIter.next();
-			    	//OverlappingInfoClass overlapInfo = overlappingRegion.get(respNodeId);
 			    	
 			    	QueryTriggerMessage<NodeIDType> queryTriggerMessage = 
 							new QueryTriggerMessage<NodeIDType>
@@ -632,7 +629,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					{
 						e.printStackTrace();
 					}
-					ContextServiceLogger.getLogger().info("Sending QueryMesgToSubspaceRegion mesg from " 
+					ContextServiceLogger.getLogger().info("Sending QueryTriggerMessage mesg from " 
 							+ getMyID() +" to node "+respNodeId);
 			    }
     		}
@@ -747,6 +744,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		String userIP       = queryTriggerMessage.getUserIP();
 		int userPort        = queryTriggerMessage.getUserPort();
 		
+		ContextServiceLogger.getLogger().fine("QueryTriggerMessag recvd "+ queryTriggerMessage);
+		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
 			this.hyperspaceDB.insertIntoSubspaceTriggerDataInfo( subspaceId, replicaNum, 
@@ -767,11 +766,11 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		HashMap<String, JSONObject> oldValGroupGUIDMap = new HashMap<String, JSONObject>();
 		HashMap<String, JSONObject> newValGroupGUIDMap = new HashMap<String, JSONObject>();
 		
-		ContextServiceLogger.getLogger().fine("processUpdateTriggerMessage oldValGroupGUIDMap size "
-				+oldValGroupGUIDMap.size()+" newValGroupGUIDMap size "+newValGroupGUIDMap.size() );
-		
 		this.hyperspaceDB.getTriggerDataInfo(subspaceId, replicaNum, attrName, oldValJSON, 
 				newUpdateVal, oldValGroupGUIDMap, newValGroupGUIDMap, oldOrNewOrBoth);
+		
+		ContextServiceLogger.getLogger().fine("processUpdateTriggerMessage oldValGroupGUIDMap size "
+				+oldValGroupGUIDMap.size()+" newValGroupGUIDMap size "+newValGroupGUIDMap.size() );
 		
 		JSONArray toBeRemoved = new JSONArray();
 		JSONArray toBeAdded = new JSONArray();
@@ -824,8 +823,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			}
 		}
 		
-		ContextServiceLogger.getLogger().fine("toBeRemoved size "+toBeRemoved.length()
-			+" toBeAdded size "+toBeAdded.length());
+		ContextServiceLogger.getLogger().fine("processUpdateTriggerMessage "
+				+ " toBeRemoved size "+toBeRemoved.length()+" toBeAdded size "+toBeAdded.length());
 		
 		UpdateTriggerReply<NodeIDType> updTriggerRep = 
 				new UpdateTriggerReply<NodeIDType>( this.getMyID(), requestID, subspaceId, replicaNum, 
@@ -1238,6 +1237,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					{
 						e.printStackTrace();
 					}
+					
+					ContextServiceLogger.getLogger().fine("Sending UpdateTriggerMessage from "
+					+getMyID()+" to "+oldRespNodeId);
 				}
 				else
 				{
@@ -1258,6 +1260,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						e.printStackTrace();
 					}
 					
+					ContextServiceLogger.getLogger().fine("Sending UpdateTriggerMessage from "
+							+getMyID()+" to "+oldRespNodeId);
+					
 					UpdateTriggerMessage<NodeIDType>  newUpdateTriggerMessage 
 					 = new UpdateTriggerMessage<NodeIDType>( this.getMyID(), requestID, subspaceId, replicaNum, 
 							 oldValueJSON, attrValuePairs, UpdateTriggerMessage.NEW_VALUE, 2, currAttrName);
@@ -1273,6 +1278,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					{
 						e.printStackTrace();
 					}
+					
+					ContextServiceLogger.getLogger().fine("Sending UpdateTriggerMessage from "
+							+getMyID()+" to "+newRespNodeId);
 				}
 			}
 		}
