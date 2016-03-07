@@ -136,6 +136,15 @@ public class HyperspaceMySQLDB<NodeIDType>
 					//ContextServiceLogger.getLogger().fine("newTableCommand "+newTableCommand);
 					stmt.executeUpdate(newTableCommand);
 					
+					if( ContextServiceConfig.TRIGGER_ENABLED )
+					{
+						// currently it is assumed that there are only conjunctive queries
+						// DNF form queries can be added by inserting its multiple conjunctive components.
+						ContextServiceLogger.getLogger().fine( "HyperspaceMySQLDB "
+								+ " TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED );					
+						createTablesForTriggers(subInfo, stmt);
+					}
+					
 					// partition info table is created for every node,
 					// whether or not it is in replica, but data storage table
 					// are only created on data storing nodes.
@@ -157,15 +166,6 @@ public class HyperspaceMySQLDB<NodeIDType>
 					
 					newTableCommand = newTableCommand +" )";
 					stmt.executeUpdate(newTableCommand);
-					
-					if( ContextServiceConfig.TRIGGER_ENABLED )
-					{
-						// currently it is assumed that there are only conjunctive queries
-						// DNF form queries can be added by inserting its multiple conjunctive components.
-						ContextServiceLogger.getLogger().fine( "HyperspaceMySQLDB "
-								+ " TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED );					
-						createTablesForTriggers(subInfo, stmt);
-					}
 				}
 			}
 			
@@ -240,6 +240,14 @@ public class HyperspaceMySQLDB<NodeIDType>
 			//ContextServiceLogger.getLogger().fine("newTableCommand "+newTableCommand);
 			stmt.executeUpdate(newTableCommand);
 			
+			// partition info table is created for every node,
+			// whether or not it is in replica, but data storage table
+			// are only created on data storing nodes.
+			// similar for trigger storage
+			if( !this.checkIfSubspaceHasMyID(subInfo.getNodesOfSubspace() ) )
+			{
+				continue;
+			}
 			
 			// creating separate query storage tables;
 			
