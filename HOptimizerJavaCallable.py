@@ -28,7 +28,7 @@ CtByC                           = 0.000009028
 Aq                              = 100*100*4
 CminByC                         = 0.00063231
 
-numAttrsInUpdate                = 2
+numAttrsInUpdate                = 1
 
 BASIC_SUBSPACE_CONFIG           = 1
 REPLICATED_SUBSPACE_CONFIG      = 2
@@ -115,7 +115,6 @@ def calcluateExpectedNumNodesAnUpdateGoesTo(numNodesForSubspace, currH):
     currP = math.pow(numNodesForSubspace, 1.0/currH)
     oneByP = 1.0/currP
     numNodesUpd = oneByP*1 + (1-oneByP)*2
-    numNodesUpd = 1
     return numNodesUpd
     
     
@@ -123,11 +122,12 @@ def maxBallsFun(currH, Aavg, B):
     # optimizer sometimes sends negative values
     if(currH < 0):
         return 0.0
-
+    
     m = Aavg
     n = math.ceil(B/currH)
     print "currH "+str(currH)+" m "+ str(m)+" n "+str(n)+" (n*math.log(n)) "+str((n*math.log(n)))
     alpha = 1.0
+    
     if ( n== 1.0):
         return Aavg
     # all terms which can go negative are made zero
@@ -200,8 +200,8 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, trigger
         numNodesUpdate = calcluateExpectedNumNodesAnUpdateGoesTo(numNodesSubspace, H)
         
         numTotalSubspsaces = N/numNodesSubspace
-        # assuming basic, will be inaccurate in replciated
-        # only one subsapce will have more than 1 node, others will be jsut 1
+        # assuming basic, will be inaccurate in replicated
+        # only one subspace will have more than 1 node, others will be jsut 1
         totalUpdLoad = numTotalSubspsaces - 1.0 + numNodesUpdate
         if(triggerEnable == 0):
             return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
@@ -281,8 +281,7 @@ if(len(sys.argv) >= 10):
     CtByC            = float(sys.argv[8])
     Aq               = float(sys.argv[9])
     CminByC          = float(sys.argv[10])
-            
-
+    
 print "rho "+str(rho)+" N "+str(N)+" CsByC "+str(CsByC)+" CuByC "+str(CuByC)+" B "+str(B)+" Aavg "+str(Aavg)+" triggerEnable "+str(triggerEnable)+" CtByC "+str(CtByC)+" Aq "+str(Aq)
 # 1 for basic config, 2 replicated config
 #configType       = float(sys.argv[7])
