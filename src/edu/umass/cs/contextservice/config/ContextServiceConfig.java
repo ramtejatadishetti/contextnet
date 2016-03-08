@@ -87,10 +87,10 @@ public class ContextServiceConfig
     // actually default mysql server max connection is 151. So this should be
     // set in conjuction with that. and also the hyperpsace hashing thread pool
     // size should be set greater than that. These things affect system performance a lot.
-	public static final int MYSQL_MAX_CONNECTIONS					= 150;
+	public static final int MYSQL_MAX_CONNECTIONS					= 214;
 	
 	// it is also important to set this at least the size of the database connection pool.
-	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 150;
+	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 214;
 	
 	// mysql result cursor fetches 1 guid at once and stores in memory
 	// need this becuase otherwise in large guids case , all the result 
