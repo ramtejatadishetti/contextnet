@@ -28,6 +28,8 @@ CtByC                           = 0.000009028
 Aq                              = 100*100*4
 CminByC                         = 0.00063231
 
+numAttrsInUpdate                = 2
+
 BASIC_SUBSPACE_CONFIG           = 1
 REPLICATED_SUBSPACE_CONFIG      = 2
 
@@ -113,6 +115,7 @@ def calcluateExpectedNumNodesAnUpdateGoesTo(numNodesForSubspace, currH):
     currP = math.pow(numNodesForSubspace, 1.0/currH)
     oneByP = 1.0/currP
     numNodesUpd = oneByP*1 + (1-oneByP)*2
+    numNodesUpd = 1
     return numNodesUpd
     
     
@@ -195,6 +198,7 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, trigger
         numNodesSubspace = getNumNodesForASubspace(B, H, N, configType)
         numNodesSearch = calculateExpectedNumNodesASearchGoesTo(numNodesSubspace, H, currX)
         numNodesUpdate = calcluateExpectedNumNodesAnUpdateGoesTo(numNodesSubspace, H)
+        
         numTotalSubspsaces = N/numNodesSubspace
         # assuming basic, will be inaccurate in replciated
         # only one subsapce will have more than 1 node, others will be jsut 1
@@ -209,7 +213,7 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, trigger
             numActiveQueriesOnNode = numNodesTrigger * ((Aq * Aavg)/(numPartitions*B))
             
             triggerGuidsRead = CminByC + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)*CtByC
-            triggerSum = rho * Aavg * numNodesTrigger * CuByC + (1-rho) * 2 * (numTotalSubspsaces/(B/H)) * triggerGuidsRead
+            triggerSum = rho * Aavg * numNodesTrigger * CuByC + (1-rho) * 2 * numAttrsInUpdate * (numTotalSubspsaces/(B/H)) * triggerGuidsRead
             
             return basicSum + triggerSum
     else:
@@ -234,7 +238,7 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, trigger
             numActiveQueriesOnNode = numNodesTrigger * ((Aq * Aavg)/(numPartitions*B))
             
             triggerGuidsRead = CminByC + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)*CtByC
-            triggerSum = rho * Aavg * numNodesTrigger * CuByC + (1-rho) * 2 * (numTotalSubspsaces/(B/H)) * triggerGuidsRead
+            triggerSum = rho * Aavg * numNodesTrigger * CuByC + (1-rho) * 2 * numAttrsInUpdate * (numTotalSubspsaces/(B/H)) * triggerGuidsRead
             
             return basicSum + triggerSum
         #return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
