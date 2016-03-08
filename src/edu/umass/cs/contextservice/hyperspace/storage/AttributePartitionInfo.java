@@ -41,6 +41,9 @@ public class AttributePartitionInfo
 	public void initializePartitionInfo( int numSubspacePartitions, int triggerNumPartitions, 
 			int defaultPartitionNum )
 	{
+		assert(triggerNumPartitions > 0 );
+		assert(numSubspacePartitions > 0 );
+		
 		this.subspaceNumPartitions = numSubspacePartitions;
 		this.triggerNumPartitions = triggerNumPartitions;
 		
