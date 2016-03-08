@@ -124,7 +124,10 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		nodeES = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
 		
 		generateSubspacePartitions();
-		generateTriggerPartitions();
+		
+		if( ContextServiceConfig.TRIGGER_ENABLED )
+			generateTriggerPartitions();
+		
 		ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
 		
 		//ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
