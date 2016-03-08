@@ -202,7 +202,7 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, trigger
         numTotalSubspsaces = N/numNodesSubspace
         # assuming basic, will be inaccurate in replicated
         # only one subspace will have more than 1 node, others will be jsut 1
-        totalUpdLoad = numTotalSubspsaces - 1.0 + numNodesUpdate
+        totalUpdLoad = 1.0 + (numTotalSubspsaces - 1.0) + numNodesUpdate
         if(triggerEnable == 0):
             return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
         else:
@@ -226,7 +226,7 @@ def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, trigger
 
         # assuming basic, will be inaccurate in replicated
         # only one subspace will have more than 1 node, others will be just 1
-        totalUpdLoad = numTotalSubspsaces - 1.0 + numNodesUpdate
+        totalUpdLoad = 1.0 + (numTotalSubspsaces - 1.0) + numNodesUpdate
         
         if(triggerEnable == 0):
             return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
