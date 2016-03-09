@@ -3,8 +3,6 @@ package edu.umass.cs.contextservice.messages;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import edu.umass.cs.contextservice.logging.ContextServiceLogger;
-
 /**
  * Class defines the packet type of the GNS trigger
  * @author ayadav
@@ -12,7 +10,8 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 
 public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 {
-	private enum Keys {VERSION_NUM, GUID, ATTR_VALUE_PAIR, USER_REQUESTID, SOURCEIP, SOURCEPORT};
+	private enum Keys {VERSION_NUM, GUID, ATTR_VALUE_PAIR, USER_REQUESTID, SOURCEIP, SOURCEPORT
+		, UPDATE_START_TIME};
 	
 	private final long versionNum;
 	private final String GUID;
@@ -20,6 +19,7 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 	private final long userRequestID;
 	private final String sourceIP;
 	private final int sourcePort;
+	private final long updStartTime;
 	//private final String attrName;
 	//private final String oldVal;
 	//private final String newVal;
@@ -27,7 +27,7 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 	//private final long updateStartTime;
 	
 	public ValueUpdateFromGNS( NodeIDType initiator, long versionNum, String GUID, JSONObject attrValuePair, long userRequestID
-			, String sourceIP, int sourcePort)
+			, String sourceIP, int sourcePort, long updStartTime)
 	{
 		super(initiator, ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS);
 		//ContextServiceLogger.getLogger().fine("ValueUpdateFromGNS enter super compl");
@@ -37,6 +37,7 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 		this.userRequestID = userRequestID;
 		this.sourceIP = sourceIP;
 		this.sourcePort = sourcePort;
+		this.updStartTime = updStartTime;
 	}
 	
 	public ValueUpdateFromGNS(JSONObject json) throws JSONException
@@ -50,10 +51,7 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 		this.userRequestID = json.getLong(Keys.USER_REQUESTID.toString());
 		this.sourceIP = json.getString(Keys.SOURCEIP.toString());
 		this.sourcePort = json.getInt(Keys.SOURCEPORT.toString());
-		//this.oldVal = json.getString(Keys.OLDVALUE.toString());
-		//this.newVal = json.getString(Keys.NEWVALUE.toString());
-		//this.allAttributes = json.getJSONObject(Keys.ALL_OTHER_ATTRs.toString());
-		//this.updateStartTime = json.getLong(Keys.UPDATE_START_TIME.toString());
+		this.updStartTime = json.getLong(Keys.UPDATE_START_TIME.toString());
 		//ContextServiceLogger.getLogger().fine("\n\n ValueUpdateFromGNS constructor");
 	}
 	
@@ -67,11 +65,7 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 		json.put(Keys.SOURCEIP.toString(), this.sourceIP);
 		json.put(Keys.SOURCEPORT.toString(), this.sourcePort);
 		
-		//json.put(Keys.OLDVALUE.toString(), this.oldVal);
-		//json.put(Keys.NEWVALUE.toString(), this.newVal);
-		//json.put(Keys.ALL_OTHER_ATTRs.toString(), this.allAttributes);
-		
-		//json.put(Keys.UPDATE_START_TIME.toString(), this.updateStartTime);
+		json.put(Keys.UPDATE_START_TIME.toString(), this.updStartTime);
 		return json;
 	}
 	
@@ -106,14 +100,11 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 		return this.sourcePort;
 	}
 	
-	/*public String getAttrName()
+	public long getUpdateStartTime()
 	{
-		return attrName;
+		return this.updStartTime;
 	}
-	public String getNewVal()
-	{
-		return this.newVal;
-	}*/
+	
 	public static void main(String[] args)
 	{
 	}

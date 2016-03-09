@@ -305,10 +305,10 @@ public class UpdateTriggerTest extends ContextServiceNode<Integer>
 			String memberAlias = CLIENT_GUID_PREFIX+myID;
 			String realAlias = memberAlias+guidNum;
 			String myGUID = getSHA1(realAlias);
+			
 			//Random valRand = new Random();
 //			double latitude = (valRand.nextDouble()-0.5)*180;
 //			double longitude = (valRand.nextDouble()-0.5)*360;
-			
 			/*if(currID%2 == 0)
 			{
 				latitude = 42.466;
@@ -321,9 +321,9 @@ public class UpdateTriggerTest extends ContextServiceNode<Integer>
 				attrValuePair.put("geoLocationCurrentLat", latitude);
 				attrValuePair.put("geoLocationCurrentLong", longitude);
 				
-				
 				ValueUpdateFromGNS<Integer> valUpdFromGNS = 
-						new ValueUpdateFromGNS<Integer>(myID, currID, myGUID, attrValuePair, currID, sourceIP, sourcePort );
+					new ValueUpdateFromGNS<Integer>
+				(myID, currID, myGUID, attrValuePair, currID, sourceIP, sourcePort, System.currentTimeMillis() );
 				
 				niot.sendToAddress(getRandomNodeSock(), valUpdFromGNS.toJSONObject());
 			} catch (JSONException e)

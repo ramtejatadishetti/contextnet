@@ -83,7 +83,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			long reqeustID = currId;
 			
 			ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = 
-					new ValueUpdateFromGNS<NodeIDType>(null, versionNum, GUID, csAttrValuePairs, reqeustID, sourceIP, sourcePort );
+					new ValueUpdateFromGNS<NodeIDType>(null, versionNum, GUID, csAttrValuePairs, reqeustID, sourceIP, sourcePort, 
+							System.currentTimeMillis() );
 			
 			UpdateStorage<NodeIDType> updateQ = new UpdateStorage<NodeIDType>();
 			updateQ.requestID = currId;

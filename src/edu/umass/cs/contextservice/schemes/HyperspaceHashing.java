@@ -1561,6 +1561,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	private void sendOutAggregatedRefreshTrigger(UpdateInfo<NodeIDType> updInfo) throws JSONException
 	{
 		JSONObject updatedAttrValuePairs = updInfo.getValueUpdateFromGNS().getAttrValuePairs();
+		long updateStartTime = updInfo.getValueUpdateFromGNS().getUpdateStartTime();
+		
 		Iterator<String> attrIter = updatedAttrValuePairs.keys();
 		HashMap<String, JSONArray> sameClientRemovedTrigger = new HashMap<String, JSONArray>();
 		HashMap<String, JSONArray> sameClientAddedTrigger = new HashMap<String, JSONArray>();
@@ -1621,7 +1623,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			
 			RefreshTrigger<NodeIDType> refTrig = new RefreshTrigger<NodeIDType>
 			(this.getMyID(), sameClientRemovedTrigger.get(ipPort), updInfo.getValueUpdateFromGNS().getVersionNum(),
-					updInfo.getValueUpdateFromGNS().getGUID(), RefreshTrigger.REMOVE);
+					updInfo.getValueUpdateFromGNS().getGUID(), RefreshTrigger.REMOVE, updateStartTime);
 			
 			String[] parsed = ipPort.split(":");
 			
@@ -1651,7 +1653,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			
 			RefreshTrigger<NodeIDType> refTrig = new RefreshTrigger<NodeIDType>
 			(this.getMyID(), sameClientAddedTrigger.get(ipPort), updInfo.getValueUpdateFromGNS().getVersionNum(),
-					updInfo.getValueUpdateFromGNS().getGUID(), RefreshTrigger.ADD);
+					updInfo.getValueUpdateFromGNS().getGUID(), RefreshTrigger.ADD, updateStartTime);
 			
 			String[] parsed = ipPort.split(":");
 			

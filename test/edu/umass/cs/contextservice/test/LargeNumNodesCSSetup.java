@@ -341,9 +341,9 @@ public class LargeNumNodesCSSetup extends ContextServiceNode<Integer>
 				attrValuePair.put("geoLocationCurrentLat", latitude);
 				attrValuePair.put("geoLocationCurrentLong", longitude);
 				
-				
 				ValueUpdateFromGNS<Integer> valUpdFromGNS = 
-						new ValueUpdateFromGNS<Integer>(myID, currID, myGUID, attrValuePair, currID, sourceIP, sourcePort );
+					new ValueUpdateFromGNS<Integer>
+				(myID, currID, myGUID, attrValuePair, currID, sourceIP, sourcePort, System.currentTimeMillis() );
 				
 				niot.sendToAddress(getRandomNodeSock(), valUpdFromGNS.toJSONObject());
 			} catch (JSONException e)

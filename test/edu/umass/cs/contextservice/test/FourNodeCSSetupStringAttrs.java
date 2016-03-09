@@ -299,9 +299,9 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 				attrValuePair.put("latitude", latitude+"");
 				attrValuePair.put("longitude", longitude+"");
 				
-				
 				ValueUpdateFromGNS<Integer> valUpdFromGNS = 
-						new ValueUpdateFromGNS<Integer>(myID, currID, myGUID, attrValuePair, currID, sourceIP, sourcePort );
+					new ValueUpdateFromGNS<Integer>
+				(myID, currID, myGUID, attrValuePair, currID, sourceIP, sourcePort, System.currentTimeMillis() );
 				
 				niot.sendToAddress(getRandomNodeSock(), valUpdFromGNS.toJSONObject());
 			} catch (JSONException e)
