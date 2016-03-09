@@ -254,11 +254,11 @@ public class HyperspaceMySQLDB<NodeIDType>
 			// creating trigger guid storage
 			tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"Attr"+attrName+"TriggerDataInfo";
 			
-			newTableCommand = "create table "+tableName+" ( groupGUID BINARY(20),  "
-					+ "userIP Binary(4),  userPort INTEGER ";
+			newTableCommand = "create table "+tableName+" ( groupGUID BINARY(20) NOT NULL , "
+					+ "userIP Binary(4) NOT NULL ,  userPort INTEGER NOT NULL ";
 			newTableCommand = getPartitionInfoStorageString(newTableCommand);
 						
-			newTableCommand = newTableCommand +" )";
+			newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort) )";
 			stmt.executeUpdate(newTableCommand);
 		}
 	}
