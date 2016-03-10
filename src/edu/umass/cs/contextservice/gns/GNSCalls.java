@@ -62,14 +62,14 @@ public class GNSCalls
 			{
 				//return GNSCallsOriginal.createQueryGroup(queryString);
 				String queryHash = Utils.getSHA1(queryString);
-				String groupGUIDString = queryHash.substring(0, 20);
+				String groupGUIDString = queryHash.substring(0, 40);
 				log.fine("createQueryGroup groupGUID returned "+groupGUIDString);
 				return groupGUIDString;
 			}
 			else
 			{
 				String queryHash = Utils.getSHA1(queryString);
-				String groupGUIDString = queryHash.substring(0, 20);
+				String groupGUIDString = queryHash.substring(0, 40);
 				log.fine("createQueryGroup groupGUID returned "+groupGUIDString);
 				return groupGUIDString;
 			}
