@@ -1893,7 +1893,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		
 		String ipInHex = Utils.bytArrayToHex(InetAddress.getByName(userIP).getAddress());
 		
-		selectQuery 				= selectQuery + " FROM "+tableName+" WHERE nodeGUID = X'"+groupGUID
+		selectQuery 				= selectQuery + " FROM "+tableName+" WHERE groupGUID = X'"+groupGUID
 				+"'"+" AND userIP = X'"+ipInHex+"'"+" AND userPort = "+userPort;
 		
 		boolean found   = false;
