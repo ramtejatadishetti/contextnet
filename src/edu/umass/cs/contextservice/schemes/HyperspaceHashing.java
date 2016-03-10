@@ -605,8 +605,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			String userIP = currReq.getUserIP();
 			int userPort = currReq.getUserPort();
 			
-			boolean found = this.hyperspaceDB.getSearchQueryRecordFromPrimaryTriggerSubspace(groupGUID, userIP, userPort);
-			
+			boolean found = this.hyperspaceDB.getSearchQueryRecordFromPrimaryTriggerSubspace
+					(groupGUID, userIP, userPort);
+			ContextServiceLogger.getLogger().fine(" search query "+currReq.getQuery()+" found "+found);
 			if( !found )
 			{
 				HashMap<Integer, Vector<ProcessingQueryComponent>> overlappingSubspaces =
