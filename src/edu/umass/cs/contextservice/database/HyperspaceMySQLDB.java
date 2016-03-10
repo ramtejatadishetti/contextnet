@@ -174,9 +174,29 @@ public class HyperspaceMySQLDB<NodeIDType>
 				      + "   nodeGUID Binary(20) PRIMARY KEY";
 			
 			newTableCommand = getDataStorageString(newTableCommand);
-			
 			newTableCommand = newTableCommand +" )";
 			stmt.executeUpdate(newTableCommand);
+			
+			
+			
+			if( ContextServiceConfig.TRIGGER_ENABLED )
+			{
+				// currently it is assumed that there are only conjunctive queries
+				// DNF form queries can be added by inserting its multiple conjunctive components.
+				//ContextServiceLogger.getLogger().fine( "HyperspaceMySQLDB "
+				//		+ " TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED );					
+				//createTablesForTriggers(subInfo, stmt);
+				
+				// for storing the trigger data, which is search queries
+				
+				tableName = "primarySubspaceTriggerDataStorage";
+				
+				newTableCommand = "create table "+tableName+" ( groupGUID BINARY(20) NOT NULL , "
+						+ "userIP Binary(4) NOT NULL ,  userPort INTEGER NOT NULL ";
+							
+				newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort) )";
+				stmt.executeUpdate(newTableCommand);
+			}
 		} catch( SQLException mysqlEx )
 		{
 			mysqlEx.printStackTrace();
@@ -1856,6 +1876,73 @@ public class HyperspaceMySQLDB<NodeIDType>
 			DelayProfiler.updateDelay("getGUIDRecordFromPrimarySubspace", t0);
 		}	
 		return oldValueJSON;
+	}
+	
+	
+	public boolean getSearchQueryRecordFromPrimaryTriggerSubspace(String groupGUID, 
+			String userIP, int userPort) throws UnknownHostException
+	{
+		long t0 = System.currentTimeMillis();
+		
+		String tableName 			= "primarySubspaceTriggerDataStorage";
+		
+		Connection myConn 			= null;
+		Statement stmt 				= null;
+		
+		String selectQuery 			= "SELECT * ";
+		
+		String ipInHex = Utils.bytArrayToHex(InetAddress.getByName(userIP).getAddress());
+		
+		selectQuery 				= selectQuery + " FROM "+tableName+" WHERE nodeGUID = X'"+groupGUID
+				+"'"+" AND userIP = X'"+ipInHex+"'"+" AND userPort = "+userPort;
+		
+		boolean found   = false;
+		
+		try
+		{
+			myConn 		 	= this.mysqlDataSource.getConnection();
+			stmt 		 	= myConn.createStatement();
+			ResultSet rs 	= stmt.executeQuery(selectQuery);	
+			
+			while( rs.next() )
+			{
+				found = true;
+			}
+			rs.close();
+			
+			if( !found )
+			{
+				String insertTableSQL = " INSERT INTO "+tableName 
+						+" ( groupGUID, userIP, userPort ";
+				
+				insertTableSQL = insertTableSQL + " ) VALUES ( X'"+groupGUID+"', "+
+								 " X'"+ipInHex+"', "+userPort+" ) ";
+				
+				stmt.executeUpdate(insertTableSQL);
+			}
+		} catch (SQLException e)
+		{
+			e.printStackTrace();
+		} finally
+		{
+			try
+			{
+				if (stmt != null)
+					stmt.close();
+				if (myConn != null)
+					myConn.close();
+			}
+			catch(SQLException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		if(ContextServiceConfig.DELAY_PROFILER_ON)
+		{
+			DelayProfiler.updateDelay("getSearchQueryRecordFromPrimaryTriggerSubspace", t0);
+		}
+		return found;
 	}
 	
 	/**

@@ -141,7 +141,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ProtocolEvent<PacketType, String> event,
 			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
 	{
-		//ContextServiceLogger.getLogger().fine("handleQueryMsgFromUser");
 		nodeES.submit(new HandleEventThread(event));
 		return null;
 	}
@@ -151,7 +150,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ProtocolEvent<PacketType, String> event,
 			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
 	{
-		//ContextServiceLogger.getLogger().fine("handleValueUpdateFromGNS");
 		nodeES.submit(new HandleEventThread(event));
 		return null;
 	}
@@ -462,9 +460,36 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		if( grpGUID.length() <= 0 )
 		{
-			ContextServiceLogger.getLogger().fine("Query request failed at the recieving node "+queryMsgFromUser);
+			ContextServiceLogger.getLogger().fine
+			("Query request failed at the recieving node "+queryMsgFromUser);
 			return;
 		}
+		
+		// check for triggers, if those are enabled then forward the query to the node
+		// which consistently hashes the the query:userIp:userPort string
+		if( ContextServiceConfig.TRIGGER_ENABLED )
+		{
+			String hashKey = query+":"+userIP+":"+userPort;
+			NodeIDType respNodeId 	  		= this.getResponsibleNodeId(hashKey);
+			
+			// just forward the request to the node that has 
+			// guid stored in primary subspace.
+			if( this.getMyID() != respNodeId )
+			{
+				try
+				{
+					this.messenger.sendToID( respNodeId, queryMsgFromUser.toJSONObject() );
+					return;
+				} catch (IOException e)
+				{
+					e.printStackTrace();
+				} catch (JSONException e)
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+		
 		
 		//Vector<QueryComponent> qcomponents = QueryParser.parseQueryNew(query);
 		//FIXME: for conflicting queries , need to be handled sometime
@@ -574,70 +599,87 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	
 	private void processTriggerOnQueryMsgFromUser(QueryInfo<NodeIDType> currReq)
 	{
-		HashMap<Integer, Vector<ProcessingQueryComponent>> overlappingSubspaces =
-    			new HashMap<Integer, Vector<ProcessingQueryComponent>>();
-		
-		getAllUniqueOverlappingSubspaces( currReq.getProcessingQC(), overlappingSubspaces );
-		
-		
-    	Iterator<Integer> overlapSubspaceIter = overlappingSubspaces.keySet().iterator();
-    	
-    	HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subapceInfoMap = 
-    			this.subspaceConfigurator.getSubspaceInfoMap();
-    	while( overlapSubspaceIter.hasNext() )
-    	{
-    		int subspaceId = overlapSubspaceIter.next();
-    		Vector<SubspaceInfo<NodeIDType>> replicasVect 
-    										= subapceInfoMap.get(subspaceId);
-    		
-    		// trigger info on a query just goes to any one random replica of a subspace
-    		// it doesn't need to be stored on all replicas of a subspace
-    		SubspaceInfo<NodeIDType> currSubInfo = replicasVect.get(this.replicaChoosingRand.nextInt(replicasVect.size()));
-    		int replicaNum = currSubInfo.getReplicaNum();
-    		Vector<ProcessingQueryComponent> matchingComp = overlappingSubspaces.get(subspaceId);
-    		
-    		for(int i=0; i<matchingComp.size(); i++)
-    		{
-    			ProcessingQueryComponent matchingQComp = matchingComp.get(i);
-    			
-    			String currMatchingAttr = matchingQComp.getAttributeName();
-    			
-    			
-    			ProcessingQueryComponent qcomponent = new ProcessingQueryComponent( currMatchingAttr, matchingQComp.getLowerBound(), 
-						matchingQComp.getUpperBound() );
-    			
-				HashMap<Integer, OverlappingInfoClass> overlappingRegion = 
-						this.hyperspaceDB.getOverlappingPartitionsInTriggers
-						(subspaceId, replicaNum, currMatchingAttr, qcomponent);
+		try
+		{
+			String groupGUID = currReq.getGroupGUID();
+			String userIP = currReq.getUserIP();
+			int userPort = currReq.getUserPort();
+			
+			boolean found = this.hyperspaceDB.getSearchQueryRecordFromPrimaryTriggerSubspace(groupGUID, userIP, userPort);
+			
+			if( !found )
+			{
+				HashMap<Integer, Vector<ProcessingQueryComponent>> overlappingSubspaces =
+		    			new HashMap<Integer, Vector<ProcessingQueryComponent>>();
 				
-				Iterator<Integer> overlapIter = overlappingRegion.keySet().iterator();
+				getAllUniqueOverlappingSubspaces( currReq.getProcessingQC(), overlappingSubspaces );
 				
-				while( overlapIter.hasNext() )
-			    {
-			    	Integer respNodeId = overlapIter.next();
-			    	
-			    	QueryTriggerMessage<NodeIDType> queryTriggerMessage = 
-							new QueryTriggerMessage<NodeIDType>
-			    				( getMyID(), currReq.getRequestId(), currReq.getQuery(), 
-			    						currReq.getGroupGUID(), subspaceId, replicaNum, 
-			    						currMatchingAttr, currReq.getUserIP(), currReq.getUserPort());
-			    	
-					try
-					{
-						this.messenger.sendToID( (NodeIDType)respNodeId, queryTriggerMessage.toJSONObject() );
-					} catch (IOException e)
-					{
-						e.printStackTrace();
-					} catch (JSONException e)
-					{
-						e.printStackTrace();
-					}
-					ContextServiceLogger.getLogger().info("Sending QueryTriggerMessage mesg from " 
-							+ getMyID() +" to node "+respNodeId);
-			    }
-    		}
-    	}
+				
+		    	Iterator<Integer> overlapSubspaceIter = overlappingSubspaces.keySet().iterator();
+		    	
+		    	HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subapceInfoMap = 
+		    			this.subspaceConfigurator.getSubspaceInfoMap();
+		    	while( overlapSubspaceIter.hasNext() )
+		    	{
+		    		int subspaceId = overlapSubspaceIter.next();
+		    		Vector<SubspaceInfo<NodeIDType>> replicasVect 
+		    										= subapceInfoMap.get(subspaceId);
+		    		
+		    		// trigger info on a query just goes to any one random replica of a subspace
+		    		// it doesn't need to be stored on all replicas of a subspace
+		    		SubspaceInfo<NodeIDType> currSubInfo = replicasVect.get(this.replicaChoosingRand.nextInt(replicasVect.size()));
+		    		int replicaNum = currSubInfo.getReplicaNum();
+		    		Vector<ProcessingQueryComponent> matchingComp = overlappingSubspaces.get(subspaceId);
+		    		
+		    		for(int i=0; i<matchingComp.size(); i++)
+		    		{
+		    			ProcessingQueryComponent matchingQComp = matchingComp.get(i);
+		    			
+		    			String currMatchingAttr = matchingQComp.getAttributeName();
+		    			
+		    			
+		    			ProcessingQueryComponent qcomponent = new ProcessingQueryComponent( currMatchingAttr, matchingQComp.getLowerBound(), 
+								matchingQComp.getUpperBound() );
+		    			
+						HashMap<Integer, OverlappingInfoClass> overlappingRegion = 
+								this.hyperspaceDB.getOverlappingPartitionsInTriggers
+								(subspaceId, replicaNum, currMatchingAttr, qcomponent);
+						
+						Iterator<Integer> overlapIter = overlappingRegion.keySet().iterator();
+						
+						while( overlapIter.hasNext() )
+					    {
+					    	Integer respNodeId = overlapIter.next();
+					    	
+					    	QueryTriggerMessage<NodeIDType> queryTriggerMessage = 
+									new QueryTriggerMessage<NodeIDType>
+					    				( getMyID(), currReq.getRequestId(), currReq.getQuery(), 
+					    						currReq.getGroupGUID(), subspaceId, replicaNum, 
+					    						currMatchingAttr, currReq.getUserIP(), currReq.getUserPort());
+					    	
+							try
+							{
+								this.messenger.sendToID( (NodeIDType)respNodeId, queryTriggerMessage.toJSONObject() );
+							} catch (IOException e)
+							{
+								e.printStackTrace();
+							} catch (JSONException e)
+							{
+								e.printStackTrace();
+							}
+							ContextServiceLogger.getLogger().info("Sending QueryTriggerMessage mesg from " 
+									+ getMyID() +" to node "+respNodeId);
+					    }
+		    		}
+		    	}
+			}
+		}
+		catch( Exception ex )
+		{
+			ex.printStackTrace();
+		}
 	}
+	
 	
 	private void processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion)
 	{
