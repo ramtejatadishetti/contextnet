@@ -133,7 +133,11 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		//ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
 		//nodeES = Executors.newCachedThreadPool();
 		
-		new Thread(new ProfilerStatClass()).start();
+		//new Thread(new ProfilerStatClass()).start();
+		if( ContextServiceConfig.TRIGGER_ENABLED )
+		{
+			new Thread( new DeleteExpiredSearchesThread() ).start();
+		}
 	}
 	
 	@Override
@@ -467,7 +471,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		// check for triggers, if those are enabled then forward the query to the node
 		// which consistently hashes the the query:userIp:userPort string
-		if( ContextServiceConfig.TRIGGER_ENABLED )
+		if( ContextServiceConfig.TRIGGER_ENABLED && ContextServiceConfig.UniqueGroupGUIDEnabled )
 		{
 			String hashKey = query+":"+userIP+":"+userPort;
 			NodeIDType respNodeId 	  		= this.getResponsibleNodeId(hashKey);
@@ -604,11 +608,17 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			String groupGUID = currReq.getGroupGUID();
 			String userIP = currReq.getUserIP();
 			int userPort = currReq.getUserPort();
+			boolean found = false;
 			
-			boolean found = this.hyperspaceDB.getSearchQueryRecordFromPrimaryTriggerSubspace
+			if( ContextServiceConfig.UniqueGroupGUIDEnabled )
+			{
+				found = this.hyperspaceDB.getSearchQueryRecordFromPrimaryTriggerSubspace
 					(groupGUID, userIP, userPort);
+			}
+			
 			ContextServiceLogger.getLogger().fine(" search query "+currReq.getQuery()+" found "+found
 					+" groupGUID "+groupGUID+" userIP "+userIP+" userPort "+userPort);
+			
 			if( !found )
 			{
 				HashMap<Integer, Vector<ProcessingQueryComponent>> overlappingSubspaces =
@@ -795,8 +805,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
+			long expiryTime = System.currentTimeMillis() + ContextServiceConfig.searchExpiryTime;
 			this.hyperspaceDB.insertIntoSubspaceTriggerDataInfo( subspaceId, replicaNum, 
-					attrName, query, groupGUID, userIP, userPort );
+					attrName, query, groupGUID, userIP, userPort, expiryTime);
 		}
 	}
 	
@@ -2142,46 +2153,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
-	private class ProfilerStatClass implements Runnable
-	{
-		private long localNumberOfQueryFromUser							= 0;
-		private long localNumberOfQueryFromUserDepart					= 0;
-		private long localNumberOfQuerySubspaceRegion					= 0;
-		private long localNumberOfQuerySubspaceRegionReply				= 0;
-		
-		@Override
-		public void run()
-		{
-			while(true)
-			{
-				try
-				{
-					Thread.sleep(10000);
-				} catch (InterruptedException e)
-				{
-					e.printStackTrace();
-				}
-				
-				long diff1 = numberOfQueryFromUser - localNumberOfQueryFromUser;
-				long diff2 = numberOfQueryFromUserDepart - localNumberOfQueryFromUserDepart;
-				long diff3 = numberOfQuerySubspaceRegion - localNumberOfQuerySubspaceRegion;
-				long diff4 = numberOfQuerySubspaceRegionReply - localNumberOfQuerySubspaceRegionReply;
-				
-				localNumberOfQueryFromUser							= numberOfQueryFromUser;
-				localNumberOfQueryFromUserDepart					= numberOfQueryFromUserDepart;
-				localNumberOfQuerySubspaceRegion					= numberOfQuerySubspaceRegion;
-				localNumberOfQuerySubspaceRegionReply				= numberOfQuerySubspaceRegionReply;
-				
-				//ContextServiceLogger.getLogger().fine("QueryFromUserRate "+diff1+" QueryFromUserDepart "+diff2+" QuerySubspaceRegion "+diff3+
-				//		" QuerySubspaceRegionReply "+diff4+
-				//		" DelayProfiler stats "+DelayProfiler.getStats());
-				
-				//ContextServiceLogger.getLogger().fine( "Pending query requests "+pendingQueryRequests.size() );
-				//ContextServiceLogger.getLogger().fine("DelayProfiler stats "+DelayProfiler.getStats());
-			}
-		}
-	}
-	
 	public static void main(String[] args)
 	{
 		double numPartitions = Math.ceil(Math.pow(16, 1.0/4));
@@ -2214,4 +2185,119 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					+ "insertIntoSubspacePartitionInfo complete");
 		}
 	}
+	
+	private class DeleteExpiredSearchesThread implements Runnable
+	{
+		/**
+		 * checks if the subspace nodes have my id.
+		 * Only then the tables are created in mysql.
+		 * @return
+		 */
+		public boolean checkIfSubspaceHasMyID(Vector<NodeIDType> subspaceNodes)
+		{
+			for(int i=0;i<subspaceNodes.size();i++)
+			{
+				NodeIDType currID = subspaceNodes.get(i);
+				if( currID == getMyID() )
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		@Override
+		public void run() 
+		{
+			while( true )
+			{
+				try
+				{
+					Thread.sleep(1000);
+				} catch (InterruptedException e) 
+				{
+					e.printStackTrace();
+				}
+				
+				HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap = 
+						subspaceConfigurator.getSubspaceInfoMap();					
+				
+				Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
+				while(subapceIdIter.hasNext())
+				{
+					int subspaceId = subapceIdIter.next();
+					// at least one replica and all replica have same default value for each attribute.
+					Vector<SubspaceInfo<NodeIDType>> subspaceInfoVect 
+										= subspaceInfoMap.get(subspaceId);
+					
+					for(int i=0; i<subspaceInfoVect.size(); i++)
+					{
+						SubspaceInfo<NodeIDType> currSubspaceInfo 
+											= subspaceInfoVect.get(i);
+						
+						int replicaNum = currSubspaceInfo.getReplicaNum();
+						
+						if( checkIfSubspaceHasMyID(currSubspaceInfo.getNodesOfSubspace()) )
+						{
+							HashMap<String, AttributePartitionInfo> attrSubspaceMap 
+									= currSubspaceInfo.getAttributesOfSubspace();
+							
+							Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
+							
+							while(attrIter.hasNext())
+							{
+								String attrName = attrIter.next();
+								int numDeleted = hyperspaceDB.deleteExpiredSearchQueries
+								(subspaceId, replicaNum, attrName);
+								if(numDeleted > 0)
+									ContextServiceLogger.getLogger().fine( "Group guids deleted "
+										+ " for subspaceId "+subspaceId+" replicaNum "+replicaNum
+										+" attrName "+attrName+" numDeleted "+numDeleted );
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+//	private class ProfilerStatClass implements Runnable
+//	{
+//		private long localNumberOfQueryFromUser							= 0;
+//		private long localNumberOfQueryFromUserDepart					= 0;
+//		private long localNumberOfQuerySubspaceRegion					= 0;
+//		private long localNumberOfQuerySubspaceRegionReply				= 0;
+//		
+//		@Override
+//		public void run()
+//		{
+//			while(true)
+//			{
+//				try
+//				{
+//					Thread.sleep(10000);
+//				} catch (InterruptedException e)
+//				{
+//					e.printStackTrace();
+//				}
+//				
+//				long diff1 = numberOfQueryFromUser - localNumberOfQueryFromUser;
+//				long diff2 = numberOfQueryFromUserDepart - localNumberOfQueryFromUserDepart;
+//				long diff3 = numberOfQuerySubspaceRegion - localNumberOfQuerySubspaceRegion;
+//				long diff4 = numberOfQuerySubspaceRegionReply - localNumberOfQuerySubspaceRegionReply;
+//				
+//				localNumberOfQueryFromUser							= numberOfQueryFromUser;
+//				localNumberOfQueryFromUserDepart					= numberOfQueryFromUserDepart;
+//				localNumberOfQuerySubspaceRegion					= numberOfQuerySubspaceRegion;
+//				localNumberOfQuerySubspaceRegionReply				= numberOfQuerySubspaceRegionReply;
+//				
+//				//ContextServiceLogger.getLogger().fine("QueryFromUserRate "+diff1+" QueryFromUserDepart "+diff2+" QuerySubspaceRegion "+diff3+
+//				//		" QuerySubspaceRegionReply "+diff4+
+//				//		" DelayProfiler stats "+DelayProfiler.getStats());
+//				
+//				//ContextServiceLogger.getLogger().fine( "Pending query requests "+pendingQueryRequests.size() );
+//				//ContextServiceLogger.getLogger().fine("DelayProfiler stats "+DelayProfiler.getStats());
+//			}
+//		}
+//	}
 }

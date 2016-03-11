@@ -179,7 +179,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 			
 			
 			
-			if( ContextServiceConfig.TRIGGER_ENABLED )
+			if( ContextServiceConfig.TRIGGER_ENABLED && ContextServiceConfig.UniqueGroupGUIDEnabled )
 			{
 				// currently it is assumed that there are only conjunctive queries
 				// DNF form queries can be added by inserting its multiple conjunctive components.
@@ -232,7 +232,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		HashMap<String, AttributePartitionInfo> attrSubspaceMap = subInfo.getAttributesOfSubspace();
 		
 		Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
-		while(attrIter.hasNext())
+		while( attrIter.hasNext() )
 		{
 			String attrName = attrIter.next();
 			AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
@@ -270,15 +270,14 @@ public class HyperspaceMySQLDB<NodeIDType>
 			}
 			
 			// creating separate query storage tables;
-			
 			// creating trigger guid storage
 			tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"Attr"+attrName+"TriggerDataInfo";
 			
 			newTableCommand = "create table "+tableName+" ( groupGUID BINARY(20) NOT NULL , "
-					+ "userIP Binary(4) NOT NULL ,  userPort INTEGER NOT NULL ";
+					+ "userIP Binary(4) NOT NULL ,  userPort INTEGER NOT NULL , expiryTime BIGINT NOT NULL ";
 			newTableCommand = getPartitionInfoStorageString(newTableCommand);
-						
-			newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort) )";
+			
+			newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort), INDEX USING BTREE(expiryTime) )";
 			stmt.executeUpdate(newTableCommand);
 		}
 	}
@@ -1247,7 +1246,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 	 * @param subspaceVector
 	 */
 	public void insertIntoSubspaceTriggerDataInfo( int subspaceId, int replicaNum, 
-			String attrName, String userQuery, String groupGUID, String userIP, int userPort )
+			String attrName, String userQuery, String groupGUID, String userIP, int userPort, long expiryTimeFromNow )
 	{
 		long t0 			= System.currentTimeMillis();
 		Connection myConn   = null;
@@ -1264,7 +1263,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 			hexIP = Utils.bytArrayToHex(InetAddress.getByName(userIP).getAddress());	
 			
 			String insertTableSQL = " INSERT INTO "+tableName 
-					+" ( groupGUID, userIP, userPort ";
+					+" ( groupGUID, userIP, userPort , expiryTime ";
 			
 			Iterator<String> qattrIter = pqcMap.keySet().iterator();
 			while( qattrIter.hasNext() )
@@ -1276,7 +1275,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 			}
 			
 			insertTableSQL = insertTableSQL + " ) VALUES ( X'"+groupGUID+"', "+
-							 " X'"+hexIP+"', "+userPort+" ";
+							 " X'"+hexIP+"', "+userPort+" , "+expiryTimeFromNow+" ";
 			
 			// assuming the order of iterator over attributes to be same in above and here
 			qattrIter = pqcMap.keySet().iterator();
@@ -1386,6 +1385,56 @@ public class HyperspaceMySQLDB<NodeIDType>
 		{
 			DelayProfiler.updateDelay("getTriggerInfo", t0);
 		}
+	}
+	
+	/**
+	 * this function runs independently on every node 
+	 * and deletes expired queries.
+	 * @return
+	 */
+	public int deleteExpiredSearchQueries( int subspaceId, int replicaNum, String attrName )
+	{
+		long currTime = System.currentTimeMillis();
+		int rumRowsDeleted = -1;
+		
+		String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"Attr"+attrName+"TriggerDataInfo";
+		String deleteCommand = "DELETE FROM "+tableName+" WHERE expiryTime <= "+currTime;
+		Connection myConn 	= null;
+		Statement stmt 		= null;
+		
+		try
+		{
+			myConn = this.mysqlDataSource.getConnection();
+			stmt = myConn.createStatement();
+			rumRowsDeleted = stmt.executeUpdate(deleteCommand);
+		} catch(SQLException sqex)
+		{
+			sqex.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if(myConn != null)
+				{
+					myConn.close();
+				}
+				if(	stmt != null )
+				{
+					stmt.close();
+				}
+			} catch(SQLException sqex)
+			{
+				sqex.printStackTrace();
+			}
+		}
+		
+		if(ContextServiceConfig.DELAY_PROFILER_ON)
+		{
+			DelayProfiler.updateDelay("deleteExpiredSearchQueries ", currTime);
+		}
+		
+		return rumRowsDeleted;
 	}
 	
 	private class OldValueGroupGUIDs implements Runnable

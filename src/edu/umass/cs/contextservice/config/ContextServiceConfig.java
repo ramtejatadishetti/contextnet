@@ -79,6 +79,11 @@ public class ContextServiceConfig
 	// if true group update trigger is enabled, not enabled if false
 	public static boolean TRIGGER_ENABLED							= false;
 	
+	
+	// if set to true then there is a primary node for each groupGUID
+	// and search always gores through that and doesn't update trigger info if its is repeated.
+	public static boolean UniqueGroupGUIDEnabled					= false;
+	
 	// if set to true basic subspace config is enabled.
 	//public static boolean basicSubspaceConfig						= false;
 	
@@ -120,4 +125,7 @@ public class ContextServiceConfig
 	public static double modelAq             						= 100*100*4;
 	
 	public static double modelCminByC								= 0.00063231;
+	
+	// search query automiatically expires after this time
+	public static long searchExpiryTime							= 30000;
 }
