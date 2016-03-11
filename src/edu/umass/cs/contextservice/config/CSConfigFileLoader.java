@@ -82,6 +82,10 @@ public class CSConfigFileLoader
 	  
 	  ContextServiceConfig.modelCminByC = Double.parseDouble(
 	    		properties.getProperty(ContextServiceConfig.modelCminByCString, ContextServiceConfig.modelCminByC+"") );
+	  
+	  ContextServiceConfig.modelSearchRes = Long.parseLong(
+	    		properties.getProperty(ContextServiceConfig.modelSearchResString, 
+	    				ContextServiceConfig.modelSearchRes+"") );
     
 	  System.out.println("read props ContextServiceConfig.modelRho "+ContextServiceConfig.modelRho
     		+" ContextServiceConfig.modelCsByC "+ContextServiceConfig.modelCsByC
@@ -90,7 +94,8 @@ public class CSConfigFileLoader
     		+" ContextServiceConfig.TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED
     		+" ContextServiceConfig.modelCtByC "+ContextServiceConfig.modelCtByC 
     		+" ContextServiceConfig.modelAq "+ContextServiceConfig.modelAq 
-    		+" ContextServiceConfig.modelCminByC "+ContextServiceConfig.modelCminByC);
+    		+" ContextServiceConfig.modelCminByC "+ContextServiceConfig.modelCminByC
+    		+" ContextServiceConfig.modelSearchRes "+ContextServiceConfig.modelSearchRes);
   }
   
   /**

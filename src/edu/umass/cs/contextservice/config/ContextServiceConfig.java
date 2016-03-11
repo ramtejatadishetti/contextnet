@@ -17,6 +17,8 @@ public class ContextServiceConfig
 	public static final String modelAqString						= "modelAq";
 	public static final String modelCminByCString					= "modelCminByC";
 	
+	public static final String modelSearchResString					= "modelSearchRes";
+	
 	// path where all config files are stored, like node setup, attribute info, subspace info
 	public static String configFileDirectory;
 	
@@ -127,5 +129,5 @@ public class ContextServiceConfig
 	public static double modelCminByC								= 0.00063231;
 	
 	// search query automiatically expires after this time
-	public static long searchExpiryTime							= 30000;
+	public static long modelSearchRes								= 30000;
 }

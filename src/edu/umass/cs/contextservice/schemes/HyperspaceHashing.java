@@ -805,7 +805,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
-			long expiryTime = System.currentTimeMillis() + ContextServiceConfig.searchExpiryTime;
+			long expiryTime = System.currentTimeMillis() + ContextServiceConfig.modelSearchRes;
 			this.hyperspaceDB.insertIntoSubspaceTriggerDataInfo( subspaceId, replicaNum, 
 					attrName, query, groupGUID, userIP, userPort, expiryTime);
 		}
