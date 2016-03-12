@@ -11,7 +11,7 @@ import sys
 
 #result = minimize(f, [1])
 #print(result.x)
-rho                             = 0.5
+rho                             = 1.0
 #Yc                             = 1.0
 N                               = 36.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
@@ -238,8 +238,8 @@ def solveThroughputQuadriticEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtB
         x1 = ( -b + math.sqrt(math.pow(b,2.0) - 4.0 * a * c) )/(2.0 * a)
         x2 = ( -b - math.sqrt(math.pow(b,2.0) - 4.0 * a * c) )/(2.0 * a)
     else:
-        x1 = ( -b + math.sqrt(math.pow(b,2.0) - 4.0 * a * c) )
-        x2 = ( -b - math.sqrt(math.pow(b,2.0) - 4.0 * a * c) )
+        x1 = -c/b
+        x2 = -c/b
     
     maxT = -1.0
     print "roots with a "+str(a)+" b "+str(b)+" c "+str(c)+" x1 "+str(x1)+" x2 "+str(x2)
@@ -361,61 +361,6 @@ print "num trigger sub "+str(calculateOverlapingNodesForTrigger(2.0, 10.0))
 
 #print "number of nodes for trigger " +str(calculateOverlapingNodesForTrigger(18, 10))
 #print "number nodes an update goes to "+str(calcluateExpectedNumNodesAnUpdateGoesTo(18, 10))
-
-
-# def hyperspaceHashingModel(H, rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtByC, CminByC):
-#     currX= maxBallsFun(H, Aavg, B)
-#     
-#     print "currX "+str(currX) +" currH "+str(H)
-#     if ( (currX > 0) ):
-#         numNodesSubspace = getNumNodesForASubspace(B, H, N, configType)
-#         numNodesSearch = calculateExpectedNumNodesASearchGoesTo(numNodesSubspace, H, currX)
-#         numNodesUpdate = calcluateExpectedNumNodesAnUpdateGoesTo(numNodesSubspace, H)
-#         
-#         numTotalSubspsaces = N/numNodesSubspace
-#         # assuming basic, will be inaccurate in replicated
-#         # only one subspace will have more than 1 node, others will be jsut 1
-#         totalUpdLoad = 1.0 + (numTotalSubspsaces - 1.0) + numNodesUpdate
-#         print "totalUpdLoad "+str(totalUpdLoad)
-#         if(triggerEnable == 0):
-#             return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
-#         else:
-#             basicSum = rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
-#             numNodesTrigger = calculateOverlapingNodesForTrigger(numNodesSubspace, H)
-#             numPartitions = math.ceil(numNodesSubspace/H)
-#             
-#             numActiveQueriesOnNode = numNodesTrigger * ((Aq * Aavg)/(numPartitions*B))
-#             
-#             triggerGuidsRead = CminByC + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)*CtByC
-#             triggerSum = rho * Aavg * numNodesTrigger * CuByC + (1-rho) * 2 * numAttrsInUpdate * (numTotalSubspsaces/(B/H)) * triggerGuidsRead
-#             
-#             return basicSum + triggerSum
-#     else:
-#         currX = (Aavg*H)/B
-#         print "Not a good value "
-#         numNodesSubspace = getNumNodesForASubspace(B, H, N, configType)
-#         numNodesSearch = calculateExpectedNumNodesASearchGoesTo(numNodesSubspace, H, currX)
-#         numNodesUpdate = calcluateExpectedNumNodesAnUpdateGoesTo(numNodesForSubspace, H)
-#         numTotalSubspsaces = N/numNodesSubspace
-# 
-#         # assuming basic, will be inaccurate in replicated
-#         # only one subspace will have more than 1 node, others will be just 1
-#         totalUpdLoad = 1.0 + (numTotalSubspsaces - 1.0) + numNodesUpdate
-#         print "totalUpdLoad "+str(totalUpdLoad)
-#         if(triggerEnable == 0):
-#             return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
-#         else:
-#             basicSum = rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
-#             numNodesTrigger = calculateOverlapingNodesForTrigger(numNodesSubspace, H)
-#             numPartitions = math.ceil(numNodesSubspace/H)
-#             
-#             numActiveQueriesOnNode = numNodesTrigger * ((Aq * Aavg)/(numPartitions*B))
-#             
-#             triggerGuidsRead = CminByC + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)*CtByC
-#             triggerSum = rho * Aavg * numNodesTrigger * CuByC + (1-rho) * 2 * numAttrsInUpdate * (numTotalSubspsaces/(B/H)) * triggerGuidsRead
-#             
-#             return basicSum + triggerSum
-#         #return rho*numNodesSearch*CsByC + (1-rho) * totalUpdLoad * CuByC
 
 #def solveDAlpha(c):
 #    x = sympy.Symbol('x')
