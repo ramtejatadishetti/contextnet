@@ -11,14 +11,14 @@ import sys
 
 #result = minimize(f, [1])
 #print(result.x)
-rho                             = 1.0
+rho                             = 0.5
 #Yc                             = 1.0
-N                               = 36.0
+N                               = 2.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
 # specially if result size increases then estimation error might increase.
 CsByC                           = 0.005319149
 CuByC                           = 0.001105274
-CiByC                           = 0.004127837
+CiByC                           = 0.003527837
 B                               = 20.0
 Aavg                            = 4.0
 
