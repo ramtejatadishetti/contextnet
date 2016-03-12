@@ -11,20 +11,20 @@ import sys
 
 #result = minimize(f, [1])
 #print(result.x)
-rho                             = 0.5
+rho                             = 0.0
 #Yc                             = 1.0
-N                               = 2.0
+N                               = 36.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
 # specially if result size increases then estimation error might increase.
 CsByC                           = 0.005319149
-CuByC                           = 0.001105274
-CiByC                           = 0.003527837
+CuByC                           = 0.00071537
+CiByC                           = 0.003127837
 B                               = 20.0
 Aavg                            = 4.0
 
 # if 0 then trigger not enable
 # 1 if enable
-triggerEnable                   = 1
+triggerEnable                   = 0
 CtByC                           = 0.000002838
 CminByC                         = 0.000313117
 QueryResidenceTime              = 30.0
@@ -225,10 +225,18 @@ def solveThroughputQuadriticEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtB
     
     numActiveQueriesCoeff = numNodesTrigger * ((rho * QueryResidenceTime * Aavg)/(numPartitions*B))* YByDAvg *CtByC
     
-    totalUpdLoad = 1.0 + (numTotalSubspsaces - 1.0) + numNodesUpdate
+    currP = math.pow(numNodesSubspace, 1.0/H)
+    if(currP < 1):
+        currP = 1
+    oneByP = 1.0/currP
+    updComp1 = oneByP*1.0*CuByC + (1.0-oneByP)*2.0*CiByC
+    
+    totalUpdLoad = (1.0 + (numTotalSubspsaces - 1.0))*CuByC + updComp1
+    
+    #totalUpdLoad = 1.0 + (numTotalSubspsaces - 1.0) + numNodesUpdate
     
     a = 2.0 * (1.0-rho) * numActiveQueriesCoeff
-    b = rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad * CuByC + rho * Aavg * numNodesTrigger * CiByC \
+    b = rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad + rho * Aavg * numNodesTrigger * CiByC \
     + (1.0-rho) * 2.0 * numUniqueSubspaces * CminByC
     c = -N
     
@@ -253,33 +261,28 @@ def solveThroughputQuadriticEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtB
 # equation becomes linear if there are no triggers.
 def solveThroughputLinearEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtByC, CminByC):
     currX= maxBallsFun(H, Aavg, B)
-    
-    print "currX "+str(currX) +" currH "+str(H)
-    if ( (currX > 0.0) ):
-        numNodesSubspace = getNumNodesForASubspace(B, H, N, configType)
-        numNodesSearch = calculateExpectedNumNodesASearchGoesTo(numNodesSubspace, H, currX)
-        numNodesUpdate = calcluateExpectedNumNodesAnUpdateGoesTo(numNodesSubspace, H)
-        
-        numTotalSubspsaces = N/numNodesSubspace
-        # assuming basic, will be inaccurate in replicated
-        # only one subspace will have more than 1 node, others will be just 1
-        totalUpdLoad = 1.0 + (numTotalSubspsaces - 1.0) + numNodesUpdate
-        print "totalUpdLoad "+str(totalUpdLoad)+" currH "+str(H)+" numNodesSearch "+str(numNodesSearch)
-        return N/(rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad * CuByC)
-    
-    else:
+    if ( currX <= 0.0 ):
         currX = (Aavg*H)/B
-        print "Not a good value "
-        numNodesSubspace = getNumNodesForASubspace(B, H, N, configType)
-        numNodesSearch = calculateExpectedNumNodesASearchGoesTo(numNodesSubspace, H, currX)
-        numNodesUpdate = calcluateExpectedNumNodesAnUpdateGoesTo(numNodesForSubspace, H)
-        numTotalSubspsaces = N/numNodesSubspace
+        
+    numNodesSubspace = getNumNodesForASubspace(B, H, N, configType)
+    numNodesSearch = calculateExpectedNumNodesASearchGoesTo(numNodesSubspace, H, currX)
+    numNodesUpdate = calcluateExpectedNumNodesAnUpdateGoesTo(numNodesSubspace, H)
+    
+    currP = math.pow(numNodesSubspace, 1.0/H)
+    if(currP < 1):
+        currP = 1
+        
+    oneByP = 1.0/currP
+    updComp1 = oneByP*1.0*CuByC + (1.0-oneByP)*2.0*CiByC
 
-        # assuming basic, will be inaccurate in replicated
-        # only one subspace will have more than 1 node, others will be just 1
-        totalUpdLoad = 1.0 + (numTotalSubspsaces - 1.0) + numNodesUpdate
-        print "totalUpdLoad "+str(totalUpdLoad)+" currH "+str(H)+" numNodesSearch "+str(numNodesSearch)
-        return N/(rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad * CuByC)
+    numTotalSubspsaces = N/numNodesSubspace
+    # assuming basic, will be inaccurate in replicated
+    # only one subspace will have more than 1 node, others will be just 1
+    totalUpdLoad = (1.0 + (numTotalSubspsaces - 1.0))*CuByC + updComp1
+    print "totalUpdLoad "+str(totalUpdLoad)+" currH "+str(H)+" numNodesSearch "+str(numNodesSearch)
+    return N/(rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad )
+    #return N/(rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad * CuByC)
+
     
 # loops through all H values to check for optimal value of H
 def loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtByC, CminByC):
