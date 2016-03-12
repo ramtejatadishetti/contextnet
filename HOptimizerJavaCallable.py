@@ -11,14 +11,14 @@ import sys
 
 #result = minimize(f, [1])
 #print(result.x)
-rho                             = 1.0
+rho                             = 0.5
 #Yc                             = 1.0
 N                               = 36.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
 # specially if result size increases then estimation error might increase.
 CsByC                           = 0.005319149
 CuByC                           = 0.001105274
-CiByC                           = 0.002105274
+CiByC                           = 0.004127837
 B                               = 20.0
 Aavg                            = 4.0
 
@@ -209,6 +209,8 @@ def solveThroughputQuadriticEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtB
     numNodesTrigger  = calculateOverlapingNodesForTrigger(numNodesSubspace, H)
     numPartitions    = math.ceil(numNodesSubspace/H)
     
+    print "currH "+str(H)+" numNodesSearch "+str(numNodesSearch)+" numNodesTrigger "+str(numNodesTrigger)
+    
     #numActiveQueriesOnNode = numNodesTrigger * ((Aq * Aavg)/(numPartitions*B))
     #triggerGuidsRead = CminByC + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)*CtByC
     # assuming basic, will be inaccurate in replicated
@@ -262,7 +264,7 @@ def solveThroughputLinearEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtByC,
         # assuming basic, will be inaccurate in replicated
         # only one subspace will have more than 1 node, others will be just 1
         totalUpdLoad = 1.0 + (numTotalSubspsaces - 1.0) + numNodesUpdate
-        print "totalUpdLoad "+str(totalUpdLoad)+" currH "+str(H)
+        print "totalUpdLoad "+str(totalUpdLoad)+" currH "+str(H)+" numNodesSearch "+str(numNodesSearch)
         return N/(rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad * CuByC)
     
     else:
@@ -276,7 +278,7 @@ def solveThroughputLinearEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtByC,
         # assuming basic, will be inaccurate in replicated
         # only one subspace will have more than 1 node, others will be just 1
         totalUpdLoad = 1.0 + (numTotalSubspsaces - 1.0) + numNodesUpdate
-        print "totalUpdLoad "+str(totalUpdLoad)+" currH "+str(H)
+        print "totalUpdLoad "+str(totalUpdLoad)+" currH "+str(H)+" numNodesSearch "+str(numNodesSearch)
         return N/(rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad * CuByC)
     
 # loops through all H values to check for optimal value of H
