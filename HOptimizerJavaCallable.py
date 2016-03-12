@@ -11,13 +11,14 @@ import sys
 
 #result = minimize(f, [1])
 #print(result.x)
-rho                             = 0.5
+rho                             = 1.0
 #Yc                             = 1.0
 N                               = 36.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
 # specially if result size increases then estimation error might increase.
 CsByC                           = 0.005319149
 CuByC                           = 0.001105274
+CiByC                           = 0.002105274
 B                               = 20.0
 Aavg                            = 4.0
 
@@ -225,14 +226,19 @@ def solveThroughputQuadriticEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtB
     totalUpdLoad = 1.0 + (numTotalSubspsaces - 1.0) + numNodesUpdate
     
     a = 2.0 * (1.0-rho) * numActiveQueriesCoeff
-    b = rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad * CuByC + rho * Aavg * numNodesTrigger * CuByC \
+    b = rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad * CuByC + rho * Aavg * numNodesTrigger * CiByC \
     + (1.0-rho) * 2.0 * numUniqueSubspaces * CminByC
     c = -N
     
     print "a "+str(a)+" b "+str(b) +" c "+str(c)
     # now get the roots.
-    x1 = ( -b + math.sqrt(math.pow(b,2.0) - 4.0 * a * c) )/(2.0 * a)
-    x2 = ( -b - math.sqrt(math.pow(b,2.0) - 4.0 * a * c) )/(2.0 * a)
+    if(a != 0):
+        x1 = ( -b + math.sqrt(math.pow(b,2.0) - 4.0 * a * c) )/(2.0 * a)
+        x2 = ( -b - math.sqrt(math.pow(b,2.0) - 4.0 * a * c) )/(2.0 * a)
+    else:
+        x1 = ( -b + math.sqrt(math.pow(b,2.0) - 4.0 * a * c) )
+        x2 = ( -b - math.sqrt(math.pow(b,2.0) - 4.0 * a * c) )
+    
     maxT = -1.0
     print "roots with a "+str(a)+" b "+str(b)+" c "+str(c)+" x1 "+str(x1)+" x2 "+str(x2)
     if(x1 > x2):
