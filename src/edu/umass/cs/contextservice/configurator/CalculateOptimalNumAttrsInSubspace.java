@@ -82,8 +82,8 @@ public class CalculateOptimalNumAttrsInSubspace
 		p = Runtime.getRuntime().exec("python HOptimizerJavaCallable.py "
 	+ContextServiceConfig.modelRho+" "+numNodes+" "+ContextServiceConfig.modelCsByC
 	+" "+ContextServiceConfig.modelCuByC+" "+numAttrs+" "+ContextServiceConfig.modelAavg
-	+" "+triggerEnable+" "+ContextServiceConfig.modelCtByC+" "+ContextServiceConfig.modelAq
-	+" "+ContextServiceConfig.modelCminByC);
+	+" "+triggerEnable+" "+ContextServiceConfig.modelCtByC+" "+ContextServiceConfig.modelCminByC
+	+" "+ContextServiceConfig.modelCiByC);
 		
 		BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
 		String currline = in.readLine();

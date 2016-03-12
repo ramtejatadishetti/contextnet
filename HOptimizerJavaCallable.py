@@ -234,7 +234,7 @@ def solveThroughputQuadriticEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtB
     
     print "a "+str(a)+" b "+str(b) +" c "+str(c)
     # now get the roots.
-    if(a != 0):
+    if(a != 0.0):
         x1 = ( -b + math.sqrt(math.pow(b,2.0) - 4.0 * a * c) )/(2.0 * a)
         x2 = ( -b - math.sqrt(math.pow(b,2.0) - 4.0 * a * c) )/(2.0 * a)
     else:
@@ -324,6 +324,7 @@ if(len(sys.argv) >= 9):
     triggerEnable    = int(sys.argv[7])
     CtByC            = float(sys.argv[8])
     CminByC          = float(sys.argv[9])
+    CiByC            = float(sys.argv[10])
     
 print "rho "+str(rho)+" N "+str(N)+" CsByC "+str(CsByC)+" CuByC "\
 +str(CuByC)+" B "+str(B)+" Aavg "+str(Aavg)+" triggerEnable "+str(triggerEnable)+" CtByC "+str(CtByC)

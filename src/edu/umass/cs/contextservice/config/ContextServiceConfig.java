@@ -14,7 +14,7 @@ public class ContextServiceConfig
 	public static final String modelAavgString  					= "modelAavg";
 	public static final String triggerEnableString					= "triggerEnable";
 	public static final String modelCtByCString						= "modelCtByC";
-	public static final String modelAqString						= "modelAq";
+	public static final String modelCiByCString						= "modelCiByC";
 	public static final String modelCminByCString					= "modelCminByC";
 	
 	public static final String modelSearchResString					= "modelSearchRes";
@@ -124,7 +124,7 @@ public class ContextServiceConfig
 	
 	public static double modelCtByC             					= 0.000009028;
 	
-	public static double modelAq             						= 100*100*4;
+	public static double modelCiByC             					= 0.004127837;
 	
 	public static double modelCminByC								= 0.00063231;
 	
