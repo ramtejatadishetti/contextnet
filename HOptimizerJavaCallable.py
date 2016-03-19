@@ -11,26 +11,27 @@ import sys
 
 #result = minimize(f, [1])
 #print(result.x)
-rho                             = 1.0
+rho                             = 0.0
 #Yc                             = 1.0
 N                               = 36.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
 # specially if result size increases then estimation error might increase.
 CsByC                           = 0.005319149
 CuByC                           = 0.00071537
-CiByC                           = 0.003127837
+#CiByC                           = 0.003127837
+CiByC                           = 0.00071537
 B                               = 2.0
 Aavg                            = 2.0
 
 # if 0 then trigger not enable
 # 1 if enable
-triggerEnable                   = 1
+triggerEnable                   = 0
 CtByC                           = 0.000002838
 CminByC                         = 0.000313117
 QueryResidenceTime              = 30.0
-disableOptimizer                = False
+disableOptimizer                = True
 inputH                          = 2.0
-inputConfigType                 = 1
+inputConfigType                 = 2
 
 BASIC_SUBSPACE_CONFIG           = 1
 REPLICATED_SUBSPACE_CONFIG      = 2
@@ -232,10 +233,11 @@ def solveThroughputQuadriticEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtB
     if(currP < 1):
         currP = 1
     oneByP = 1.0/currP
-    updComp1 = oneByP*1.0*CuByC + (1.0-oneByP)*2.0*CiByC
+    #updComp1 = oneByP*1.0*CuByC + (1.0-oneByP)*2.0*CiByC
+    updComp1 = CuByC + (1.0-oneByP)*CiByC
     
-    totalUpdLoad = (1.0 + (numTotalSubspsaces - 1.0))*CuByC + updComp1
-    
+    #totalUpdLoad = (1.0 + (numTotalSubspsaces - 1.0))*CuByC + updComp1
+    totalUpdLoad = CuByC + numUniqueSubspaces*updComp1 + (numTotalSubspsaces-numUniqueSubspaces)*CuByC
     #totalUpdLoad = 1.0 + (numTotalSubspsaces - 1.0) + numNodesUpdate
     
     a = 2.0 * (1.0-rho) * numActiveQueriesCoeff
@@ -279,9 +281,14 @@ def solveThroughputLinearEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtByC,
     updComp1 = oneByP*1.0*CuByC + (1.0-oneByP)*2.0*CiByC
 
     numTotalSubspsaces = N/numNodesSubspace
+    numUniqueSubspaces = numTotalSubspsaces/((B/H)) 
+    
     # assuming basic, will be inaccurate in replicated
     # only one subspace will have more than 1 node, others will be just 1
-    totalUpdLoad = (1.0 + (numTotalSubspsaces - 1.0))*CuByC + updComp1
+    
+    totalUpdLoad = CuByC + numUniqueSubspaces*updComp1 + (numTotalSubspsaces-numUniqueSubspaces)*CuByC
+    
+    #totalUpdLoad = (1.0 + (numTotalSubspsaces - 1.0))*CuByC + updComp1
     print "totalUpdLoad "+str(totalUpdLoad)+" currH "+str(H)+" numNodesSearch "+str(numNodesSearch)
     return N/(rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad )
     #return N/(rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad * CuByC)
