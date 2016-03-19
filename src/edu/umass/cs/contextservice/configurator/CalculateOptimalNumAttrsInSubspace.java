@@ -73,17 +73,33 @@ public class CalculateOptimalNumAttrsInSubspace
 		extractTheScript();
 		int triggerEnable = 0;
 		
-		if(ContextServiceConfig.TRIGGER_ENABLED)
+		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
 			triggerEnable = 1;
 		}
+		String disableOptimizer = "False";
+		
+		if( ContextServiceConfig.disableOptimizer )
+		{
+			disableOptimizer = "True";
+		}
+		
+		// 1 for basic config/no replication
+		int inputConfigType = 1;
+		if( !ContextServiceConfig.basicConfig )
+		{
+			// for replicated config
+			inputConfigType = 2;
+		}
+		
 		Process p = Runtime.getRuntime().exec("chmod +x HOptimizerJavaCallable.py");
 		
 		p = Runtime.getRuntime().exec("python HOptimizerJavaCallable.py "
 	+ContextServiceConfig.modelRho+" "+numNodes+" "+ContextServiceConfig.modelCsByC
 	+" "+ContextServiceConfig.modelCuByC+" "+numAttrs+" "+ContextServiceConfig.modelAavg
 	+" "+triggerEnable+" "+ContextServiceConfig.modelCtByC+" "+ContextServiceConfig.modelCminByC
-	+" "+ContextServiceConfig.modelCiByC);
+	+" "+ContextServiceConfig.modelCiByC+" "+disableOptimizer+" "+ContextServiceConfig.optimalH+" "
+	+ inputConfigType);
 		
 		BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
 		String currline = in.readLine();

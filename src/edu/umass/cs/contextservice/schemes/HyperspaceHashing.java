@@ -63,7 +63,7 @@ import edu.umass.cs.protocoltask.ProtocolEvent;
 import edu.umass.cs.protocoltask.ProtocolTask;
 
 public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
-{	
+{
 	private final ExecutorService nodeES;
 	
 	private long numberOfQueryFromUser													= 0;
@@ -93,6 +93,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		replicaChoosingRand = new Random(this.getMyID().hashCode());
 		guidUpdateInfoMap = new HashMap<String, GUIDUpdateInfo<NodeIDType>>();
 		
+
 		optimalHCalculator = new CalculateOptimalNumAttrsInSubspace(nc.getNodeIDs().size(),
 					AttributeTypes.attributeMap.size());
 		
@@ -106,7 +107,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			subspaceConfigurator 
 			= new ReplicatedSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), optimalHCalculator.getOptimalH() );
 		}
-		
+			
 		ContextServiceLogger.getLogger().fine("configure subspace started");
 		// configure subspaces
 		subspaceConfigurator.configureSubspaceInfo();

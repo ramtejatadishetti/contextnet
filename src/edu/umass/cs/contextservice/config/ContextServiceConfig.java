@@ -19,6 +19,10 @@ public class ContextServiceConfig
 	
 	public static final String modelSearchResString					= "modelSearchRes";
 	
+	public static final String disableOptimizerString				= "disableOptimizer";
+	public static final String basicConfigString					= "basicConfig";
+	public static final String optimalHString						= "optimalH";
+	
 	// path where all config files are stored, like node setup, attribute info, subspace info
 	public static String configFileDirectory;
 	
@@ -130,4 +134,15 @@ public class ContextServiceConfig
 	
 	// search query automiatically expires after this time
 	public static long modelSearchRes								= 30000;
+	
+	// if set to true then optimizer is disabled
+	public static boolean disableOptimizer							= false;
+	
+	// basic config is used if set to true.
+	// only used if optimizer is disabled, otherwise the optimizer given config will be used.
+	public static boolean basicConfig								= true;
+	
+	// can be set from config files, if the optimizer is disabled. Otherwise will come from
+	// optimizer. If false replicated config will be used and optimizer disabled
+	public static double optimalH									= 2.0;
 }

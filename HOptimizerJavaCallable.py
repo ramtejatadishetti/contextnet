@@ -1,7 +1,7 @@
 # script that is called by the contextnet java system/program.
 # it returns the optimal value of H, considering both the replicated 
 # and basic subspace configurations.
-# refer to contextnet modelling section and http://www14.in.tum.de/personen/raab/publ/balls.pdf for maximum balls and bins function
+# refer to contextnet modeling section and http://www14.in.tum.de/personen/raab/publ/balls.pdf for maximum balls and bins function
 
 import math
 #from scipy.optimize import minimize
@@ -11,7 +11,7 @@ import sys
 
 #result = minimize(f, [1])
 #print(result.x)
-rho                             = 0.0
+rho                             = 1.0
 #Yc                             = 1.0
 N                               = 36.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
@@ -19,15 +19,18 @@ N                               = 36.0
 CsByC                           = 0.005319149
 CuByC                           = 0.00071537
 CiByC                           = 0.003127837
-B                               = 20.0
-Aavg                            = 4.0
+B                               = 2.0
+Aavg                            = 2.0
 
 # if 0 then trigger not enable
 # 1 if enable
-triggerEnable                   = 0
+triggerEnable                   = 1
 CtByC                           = 0.000002838
 CminByC                         = 0.000313117
 QueryResidenceTime              = 30.0
+disableOptimizer                = False
+inputH                          = 2.0
+inputConfigType                 = 1
 
 BASIC_SUBSPACE_CONFIG           = 1
 REPLICATED_SUBSPACE_CONFIG      = 2
@@ -119,7 +122,7 @@ def calcluateExpectedNumNodesAnUpdateGoesTo(numNodesForSubspace, currH):
     numNodesUpd = oneByP*1.0 + (1.0-oneByP)*2.0
     return numNodesUpd
 
-    
+
 def maxBallsFun(currH, Aavg, B):
     # optimizer sometimes sends negative values
     if(currH < 0.0):
@@ -190,7 +193,7 @@ def getNumNodesForASubspace(B, currH, N, configType):
         else:
             print "\n B = "+str(B)+" currH "+str(currH)+" N= "+str(N)+" choosing replicated config \n"
             return math.ceil(math.sqrt(N))
-                
+    
     
 # equation becomes quadritic in case of active triggers.
 def solveThroughputQuadriticEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtByC, CminByC):
@@ -290,7 +293,7 @@ def loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtBy
     optimalH  = -1.0
     maxValue  = -1.0
     currH     = 2.0
-    while( currH <= MAXIMUM_H_VALUE ):
+    while( currH <= MAXIMUM_H_VALUE and currH <= B ):
         currT = -1.0
         if(triggerEnable == 0):
             currT = solveThroughputLinearEq(currH, rho, N, CsByC, B, CuByC, Aavg, configType, CtByC, CminByC)
@@ -315,7 +318,7 @@ def loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtBy
     print "rho "+ str(rho)+" optimalH "+str(optimalH)+" maxValue "+str(maxValue)+"\n"
     return returnDict
     
-if(len(sys.argv) >= 9):
+if(len(sys.argv) >= 13):
     rho              = float(sys.argv[1])
     N                = float(sys.argv[2])
     # calculated by single node throughput, not very accurate estimation but let's go with that for now.
@@ -328,48 +331,44 @@ if(len(sys.argv) >= 9):
     CtByC            = float(sys.argv[8])
     CminByC          = float(sys.argv[9])
     CiByC            = float(sys.argv[10])
+    disableOptimizer = bool(sys.argv[11])
+    inputH           = float(sys.argv[12])
+    inputConfigType  = int(sys.argv[13])
     
 print "rho "+str(rho)+" N "+str(N)+" CsByC "+str(CsByC)+" CuByC "\
 +str(CuByC)+" B "+str(B)+" Aavg "+str(Aavg)+" triggerEnable "+str(triggerEnable)+" CtByC "+str(CtByC)
 
-# 1 for basic config, 2 replicated config
-#configType       = float(sys.argv[7])
-
-# BASIC_SUBSPACE_CONFIG           = 1
-# REPLICATED_SUBSPACE_CONFIG      = 2
-
-basicResultDict = loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, BASIC_SUBSPACE_CONFIG, triggerEnable, CtByC, CminByC)
-repResultDict = loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, REPLICATED_SUBSPACE_CONFIG, triggerEnable, CtByC, CminByC)
-
-# compare which scheme is better, replicated or basic configuration
-#functionValKey                  = 'funcValKey'
-#optimalHKey                     = 'optimalHKey'
-
-basicFuncValue = basicResultDict[functionValKey]
-repFuncValue = repResultDict[functionValKey]
-
-# basic config better
-if( basicFuncValue >= repFuncValue ):
-    print "BASIC OPTIMIZATION RESULT H "+str(basicResultDict[optimalHKey])+" MAXVALUE "+str(basicFuncValue) \
-    +" OTHERVAL "+str(repFuncValue)
-else:
-    print "REPLICATED OPTIMIZATION RESULT H "+str(repResultDict[optimalHKey])+" MAXVALUE "+str(repFuncValue) \
-    +" OTHERVAL "+str(basicFuncValue)
+if(not disableOptimizer):
+    basicResultDict = loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, BASIC_SUBSPACE_CONFIG, triggerEnable, CtByC, CminByC)
+    repResultDict   = loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, REPLICATED_SUBSPACE_CONFIG, triggerEnable, CtByC, CminByC)
     
-print "###################\n\n\n\n"
-print "num trigger sub "+str(calculateOverlapingNodesForTrigger(2.0, 10.0))
-#hyperspaceHashingModel(10.0, rho, N, CsByC, B, CuByC, Aavg, BASIC_SUBSPACE_CONFIG, triggerEnable, CtByC, CminByC)
+    # compare which scheme is better, replicated or basic configuration
+    #functionValKey                  = 'funcValKey'
+    #optimalHKey                     = 'optimalHKey'
 
+    basicFuncValue  = basicResultDict[functionValKey]
+    repFuncValue    = repResultDict[functionValKey]
 
-
-#print "number of nodes for trigger " +str(calculateOverlapingNodesForTrigger(18, 10))
-#print "number nodes an update goes to "+str(calcluateExpectedNumNodesAnUpdateGoesTo(18, 10))
-
-#def solveDAlpha(c):
-#    x = sympy.Symbol('x')
-#    res = sympy.solve(1.0 + x * (sympy.log(c) - sympy.log(x) + 1) - c, x)
-#    
-#    for i in range(len(res)):
-#        if(res[i] > c):
-#            return res[i]
-#    return -1
+    # basic config better
+    if( basicFuncValue >= repFuncValue ):
+        print "BASIC OPTIMIZATION RESULT H "+str(basicResultDict[optimalHKey])+" MAXVALUE "+str(basicFuncValue) \
+        +" OTHERVAL "+str(repFuncValue)
+    else:
+        print "REPLICATED OPTIMIZATION RESULT H "+str(repResultDict[optimalHKey])+" MAXVALUE "+str(repFuncValue) \
+        +" OTHERVAL "+str(basicFuncValue)
+    
+    print "###################\n\n\n\n"
+    print "num trigger sub "+str(calculateOverlapingNodesForTrigger(2.0, 10.0))
+    #hyperspaceHashingModel(10.0, rho, N, CsByC, B, CuByC, Aavg, BASIC_SUBSPACE_CONFIG, triggerEnable, CtByC, CminByC)
+else:
+    currT = -1.0
+    if(triggerEnable == 0):
+        currT = solveThroughputLinearEq(inputH, rho, N, CsByC, B, CuByC, Aavg, inputConfigType, CtByC, CminByC)
+    else:
+        print "disabled optimizer at work inputH "+str(inputH)
+        currT = solveThroughputQuadriticEq(inputH, rho, N, CsByC, B, CuByC, Aavg, inputConfigType, CtByC, CminByC)
+    
+    if( inputConfigType == BASIC_SUBSPACE_CONFIG ):
+        print "BASIC OPTIMIZATION RESULT H "+str(inputH)+" MAXVALUE "+str(currT) +" OTHERVAL "+str(currT)
+    elif( inputConfigType == REPLICATED_SUBSPACE_CONFIG ):
+        print "REPLICATED OPTIMIZATION RESULT H "+str(inputH)+" MAXVALUE "+str(currT)+" OTHERVAL "+str(currT)

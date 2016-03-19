@@ -72,7 +72,7 @@ public class CSConfigFileLoader
     		properties.getProperty(ContextServiceConfig.modelAavgString, ContextServiceConfig.modelAavg+"") );
     
 	  ContextServiceConfig.TRIGGER_ENABLED = Boolean.parseBoolean(
-    		properties.getProperty(ContextServiceConfig.triggerEnableString, "false") );
+    		properties.getProperty(ContextServiceConfig.triggerEnableString, ContextServiceConfig.TRIGGER_ENABLED+"") );
     
 	  ContextServiceConfig.modelCtByC = Double.parseDouble(
     		properties.getProperty(ContextServiceConfig.modelCtByCString, ContextServiceConfig.modelCtByC+"") );
@@ -86,7 +86,17 @@ public class CSConfigFileLoader
 	  ContextServiceConfig.modelSearchRes = Long.parseLong(
 	    		properties.getProperty(ContextServiceConfig.modelSearchResString, 
 	    				ContextServiceConfig.modelSearchRes+"") );
-    
+	  
+	  ContextServiceConfig.disableOptimizer = Boolean.parseBoolean(
+		properties.getProperty(ContextServiceConfig.disableOptimizerString, ContextServiceConfig.disableOptimizer+"") );
+	  
+	  ContextServiceConfig.basicConfig = Boolean.parseBoolean(
+				properties.getProperty(ContextServiceConfig.basicConfigString, ContextServiceConfig.basicConfig+"") );
+	  
+	  ContextServiceConfig.optimalH = Double.parseDouble(
+			  properties.getProperty(ContextServiceConfig.optimalHString, ContextServiceConfig.optimalH+"") );
+	  
+	  
 	  System.out.println("read props ContextServiceConfig.modelRho "+ContextServiceConfig.modelRho
     		+" ContextServiceConfig.modelCsByC "+ContextServiceConfig.modelCsByC
     		+" ContextServiceConfig.modelCuByC "+ContextServiceConfig.modelCuByC
@@ -95,7 +105,10 @@ public class CSConfigFileLoader
     		+" ContextServiceConfig.modelCtByC "+ContextServiceConfig.modelCtByC 
     		+" ContextServiceConfig.modelCiByC "+ContextServiceConfig.modelCiByC 
     		+" ContextServiceConfig.modelCminByC "+ContextServiceConfig.modelCminByC
-    		+" ContextServiceConfig.modelSearchRes "+ContextServiceConfig.modelSearchRes);
+    		+" ContextServiceConfig.modelSearchRes "+ContextServiceConfig.modelSearchRes
+    		+" ContextServiceConfig.disableOptimizer "+ ContextServiceConfig.disableOptimizer 
+    		+" ContextServiceConfig.basicConfig "+ContextServiceConfig.basicConfig
+    		+" ContextServiceConfig.optimalH "+ContextServiceConfig.optimalH );
   }
   
   /**
