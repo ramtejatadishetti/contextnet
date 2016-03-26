@@ -33,6 +33,8 @@ QueryResidenceTime              = 30.0
 disableOptimizer                = False
 inputH                          = 2.0
 inputConfigType                 = 2
+numGuids                        = 200000.0
+CstByC                          = 0.000001289
 
 BASIC_SUBSPACE_CONFIG           = 1
 REPLICATED_SUBSPACE_CONFIG      = 2
@@ -47,7 +49,21 @@ optimalHKey                     = 'optimalHKey'
 # for calculating expected number of nodes a query goes to.
 YByDArray = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
+
 def YbyDAverg(Aavg):
+    sum = 0.0
+    for i in YByDArray:
+        for j in YByDArray:
+            for k in YByDArray:
+                for l in YByDArray:
+                    sum = sum + i*j*k*l
+    
+    sum = sum/math.pow(10, Aavg)
+    print "sum "+str(sum)
+    return sum
+
+
+def YbyDAvergMinusOne(Aavg):
     sum = 0.0
     for i in YByDArray:
         for j in YByDArray:
@@ -64,6 +80,7 @@ def dAlphsFunc(x, c):
         return -1.0
     print "dAlphsFunc "+str(x) +" "+str(c)
     return 1.0 + x * (math.log(c) - math.log(x) + 1.0) - c
+
 
 def solveDAlpha(c):
     data = (c)
@@ -100,7 +117,6 @@ def calculateOverlapingNodesForTrigger(numNodesForSubspace, currH):
         
         print "calculateOverlapingNodesForTrigger for numNodesForSubspace "+str(numNodesForSubspace)+" currH "+str(currH)+" expectedNumOverlapNodes "+str(expectedNumNodes) 
         return expectedNumNodes
-    
 
 def calculateExpectedNumNodesASearchGoesTo(numNodesForSubspace, currH, currM):  
         expectedNumNodes = 0.0
@@ -208,7 +224,7 @@ def solveThroughputQuadriticEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtB
     
     numNodesSearch   = calculateExpectedNumNodesASearchGoesTo(numNodesSubspace, H, currX)
     numNodesUpdate   = calcluateExpectedNumNodesAnUpdateGoesTo(numNodesSubspace, H)
-        
+    
     numTotalSubspsaces = N/numNodesSubspace
     
     numNodesTrigger  = calculateOverlapingNodesForTrigger(numNodesSubspace, H)
@@ -216,19 +232,19 @@ def solveThroughputQuadriticEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtB
     
     print "currH "+str(H)+" numNodesSearch "+str(numNodesSearch)+" numNodesTrigger "+str(numNodesTrigger)
     
-    #numActiveQueriesOnNode = numNodesTrigger * ((Aq * Aavg)/(numPartitions*B))
-    #triggerGuidsRead = CminByC + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)*CtByC
+    # numActiveQueriesOnNode = numNodesTrigger * ((Aq * Aavg)/(numPartitions*B))
+    # triggerGuidsRead = CminByC + numActiveQueriesOnNode * math.pow(0.5, Aavg-1)*CtByC
     # assuming basic, will be inaccurate in replicated
     # only one subspace will have more than 1 node, others will be just 1
-                                               
+    
     # quadritic equation is of the form a*x^2 + b*x + c = 0
     # calculating a first.
-    # might need to replace it with actual expcetation
-    YByDAvg = YbyDAverg(Aavg)
+    # might need to replace it with actual expectation
+    YByDAvgMinusOne = YbyDAvergMinusOne(Aavg)
     numUniqueSubspaces = numTotalSubspsaces/((B/H)) 
     #* math.pow(YByD, Aavg -1.0)
     
-    numActiveQueriesCoeff = numNodesTrigger * ((rho * QueryResidenceTime * Aavg)/(numPartitions*B))* YByDAvg *CtByC
+    numActiveQueriesCoeff = numNodesTrigger * ((rho * QueryResidenceTime * Aavg)/(numPartitions*B))* YByDAvgMinusOne *CtByC
     
     currP = math.pow(numNodesSubspace, 1.0/H)
     if(currP < 1):
@@ -257,11 +273,11 @@ def solveThroughputQuadriticEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtB
     
     maxT = -1.0
     print "roots with a "+str(a)+" b "+str(b)+" c "+str(c)+" x1 "+str(x1)+" x2 "+str(x2)
-    if(x1 > x2):
+    if( x1 > x2 ):
         maxT = x1
     else:
         maxT = x2
-    
+        
     return maxT    
     
 # equation becomes linear if there are no triggers.
@@ -270,12 +286,16 @@ def solveThroughputLinearEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtByC,
     if ( currX <= 0.0 ):
         currX = (Aavg*H)/B
         
-    numNodesSubspace = getNumNodesForASubspace(B, H, N, configType)
-    numNodesSearch = calculateExpectedNumNodesASearchGoesTo(numNodesSubspace, H, currX)
-    numNodesUpdate = calcluateExpectedNumNodesAnUpdateGoesTo(numNodesSubspace, H)
+    numNodesSubspace  = getNumNodesForASubspace(B, H, N, configType)
+    numNodesSearch    = calculateExpectedNumNodesASearchGoesTo(numNodesSubspace, H, currX)
+    numNodesUpdate    = calcluateExpectedNumNodesAnUpdateGoesTo(numNodesSubspace, H)
+    YByDAvg           = YbyDAverg(Aavg)
+    resultSize        = numGuids * YByDAvg
     
-    currP = math.pow(numNodesSubspace, 1.0/H)
-    if(currP < 1):
+    
+    currP = math.pow( numNodesSubspace, 1.0/H )
+    
+    if( currP < 1 ):
         currP = 1
         
     oneByP = 1.0/currP
@@ -289,9 +309,12 @@ def solveThroughputLinearEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtByC,
     
     totalUpdLoad = CuByC + numUniqueSubspaces*updComp1 + (numTotalSubspsaces-numUniqueSubspaces)*CuByC
     
+    totalSearchLoad = numNodesSearch*CsByC + resultSize * CstByC
     #totalUpdLoad = (1.0 + (numTotalSubspsaces - 1.0))*CuByC + updComp1
-    print "totalUpdLoad "+str(totalUpdLoad)+" currH "+str(H)+" numNodesSearch "+str(numNodesSearch)
-    return N/(rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad )
+    print "totalUpdLoad "+str(totalUpdLoad)+" currH "+str(H)+" numNodesSearch "+str(numNodesSearch)\
+    +" numNodesSearch "+str(numNodesSearch)+" resultSize "+str(resultSize)
+    
+    return N/(rho*totalSearchLoad + (1.0-rho) * totalUpdLoad )
     #return N/(rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad * CuByC)
 
     
@@ -326,7 +349,7 @@ def loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtBy
     print "rho "+ str(rho)+" optimalH "+str(optimalH)+" maxValue "+str(maxValue)+"\n"
     return returnDict
     
-if(len(sys.argv) >= 13):
+if( len(sys.argv) >= 14 ):
     rho              = float(sys.argv[1])
     N                = float(sys.argv[2])
     # calculated by single node throughput, not very accurate estimation but let's go with that for now.
@@ -342,9 +365,10 @@ if(len(sys.argv) >= 13):
     disableOptimizer = bool(sys.argv[11])
     inputH           = float(sys.argv[12])
     inputConfigType  = int(sys.argv[13])
+    numGuids         = float(sys.argv[14])
     
 print "rho "+str(rho)+" N "+str(N)+" CsByC "+str(CsByC)+" CuByC "\
-+str(CuByC)+" B "+str(B)+" Aavg "+str(Aavg)+" triggerEnable "+str(triggerEnable)+" CtByC "+str(CtByC)
++str(CuByC)+" B "+str(B)+" Aavg "+str(Aavg)+" triggerEnable "+str(triggerEnable)+" CtByC "+str(CtByC) +" numGuids "+str(numGuids)+"\n"
 
 if(not disableOptimizer):
     basicResultDict = loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, BASIC_SUBSPACE_CONFIG, triggerEnable, CtByC, CminByC)
