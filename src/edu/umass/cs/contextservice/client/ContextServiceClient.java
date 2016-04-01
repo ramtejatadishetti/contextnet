@@ -44,13 +44,13 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	
 	public ContextServiceClient(String hostName, int portNum) throws IOException
 	{
-		super(hostName, portNum);
+		super( hostName, portNum );
 		refreshTriggerQueue = new LinkedList<JSONObject>();
 		sendConfigRequest();
 	}
 	
 	@Override
-	public void sendUpdate(String GUID, JSONObject gnsAttrValuePairs, long versionNum, boolean blocking)
+	public void sendUpdate( String GUID, JSONObject gnsAttrValuePairs, long versionNum, boolean blocking )
 	{
 		ContextServiceLogger.getLogger().fine("ContextClient sendUpdate enter "+GUID+" json "+
 				gnsAttrValuePairs);
@@ -58,7 +58,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		{
 			long currId;
 			
-			synchronized(this.updateIdLock)
+			synchronized( this.updateIdLock )
 			{
 				currId = this.updateReqId++;
 			}
@@ -75,7 +75,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				}
 			}
 			// no context service attribute matching.
-			if(csAttrValuePairs.length() <= 0)
+			if( csAttrValuePairs.length() <= 0 )
 			{
 				return;
 			}
@@ -102,7 +102,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			//niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
 			niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
 			
-			if(blocking)
+			if( blocking )
 			{
 				synchronized( updateQ )
 				{
@@ -122,7 +122,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		} catch (JSONException e)
 		{
 			e.printStackTrace();
-		} catch (UnknownHostException e)
+		} catch ( UnknownHostException e )
 		{
 			e.printStackTrace();
 		} catch (IOException e)
@@ -139,7 +139,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	@Override
 	public int sendSearchQuery(String searchQuery, JSONArray replyArray, long expiryTime)
 	{
-		if(replyArray == null)
+		if( replyArray == null )
 		{
 			ContextServiceLogger.getLogger().warning("null passsed "
 					+ "as replyArray in sendSearchQuery");
@@ -147,7 +147,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 		
 		long currId;
-		synchronized(this.searchIdLock)
+		synchronized( this.searchIdLock )
 		{
 			currId = this.searchReqId++;
 		}
@@ -486,7 +486,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		{
 			while( refreshTriggerQueue.size() == 0 )
 			{
-				try 
+				try
 				{
 					refreshTriggerClientWaitLock.wait();
 				} catch (InterruptedException e) 
@@ -495,7 +495,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				}
 			}
 			
-			while(!refreshTriggerQueue.isEmpty())
+			while( !refreshTriggerQueue.isEmpty() )
 			{
 				triggerArray.put(refreshTriggerQueue.poll());
 			}
