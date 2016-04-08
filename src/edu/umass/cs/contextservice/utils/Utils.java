@@ -5,8 +5,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -14,6 +21,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 import java.util.logging.Logger;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -28,10 +40,9 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 
 public class Utils
 {
+	public static final int GUID_SIZE				= 20; // 20 bytes
 	private static final Logger LOGGER 				= ContextServiceLogger.getLogger();
 	
-	public static final String UDPServer				= "ananas.cs.umass.edu";
-	public static final int UDPPort					= 54321;
 	
 	public static Vector<String> getActiveInterfaceStringAddresses()
 	{
@@ -264,6 +275,58 @@ public class Utils
        return sb.toString();
 	}
 	
+	public static String convertPublicKeyToGUIDString(byte[] publicKeyByteArray)
+	{
+		//Hashing.consistentHash(input, buckets);
+		MessageDigest md=null;
+		try 
+		{
+			md = MessageDigest.getInstance("SHA-256");
+		} catch (NoSuchAlgorithmException e) 
+		{
+			e.printStackTrace();
+		}
+		
+		md.update(publicKeyByteArray);
+		byte byteData[] = md.digest();
+ 
+		//convert the byte to hex format method 1
+		StringBuffer sb = new StringBuffer();
+		for (int i = 0; i < byteData.length; i++) 
+		{
+			sb.append(Integer.toString((byteData[i] & 0xff) + 0x100, 16).substring(1));
+		}
+		
+		//LOGGER.fine("Hex format : " + sb.toString());
+		return sb.toString().substring(0, GUID_SIZE*2);
+	}
+	
+	
+	public static byte[] convertPublicKeyToGUIDByteArray(byte[] publicKeyByteArray)
+	{
+		MessageDigest md=null;
+		try 
+		{
+			md = MessageDigest.getInstance("SHA-256");
+		} catch (NoSuchAlgorithmException e) 
+		{
+			e.printStackTrace();
+		}
+		
+		md.update(publicKeyByteArray);
+		byte byteData[] = md.digest();
+		
+		// 20 byte guid
+		byte[] guid = new byte[GUID_SIZE];
+		
+		for( int i=0; i<GUID_SIZE; i++ )
+		{
+			guid[i] = byteData[i];
+		}
+		
+		return guid;
+	}
+	
 	/**
 	 * returns true if the given address belongs to this machine
 	 * @return
@@ -273,9 +336,9 @@ public class Utils
 		Vector<InetAddress> currIPs = getActiveInterfaceInetAddresses();
 		for( int i=0;i<currIPs.size();i++ )
 		{
-			ContextServiceLogger.getLogger().fine("givenAddress "+givenAddress+
-					" currIPs.get(i) "+currIPs.get(i));
-			if(currIPs.get(i).getHostAddress().equals(givenAddress.getHostAddress()))
+			ContextServiceLogger.getLogger().fine( "givenAddress "+givenAddress+
+					" currIPs.get(i) "+currIPs.get(i) );
+			if( currIPs.get(i).getHostAddress().equals(givenAddress.getHostAddress()) )
 			{
 				return true;
 			}
@@ -283,44 +346,93 @@ public class Utils
 		return false;
 	}
 	
-	//public static void sendUDP( String mesg )
-	//{
-		/*try
+	public static double roundTo(double value, int places) 
+	{
+		if ( places < 0 || places > 20 )
 		{
-			DatagramSocket client_socket = new DatagramSocket();
-			
-			byte[] send_data = new byte[1024];	
-			//BufferedReader infromuser = 
-	        //                new BufferedReader(new InputStreamReader(System.in));
-			
-			InetAddress IPAddress =  InetAddress.getByName(Utils.UDPServer);
-			
-			//String data = infromuser.readLine();
-			send_data = mesg.getBytes();
-			DatagramPacket send_packet = new DatagramPacket(send_data,
-	                                                        send_data.length, 
-	                                                        IPAddress, UDPPort);
-			client_socket.send(send_packet);
-			
-			client_socket.close();
-		} catch(Exception ex)
-		{
-			ex.printStackTrace();
-		}*/
-	//}
-	
-	public static double roundTo(double value, int places) {
-	    if (places < 0 || places > 20) {
-	      throw new IllegalArgumentException();
+			throw new IllegalArgumentException();
 	    }
-
-	    double factor = Math.pow(10.0, places);
+		
+		double factor = Math.pow(10.0, places);
 	    value = value * factor;
 	    double tmp = Math.round(value);
 	    return tmp / factor;
-	  }
+	}
 	
-	public static void main(String[] args)
+	/**
+	 * does public key encryption and returns the byte[]
+	 * @param publicKey
+	 * @param plainTextByteArray
+	 * @return
+	 * @throws NoSuchAlgorithmException 
+	 * @throws InvalidKeySpecException 
+	 * @throws NoSuchPaddingException 
+	 * @throws InvalidKeyException 
+	 * @throws BadPaddingException 
+	 * @throws IllegalBlockSizeException 
+	 */
+	public static byte[] doPublicKeyEncryption(byte[] publicKeyBytes, byte[] plainTextByteArray) 
+			throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException
+	{
+//		byte[] privateKeyBytes;
+//		byte[] publicKeyBytes;
+//		KeyFactory kf = KeyFactory.getInstance("RSA"); // or "EC" or whatever
+//		PrivateKey private = kf.generatePrivate(new PKCS8EncodedKeySpec(privateKeyBytes));
+//		PublicKey public = kf.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+		
+		KeyFactory kf = KeyFactory.getInstance("RSA"); // or "EC" or whatever
+		//PrivateKey private = kf.generatePrivate(new PKCS8EncodedKeySpec(privateKeyBytes));
+		PublicKey publicKey = kf.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+		
+		byte[] cipherText = null;
+		
+		// get an RSA cipher object and print the provider
+		Cipher cipher = Cipher.getInstance("RSA");
+		// encrypt the plain text using the public key
+		cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+		cipherText = cipher.doFinal(plainTextByteArray);
+	    return cipherText;
+	}
+	
+	
+	/**
+	 * does private key decryption and returns the byte[]
+	 * @param publicKey
+	 * @param plainTextByteArray
+	 * @return
+	 * @throws NoSuchAlgorithmException 
+	 * @throws InvalidKeySpecException 
+	 * @throws NoSuchPaddingException 
+	 * @throws InvalidKeyException 
+	 * @throws BadPaddingException 
+	 * @throws IllegalBlockSizeException 
+	 */
+	public static byte[] doPrivateKeyDecryption(byte[] privateKeyBytes, byte[] encryptedTextByteArray) 
+			throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException
+	{
+//		byte[] privateKeyBytes;
+//		byte[] publicKeyBytes;
+//		KeyFactory kf = KeyFactory.getInstance("RSA"); // or "EC" or whatever
+//		PrivateKey private = kf.generatePrivate(new PKCS8EncodedKeySpec(privateKeyBytes));
+//		PublicKey public = kf.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+		
+		KeyFactory kf = KeyFactory.getInstance("RSA"); // or "EC" or whatever
+		PrivateKey privateKey = kf.generatePrivate(new PKCS8EncodedKeySpec(privateKeyBytes));
+		//PublicKey publicKey = kf.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
+		
+		byte[] plainText = null;
+		
+		// get an RSA cipher object and print the provider
+		Cipher cipher = Cipher.getInstance("RSA");
+		// encrypt the plain text using the public key
+		cipher.init(Cipher.DECRYPT_MODE, privateKey);
+		plainText = cipher.doFinal(encryptedTextByteArray);
+		
+	    return plainText;
+	}
+	
+	
+	public static void main( String[] args )
 	{
 		//  open up standard input
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));

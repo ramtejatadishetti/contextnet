@@ -6,6 +6,7 @@ import java.util.Vector;
 
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
+import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.nio.interfaces.NodeConfig;
 
 public abstract class AbstractSubspaceConfigurator<NodeIDType>
@@ -70,6 +71,9 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 					= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
 				
 				int currTriggerNumPartitions = (int)Math.ceil(((double)currSubspaceNumNodes)/(double)currSubspaceNumAttrs);
+				
+				ContextServiceLogger.getLogger().fine("currSubspaceNumPartitions "
+						+currSubspaceNumPartitions+" currTriggerNumPartitions "+currTriggerNumPartitions);
 				
 				assert(currTriggerNumPartitions > 0 );
 				currSubInfo.setNumPartitions(currSubspaceNumPartitions);

@@ -343,7 +343,8 @@ public class LargeNumNodesCSSetup extends ContextServiceNode<Integer>
 				
 				ValueUpdateFromGNS<Integer> valUpdFromGNS = 
 					new ValueUpdateFromGNS<Integer>
-				(myID, currID, myGUID, attrValuePair, currID, sourceIP, sourcePort, System.currentTimeMillis() );
+				(myID, currID, myGUID, attrValuePair, currID, sourceIP, sourcePort, 
+						System.currentTimeMillis(), new JSONObject() );
 				
 				niot.sendToAddress(getRandomNodeSock(), valUpdFromGNS.toJSONObject());
 			} catch (JSONException e)

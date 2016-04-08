@@ -1,0 +1,7 @@
+#attrName, minValue, maxValue, defaultValue, datatype[Integer, Long, Double, String]
+attr0, 1.0, 1500.0, 1.0, Double
+attr1, 1.0, 1500.0, 1.0, Double
+attr2, 1.0, 1500.0, 1.0, Double
+attr3, 1.0, 1500.0, 1.0, Double
+attr4, 1.0, 1500.0, 1.0, Double
+attr5, 1.0, 1500.0, 1.0, Double

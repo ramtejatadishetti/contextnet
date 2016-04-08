@@ -16,6 +16,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 
 /**
@@ -287,8 +288,11 @@ public class AttributeTypes
 	}
 	
 	
-	public static Vector<DomainPartitionInfo> partitionDomain(int numPartitions, String minValue, String maxValue, String dataType)
+	public static Vector<DomainPartitionInfo> partitionDomain(int numPartitions, 
+			String minValue, String maxValue, String dataType)
 	{
+		ContextServiceLogger.getLogger().fine("partitionDomain numPartitions "+numPartitions );
+		
 		Vector<DomainPartitionInfo> domainParitionInfo = new Vector<DomainPartitionInfo>();
 		
 		switch(dataType)
@@ -414,12 +418,17 @@ public class AttributeTypes
 				
 				break;
 			}
+			default:
+				assert(false);
 		}
-		for(int i=0;i<domainParitionInfo.size();i++)
-		{
-			DomainPartitionInfo dinfo = domainParitionInfo.get(i);
-			//System.out.println("DomainPartitionInfo dinfo "+dinfo.lowerbound+" "+dinfo.upperbound+" "+dinfo.partitionNum);
-		}
+		assert(domainParitionInfo.size() > 0);
+//		for(int i=0;i<domainParitionInfo.size();i++)
+//		{
+//			DomainPartitionInfo dinfo = domainParitionInfo.get(i);
+//			//System.out.println("DomainPartitionInfo dinfo "+dinfo.lowerbound+" "+dinfo.upperbound+" "+dinfo.partitionNum);
+//		}
+		ContextServiceLogger.getLogger().fine("partitionDomain numPartitions "+numPartitions 
+				+" domainParitionInfo "+domainParitionInfo.size());
 		return domainParitionInfo;
 	}
 	

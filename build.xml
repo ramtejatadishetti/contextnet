@@ -68,11 +68,10 @@
 	<jar jarfile="${release.dir}/context-nodoc-GNS.jar">
 	  <fileset dir="${build.dir}/">
 	  </fileset>
-	   <fileset dir="${basedir}">
-				<include name="conf/contextServiceConf/contextServiceNodeSetup.txt" />
-				<include name="conf/contextServiceConf/attributeInfo.txt" />
-	     </fileset>
-	  <zipgroupfileset dir="${lib.dir}/" includes="combinatoricslib-2.1.jar, commons-cli-1.1.jar, com.jcraft.jsch-all-1.0.6.release.jar"/>
+		<fileset dir="${basedir}">
+		  	<include name="HOptimizerJavaCallable.py" />
+		  </fileset>
+	  <zipgroupfileset dir="${lib.dir}/" includes="combinatoricslib-2.1.jar, commons-cli-1.1.jar, com.jcraft.jsch-all-1.0.6.release.jar, guava-19.0.jar, mysql-connector-java-5.1.36-bin.jar"/>
 	  <manifest>
 	    <attribute name="Built-By" value="Aditya Yadav" />
 	    <!-- Information about the program itself -->
@@ -97,11 +96,6 @@
 			<include name="edu/umass/cs/contextservice/logging/**" />
 			<include name="edu/umass/cs/contextservice/config/**" />
 			<!--<exclude name="edu/umass/cs/msocket/watchdog/**" />-->
-		</fileset>
-	  
-		<fileset dir="${basedir}">
-			<include name="conf/contextServiceConf/contextServiceNodeSetup.txt" />
-			<include name="conf/contextServiceConf/attributeInfo.txt" />
 		</fileset>
 	  
 		<zipgroupfileset dir="${lib.dir}/" includes="GNSClient.jar, gigapaxos-1.0.jar"/>
@@ -130,12 +124,7 @@
 				<include name="edu/umass/cs/contextservice/config/**" />
 				<!--<exclude name="edu/umass/cs/msocket/watchdog/**" />-->
 			</fileset>
-		  
-			<fileset dir="${basedir}">
-		  	<include name="conf/contextServiceConf/contextServiceNodeSetup.txt" />
-			<include name="conf/contextServiceConf/attributeInfo.txt" />
-			</fileset>
-		  
+			
 			<!--<zipgroupfileset dir="${lib.dir}/" includes="GNSClient.jar, gigapaxos-1.0.jar"/>-->
 		  <manifest>
 		    <attribute name="Built-By" value="Aditya Yadav" />

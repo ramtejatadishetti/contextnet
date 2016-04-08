@@ -6,7 +6,8 @@ import org.json.JSONObject;
 
 public class QueryMesgToSubspaceRegionReply<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 {
-	private enum Keys {REQUESTID, GROUP_GUID, RESULT_GUIDS, REPLY_SIZE};
+	private enum Keys { REQUESTID, GROUP_GUID, RESULT_GUIDS, 
+		REPLY_SIZE, ENCRYPTED_REALID_OBJECT };
 	
 	//private final NodeIDType sourceNodeId;
 	private final long requestID;
@@ -25,14 +26,18 @@ public class QueryMesgToSubspaceRegionReply<NodeIDType> extends BasicContextServ
 	// actual replies are not sent
 	private final int replySize;
 	
+	private final JSONObject encryptedRealIDObject;
 	
 	/*
 	 * sourceID will be the ID of the node that 
 	 * recvd query from the user.
 	 */
-	public QueryMesgToSubspaceRegionReply(NodeIDType initiator, long requestId, String groupGUID, JSONArray resultGUIDs, int resultSize)
+	public QueryMesgToSubspaceRegionReply(NodeIDType initiator, long requestId, 
+			String groupGUID, JSONArray resultGUIDs, int resultSize, 
+			JSONObject encryptedRealIDObject)
 	{
-		super(initiator, ContextServicePacket.PacketType.QUERY_MESG_TO_SUBSPACE_REGION_REPLY);
+		super(initiator, 
+				ContextServicePacket.PacketType.QUERY_MESG_TO_SUBSPACE_REGION_REPLY);
 		//this.predicate = predicate;
 		//this.sourceNodeId = sourceID;
 		this.requestID = requestId;
@@ -40,6 +45,7 @@ public class QueryMesgToSubspaceRegionReply<NodeIDType> extends BasicContextServ
 		
 		this.resultGUIDs = resultGUIDs;
 		this.replySize = resultSize;
+		this.encryptedRealIDObject = encryptedRealIDObject;
 	}
 	
 	public QueryMesgToSubspaceRegionReply(JSONObject json) throws JSONException
@@ -51,6 +57,7 @@ public class QueryMesgToSubspaceRegionReply<NodeIDType> extends BasicContextServ
 		this.groupGUID   = json.getString(Keys.GROUP_GUID.toString());
 		this.resultGUIDs = json.getJSONArray(Keys.RESULT_GUIDS.toString());
 		this.replySize   = json.getInt(Keys.REPLY_SIZE.toString());
+		this.encryptedRealIDObject = json.getJSONObject( Keys.ENCRYPTED_REALID_OBJECT.toString() );
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException
@@ -62,6 +69,7 @@ public class QueryMesgToSubspaceRegionReply<NodeIDType> extends BasicContextServ
 		json.put(Keys.GROUP_GUID.toString(), groupGUID);
 		json.put(Keys.RESULT_GUIDS.toString(), resultGUIDs);
 		json.put(Keys.REPLY_SIZE.toString(), replySize);
+		json.put(Keys.ENCRYPTED_REALID_OBJECT.toString(), encryptedRealIDObject);
 		return json;
 	}
 	
@@ -83,6 +91,11 @@ public class QueryMesgToSubspaceRegionReply<NodeIDType> extends BasicContextServ
 	public int returnReplySize()
 	{
 		return this.replySize;
+	}
+	
+	public JSONObject getEncryptedRealIDObject()
+	{
+		return this.encryptedRealIDObject;
 	}
 	
 	public static void main(String[] args)

@@ -76,7 +76,7 @@ public class ContextServiceConfig
 	//control if full guids are sent in the search query
 	// reply, if false only sends the number of guids, not
 	// the actual guids
-	public static final boolean sendFullReplies						= false;
+	public static final boolean sendFullReplies						= true;
 	
 	//if false, replies for any update messages will not be sent
 	// just for measuring update throughout and time in experiments
@@ -116,6 +116,9 @@ public class ContextServiceConfig
 	// attributes and each parititioned twice. 
 	public static final int MAXIMUM_NUM_ATTRS_IN_SUBSPACE			= 10;
 	
+	
+	public static final boolean PRIVACY_ENABLED						= true;
+	
 	//  model paramters
 	// search/(search+update) ratio
 	public static double modelRho									= 0.5;
@@ -145,4 +148,7 @@ public class ContextServiceConfig
 	// can be set from config files, if the optimizer is disabled. Otherwise will come from
 	// optimizer. If false replicated config will be used and optimizer disabled
 	public static double optimalH									= 2.0;
+	
+	// security things
+	public static final int KEY_LENGTH_SIZE							= 1024;
 }

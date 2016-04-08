@@ -3,7 +3,8 @@ package edu.umass.cs.contextservice.messages;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class ValueUpdateToSubspaceRegionMessage<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class ValueUpdateToSubspaceRegionMessage<NodeIDType> 
+									extends BasicContextServicePacket<NodeIDType>
 {
 	// Value node that receives the message has to add entry, 
 	// or remove entry or do remove and add both, in that order 
@@ -11,7 +12,8 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType> extends BasicContext
 	public static final int REMOVE_ENTRY			= 2;
 	public static final int UPDATE_ENTRY			= 3;
 	
-	private enum Keys {VERSION_NUM, GUID, ATTR_VAL_PAIRS, OPER_TYPE, SUBSPACENUM, REQUEST_ID};
+	private enum Keys {VERSION_NUM, GUID, ATTR_VAL_PAIRS, 
+		OPER_TYPE, SUBSPACENUM, REQUEST_ID, ENCRYPTED_REAL_ID_ARRAY};
 	
 	private final long versionNum;
 	//GUID of the update
@@ -21,7 +23,10 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType> extends BasicContext
 	// the old value and the new value is same.
 	//private final double oldValue;
 	//private final double newValue;
-	JSONObject attrValuePairs;
+	private final JSONObject attrValuePairs;
+	
+	// attrName, to encrypted real ID JSON
+	private final JSONObject encryptedRealIDArray;
 	
 	private final int operType;
 	private final int subspaceNum;
@@ -32,8 +37,9 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType> extends BasicContext
 	//private final NodeIDType sourceID;
 	//private final long requestID;
 	
-	public ValueUpdateToSubspaceRegionMessage(NodeIDType initiator, long versionNum, String GUID, JSONObject attrValuePairs,
-			int operType, int subspaceNum, long requestID)
+	public ValueUpdateToSubspaceRegionMessage(NodeIDType initiator, long versionNum, String GUID, 
+			JSONObject attrValuePairs, int operType, int subspaceNum, long requestID, 
+			JSONObject encryptedRealIDArray)
 	{
 		super(initiator, ContextServicePacket.PacketType.VALUEUPDATE_TO_SUBSPACE_REGION_MESSAGE);
 		this.versionNum = versionNum;
@@ -42,6 +48,7 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType> extends BasicContext
 		this.operType = operType;
 		this.subspaceNum = subspaceNum;
 		this.requestID = requestID;
+		this.encryptedRealIDArray = encryptedRealIDArray;
 		//this.allAttrs = allAttrs;
 		//this.sourceID = sourceID;
 		//this.requestID = requestID;
@@ -60,6 +67,7 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType> extends BasicContext
 		this.subspaceNum = json.getInt(Keys.SUBSPACENUM.toString());
 		
 		this.requestID = json.getLong( Keys.REQUEST_ID.toString() );
+		this.encryptedRealIDArray = json.getJSONObject(Keys.ENCRYPTED_REAL_ID_ARRAY.toString());
 		//this.allAttrs = json.getJSONObject(Keys.ALL_ATTRS.toString());
 		//this.sourceID = (NodeIDType)json.get(Keys.SOURCE_ID.toString());
 		//this.requestID = json.getLong(Keys.REQUEST_ID.toString());
@@ -74,7 +82,7 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType> extends BasicContext
 		json.put(Keys.OPER_TYPE.toString(), this.operType);
 		json.put(Keys.SUBSPACENUM.toString(), this.subspaceNum);
 		json.put(Keys.REQUEST_ID.toString(), this.requestID);
-		
+		json.put(Keys.ENCRYPTED_REAL_ID_ARRAY.toString(), this.encryptedRealIDArray);
 		//json.put(Keys.ALL_ATTRS.toString(), this.allAttrs);
 		//json.put(Keys.SOURCE_ID.toString(), this.sourceID);
 		//json.put(Keys.REQUEST_ID.toString(), this.requestID);
@@ -111,6 +119,11 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType> extends BasicContext
 	public long getRequestID()
 	{
 		return this.requestID;
+	}
+	
+	public JSONObject getEncryptedRealIDJSONObject()
+	{
+		return this.encryptedRealIDArray;
 	}
 	
 	public static void main(String[] args)

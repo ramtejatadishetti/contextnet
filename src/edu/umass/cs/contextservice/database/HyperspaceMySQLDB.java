@@ -178,7 +178,6 @@ public class HyperspaceMySQLDB<NodeIDType>
 			stmt.executeUpdate(newTableCommand);
 			
 			
-			
 			if( ContextServiceConfig.TRIGGER_ENABLED && ContextServiceConfig.UniqueGroupGUIDEnabled )
 			{
 				// currently it is assumed that there are only conjunctive queries
@@ -193,7 +192,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 				
 				newTableCommand = "create table "+tableName+" ( groupGUID BINARY(20) NOT NULL , "
 						+ "userIP Binary(4) NOT NULL ,  userPort INTEGER NOT NULL ";
-							
+				
 				newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort) )";
 				stmt.executeUpdate(newTableCommand);
 			}
@@ -345,9 +344,27 @@ public class HyperspaceMySQLDB<NodeIDType>
 				String dataType = attrMetaInfo.getDataType();
 				String defaultVal = attrPartInfo.getDefaultValue();
 				String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
-				newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
-						+" , INDEX USING BTREE("+attrName+")";
 				
+				if( ContextServiceConfig.PRIVACY_ENABLED )
+				{
+					//ACL<attrName> is ACL info for each attribute needed in privacy scheme.
+					// not sure if BLOB is right datatype. ALso not sure if this is most optimized way to do this.
+					// ACL info can be very large, CS can parse each element of JSONArray and store it row wise in a separate table.
+					// but that will require CS parsing, which is not needed for CS for any other purpose and 
+					// another drawback is after result Anonymized IDs are computed then there is another database 
+					// lookup to fetch ACL info of all those Anonymized IDs.
+					// So doing it like this now and see the performance.
+					// Benefit of this approach is that everything can be selected in one select query.
+					
+					newTableCommand 
+						= newTableCommand + ", "+attrName+" "+mySQLDataType+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
+						+" , INDEX USING BTREE("+attrName+") , ACL"+attrName+" BLOB";
+				}
+				else
+				{
+					newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
+						+" , INDEX USING BTREE("+attrName+")";
+				}
 			}
 		}
 		return newTableCommand;
@@ -639,7 +656,8 @@ public class HyperspaceMySQLDB<NodeIDType>
 		return isFun;
 	}
 	
-	public int processSearchQueryInSubspaceRegion(int subspaceId, String query, JSONArray resultArray)
+	public int processSearchQueryInSubspaceRegion(int subspaceId, String query, JSONArray resultArray, 
+			JSONObject encryptedRealIDObject)
 	{
 		long t0 = System.currentTimeMillis();
 		
@@ -652,17 +670,34 @@ public class HyperspaceMySQLDB<NodeIDType>
 		
 		String tableName = "subspaceId"+subspaceId+"DataStorage";
 		String mysqlQuery = "";
+		String ACLattr = "";
 		
-		if(isFun)
+		// getting a query attribute to fetch its encrypted ACL info.
+		//TODO: for now, we are not taking conjunction of encryptedRealIDs
+		// across all query attributes. as that requires CS to read all of those lists
+		// and take an intersection..  For now we are just returning one list, which will be superset
+		
+		if(pqComponents.size() > 0)
+		{
+			ACLattr = pqComponents.keySet().iterator().next();
+			ACLattr = "ACL"+ACLattr;
+		}
+		else
+		{
+			assert(false);
+		}
+		
+		if( isFun )
 		{
 			// get all fields as function might need to check them
 			// for post processing
 			// FIXME: need to add support for hex
+			// FIXME: remove the ACL attrs columns, as those are big and consume a lot of memory.
 			mysqlQuery = "SELECT * from "+tableName+" WHERE ( ";
 		}
 		else
 		{
-			mysqlQuery = "SELECT nodeGUID from "+tableName+" WHERE ( ";	
+			mysqlQuery = "SELECT nodeGUID , "+ACLattr+" from "+tableName+" WHERE ( ";	
 		}
 		
 		
@@ -770,6 +805,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 				if(isFun)
 				{
 					//String nodeGUID = rs.getString("nodeGUID");
+					//FIXME: privacy in function
 					byte[] nodeGUIDBytes = rs.getBytes("nodeGUID");
 					boolean satisfies = true;
 					// checks against all such functions
@@ -804,6 +840,9 @@ public class HyperspaceMySQLDB<NodeIDType>
 				{
 					//String nodeGUID = rs.getString("nodeGUID");
 					byte[] nodeGUIDBytes = rs.getBytes("nodeGUID");
+					// it is actually a JSONArray in hexformat byte array representation.
+					// reverse conversion is byte array to String and then string to JSONArray.
+					byte[] realIDEncryptedArray = rs.getBytes(ACLattr);
 					
 					//ValueTableInfo valobj = new ValueTableInfo(value, nodeGUID);
 					//answerList.add(valobj);
@@ -811,6 +850,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 					{
 						String nodeGUID = Utils.bytArrayToHex(nodeGUIDBytes);
 						resultArray.put(nodeGUID);
+						encryptedRealIDObject.put(nodeGUID, realIDEncryptedArray);
 						resultSize++;
 					}
 					else
@@ -825,6 +865,9 @@ public class HyperspaceMySQLDB<NodeIDType>
 		} catch(SQLException sqlex)
 		{
 			sqlex.printStackTrace();
+		} catch (JSONException e) 
+		{
+			e.printStackTrace();
 		}
 		finally
 		{
@@ -1552,7 +1595,6 @@ public class HyperspaceMySQLDB<NodeIDType>
 		}
 	}
 	
-	
 	private void returnNewValueGroupGUIDs( int subspaceId, int replicaNum, String attrName, JSONObject oldValJSON, 
 			JSONObject newUpdateVal, HashMap<String, JSONObject> newValGroupGUIDMap )
 	{
@@ -1662,7 +1704,8 @@ public class HyperspaceMySQLDB<NodeIDType>
      * @throws JSONException
      */
     @SuppressWarnings("unchecked")
-    public void storeGUIDInSubspace(String tableName, String nodeGUID, JSONObject attrValuePairs, int updateOrInsert) throws JSONException
+    public void storeGUIDInSubspace(String tableName, String nodeGUID, JSONObject attrValuePairs, int updateOrInsert, 
+    		JSONObject encryptedRealIDObject ) throws JSONException
     {
     	ContextServiceLogger.getLogger().fine("storeGUIDInSubspace "+tableName+" nodeGUID "+nodeGUID+" attrValuePairs "
     			+attrValuePairs+" updateOrInsert "+updateOrInsert);
@@ -1671,7 +1714,7 @@ public class HyperspaceMySQLDB<NodeIDType>
         Connection myConn      = null;
         Statement stmt         = null;
        
-        String updateSqlQuery     = "UPDATE "+tableName
+        String updateSqlQuery     	= "UPDATE "+tableName
                 + " SET ";
        
         // delayed insert performs better than just insert
@@ -1692,8 +1735,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 	            String dataType = attrMetaInfo.getDataType();
 				
 				newVal = AttributeTypes.convertStringToDataTypeForMySQL
-						(newVal, dataType)+"";
-	
+						(newVal, dataType)+"";	
 				
 	            //oldValueJSON.put(attrName, AttributeTypes.NOT_SET);
 	           
@@ -1709,16 +1751,32 @@ public class HyperspaceMySQLDB<NodeIDType>
 	                updateSqlQuery = updateSqlQuery +" , "+ attrName +" = "+newVal;
 	                insertQuery = insertQuery +", "+attrName;
 	            }
+	            
+	            if( ContextServiceConfig.PRIVACY_ENABLED && encryptedRealIDObject.has(attrName) )
+                {
+                	JSONArray encryptedRealIDArray = encryptedRealIDObject.getJSONArray(attrName);
+                	if( encryptedRealIDArray != null )
+                	{
+                		if( encryptedRealIDArray.length() > 0 )
+                		{
+                			String hexRep 
+                				= Utils.bytArrayToHex( encryptedRealIDArray.toString().getBytes() );
+                			// now add it in the query
+                			updateSqlQuery = updateSqlQuery + " , ACL"+attrName +" = X'"+hexRep+"'";
+        	                insertQuery = insertQuery + " , ACL"+attrName;
+                		}
+                	}
+                }
 	            i++;
 	        }
-       
+	        
 	        //selectQuery = selectQuery + " FROM "+tableName+" WHERE nodeGUID = '"+nodeGUID+"'";
 	        updateSqlQuery = updateSqlQuery + " WHERE nodeGUID = X'"+nodeGUID+"'";
 	        insertQuery = insertQuery + ", nodeGUID) " + "VALUES"+ "(";
-                //+ ",'"+nodeGUID+"' )
+            //+ ",'"+nodeGUID+"' )
 	        //double oldValue = Double.MIN_VALUE;
-       
-        
+	        
+	        
             i = 0;
             //try insert, if fails then update
             jsoObjKeysIter = attrValuePairs.keys();
@@ -1741,11 +1799,27 @@ public class HyperspaceMySQLDB<NodeIDType>
                 }
                 else
                 {
-                    insertQuery = insertQuery +", "+newValue;
+                    insertQuery = insertQuery +" , "+newValue;
                 }
+                
+                if(ContextServiceConfig.PRIVACY_ENABLED &&  encryptedRealIDObject.has(attrName) )
+                {
+                	JSONArray encryptedRealIDArray = encryptedRealIDObject.getJSONArray(attrName);
+                	if( encryptedRealIDArray != null )
+                	{
+                		if( encryptedRealIDArray.length() > 0 )
+                		{
+                			String hexRep 
+                				= Utils.bytArrayToHex( encryptedRealIDArray.toString().getBytes() );
+                			// now add it in the query    	                
+        	                insertQuery = insertQuery +" , X'"+hexRep+"'";
+                		}
+                	}
+                }
+                
                 i++;
             }
-            insertQuery = insertQuery +", X'"+nodeGUID+"' )";
+            insertQuery = insertQuery +" , X'"+nodeGUID+"' )";
             
             myConn = this.mysqlDataSource.getConnection();
             stmt = myConn.createStatement();   
@@ -1788,34 +1862,34 @@ public class HyperspaceMySQLDB<NodeIDType>
             		ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING INSERT rowCount "+rowCount+" insertQuery "+insertQuery);
             		// duplicate insert always gives exception so no need to check rowCount and do update
             		// it happends in exception code
-                } catch(SQLException sqlEx)
+                } catch( SQLException sqlEx )
                 {
-                	//ContextServiceLogger.getLogger().fine("EXECUTING INSERT "+updateSqlQuery);
+                	// ContextServiceLogger.getLogger().fine("EXECUTING INSERT "+updateSqlQuery);
                 	int rowCount = stmt.executeUpdate(updateSqlQuery);
-                	//ContextServiceLogger.getLogger().fine("EXECUTING INSERT rowCount "+rowCount);
+                	// ContextServiceLogger.getLogger().fine("EXECUTING INSERT rowCount "+rowCount);
                 }
             }
-            // execute insert SQL stetement
-            //statement.executeUpdate(sqlQuery);
-        } catch (Exception  | Error ex)
+            // execute insert SQL statement
+            // statement.executeUpdate(sqlQuery);
+        } catch ( Exception  | Error ex )
         {
             ex.printStackTrace();
         } finally
         {
             try
             {
-                if (stmt != null)
+                if ( stmt != null )
                     stmt.close();
-                if (myConn != null)
+                if ( myConn != null )
                     myConn.close();
             }
             catch(SQLException e)
             {
-                e.printStackTrace();
+            	e.printStackTrace();
             }
         }
         
-        if(ContextServiceConfig.DELAY_PROFILER_ON)
+        if( ContextServiceConfig.DELAY_PROFILER_ON )
         {
             DelayProfiler.updateDelay("storeGUIDInSubspace", t0);
         }

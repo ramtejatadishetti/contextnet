@@ -20,6 +20,11 @@ public abstract class ContextServiceNode<NodeIDType>
 	
 	protected final AbstractScheme<NodeIDType> contextservice;
 	
+	private boolean started = false;
+	
+	private final Object startMonitor = new Object();
+	
+	
 	public ContextServiceNode(NodeIDType id, NodeConfig<NodeIDType> nc) throws IOException
 	{
 		this.myID = id;
@@ -59,6 +64,14 @@ public abstract class ContextServiceNode<NodeIDType>
 			pd.register(pktType, this.contextservice);
 		}
 		messenger.addPacketDemultiplexer(pd);
+		
+		started = true;
+		
+		synchronized( startMonitor )
+		{
+			startMonitor.notify();
+		}
+		
 	}
 	
 	/**
@@ -69,4 +82,25 @@ public abstract class ContextServiceNode<NodeIDType>
 	{
 		return this.contextservice;
 	}
+	
+	/**
+	 * waits till the current node has started
+	 */
+	public void waitToFinishStart()
+	{
+		while( !started )
+		{
+			synchronized( startMonitor )
+			{
+				try 
+				{
+					startMonitor.wait();
+				} catch (InterruptedException e) 
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
 }

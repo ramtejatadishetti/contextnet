@@ -35,6 +35,11 @@ import edu.umass.cs.nio.JSONNIOTransport;
 import edu.umass.cs.nio.interfaces.NodeConfig;
 import edu.umass.cs.nio.interfaces.PacketDemultiplexer;
 
+/**
+ * Just a simple four node CS setup for local testing.
+ * @author adipc
+ *
+ */
 public class FourNodeCSSetup extends ContextServiceNode<Integer>
 {
 	public static final int HYPERSPACE_HASHING							= 1;
@@ -84,12 +89,12 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 			e.printStackTrace();
 		}
 		
-		try {
+		/*try {
 			RequestClass.startRequests();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}*/
 	}
 	
 	
@@ -301,7 +306,7 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 				ValueUpdateFromGNS<Integer> valUpdFromGNS = 
 						new ValueUpdateFromGNS<Integer>
 				(myID, currID, myGUID, attrValuePair, currID, 
-						sourceIP, sourcePort, System.currentTimeMillis() );
+						sourceIP, sourcePort, System.currentTimeMillis(), new JSONObject() );
 				
 				niot.sendToAddress(getRandomNodeSock(), valUpdFromGNS.toJSONObject());
 			} catch (JSONException e)

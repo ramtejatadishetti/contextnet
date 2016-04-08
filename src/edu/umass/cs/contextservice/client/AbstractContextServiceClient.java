@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
@@ -32,32 +33,34 @@ public abstract class AbstractContextServiceClient<NodeIDType> implements Packet
 	protected final int sourcePort;
 	protected final Random rand;
 	// local client config
-	protected CSNodeConfig<NodeIDType> clientNodeConfig								= null;
+	protected CSNodeConfig<NodeIDType> clientNodeConfig									= null;
 	
 	// context service node config
 	// this is read from the file already included in jar
-	//protected CSNodeConfig<Integer> csNodeConfig									= null;
+	//protected CSNodeConfig<Integer> csNodeConfig										= null;
 	
-	protected List<InetSocketAddress> csNodeAddresses								= null;
+	protected List<InetSocketAddress> csNodeAddresses									= null;
 	// hashmap of attributes, incoming updates are checked 
 	// if they are for context attributes only then they are forwarded to context service
-	protected HashMap<String, Boolean> attributeHashMap								= null;
+	protected HashMap<String, Boolean> attributeHashMap									= null;
+	
+	protected HashMap<Integer, JSONArray> subspaceAttrMap								= null;
 	
 	//long is the request num
-	protected ConcurrentHashMap<Long, SearchQueryStorage<NodeIDType>> pendingSearches = null;
-	protected ConcurrentHashMap<Long, UpdateStorage<NodeIDType>> pendingUpdate		  = null;
-	protected ConcurrentHashMap<Long, GetStorage<NodeIDType>> pendingGet			  = null;
+	protected ConcurrentHashMap<Long, SearchQueryStorage<NodeIDType>> pendingSearches 	= null;
+	protected ConcurrentHashMap<Long, UpdateStorage<NodeIDType>> pendingUpdate		  	= null;
+	protected ConcurrentHashMap<Long, GetStorage<NodeIDType>> pendingGet			  	= null;
 	
-	protected final Object searchIdLock												= new Object();
-	protected final Object updateIdLock												= new Object();
-	protected final Object getIdLock												= new Object();
-	protected final Object configLock												= new Object();
+	protected final Object searchIdLock													= new Object();
+	protected final Object updateIdLock													= new Object();
+	protected final Object getIdLock													= new Object();
+	protected final Object configLock													= new Object();
 	
-	protected long searchReqId														= 0;
-	protected long updateReqId														= 0;
-	protected long getReqId															= 0;
+	protected long searchReqId															= 0;
+	protected long updateReqId															= 0;
+	protected long getReqId																= 0;
 	
-	protected NodeIDType nodeid														= null;
+	protected NodeIDType nodeid															= null;
 	
 	protected final String configHost;
 	protected final int configPort;
@@ -66,8 +69,10 @@ public abstract class AbstractContextServiceClient<NodeIDType> implements Packet
 	{
 		this.configHost = hostname;
 		this.configPort = port;
+		
 		csNodeAddresses  = new LinkedList<InetSocketAddress>();
 		attributeHashMap = new HashMap<String, Boolean>();
+		subspaceAttrMap  = new HashMap<Integer, JSONArray>();
 		
 		//readNodeInfo();
 		//readAttributeInfo();
@@ -147,5 +152,5 @@ public abstract class AbstractContextServiceClient<NodeIDType> implements Packet
 	public abstract void getQueryUpdateTriggers(JSONArray triggerArray);
 	
 	// non blocking call
-	//public abstract void expireSearchQuery(String searchQuery);
+	// public abstract void expireSearchQuery(String searchQuery);
 }

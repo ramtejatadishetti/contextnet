@@ -11,6 +11,7 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.client.ContextServiceClient;
 
+
 public class ClientRequestTest
 {
 	public static final String CLIENT_GUID_PREFIX							= "clientGUID";
@@ -110,7 +111,7 @@ public class ClientRequestTest
 	/**
 	 * This function sends update
 	 */
-	public void sendUpdate(long currID, int guidNum)
+	public void sendUpdate( long currID, int guidNum )
 	{	
 		String memberAlias = CLIENT_GUID_PREFIX;
 		String realAlias = memberAlias+guidNum;
@@ -142,7 +143,7 @@ public class ClientRequestTest
 	 * Depending on the random outcome this function sends query
 	 */
 	public void sendQuery(long currID)
-	{	
+	{
 		String query = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE "
 				+ "geoLocationCurrentLat >= -90 AND geoLocationCurrentLong <= 180";
 		//JSONObject geoJSONObject = getGeoJSON();

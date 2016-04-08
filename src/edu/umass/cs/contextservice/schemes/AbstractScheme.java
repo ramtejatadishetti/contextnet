@@ -153,33 +153,6 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 		return this.numMessagesInSystem;
 	}
 	
-	protected void sendReplyBackToUser(QueryInfo<NodeIDType> qinfo, JSONArray resultList)
-	{
-		QueryMsgFromUserReply<NodeIDType> qmesgUR
-			= new QueryMsgFromUserReply<NodeIDType>( this.getMyID(), qinfo.getQuery(), qinfo.getGroupGUID(),
-					resultList, qinfo.getUserReqID(), resultList.length() );
-		try
-		{
-			log.fine("sendReplyBackToUser "+qinfo.getUserIP()+" "+qinfo.getUserPort()+
-					qmesgUR.toJSONObject());
-			
-			ContextServiceLogger.getLogger().fine("QUERY COMPLETE: sendReplyBackToUser "+qinfo.getUserIP()+" "+qinfo.getUserPort()+
-					qmesgUR.toJSONObject());
-			
-			this.messenger.sendToAddress(new InetSocketAddress(InetAddress.getByName(qinfo.getUserIP()), qinfo.getUserPort())
-								, qmesgUR.toJSONObject());
-		} catch (UnknownHostException e)
-		{
-			e.printStackTrace();
-		} catch (IOException e)
-		{
-			e.printStackTrace();
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-	}
-	
 	protected void sendQueryReplyBackToUser(InetSocketAddress destAddress, QueryMsgFromUserReply<NodeIDType> qmesgUR)
 	{
 		try

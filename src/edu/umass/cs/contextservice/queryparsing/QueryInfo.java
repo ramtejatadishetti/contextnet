@@ -188,6 +188,7 @@ public class QueryInfo<NodeIDType>
 			{
 				OverlappingInfoClass overlapObj = this.regionalReplies.get(senderID);
 				overlapObj.replyArray = queryMesgToSubspaceRegionReply.getResultGUIDs();
+				overlapObj.encryptedRealIDJSON = queryMesgToSubspaceRegionReply.getEncryptedRealIDObject();
 				this.regionalReplies.put(senderID, overlapObj);
 			}
 			else
