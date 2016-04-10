@@ -1,7 +1,14 @@
 package edu.umass.cs.contextservice.client;
 
+import java.util.HashMap;
+import java.util.List;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import edu.umass.cs.contextservice.client.common.ACLEntry;
+import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
+import edu.umass.cs.contextservice.client.common.GUIDEntryStoringClass;
 
 /**
  * 
@@ -23,7 +30,8 @@ public interface SecureContextClientInterface
 	 * @param versionNum 
 	 * @param blocking true then the update will block until CS confirms completion.
 	 */
-	public void sendUpdateSecure(GUIDEntryStoringClass myGUIDInfo, JSONArray ACLArray, JSONArray anonymizedIDs, 
+	public void sendUpdateSecure(GUIDEntryStoringClass myGUIDInfo, 
+			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList, 
 			JSONObject attrValuePairs, long versionNum, boolean blocking);
 	
 	/**
@@ -32,7 +40,7 @@ public interface SecureContextClientInterface
 	 * @param ACLArray the calling user's ACL
 	 * @return
 	 */
-	public JSONArray computeAnonymizedIDs(GUIDEntryStoringClass myGUIDInfo, JSONArray ACLArray);
+	public List<AnonymizedIDEntry> computeAnonymizedIDs(HashMap<String, List<ACLEntry>> aclMap);
 	
 	//FIXME: semantics needs to be decided, after secure update/insert is implemented
 	public int sendSearchQuerySecure(GUIDEntryStoringClass myGUIDInfo, String searchQuery, JSONArray replyArray, long expiryTime);
