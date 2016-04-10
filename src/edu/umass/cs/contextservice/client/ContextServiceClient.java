@@ -31,10 +31,10 @@ import edu.umass.cs.contextservice.client.anonymizedID.NoopAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.client.common.GUIDEntryStoringClass;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSPrivacyTransformInterface;
-import edu.umass.cs.contextservice.client.csprivacytransform.CSTransformedUpdatedMessage;
+import edu.umass.cs.contextservice.client.csprivacytransform.CSTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.NoopCSTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSPrivacyTransformInterface;
-import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSTransformedUpdateMessage;
+import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSTransformedMessage;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.NoopGNSPrivacyTransform;
 import edu.umass.cs.contextservice.client.storage.GetStorage;
 import edu.umass.cs.contextservice.client.storage.SearchQueryStorage;
@@ -52,7 +52,6 @@ import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
 import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.gnsclient.client.GNSClient;
-import edu.umass.cs.gnsclient.client.GNSClientConfig;
 import edu.umass.cs.gnsclient.client.GuidEntry;
 import edu.umass.cs.gnsclient.client.UniversalTcpClientExtended;
 import edu.umass.cs.gnscommon.exceptions.client.GnsClientException;
@@ -100,7 +99,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 	
 	
-	public ContextServiceClient(String csHostName, int csPortNum, String gnsHostName, int gnsPort) 
+	public ContextServiceClient( String csHostName, int csPortNum, 
+			String gnsHostName, int gnsPort ) 
 			throws IOException
 	{
 		super( csHostName, csPortNum );
@@ -113,10 +113,10 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		props.setProperty("javax.net.ssl.keyStorePassword", "qwerty");
 		props.setProperty("javax.net.ssl.keyStore", "conf/gnsClientConf/keyStore/node100.jks");	
 		
-		InetSocketAddress address 
-					= new InetSocketAddress("127.0.0.1", GNSClientConfig.LNS_PORT);
+		InetSocketAddress gnsAddress 
+					= new InetSocketAddress(gnsHostName, gnsPort);
 		
-		gnsClient = new GNSClient(null, address, true);
+		gnsClient = new GNSClient(null, gnsAddress, true);
 		
 		initializeClient();
 	}
@@ -200,6 +200,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 		// no waiting in update	
 	}
+	
 	
 	@Override
 	public int sendSearchQuery(String searchQuery, JSONArray replyArray, long expiryTime)
@@ -400,7 +401,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 	
 	@Override
-	public void sendUpdateSecure(GUIDEntryStoringClass myGUIDInfo, 
+	public void sendUpdateSecure(GuidEntry myGUIDInfo, 
 			HashMap<String, List<ACLEntry>> aclMap, List<AnonymizedIDEntry> anonymizedIDList, 
 			JSONObject gnsAttrValuePairs, long versionNum, boolean blocking)
 	{
@@ -414,14 +415,14 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			}
 			
 			//TODO: send secure update to GNS
-			GNSTransformedUpdateMessage gnsTransformMesg = 
+			GNSTransformedMessage gnsTransformMesg = 
 					this.gnsPrivacyTransform.transformUpdateForGNSPrivacy(gnsAttrValuePairs, aclMap);
 			
-			this.sendSecureMessageToGNS(null, gnsTransformMesg);
+			sendSecureMessageToGNS(myGUIDInfo, gnsTransformMesg);
 			
-			List<CSTransformedUpdatedMessage> transformedMesgList 
-			= this.csPrivacyTransform.transformUpdateForCSPrivacy
-			(Utils.bytArrayToHex(myGUIDInfo.getGuidByteArray()), csAttrValuePairs, aclMap, anonymizedIDList);
+			List<CSTransformedMessage> transformedMesgList 
+				= this.csPrivacyTransform.transformUpdateForCSPrivacy
+				(myGUIDInfo.getGuid(), csAttrValuePairs, aclMap, anonymizedIDList);
 			
 			// now all the anonymized IDs and the attributes that needs to be updated
 			// are calculated, 
@@ -436,7 +437,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 
 	@Override
-	public int sendSearchQuerySecure(GUIDEntryStoringClass myGUIDInfo, String searchQuery, 
+	public int sendSearchQuerySecure(GuidEntry myGUIDInfo, String searchQuery, 
 			JSONArray replyArray, long expiryTime) 
 	{
 		if( replyArray == null )
@@ -515,13 +516,21 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		//TODO: untransform
 //		decryptAnonymizedIDs(myGUIDInfo, 
 //				encryptedRealIDArray, replyArray);
-		
 		return resultSize;
 	}
 	
 	@Override
-	public JSONObject sendGetRequestSecure(GUIDEntryStoringClass myGUIDInfo, String GUID)
+	public JSONObject sendGetRequestSecure(GuidEntry myGUIDInfo, String GUID) throws Exception
 	{
+		// fetch it form GNS
+		if(gnsClient != null)
+		{
+			JSONObject encryptedJSON = gnsClient.read(GUID, myGUIDInfo);
+			GNSTransformedMessage gnsTransformedMesg 
+							= new GNSTransformedMessage(encryptedJSON);
+			
+			return this.gnsPrivacyTransform.unTransformGetReply(gnsTransformedMesg, myGUIDInfo);
+		}
 		return null;
 	}
 	
@@ -535,12 +544,12 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		return this.anonymizedIDCreation.computeAnonymizedIDs(aclMap);
 	}
 	
-	private void sendSecureUpdateMessageToCS(List<CSTransformedUpdatedMessage> transformedMesgList, 
+	private void sendSecureUpdateMessageToCS(List<CSTransformedMessage> transformedMesgList, 
 			long versionNum, boolean blocking)
 	{
 		for(int i=0;i<transformedMesgList.size();i++)
 		{
-			CSTransformedUpdatedMessage csTransformedMessage = transformedMesgList.get(i);
+			CSTransformedMessage csTransformedMessage = transformedMesgList.get(i);
 			
 			String IDString = Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
 	//		ContextServiceLogger.getLogger().fine("ContextClient sendUpdate enter "+GUID+" json "+
@@ -612,7 +621,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		// no waiting in update	
 	}
 	
-	private void sendSecureMessageToGNS(GuidEntry writingGuid, GNSTransformedUpdateMessage gnsTransformedMesg)
+	private void sendSecureMessageToGNS(GuidEntry writingGuid, GNSTransformedMessage gnsTransformedMesg)
 	{
 		if(gnsClient != null)
 		{
@@ -844,8 +853,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		sendConfigRequest();
 	}
 	
-	
-	
 	// testing secure client code
 	// TODO: test the scheme with the example given in the draft.
 	public static void main(String[] args) throws JSONException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, IOException
@@ -877,7 +884,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 //		System.out.println("decrypted value "+new String(nameArray));
 		
 		
-			
 		System.out.println("public key "+Utils.bytArrayToHex(publicKeyByteArray1)
 			+" len "+publicKeyByteArray1.length+" privateKeyByteArray "
 			+ Utils.bytArrayToHex(privateKeyByteArray1) 
@@ -914,7 +920,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			JSONArray key = iter.next();
 			System.out.println("key "+key+" "+testMap.get(key));
 		}
-		
 		
 		
 		Vector<GUIDEntryStoringClass> guidsVector = new Vector<GUIDEntryStoringClass>();
@@ -986,8 +991,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		acl5.add(guidsVector.get(3).getPublicKeyByteArray());
 		
 		ACLEntry attr5ACL = new ACLEntry("attr5", acl5);
-		
-		
 		
 		JSONArray ACLInfo = new JSONArray();
 		ACLInfo.put(attr0ACL);

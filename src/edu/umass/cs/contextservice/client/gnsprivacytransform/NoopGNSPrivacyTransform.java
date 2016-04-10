@@ -17,16 +17,16 @@ import edu.umass.cs.gnsclient.client.GuidEntry;
 public class NoopGNSPrivacyTransform implements GNSPrivacyTransformInterface
 {
 	@Override
-	public GNSTransformedUpdateMessage transformUpdateForGNSPrivacy(JSONObject attrValuePair,
+	public GNSTransformedMessage transformUpdateForGNSPrivacy(JSONObject attrValuePair,
 			HashMap<String, List<ACLEntry>> aclMap) 
 	{
-		GNSTransformedUpdateMessage gnsTransformedMessage 
-						= new GNSTransformedUpdateMessage(attrValuePair);
+		GNSTransformedMessage gnsTransformedMessage 
+						= new GNSTransformedMessage(attrValuePair);
 		return gnsTransformedMessage;
 	}
 
 	@Override
-	public JSONObject unTransformGetReply(GNSTransformedUpdateMessage gnsTransformedMessage, 
+	public JSONObject unTransformGetReply(GNSTransformedMessage gnsTransformedMessage, 
 			GuidEntry myGuidEntry) 
 	{
 		return gnsTransformedMessage.getEncryptedAttrValuePair();

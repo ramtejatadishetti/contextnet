@@ -15,19 +15,19 @@ public class NoopCSTransform implements CSPrivacyTransformInterface
 {
 	
 	@Override
-	public List<CSTransformedUpdatedMessage> transformUpdateForCSPrivacy(String targetGuid, JSONObject attrValuePairs,
+	public List<CSTransformedMessage> transformUpdateForCSPrivacy(String targetGuid, JSONObject attrValuePairs,
 			HashMap<String, List<ACLEntry>> aclMap, List<AnonymizedIDEntry> anonymizedIDList) 
 	{
-		CSTransformedUpdatedMessage csTransformedMessage 
-				= new CSTransformedUpdatedMessage(Utils.hexStringToByteArray(targetGuid), 
+		CSTransformedMessage csTransformedMessage 
+				= new CSTransformedMessage(Utils.hexStringToByteArray(targetGuid), 
 						attrValuePairs, new JSONObject());
-		List<CSTransformedUpdatedMessage> returnList = new LinkedList<CSTransformedUpdatedMessage>();
+		List<CSTransformedMessage> returnList = new LinkedList<CSTransformedMessage>();
 		returnList.add(csTransformedMessage);
 		return returnList;
 	}
 
 	@Override
-	public List<String> unTransformSearchReply(List<CSTransformedUpdatedMessage> csTransformedList) 
+	public List<String> unTransformSearchReply(List<CSTransformedMessage> csTransformedList) 
 	{
 		List<String> resultGUIDs = new LinkedList<String>();
 		for(int i=0;i<csTransformedList.size(); i++)

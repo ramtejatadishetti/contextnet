@@ -8,7 +8,7 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
-import edu.umass.cs.contextservice.client.common.GUIDEntryStoringClass;
+import edu.umass.cs.gnsclient.client.GuidEntry;
 
 /**
  * 
@@ -30,7 +30,7 @@ public interface SecureContextClientInterface
 	 * @param versionNum 
 	 * @param blocking true then the update will block until CS confirms completion.
 	 */
-	public void sendUpdateSecure(GUIDEntryStoringClass myGUIDInfo, 
+	public void sendUpdateSecure(GuidEntry myGUIDInfo, 
 			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList, 
 			JSONObject attrValuePairs, long versionNum, boolean blocking);
 	
@@ -43,8 +43,8 @@ public interface SecureContextClientInterface
 	public List<AnonymizedIDEntry> computeAnonymizedIDs(HashMap<String, List<ACLEntry>> aclMap);
 	
 	//FIXME: semantics needs to be decided, after secure update/insert is implemented
-	public int sendSearchQuerySecure(GUIDEntryStoringClass myGUIDInfo, String searchQuery, JSONArray replyArray, long expiryTime);
+	public int sendSearchQuerySecure(GuidEntry myGUIDInfo, String searchQuery, JSONArray replyArray, long expiryTime);
 	
 	//FIXME: semantics needs to be decided, after secure update/insert is implemented
-	public JSONObject sendGetRequestSecure(GUIDEntryStoringClass myGUIDInfo, String GUID);
+	public JSONObject sendGetRequestSecure(GuidEntry myGUIDInfo, String GUID) throws Exception;
 }

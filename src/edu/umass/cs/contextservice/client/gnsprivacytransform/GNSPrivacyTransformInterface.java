@@ -17,20 +17,20 @@ public interface GNSPrivacyTransformInterface
 {
 	/**
 	 * Takes <attr, value> pairs and aclMap as input and 
-	 * returns <attr, encryptedValueJSON>.
+	 * returns GNSTransformedMessage, which is <attr, encryptedValueJSON>.
 	 * @param attrValuePair
 	 * @param aclMap
 	 * @return
 	 */
-	public GNSTransformedUpdateMessage transformUpdateForGNSPrivacy(
+	public GNSTransformedMessage transformUpdateForGNSPrivacy(
 			JSONObject attrValuePair, HashMap<String, List<ACLEntry>> aclMap);
 	
 	/**
-	 * untransforms the encrypted value, and returns a plain text attr-value pair.
+	 * untransforms the GNSTransformedMessage, and returns a plain text attr-value pair.
 	 * @param encryptedAttrValuePair
 	 * @param myGuidEntry
 	 * @return
 	 */
-	public JSONObject unTransformGetReply(GNSTransformedUpdateMessage gnsTransformedMessage, 
+	public JSONObject unTransformGetReply(GNSTransformedMessage gnsTransformedMessage, 
 			GuidEntry myGuidEntry);
 }

@@ -9,7 +9,7 @@ import org.json.JSONObject;
  * @author adipc
  *
  */
-public class CSTransformedUpdatedMessage 
+public class CSTransformedMessage 
 {	
 	private final byte[] anonymizedID; 
 	
@@ -22,7 +22,7 @@ public class CSTransformedUpdatedMessage
 	private final JSONObject realIDMappingInfo;
 	
 	
-	public CSTransformedUpdatedMessage(byte[] anonymizedID, JSONObject attrValuePairs, 
+	public CSTransformedMessage(byte[] anonymizedID, JSONObject attrValuePairs, 
 			JSONObject realIDMappingInfo)
 	{
 		this.anonymizedID = anonymizedID;

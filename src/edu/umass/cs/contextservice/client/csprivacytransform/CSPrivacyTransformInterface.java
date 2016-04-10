@@ -26,7 +26,7 @@ public interface CSPrivacyTransformInterface
 	 * @param versionNum
 	 * @return
 	 */
-	public List<CSTransformedUpdatedMessage> transformUpdateForCSPrivacy(String targetGuid, 
+	public List<CSTransformedMessage> transformUpdateForCSPrivacy(String targetGuid, 
 			JSONObject attrValuePairs, HashMap<String, List<ACLEntry>> aclMap, 
 			List<AnonymizedIDEntry> anonymizedIDList);
 	
@@ -36,5 +36,5 @@ public interface CSPrivacyTransformInterface
 	 * @param encryptedRealIDArray
 	 * @return
 	 */
-	public List<String> unTransformSearchReply(List<CSTransformedUpdatedMessage> csTransformedList);
+	public List<String> unTransformSearchReply(List<CSTransformedMessage> csTransformedList);
 }

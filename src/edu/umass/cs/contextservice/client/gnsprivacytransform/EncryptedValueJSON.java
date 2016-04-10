@@ -1,5 +1,6 @@
 package edu.umass.cs.contextservice.client.gnsprivacytransform;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -14,17 +15,17 @@ public class EncryptedValueJSON
 	
 	// byte arrays should be used instead if strings,
 	// as string just double the space, 
-	// and encrypted values are already very big.
+	// and encrypted values are already very large in size.
 	private final byte[] encytpedValue; 
 	
 	// the key of this JSONObject is guids in ACL, like G1 ,and the value is
-	// and the value is enc(G1+, Ks), where G1+ is the public key of G1
+	// and  enc(G1+, Ks), where G1+ is the public key of G1
 	// and Ks is the symmetric key with which the value is encrypted.
 	// having GUID G1 as the key helps in directly obtaining the decrypting
 	// info rather than checking all members of ACL, decrypting and failing until
 	// the owners own GUID is found in the ACL.
 	// TODO: GNS can also jsut return the decrypting info of the GUID that is
-	// doing the lookup, instead returning all members of ACL. but that
+	// doing the lookup, instead returning all members of ACL. but that requires
 	// more changes in GNS for privacy stuff.
 	private final JSONObject decryptValueInfo;
 	
@@ -35,11 +36,11 @@ public class EncryptedValueJSON
 		this.decryptValueInfo = decryptValueInfo;
 	}
 	
-	public JSONObject toJSONObject()
+	public JSONObject toJSONObject() throws JSONException
 	{
-		// TODO: completion of this 
-		return new JSONObject();
-		//JSONObject valueJSON = new JSONObject();
-		//valueJSON.put(key, value);
+		JSONObject jsonObject = new JSONObject();
+		jsonObject.put(Keys.ENCRYPTED_VALUE.toString(), encytpedValue);
+		jsonObject.put(Keys.DECRYPT_VALUE_INFO.toString(), decryptValueInfo);
+		return jsonObject;
 	}
 }

@@ -2,12 +2,12 @@ package edu.umass.cs.contextservice.client.gnsprivacytransform;
 
 import org.json.JSONObject;
 
-public class GNSTransformedUpdateMessage 
+public class GNSTransformedMessage 
 {
 	// key is attrName, value is EncryptedValueJSON.
 	private final JSONObject encryptedAttrValuePair;
 	
-	public GNSTransformedUpdateMessage(JSONObject encryptedAttrValuePair)
+	public GNSTransformedMessage(JSONObject encryptedAttrValuePair)
 	{
 		this.encryptedAttrValuePair = encryptedAttrValuePair;
 	}

@@ -25,12 +25,12 @@ import edu.umass.cs.contextservice.utils.Utils;
 public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 {
 	@Override
-	public List<CSTransformedUpdatedMessage> transformUpdateForCSPrivacy(String targetGuid, JSONObject attrValuePairs,
+	public List<CSTransformedMessage> transformUpdateForCSPrivacy(String targetGuid, JSONObject attrValuePairs,
 			HashMap<String, List<ACLEntry>> aclMap, List<AnonymizedIDEntry> anonymizedIDList) 
 	{
 		try
 		{
-			 List<CSTransformedUpdatedMessage> transformedMesgList 	= new LinkedList<CSTransformedUpdatedMessage>();
+			 List<CSTransformedMessage> transformedMesgList 	= new LinkedList<CSTransformedMessage>();
 			
 			// a map is computed that contains anonymized IDs whose Gul, guid set, intersects with
 			// the ACL of the attributes. The map is from the anonymized IDs to the set of attributes
@@ -103,7 +103,7 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 	}
 
 	@Override
-	public List<String> unTransformSearchReply(List<CSTransformedUpdatedMessage> csTransformedList) {
+	public List<String> unTransformSearchReply(List<CSTransformedMessage> csTransformedList) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -143,8 +143,8 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 	}
 	
 	
-	private List<CSTransformedUpdatedMessage> getTransformedMessageList(byte[] anonymizedID, byte[] realGUID, 
-			List<AttributeUpdateInfo> updateAttrList, JSONObject csAttrValuePairs, List<CSTransformedUpdatedMessage> transformMessageList)
+	private List<CSTransformedMessage> getTransformedMessageList(byte[] anonymizedID, byte[] realGUID, 
+			List<AttributeUpdateInfo> updateAttrList, JSONObject csAttrValuePairs, List<CSTransformedMessage> transformMessageList)
 	{
 //		String IDString = Utils.bytArrayToHex(anonymizedID);
 //		ContextServiceLogger.getLogger().fine("ContextClient sendUpdate enter "+GUID+" json "+
@@ -163,7 +163,7 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 				addSecureValueInJSON( realGUID, csAttrValuePairsSec, encryptedRealIDPair, 
 						attrUpdInfo, value );
 				
-				CSTransformedUpdatedMessage transforMessage = new CSTransformedUpdatedMessage
+				CSTransformedMessage transforMessage = new CSTransformedMessage
 						(anonymizedID, csAttrValuePairsSec, encryptedRealIDPair);
 				transformMessageList.add(transforMessage);
 			}
