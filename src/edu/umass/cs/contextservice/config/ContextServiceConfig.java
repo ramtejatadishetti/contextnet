@@ -119,6 +119,10 @@ public class ContextServiceConfig
 	
 	public static final boolean PRIVACY_ENABLED						= true;
 	
+	public static final String AssymmetricEncAlgorithm				= "RSA";
+	public static final String SymmetricEncAlgorithm				= "DES";
+	
+	
 	//  model paramters
 	// search/(search+update) ratio
 	public static double modelRho									= 0.5;

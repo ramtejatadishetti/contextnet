@@ -83,12 +83,13 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 		
 		try
 		{
-			Thread.sleep(30000);
+			Thread.sleep(10000);
 		} catch (InterruptedException e) 
 		{
 			e.printStackTrace();
 		}
 		
+		System.out.println("All CS servers ready");
 		/*try 
 		{
 			RequestClass.startRequests();

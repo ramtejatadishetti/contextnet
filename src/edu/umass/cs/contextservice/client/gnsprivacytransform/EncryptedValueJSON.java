@@ -13,10 +13,11 @@ public class EncryptedValueJSON
 {
 	private enum Keys {ENCRYPTED_VALUE, DECRYPT_VALUE_INFO};
 	
+	// byte[] array with NIO not working, so changing it to hex format String
 	// byte arrays should be used instead if strings,
 	// as string just double the space, 
 	// and encrypted values are already very large in size.
-	private final byte[] encytpedValue; 
+	private final String encytpedValue; 
 	
 	// the key of this JSONObject is guids in ACL, like G1 ,and the value is
 	// and  enc(G1+, Ks), where G1+ is the public key of G1
@@ -30,10 +31,20 @@ public class EncryptedValueJSON
 	private final JSONObject decryptValueInfo;
 	
 	
-	public EncryptedValueJSON(byte[] encytpedValue, JSONObject decryptValueInfo)
+	public EncryptedValueJSON(String encytpedValue, JSONObject decryptValueInfo)
 	{
 		this.encytpedValue = encytpedValue;
 		this.decryptValueInfo = decryptValueInfo;
+	}
+	
+	public String getEncytpedValue()
+	{
+		return encytpedValue;
+	}
+	
+	public JSONObject  getDecryptValueInfo()
+	{
+		return decryptValueInfo;
 	}
 	
 	public JSONObject toJSONObject() throws JSONException
@@ -42,5 +53,16 @@ public class EncryptedValueJSON
 		jsonObject.put(Keys.ENCRYPTED_VALUE.toString(), encytpedValue);
 		jsonObject.put(Keys.DECRYPT_VALUE_INFO.toString(), decryptValueInfo);
 		return jsonObject;
+	}
+	
+	public static EncryptedValueJSON fromJSONObject(JSONObject jsonObject) throws JSONException
+	{
+		String encryptedValue = jsonObject.getString(Keys.ENCRYPTED_VALUE.toString());
+		JSONObject decryptValueInfo = jsonObject.getJSONObject(Keys.DECRYPT_VALUE_INFO.toString());
+		
+		EncryptedValueJSON encryptJSON = new EncryptedValueJSON(encryptedValue, 
+				decryptValueInfo);
+		
+		return encryptJSON;
 	}
 }

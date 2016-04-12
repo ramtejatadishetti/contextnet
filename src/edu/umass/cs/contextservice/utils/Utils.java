@@ -26,10 +26,13 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 
 /**
@@ -431,7 +434,30 @@ public class Utils
 	    return plainText;
 	}
 	
-	//public static byte[] 
+	public static byte[] doSymmetricEncryption(byte[] symmetricKey, byte[] plainTextByteArray) 
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, 
+			IllegalBlockSizeException, BadPaddingException
+	{
+		SecretKey keyObj = new SecretKeySpec(symmetricKey, 0, symmetricKey.length, 
+				ContextServiceConfig.SymmetricEncAlgorithm);
+		
+		Cipher c = Cipher.getInstance(ContextServiceConfig.SymmetricEncAlgorithm);
+		c.init(Cipher.ENCRYPT_MODE, keyObj);
+		return c.doFinal(plainTextByteArray);
+	}
+	
+	
+	public static byte[] doSymmetricDecryption(byte[] symmetricKey, byte[] encryptedByteArray) 
+			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, 
+			IllegalBlockSizeException, BadPaddingException
+	{
+		SecretKey keyObj = new SecretKeySpec(symmetricKey, 0, symmetricKey.length, 
+				ContextServiceConfig.SymmetricEncAlgorithm);
+		
+		Cipher c = Cipher.getInstance(ContextServiceConfig.SymmetricEncAlgorithm);
+		c.init(Cipher.DECRYPT_MODE, keyObj);
+		return c.doFinal(encryptedByteArray);
+	}
 	
 	
 	public static void main( String[] args )

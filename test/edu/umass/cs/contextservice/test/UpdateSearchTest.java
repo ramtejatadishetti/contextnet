@@ -29,6 +29,7 @@ import edu.umass.cs.gnsclient.client.util.ServerSelectDialog;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.security.NoSuchAlgorithmException;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -81,7 +82,10 @@ public class UpdateSearchTest {
       } catch (IOException e1) 
       {
 		e1.printStackTrace();
-      }
+      } catch (NoSuchAlgorithmException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
       //client = new BasicUniversalTcpClient(address.getHostName(), address.getPort(), true);
       client = new UniversalTcpClient(address.getHostName(), address.getPort(), true);
       try 

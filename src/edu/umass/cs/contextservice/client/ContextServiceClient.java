@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.HashMap;
@@ -27,6 +28,7 @@ import edu.umass.cs.contextservice.client.csprivacytransform.CSPrivacyTransformI
 import edu.umass.cs.contextservice.client.csprivacytransform.CSSearchReplyTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSUpdateTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.SubspaceBasedCSTransform;
+import edu.umass.cs.contextservice.client.gnsprivacytransform.EncryptionBasedGNSPrivacyTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSPrivacyTransformInterface;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSTransformedMessage;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.NoopGNSPrivacyTransform;
@@ -49,6 +51,7 @@ import edu.umass.cs.contextservice.messages.dataformat.ParsingMethods;
 import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.gnsclient.client.GNSClient;
+import edu.umass.cs.gnsclient.client.GNSClientConfig;
 import edu.umass.cs.gnsclient.client.GuidEntry;
 import edu.umass.cs.gnsclient.client.UniversalTcpClientExtended;
 import edu.umass.cs.gnsclient.client.util.GuidUtils;
@@ -87,8 +90,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	 * @param csHostName
 	 * @param csPortNum
 	 * @throws IOException
+	 * @throws NoSuchAlgorithmException 
 	 */
-	public ContextServiceClient(String csHostName, int csPortNum) throws IOException
+	public ContextServiceClient(String csHostName, int csPortNum) throws IOException, NoSuchAlgorithmException
 	{
 		super( csHostName, csPortNum );
 		gnsClient = null;
@@ -103,10 +107,11 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	 * @param gnsHostName
 	 * @param gnsPort
 	 * @throws IOException
+	 * @throws NoSuchAlgorithmException 
 	 */
 	public ContextServiceClient( String csHostName, int csPortNum, 
 			String gnsHostName, int gnsPort ) 
-			throws IOException
+			throws IOException, NoSuchAlgorithmException
 	{
 		super( csHostName, csPortNum );
 		
@@ -803,7 +808,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		return csAttrValuePairs;
 	}
 	
-	private void initializeClient()
+	private void initializeClient() throws NoSuchAlgorithmException
 	{	
 		refreshTriggerQueue = new LinkedList<JSONObject>();
 		// FIXME: add a timeout mechanism here.
@@ -813,7 +818,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		anonymizedIDCreation = new SubspaceBasedAnonymizedIDCreator(subspaceAttrMap);
 				
 		// for gnsTransform
-		gnsPrivacyTransform = new NoopGNSPrivacyTransform();
+		gnsPrivacyTransform = new EncryptionBasedGNSPrivacyTransform();
 				
 		// for cs transform
 		csPrivacyTransform = new SubspaceBasedCSTransform();
@@ -829,6 +834,20 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		// test with the example in the draft.
 		//GUIDEntryStoringClass myGUIDInfo, JSONArray ACLArray
 		//String guid = GuidUtils.createGuidFromPublicKey(keyPair.getPublic().getEncoded());
+//		Properties props = System.getProperties();
+//		props.setProperty("gigapaxosConfig", "conf/gnsClientConf/gigapaxos.client.local.properties");
+//		props.setProperty("javax.net.ssl.trustStorePassword", "qwerty");
+//		props.setProperty("javax.net.ssl.trustStore", "conf/gnsClientConf/trustStore/node100.jks");
+//		props.setProperty("javax.net.ssl.keyStorePassword", "qwerty");
+//		props.setProperty("javax.net.ssl.keyStore", "conf/gnsClientConf/keyStore/node100.jks");
+//		
+//		InetSocketAddress address 
+//			= new InetSocketAddress("127.0.0.1", GNSClientConfig.LNS_PORT);
+//		UniversalTcpClientExtended gnsClient = new GNSClient(null, address, true);
+//	
+//		GuidEntry masterGuid = GuidUtils.lookupOrCreateAccountGuid(gnsClient,
+//            "ayadav@cs.umass.edu", "password", true);
+	
 		KeyPairGenerator kpg;
 		kpg = KeyPairGenerator.getInstance("RSA");
 		KeyPair kp0 = kpg.genKeyPair();
@@ -838,9 +857,19 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		byte[] privateKeyByteArray0 = privateKey0.getEncoded();
 		
 		String guid0 = GuidUtils.createGuidFromPublicKey(publicKeyByteArray0);
+		GuidEntry myGUID = new GuidEntry("Guid0", guid0, publicKey0, privateKey0);
+		
+//		PublicKey publicKey0 = masterGuid.getPublicKey();
+//		PrivateKey privateKey0 = masterGuid.getPrivateKey();
+//		byte[] publicKeyByteArray0 = publicKey0.getEncoded();
+//		byte[] privateKeyByteArray0 = privateKey0.getEncoded();
+//		
+//		String guid0 = GuidUtils.createGuidFromPublicKey(publicKeyByteArray0);
+//		GuidEntry myGUID = masterGuid;
+		
 		
 		Vector<GuidEntry> guidsVector = new Vector<GuidEntry>();
-		GuidEntry myGUID = new GuidEntry("Guid0", guid0, publicKey0, privateKey0);
+		
 
 		
 		guidsVector.add(myGUID);
@@ -923,17 +952,21 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		GuidEntry queryingGuid = guidsVector.get(3);
 		csClient.sendSearchQuerySecure(searchQuery, replyArray, 300000, queryingGuid);
 		
-		System.out.println("Query GUID "+ queryingGuid.getGuid()+
+		System.out.println("Query for attr1 querying GUID "+ queryingGuid.getGuid()+
 				" Real GUID "+guid0+" reply Arr "+replyArray);
 		
 		
 		searchQuery = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE attr1 >= 5 AND attr1 <= 15"
 				+ " AND attr2 >= 10 AND attr2 <= 20";
 		replyArray = new JSONArray();
-		queryingGuid = guidsVector.get(3);
+		queryingGuid = guidsVector.get(1);
 		csClient.sendSearchQuerySecure(searchQuery, replyArray, 300000, queryingGuid);
 		
-		System.out.println("Query GUID "+ queryingGuid.getGuid()+
+		System.out.println("Query for att1 and attr4 querying GUID "+ queryingGuid.getGuid()+
 				" Real GUID "+guid0+" reply Arr "+replyArray);
+		
+//		queryingGuid = guidsVector.get(1);
+//		JSONObject getObj = csClient.sendGetRequestSecure(guid0, queryingGuid);
+//		System.out.println("recvd Obj "+getObj);
 	}
 }

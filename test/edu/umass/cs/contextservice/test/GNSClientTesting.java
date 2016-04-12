@@ -25,7 +25,7 @@ public class GNSClientTesting
 		props.setProperty("javax.net.ssl.trustStore", "conf/gnsClientConf/trustStore/node100.jks");
 		props.setProperty("javax.net.ssl.keyStorePassword", "qwerty");
 		props.setProperty("javax.net.ssl.keyStore", "conf/gnsClientConf/keyStore/node100.jks");	
-				
+		
 		InetSocketAddress address 
 			= new InetSocketAddress("127.0.0.1", GNSClientConfig.LNS_PORT);
 		UniversalTcpClientExtended gnsClient = new GNSClient(null, address, true);
