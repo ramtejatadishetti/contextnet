@@ -19,7 +19,7 @@ import edu.umass.cs.gnsclient.client.GuidEntry;
  * double the space 200s of bytes.
  * @author adipc
  */
-public interface SecureContextClientInterface
+public interface ContextClientInterfaceWithPrivacy
 {
 	// 20 bytes
 	public static final int SIZE_OF_ANONYMIZED_ID			= 20;
@@ -30,9 +30,9 @@ public interface SecureContextClientInterface
 	 * @param versionNum 
 	 * @param blocking true then the update will block until CS confirms completion.
 	 */
-	public void sendUpdateSecure(GuidEntry myGUIDInfo, 
-			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList, 
-			JSONObject attrValuePairs, long versionNum, boolean blocking);
+	public void sendUpdateSecure(String GUID, GuidEntry myGUIDInfo, 
+			JSONObject attrValuePairs, long versionNum, boolean blocking,
+			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList );
 	
 	/**
 	 * computes anonymized Ids for a user
@@ -43,8 +43,9 @@ public interface SecureContextClientInterface
 	public List<AnonymizedIDEntry> computeAnonymizedIDs(HashMap<String, List<ACLEntry>> aclMap);
 	
 	//FIXME: semantics needs to be decided, after secure update/insert is implemented
-	public int sendSearchQuerySecure(GuidEntry myGUIDInfo, String searchQuery, JSONArray replyArray, long expiryTime);
+	public int sendSearchQuerySecure(String searchQuery, JSONArray replyArray, 
+			long expiryTime, GuidEntry myGUIDInfo);
 	
 	//FIXME: semantics needs to be decided, after secure update/insert is implemented
-	public JSONObject sendGetRequestSecure(GuidEntry myGUIDInfo, String GUID) throws Exception;
+	public JSONObject sendGetRequestSecure(String GUID, GuidEntry myGUIDInfo) throws Exception;
 }

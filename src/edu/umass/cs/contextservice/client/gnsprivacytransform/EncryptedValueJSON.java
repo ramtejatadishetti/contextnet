@@ -24,7 +24,7 @@ public class EncryptedValueJSON
 	// having GUID G1 as the key helps in directly obtaining the decrypting
 	// info rather than checking all members of ACL, decrypting and failing until
 	// the owners own GUID is found in the ACL.
-	// TODO: GNS can also jsut return the decrypting info of the GUID that is
+	// TODO: GNS can also just return the decrypting info of the GUID that is
 	// doing the lookup, instead returning all members of ACL. but that requires
 	// more changes in GNS for privacy stuff.
 	private final JSONObject decryptValueInfo;

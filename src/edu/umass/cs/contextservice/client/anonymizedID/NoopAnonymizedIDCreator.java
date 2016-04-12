@@ -13,7 +13,6 @@ import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
  */
 public class NoopAnonymizedIDCreator implements AnonymizedIDCreationInterface
 {
-
 	@Override
 	public List<AnonymizedIDEntry> computeAnonymizedIDs(HashMap<String, List<ACLEntry>> aclList) 
 	{

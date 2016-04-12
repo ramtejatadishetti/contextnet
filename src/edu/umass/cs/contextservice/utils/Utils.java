@@ -33,9 +33,9 @@ import org.json.JSONException;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 
 /**
+ * 
  * Class specifies the common utility methods like SHA1 hashing etc.
  * @author ayadav
- *
  */
 
 public class Utils
@@ -46,7 +46,7 @@ public class Utils
 	
 	public static Vector<String> getActiveInterfaceStringAddresses()
 	{
-	    Vector<String> CurrentInterfaceIPs = new Vector<String>();
+		Vector<String> CurrentInterfaceIPs = new Vector<String>();
 	    try
 	    {
 	      for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();)
@@ -431,10 +431,12 @@ public class Utils
 	    return plainText;
 	}
 	
+	//public static byte[] 
+	
 	
 	public static void main( String[] args )
 	{
-		//  open up standard input
+		//open up standard input
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 		String query = null;
 		//  read the username from the command-line; need to use try/catch with the

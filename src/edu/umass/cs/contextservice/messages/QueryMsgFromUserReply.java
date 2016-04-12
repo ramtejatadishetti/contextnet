@@ -7,20 +7,17 @@ import org.json.JSONObject;
 public class QueryMsgFromUserReply<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 {
 	private enum Keys {QUERY, QUERY_GUID, GUIDs, USER_REQ_NUM, 
-		REPLY_SIZE, ENCRYPTED_REALID_ARRAY};
+		REPLY_SIZE};
 	
 	private final String query;  // original query sent by the user.
 	private final String queryGUID;
 	private final JSONArray resultGUIDs;
 	private final long userReqNum;
 	private final int replySize;
-	// array of JSONObjects from different subspace region nodes. 
-	// each element is a JSONObject with anonymized ID as key and JSONArray of encrypted RealIDs as values. 
-	private final JSONArray encryptedRealIDArray;
 	
 	//FIXME: resultGUIDs will be removed later on
 	public QueryMsgFromUserReply(NodeIDType initiator, String query, String queryGUID, JSONArray resultGUIDs
-			, long userReqNum, int replySize, JSONArray encryptedRealIDArray )
+			, long userReqNum, int replySize)
 	{
 		super(initiator, ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY);
 		this.resultGUIDs = resultGUIDs;
@@ -29,7 +26,6 @@ public class QueryMsgFromUserReply<NodeIDType> extends BasicContextServicePacket
 		this.queryGUID = queryGUID;
 		this.userReqNum = userReqNum;
 		this.replySize = replySize;
-		this.encryptedRealIDArray = encryptedRealIDArray;
 	}
 	
 	public QueryMsgFromUserReply(JSONObject json) throws JSONException
@@ -41,8 +37,6 @@ public class QueryMsgFromUserReply<NodeIDType> extends BasicContextServicePacket
 		this.userReqNum = json.getLong(Keys.USER_REQ_NUM.toString());
 		this.queryGUID = json.getString(Keys.QUERY_GUID.toString());
 		this.replySize = json.getInt(Keys.REPLY_SIZE.toString());
-		
-		this.encryptedRealIDArray = json.getJSONArray(Keys.ENCRYPTED_REALID_ARRAY.toString());
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException
@@ -53,7 +47,6 @@ public class QueryMsgFromUserReply<NodeIDType> extends BasicContextServicePacket
 		json.put(Keys.USER_REQ_NUM.toString(), this.userReqNum);
 		json.put(Keys.QUERY_GUID.toString(), this.queryGUID);
 		json.put(Keys.REPLY_SIZE.toString(), this.replySize);
-		json.put(Keys.ENCRYPTED_REALID_ARRAY.toString(), this.encryptedRealIDArray);
 		return json;
 	}
 	
@@ -80,11 +73,6 @@ public class QueryMsgFromUserReply<NodeIDType> extends BasicContextServicePacket
 	public int getReplySize()
 	{
 		return this.replySize;
-	}
-	
-	public JSONArray getEncryptedRealIDArray()
-	{
-		return this.encryptedRealIDArray;
 	}
 	
 	public static void main( String[] args )

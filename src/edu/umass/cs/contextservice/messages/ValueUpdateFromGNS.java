@@ -10,8 +10,8 @@ import org.json.JSONObject;
 
 public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 {
-	private enum Keys {VERSION_NUM, GUID, ATTR_VALUE_PAIR, USER_REQUESTID, SOURCEIP, SOURCEPORT
-		, UPDATE_START_TIME, ENCRYPT_REAL_ID_JSON};
+	private enum Keys {VERSION_NUM, GUID, ATTR_VALUE_PAIR, USER_REQUESTID, 
+		SOURCEIP, SOURCEPORT, UPDATE_START_TIME};
 	
 	private final long versionNum;
 	private final String GUID;
@@ -22,7 +22,7 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 	private final long updStartTime;
 	// true if privacy enabled, false otherwise
 	// key is attrName, and value is JSONArray of encrypted Real IDs
-	private final JSONObject attrEncryptedRealIDPair;
+	//private final JSONObject attrEncryptedRealIDPair;
 	//private final String attrName;
 	//private final String oldVal;
 	//private final String newVal;
@@ -30,7 +30,7 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 	//private final long updateStartTime;
 	
 	public ValueUpdateFromGNS( NodeIDType initiator, long versionNum, String GUID, JSONObject attrValuePair, long userRequestID
-			, String sourceIP, int sourcePort, long updStartTime, JSONObject attrEncryptedRealIDPair )
+			, String sourceIP, int sourcePort, long updStartTime )
 	{
 		super(initiator, ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS);
 		//ContextServiceLogger.getLogger().fine("ValueUpdateFromGNS enter super compl");
@@ -41,7 +41,6 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 		this.sourceIP = sourceIP;
 		this.sourcePort = sourcePort;
 		this.updStartTime = updStartTime;
-		this.attrEncryptedRealIDPair = attrEncryptedRealIDPair;
 	}
 	
 	public ValueUpdateFromGNS(JSONObject json) throws JSONException
@@ -56,7 +55,6 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 		this.sourceIP = json.getString(Keys.SOURCEIP.toString());
 		this.sourcePort = json.getInt(Keys.SOURCEPORT.toString());
 		this.updStartTime = json.getLong(Keys.UPDATE_START_TIME.toString());
-		this.attrEncryptedRealIDPair = json.getJSONObject(Keys.ENCRYPT_REAL_ID_JSON.toString());
 		//ContextServiceLogger.getLogger().fine("\n\n ValueUpdateFromGNS constructor");
 	}
 	
@@ -70,7 +68,6 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 		json.put(Keys.SOURCEIP.toString(), this.sourceIP);
 		json.put(Keys.SOURCEPORT.toString(), this.sourcePort);
 		json.put(Keys.UPDATE_START_TIME.toString(), this.updStartTime);
-		json.put(Keys.ENCRYPT_REAL_ID_JSON.toString(), this.attrEncryptedRealIDPair);
 		return json;
 	}
 	
@@ -107,11 +104,6 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 	public long getUpdateStartTime()
 	{
 		return this.updStartTime;
-	}
-	
-	public JSONObject getAttrEncryptedRealIDPair()
-	{
-		return this.attrEncryptedRealIDPair;
 	}
 	
 	public static void main( String[] args )

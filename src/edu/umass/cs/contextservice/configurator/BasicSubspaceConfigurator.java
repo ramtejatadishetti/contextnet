@@ -40,10 +40,11 @@ public class BasicSubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfi
 		
 		double numSubspaces = Math.ceil(numAttrs/optimalH);
 		
-		Vector<AttributeMetaInfo> attrVector 
-				= new Vector<AttributeMetaInfo>();
+		//Vector<AttributeMetaInfo> attrVector 
+		//		= new Vector<AttributeMetaInfo>();
 
-		attrVector.addAll(AttributeTypes.attributeMap.values());
+		//attrVector.addAll(AttributeTypes.attributeMap.values());
+		
 		// handling the case if somehow numSubspaces 
 		// becomes greater than numNodes, specially in 1 node case
 //		if(numSubspaces > numNodes)

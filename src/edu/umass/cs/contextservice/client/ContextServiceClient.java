@@ -2,13 +2,10 @@ package edu.umass.cs.contextservice.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.security.InvalidKeyException;
-import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -17,9 +14,6 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.Vector;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -27,12 +21,12 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.anonymizedID.AnonymizedIDCreationInterface;
-import edu.umass.cs.contextservice.client.anonymizedID.NoopAnonymizedIDCreator;
+import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
-import edu.umass.cs.contextservice.client.common.GUIDEntryStoringClass;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSPrivacyTransformInterface;
-import edu.umass.cs.contextservice.client.csprivacytransform.CSTransformedMessage;
-import edu.umass.cs.contextservice.client.csprivacytransform.NoopCSTransform;
+import edu.umass.cs.contextservice.client.csprivacytransform.CSSearchReplyTransformedMessage;
+import edu.umass.cs.contextservice.client.csprivacytransform.CSUpdateTransformedMessage;
+import edu.umass.cs.contextservice.client.csprivacytransform.SubspaceBasedCSTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSPrivacyTransformInterface;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSTransformedMessage;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.NoopGNSPrivacyTransform;
@@ -50,10 +44,14 @@ import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
 import edu.umass.cs.contextservice.messages.RefreshTrigger;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
+import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
+import edu.umass.cs.contextservice.messages.dataformat.ParsingMethods;
+import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.gnsclient.client.GNSClient;
 import edu.umass.cs.gnsclient.client.GuidEntry;
 import edu.umass.cs.gnsclient.client.UniversalTcpClientExtended;
+import edu.umass.cs.gnsclient.client.util.GuidUtils;
 import edu.umass.cs.gnscommon.exceptions.client.GnsClientException;
 
 /**
@@ -66,7 +64,7 @@ import edu.umass.cs.gnscommon.exceptions.client.GnsClientException;
  * @param <NodeIDType>
  */
 public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClient<NodeIDType> 
-												implements SecureContextClientInterface
+												implements ContextClientInterfaceWithPrivacy, ContextServiceClientInterfaceWithoutPrivacy
 {
 	private Queue<JSONObject> refreshTriggerQueue;
 	//private final Object refreshQueueLock 						= new Object();
@@ -98,7 +96,14 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		initializeClient();
 	}
 	
-	
+	/**
+	 * Use this constructor when CS and GNS are used.
+	 * @param csHostName
+	 * @param csPortNum
+	 * @param gnsHostName
+	 * @param gnsPort
+	 * @throws IOException
+	 */
 	public ContextServiceClient( String csHostName, int csPortNum, 
 			String gnsHostName, int gnsPort ) 
 			throws IOException
@@ -121,23 +126,21 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		initializeClient();
 	}
 	
-	
-	@Override
-	public void sendUpdate( String GUID, JSONObject gnsAttrValuePairs, 
+	public void sendUpdate( String GUID, GuidEntry myGuidEntry, JSONObject gnsAttrValuePairs, 
 			long versionNum, boolean blocking )
 	{
+		//Note: gnsAttrValuePairs, key is attrName, value is attrValue
 		ContextServiceLogger.getLogger().fine("ContextClient sendUpdate enter "+GUID+" json "+
 				gnsAttrValuePairs);
 		try
-		{
-			long currId;
-			
-			synchronized( this.updateIdLock )
+		{	
+			if(gnsClient != null)
 			{
-				currId = this.updateReqId++;
+				sendUpdateToGNS(myGuidEntry, gnsAttrValuePairs);
 			}
 			
-			JSONObject csAttrValuePairs = filterCSAttributes(gnsAttrValuePairs);
+			JSONObject csAttrValuePairs 
+						= filterCSAttributes(gnsAttrValuePairs);
 			
 			// no context service attribute matching.
 			if( csAttrValuePairs.length() <= 0 )
@@ -145,64 +148,17 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				return;
 			}
 			
-			long reqeustID = currId;
-			
-			ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = 
-					new ValueUpdateFromGNS<NodeIDType>(null, versionNum, GUID, csAttrValuePairs, reqeustID, sourceIP, sourcePort, 
-							System.currentTimeMillis() , new JSONObject());
-			
-			UpdateStorage<NodeIDType> updateQ = new UpdateStorage<NodeIDType>();
-			updateQ.requestID = currId;
-			//updateQ.valUpdFromGNS = valUpdFromGNS;
-			updateQ.valUpdFromGNS = valUpdFromGNS;
-			updateQ.valUpdFromGNSReply = null;
-			updateQ.blocking = blocking;
-			
-			this.pendingUpdate.put(currId, updateQ);
-			
-			InetSocketAddress sockAddr = this.csNodeAddresses.get(rand.nextInt(csNodeAddresses.size()));
-			
-			ContextServiceLogger.getLogger().fine("ContextClient sending update requestID "+currId+" to "+sockAddr+" json "+
-					valUpdFromGNS);		
-			//niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
-			niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
-			
-			if( blocking )
-			{
-				synchronized( updateQ )
-				{
-					while( updateQ.valUpdFromGNSReply == null )
-					{
-						try 
-						{
-							updateQ.wait();
-						} catch (InterruptedException e) 
-						{
-							e.printStackTrace();
-						}
-					}
-				}
-				pendingUpdate.remove(currId);
-			}
-		} catch (JSONException e)
+			sendUpdateToCS(GUID, 
+					convertAttrValueToSystemFormat(csAttrValuePairs), 
+					versionNum, blocking );
+		} 
+		catch (Exception | Error e)
 		{
 			e.printStackTrace();
-		} catch ( UnknownHostException e )
-		{
-			e.printStackTrace();
-		} catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-		catch(Exception | Error ex)
-		{
-			ex.printStackTrace();
 		}
 		// no waiting in update	
 	}
 	
-	
-	@Override
 	public int sendSearchQuery(String searchQuery, JSONArray replyArray, long expiryTime)
 	{
 		if( replyArray == null )
@@ -212,69 +168,29 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			return -1;
 		}
 		
-		long currId;
-		synchronized( this.searchIdLock )
-		{
-			currId = this.searchReqId++;
-		}
+		SearchReplyAnswer searchAnswer = sendSearchQueryToCS(searchQuery, expiryTime);
 		
-		QueryMsgFromUser<NodeIDType> qmesgU 
-			= new QueryMsgFromUser<NodeIDType>(this.nodeid, searchQuery, currId, expiryTime, sourceIP, sourcePort);
-		
-		SearchQueryStorage<NodeIDType> searchQ = new SearchQueryStorage<NodeIDType>();
-		searchQ.requestID = currId;
-		searchQ.queryMsgFromUser = qmesgU;
-		searchQ.queryMsgFromUserReply = null; 
-		
-		this.pendingSearches.put(currId, searchQ);
-		InetSocketAddress sockAddr = this.csNodeAddresses.get(rand.nextInt(csNodeAddresses.size()));
-		
-		try 
-		{
-			niot.sendToAddress(sockAddr, qmesgU.toJSONObject());
-		} catch (IOException e) 
-		{
-			e.printStackTrace();
-		} catch (JSONException e) 
-		{
-			e.printStackTrace();
-		}
-		
-		synchronized( searchQ )
-		{
-			while( searchQ.queryMsgFromUserReply == null )
-			{
-				try 
-				{
-					searchQ.wait();
-				} catch (InterruptedException e) 
-				{
-					e.printStackTrace();
-				}
-			}
-		}
-		JSONArray result = searchQ.queryMsgFromUserReply.getResultGUIDs();
-		int resultSize = searchQ.queryMsgFromUserReply.getReplySize();
-		pendingSearches.remove(currId);
-		
-		// convert result to list of GUIDs, currently is is list of JSONArrays 
-		//JSONArray resultRet = new JSONArray();
-		for(int i=0; i<result.length(); i++)
+		// no untransformation needed in no privacy case.
+		// context service returns an array of JSONArrays.
+		// Each JSONArray contains the SearchReplyGUIDRepresentationJSON JSONObjects 
+		for(int i=0; i<searchAnswer.resultArray.length(); i++)
 		{
 			try
 			{
-				JSONArray jsoArr1 = result.getJSONArray(i);
+				JSONArray jsoArr1 = searchAnswer.resultArray.getJSONArray(i);
 				for(int j=0; j<jsoArr1.length(); j++)
 				{
 					//resultGUIDMap.put(jsoArr1.getString(j), true);
-					replyArray.put(jsoArr1.getString(j));
+					JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
+					SearchReplyGUIDRepresentationJSON searchRepObj = SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
+					replyArray.put(searchRepObj.getID());
 				}
 			} catch ( JSONException e )
 			{
 				e.printStackTrace();
 			}
 		}
-		return resultSize;
+		return searchAnswer.resultSize;
 	}
 	
 	@Override
@@ -327,45 +243,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		return result;
 	}
 	
-//	@Override
-//	public void expireSearchQuery(String searchQuery) 
-//	{
-//	}
-	
-	@Override
-	public boolean handleMessage(JSONObject jsonObject)
-	{
-		try
-		{
-			if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE) 
-					== ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY.getInt() )
-			{
-				handleQueryReply(jsonObject);
-			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-					== ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY.getInt() )
-			{
-				handleUpdateReply(jsonObject);
-			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-					== ContextServicePacket.PacketType.REFRESH_TRIGGER.getInt() )
-			{
-				handleRefreshTrigger(jsonObject);
-			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-					== ContextServicePacket.PacketType.GET_REPLY_MESSAGE.getInt() )
-			{
-				handleGetReply(jsonObject);
-			} else if(jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-					== ContextServicePacket.PacketType.CONFIG_REPLY.getInt() )
-			{
-				handleConfigReply(jsonObject);
-			}
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-		return true;
-	}
-	
-	
 	
 	@Override
 	/**
@@ -401,34 +278,47 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 	
 	@Override
-	public void sendUpdateSecure(GuidEntry myGUIDInfo, 
-			HashMap<String, List<ACLEntry>> aclMap, List<AnonymizedIDEntry> anonymizedIDList, 
-			JSONObject gnsAttrValuePairs, long versionNum, boolean blocking)
+	public void sendUpdateSecure(String GUID, GuidEntry myGUIDInfo, 
+			JSONObject attrValuePairs, long versionNum, boolean blocking,
+			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList)
 	{
 		try
 		{
-			JSONObject csAttrValuePairs = filterCSAttributes(gnsAttrValuePairs);
+			GNSTransformedMessage gnsTransformMesg = 
+					this.gnsPrivacyTransform.transformUpdateForGNSPrivacy
+					(attrValuePairs, aclmap);
+		
+			sendUpdateToGNS(myGUIDInfo, 
+					gnsTransformMesg.getEncryptedAttrValuePair());
+			
+			
+			JSONObject csAttrValuePairs = filterCSAttributes(attrValuePairs);
 			// no context service attribute matching.
 			if( csAttrValuePairs.length() <= 0 )
 			{
 				return;
 			}
 			
-			//TODO: send secure update to GNS
-			GNSTransformedMessage gnsTransformMesg = 
-					this.gnsPrivacyTransform.transformUpdateForGNSPrivacy(gnsAttrValuePairs, aclMap);
+			HashMap<String, AttrValueRepresentationJSON> attrValueMap =
+					convertAttrValueToSystemFormat(csAttrValuePairs);
 			
-			sendSecureMessageToGNS(myGUIDInfo, gnsTransformMesg);
-			
-			List<CSTransformedMessage> transformedMesgList 
+			List<CSUpdateTransformedMessage> transformedMesgList 
 				= this.csPrivacyTransform.transformUpdateForCSPrivacy
-				(myGUIDInfo.getGuid(), csAttrValuePairs, aclMap, anonymizedIDList);
+				(myGUIDInfo.getGuid(), attrValueMap, aclmap, anonymizedIDList);
 			
 			// now all the anonymized IDs and the attributes that needs to be updated
 			// are calculated, 
 			// just need to send out updates
 			
-			sendSecureUpdateMessageToCS(transformedMesgList, versionNum, blocking);
+			for( int i=0;i<transformedMesgList.size();i++ )
+			{
+				CSUpdateTransformedMessage csTransformedMessage = transformedMesgList.get(i);
+				
+				String IDString = Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
+				
+				sendUpdateToCS( IDString, csTransformedMessage.getAttrValMap() , 
+						versionNum, blocking );
+			}
 		}
 		catch( JSONException jsoEx )
 		{
@@ -437,8 +327,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 
 	@Override
-	public int sendSearchQuerySecure(GuidEntry myGUIDInfo, String searchQuery, 
-			JSONArray replyArray, long expiryTime) 
+	public int sendSearchQuerySecure(String searchQuery, JSONArray replyArray, 
+			long expiryTime, GuidEntry myGUIDInfo) 
 	{
 		if( replyArray == null )
 		{
@@ -447,6 +337,204 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			return -1;
 		}
 		
+		SearchReplyAnswer searchAnswer 
+						= sendSearchQueryToCS(searchQuery, expiryTime);
+		
+		List<CSSearchReplyTransformedMessage> searchRepTransformList = 
+				new LinkedList<CSSearchReplyTransformedMessage>();
+		for(int i=0; i<searchAnswer.resultArray.length(); i++)
+		{
+			try
+			{
+				JSONArray jsoArr1 = searchAnswer.resultArray.getJSONArray(i);
+				for(int j=0; j<jsoArr1.length(); j++)
+				{
+					//resultGUIDMap.put(jsoArr1.getString(j), true);
+					JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
+					SearchReplyGUIDRepresentationJSON searchRepObj = SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
+
+					CSSearchReplyTransformedMessage csSearchRepTransform 
+										= new CSSearchReplyTransformedMessage(searchRepObj);
+					searchRepTransformList.add(csSearchRepTransform);
+				}
+			} catch ( JSONException e )
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		this.csPrivacyTransform.unTransformSearchReply(myGUIDInfo,
+				searchRepTransformList, replyArray);
+		
+		return searchAnswer.resultSize;
+	}
+	
+	@Override
+	public JSONObject sendGetRequestSecure(String GUID, GuidEntry myGUIDInfo) throws Exception
+	{
+		// fetch it form GNS
+		if(gnsClient != null)
+		{
+			JSONObject encryptedJSON = gnsClient.read(GUID, myGUIDInfo);
+			GNSTransformedMessage gnsTransformedMesg 
+							= new GNSTransformedMessage(encryptedJSON);
+			
+			return this.gnsPrivacyTransform.unTransformGetReply(gnsTransformedMesg, myGUIDInfo);
+		}
+		return null;
+	}
+	
+	/**
+	 * assumption is that ACL always fits in memory.
+	 */
+	@Override
+	public List<AnonymizedIDEntry> computeAnonymizedIDs(
+			HashMap<String, List<ACLEntry>> aclMap) 
+	{
+		return this.anonymizedIDCreation.computeAnonymizedIDs(aclMap);
+	}
+	
+	
+	@Override
+	public boolean handleMessage(JSONObject jsonObject)
+	{
+		try
+		{
+			if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE) 
+					== ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY.getInt() )
+			{
+				handleQueryReply(jsonObject);
+			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
+					== ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY.getInt() )
+			{
+				handleUpdateReply(jsonObject);
+			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
+					== ContextServicePacket.PacketType.REFRESH_TRIGGER.getInt() )
+			{
+				handleRefreshTrigger(jsonObject);
+			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
+					== ContextServicePacket.PacketType.GET_REPLY_MESSAGE.getInt() )
+			{
+				handleGetReply(jsonObject);
+			} else if(jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
+					== ContextServicePacket.PacketType.CONFIG_REPLY.getInt() )
+			{
+				handleConfigReply(jsonObject);
+			}
+		} catch (JSONException e)
+		{
+			e.printStackTrace();
+		}
+		return true;
+	}
+	
+	
+	/**
+	 * COnverts attr value JSON given in the api calls to
+	 * attr AttrValueRepresentationJSON map
+	 * @return
+	 * @throws JSONException 
+	 */
+	private HashMap<String, AttrValueRepresentationJSON> convertAttrValueToSystemFormat
+								(JSONObject attrValuePairs) throws JSONException
+	{
+		HashMap<String, AttrValueRepresentationJSON> map 
+							= new HashMap<String, AttrValueRepresentationJSON>();
+		
+		Iterator<String> jsonIter = attrValuePairs.keys();
+		while(jsonIter.hasNext())
+		{
+			String attrName = jsonIter.next();
+			String value = attrValuePairs.getString(attrName);
+			AttrValueRepresentationJSON valRep = new AttrValueRepresentationJSON(value);
+			
+			map.put(attrName, valRep);
+		}
+		return map;
+	}
+	/**
+	 * Sends update to CS in both privacy and non privacy case.
+	 * filtering of CS attributes has already happened before this function call.
+	 * It assumes all attributes in csAttrValMap are CS attributes.
+	 */
+	private void sendUpdateToCS( String GUID, 
+			HashMap<String, AttrValueRepresentationJSON> csAttrValMap, 
+			long versionNum, boolean blocking )
+	{
+		try
+		{
+			JSONObject jsonObject = ParsingMethods.getJSONObject(csAttrValMap);
+			
+			long currId;
+			
+			synchronized( this.updateIdLock )
+			{
+				currId = this.updateReqId++;
+			}
+			
+			long reqeustID = currId;
+			
+			ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = 
+				new ValueUpdateFromGNS<NodeIDType>(null, versionNum, GUID, 
+						jsonObject, reqeustID, sourceIP, sourcePort, 
+							System.currentTimeMillis() );
+			
+			UpdateStorage<NodeIDType> updateQ = new UpdateStorage<NodeIDType>();
+			updateQ.requestID = currId;
+			//updateQ.valUpdFromGNS = valUpdFromGNS;
+			updateQ.valUpdFromGNS = valUpdFromGNS;
+			updateQ.valUpdFromGNSReply = null;
+			updateQ.blocking = blocking;
+			
+			this.pendingUpdate.put(currId, updateQ);
+			
+			InetSocketAddress sockAddr = this.csNodeAddresses.get(rand.nextInt(csNodeAddresses.size()));
+			
+			ContextServiceLogger.getLogger().fine("ContextClient sending update requestID "+currId+" to "+sockAddr+" json "+
+					valUpdFromGNS);		
+			//niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
+			niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
+			
+			if( blocking )
+			{
+				synchronized( updateQ )
+				{
+					while( updateQ.valUpdFromGNSReply == null )
+					{
+						try 
+						{
+							updateQ.wait();
+						} catch (InterruptedException e) 
+						{
+							e.printStackTrace();
+						}
+					}
+				}
+				pendingUpdate.remove(currId);
+			}
+		}
+		catch ( Exception | Error e )
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	private void sendUpdateToGNS(GuidEntry writingGuid, 
+			JSONObject attrValuePair)
+	{
+		if(gnsClient != null)
+		{
+			try {
+				gnsClient.update(writingGuid, attrValuePair);
+			} catch (IOException | GnsClientException e) 
+			{
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	private SearchReplyAnswer sendSearchQueryToCS(String searchQuery, long expiryTime)
+	{	
 		long currId;
 		synchronized( this.searchIdLock )
 		{
@@ -454,8 +542,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 		
 		QueryMsgFromUser<NodeIDType> qmesgU 
-			= new QueryMsgFromUser<NodeIDType>(this.nodeid, searchQuery, currId, 
-					expiryTime, sourceIP, sourcePort);
+			= new QueryMsgFromUser<NodeIDType>(this.nodeid, searchQuery, 
+					currId, expiryTime, sourceIP, sourcePort);
 		
 		SearchQueryStorage<NodeIDType> searchQ = new SearchQueryStorage<NodeIDType>();
 		searchQ.requestID = currId;
@@ -489,149 +577,27 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				}
 			}
 		}
+		
 		JSONArray result = searchQ.queryMsgFromUserReply.getResultGUIDs();
 		int resultSize = searchQ.queryMsgFromUserReply.getReplySize();
-		JSONArray encryptedRealIDArray = searchQ.queryMsgFromUserReply.getEncryptedRealIDArray();
-		
 		pendingSearches.remove(currId);
 		
-		// convert result to list of GUIDs, currently is is list of JSONArrays 
-		//JSONArray resultRet = new JSONArray();
-		/*for(int i=0; i<result.length(); i++)
-		{
-			try
-			{
-				JSONArray jsoArr1 = result.getJSONArray(i);
-				for(int j=0; j<jsoArr1.length(); j++)
-				{
-					//resultGUIDMap.put(jsoArr1.getString(j), true);
-					replyArray.put(jsoArr1.getString(j));
-				}
-			} catch (JSONException e)
-			{
-				e.printStackTrace();
-			}
-		}*/
-		
-		//TODO: untransform
-//		decryptAnonymizedIDs(myGUIDInfo, 
-//				encryptedRealIDArray, replyArray);
-		return resultSize;
-	}
-	
-	@Override
-	public JSONObject sendGetRequestSecure(GuidEntry myGUIDInfo, String GUID) throws Exception
-	{
-		// fetch it form GNS
-		if(gnsClient != null)
-		{
-			JSONObject encryptedJSON = gnsClient.read(GUID, myGUIDInfo);
-			GNSTransformedMessage gnsTransformedMesg 
-							= new GNSTransformedMessage(encryptedJSON);
-			
-			return this.gnsPrivacyTransform.unTransformGetReply(gnsTransformedMesg, myGUIDInfo);
-		}
-		return null;
+		SearchReplyAnswer searchAnswer = new SearchReplyAnswer();
+		searchAnswer.resultArray = result;
+		searchAnswer.resultSize = resultSize;
+		return searchAnswer;
 	}
 	
 	/**
-	 * assumption is that ACL always fits in memory.
+	 * Just used to return the search reply answer from
+	 * private method to public method
+	 * @author adipc
+	 *
 	 */
-	@Override
-	public List<AnonymizedIDEntry> computeAnonymizedIDs(
-			HashMap<String, List<ACLEntry>> aclMap) 
+	private class SearchReplyAnswer 
 	{
-		return this.anonymizedIDCreation.computeAnonymizedIDs(aclMap);
-	}
-	
-	private void sendSecureUpdateMessageToCS(List<CSTransformedMessage> transformedMesgList, 
-			long versionNum, boolean blocking)
-	{
-		for(int i=0;i<transformedMesgList.size();i++)
-		{
-			CSTransformedMessage csTransformedMessage = transformedMesgList.get(i);
-			
-			String IDString = Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
-	//		ContextServiceLogger.getLogger().fine("ContextClient sendUpdate enter "+GUID+" json "+
-	//				gnsAttrValuePairs);
-			try
-			{
-				long currId;
-				
-				synchronized( this.updateIdLock )
-				{
-					currId = this.updateReqId++;
-				}
-				
-				long reqeustID = currId;
-				
-				ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = 
-						new ValueUpdateFromGNS<NodeIDType>(null, versionNum, IDString, 
-								csTransformedMessage.getAttrValuePairJSON(), reqeustID, sourceIP, sourcePort, 
-								System.currentTimeMillis() , csTransformedMessage.getRealIDMappingInfoJSON());
-				
-				UpdateStorage<NodeIDType> updateQ = new UpdateStorage<NodeIDType>();
-				updateQ.requestID = currId;
-				//updateQ.valUpdFromGNS = valUpdFromGNS;
-				updateQ.valUpdFromGNS = valUpdFromGNS;
-				updateQ.valUpdFromGNSReply = null;
-				updateQ.blocking = blocking;
-				
-				this.pendingUpdate.put(currId, updateQ);
-				
-				InetSocketAddress sockAddr = this.csNodeAddresses.get(rand.nextInt(csNodeAddresses.size()));
-				
-				ContextServiceLogger.getLogger().fine("ContextClient sending update requestID "+currId+" to "+sockAddr+" json "+
-						valUpdFromGNS);		
-				//niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
-				niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
-				
-				if( blocking )
-				{
-					synchronized( updateQ )
-					{
-						while( updateQ.valUpdFromGNSReply == null )
-						{
-							try
-							{
-								updateQ.wait();
-							} catch (InterruptedException e) 
-							{
-								e.printStackTrace();
-							}
-						}
-					}
-					pendingUpdate.remove(currId);
-				}
-			} catch (JSONException e)
-			{
-				e.printStackTrace();
-			} catch ( UnknownHostException e )
-			{
-				e.printStackTrace();
-			} catch (IOException e)
-			{
-				e.printStackTrace();
-			}
-			catch(Exception | Error ex)
-			{
-				ex.printStackTrace();
-			}
-		}
-		// no waiting in update	
-	}
-	
-	private void sendSecureMessageToGNS(GuidEntry writingGuid, GNSTransformedMessage gnsTransformedMesg)
-	{
-		if(gnsClient != null)
-		{
-			try {
-				gnsClient.update(writingGuid, gnsTransformedMesg.getEncryptedAttrValuePair());
-			} catch (IOException | GnsClientException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
+		JSONArray resultArray;
+		int resultSize;
 	}
 	
 	private void handleUpdateReply(JSONObject jso)
@@ -838,94 +804,44 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 	
 	private void initializeClient()
-	{
-		// for anonymized ID
-		anonymizedIDCreation = new NoopAnonymizedIDCreator();
-		
-		// for gnsTransform
-		gnsPrivacyTransform = new NoopGNSPrivacyTransform();
-		
-		// for cs transform
-		csPrivacyTransform = new NoopCSTransform();
-		
+	{	
 		refreshTriggerQueue = new LinkedList<JSONObject>();
 		// FIXME: add a timeout mechanism here.
 		sendConfigRequest();
+		
+		// for anonymized ID
+		anonymizedIDCreation = new SubspaceBasedAnonymizedIDCreator(subspaceAttrMap);
+				
+		// for gnsTransform
+		gnsPrivacyTransform = new NoopGNSPrivacyTransform();
+				
+		// for cs transform
+		csPrivacyTransform = new SubspaceBasedCSTransform();
 	}
 	
 	// testing secure client code
 	// TODO: test the scheme with the example given in the draft.
-	public static void main(String[] args) throws JSONException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, IOException
+	public static void main(String[] args) 
+			throws Exception
 	{
+		// testing based on the example in the draft.
+		// more testing of each method in secure interface.
+		// test with the example in the draft.
+		//GUIDEntryStoringClass myGUIDInfo, JSONArray ACLArray
+		//String guid = GuidUtils.createGuidFromPublicKey(keyPair.getPublic().getEncoded());
 		KeyPairGenerator kpg;
 		kpg = KeyPairGenerator.getInstance("RSA");
-		kpg.initialize(1024);
-		KeyPair kp1 = kpg.genKeyPair();
-		Key publicKey1 = kp1.getPublic();
-		Key privateKey1 = kp1.getPrivate();
-		byte[] publicKeyByteArray1 = publicKey1.getEncoded();
-		byte[] privateKeyByteArray1 = privateKey1.getEncoded();
+		KeyPair kp0 = kpg.genKeyPair();
+		PublicKey publicKey0 = kp0.getPublic();
+		PrivateKey privateKey0 = kp0.getPrivate();
+		byte[] publicKeyByteArray0 = publicKey0.getEncoded();
+		byte[] privateKeyByteArray0 = privateKey0.getEncoded();
 		
-		KeyPair kp2 = kpg.genKeyPair();
-		Key publicKey2 = kp2.getPublic();
-		Key privateKey2 = kp2.getPrivate();
-		byte[] publicKeyByteArray2 = publicKey2.getEncoded();
-		byte[] privateKeyByteArray2 = privateKey2.getEncoded();
+		String guid0 = GuidUtils.createGuidFromPublicKey(publicKeyByteArray0);
 		
-		
-		String info = "name";
-		byte[] encryptedName = Utils.doPublicKeyEncryption(publicKeyByteArray1, info.getBytes());
-		byte[] nameArray = Utils.doPrivateKeyDecryption(privateKeyByteArray1, encryptedName);
-		System.out.println("decrypted value "+new String(nameArray));
-		
-		// wrong private key decryption
-		// on bad decryption this javax.crypto.BadPaddingException is thrown
-//		nameArray = Utils.doPrivateKeyDecryption(privateKeyByteArray2, encryptedName);
-//		System.out.println("decrypted value "+new String(nameArray));
-		
-		
-		System.out.println("public key "+Utils.bytArrayToHex(publicKeyByteArray1)
-			+" len "+publicKeyByteArray1.length+" privateKeyByteArray "
-			+ Utils.bytArrayToHex(privateKeyByteArray1) 
-			+" len "+privateKeyByteArray1.length);
-		
-		//testing JSON put of byte array
-		JSONObject jsonObject = new JSONObject();
-		jsonObject.put( GUIDEntryStoringClass.PUBLICKEY_KEY 
-				, publicKeyByteArray1);
-		
-		byte[] fetchedByteArr = 
-				(byte[]) jsonObject.get(GUIDEntryStoringClass.PUBLICKEY_KEY);
-		
-		System.out.println("fetched public key "+Utils.bytArrayToHex(fetchedByteArr)
-		+" len "+fetchedByteArr.length);
-		
-		
-		JSONArray testAtrr1 = new JSONArray();
-		JSONArray testAtrr2 = new JSONArray();
-		HashMap<JSONArray, Integer> testMap = new HashMap<JSONArray, Integer>();
-		testAtrr1.put("a1");
-		testAtrr1.put("a2");
-		
-		testAtrr2.put("a1");
-		testAtrr2.put("a2");
-		
-		testMap.put(testAtrr1, 1);
-		testMap.put(testAtrr2, 2);
-		
-		Iterator<JSONArray> iter =  testMap.keySet().iterator();
-		
-		while( iter.hasNext() )
-		{
-			JSONArray key = iter.next();
-			System.out.println("key "+key+" "+testMap.get(key));
-		}
-		
-		
-		Vector<GUIDEntryStoringClass> guidsVector = new Vector<GUIDEntryStoringClass>();
-		GUIDEntryStoringClass myGUID = new GUIDEntryStoringClass(
-				Utils.convertPublicKeyToGUIDByteArray(publicKeyByteArray1), publicKeyByteArray1 ,
-				privateKeyByteArray1);
+		Vector<GuidEntry> guidsVector = new Vector<GuidEntry>();
+		GuidEntry myGUID = new GuidEntry("Guid0", guid0, publicKey0, privateKey0);
+
 		
 		guidsVector.add(myGUID);
 		
@@ -933,74 +849,91 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		for(int i=1; i <= 7; i++)
 		{
 			KeyPair kp = kpg.genKeyPair();
-			Key publicKey = kp.getPublic();
-			Key privateKey = kp.getPrivate();
+			PublicKey publicKey = kp.getPublic();
+			PrivateKey privateKey = kp.getPrivate();
 			byte[] publicKeyByteArray = publicKey.getEncoded();
 			byte[] privateKeyByteArray = privateKey.getEncoded();
 			
-			GUIDEntryStoringClass currGUID = new GUIDEntryStoringClass(
-					Utils.convertPublicKeyToGUIDByteArray(publicKeyByteArray), publicKeyByteArray ,
-					privateKeyByteArray);
+			String guid = GuidUtils.createGuidFromPublicKey(publicKeyByteArray);
+			
+			GuidEntry currGUID = new GuidEntry("Guid"+i, guid, 
+					publicKey, privateKey);
 			
 			guidsVector.add(currGUID);
 		}
 		
+		HashMap<String, List<ACLEntry>> aclMap = new HashMap<String, List<ACLEntry>>();
 		
-		//FIXME: fix the testing code.
-	/*	// more testing of each method in secure interface.
-		// test with the example in the draft.
+		List<ACLEntry> acl0 = new LinkedList<ACLEntry>();
+		
+		acl0.add(new ACLEntry(guidsVector.get(1).getGuid(), guidsVector.get(1).getPublicKey()));
+		acl0.add(new ACLEntry(guidsVector.get(2).getGuid(), guidsVector.get(2).getPublicKey()));
+		acl0.add(new ACLEntry(guidsVector.get(3).getGuid(), guidsVector.get(3).getPublicKey()));
+		aclMap.put("attr1", acl0);
+		
+		
+		List<ACLEntry> acl1 = new LinkedList<ACLEntry>();
+		acl1.add(new ACLEntry(guidsVector.get(4).getGuid(), guidsVector.get(4).getPublicKey()));
+		acl1.add(new ACLEntry(guidsVector.get(5).getGuid(), guidsVector.get(5).getPublicKey()));
+		acl1.add(new ACLEntry(guidsVector.get(3).getGuid(), guidsVector.get(3).getPublicKey()));
+		aclMap.put("attr2", acl1);
+		
+		
+		List<ACLEntry> acl2 = new LinkedList<ACLEntry>();
+		acl2.add(new ACLEntry(guidsVector.get(1).getGuid(), guidsVector.get(1).getPublicKey()));
+		acl2.add(new ACLEntry(guidsVector.get(2).getGuid(), guidsVector.get(2).getPublicKey()));
+		aclMap.put("attr3", acl2);
+		
+		
+		List<ACLEntry> acl3 = new LinkedList<ACLEntry>();
+		acl3.add(new ACLEntry(guidsVector.get(1).getGuid(), guidsVector.get(1).getPublicKey()));
+		acl3.add(new ACLEntry(guidsVector.get(2).getGuid(), guidsVector.get(2).getPublicKey()));
+		acl3.add(new ACLEntry(guidsVector.get(3).getGuid(), guidsVector.get(3).getPublicKey()));
+		aclMap.put("attr4", acl3);
+		
+		
+		List<ACLEntry> acl4 = new LinkedList<ACLEntry>();
+		acl4.add(new ACLEntry(guidsVector.get(6).getGuid(), guidsVector.get(6).getPublicKey()));
+		acl4.add(new ACLEntry(guidsVector.get(7).getGuid(), guidsVector.get(7).getPublicKey()));
+		aclMap.put("attr5", acl4);
+		
+		
+		List<ACLEntry> acl5 = new LinkedList<ACLEntry>();
+		acl5.add(new ACLEntry(guidsVector.get(4).getGuid(), guidsVector.get(4).getPublicKey()));
+		acl5.add(new ACLEntry(guidsVector.get(5).getGuid(), guidsVector.get(5).getPublicKey()));
+		acl5.add(new ACLEntry(guidsVector.get(1).getGuid(), guidsVector.get(1).getPublicKey()));
+		
+		aclMap.put("attr6", acl5);
+		
+		
 		ContextServiceClient<Integer> csClient = new ContextServiceClient<Integer>("127.0.0.1", 8000);
-		//GUIDEntryStoringClass myGUIDInfo, JSONArray ACLArray
 		
-		List<byte[]> acl0 = new LinkedList<byte[]>();
-		acl0.add(guidsVector.get(1).getPublicKeyByteArray());
-		acl0.add(guidsVector.get(2).getPublicKeyByteArray());
-		acl0.add(guidsVector.get(3).getPublicKeyByteArray());
-		ACLEntry attr0ACL = new ACLEntry("attr0", acl0);
+		List<AnonymizedIDEntry> anonymizedIdList = csClient.computeAnonymizedIDs(aclMap);
+		JSONObject attrValPair = new JSONObject();
+		attrValPair.put("attr1", 10+"");
 		
+		attrValPair.put("attr2", 15+"");
 		
-		List<byte[]> acl1 = new LinkedList<byte[]>();
-		acl1.add(guidsVector.get(4).getPublicKeyByteArray());
-		acl1.add(guidsVector.get(5).getPublicKeyByteArray());
-		acl1.add(guidsVector.get(1).getPublicKeyByteArray());
-		ACLEntry attr1ACL = new ACLEntry("attr1", acl1);
+		csClient.sendUpdateSecure(guid0, myGUID, attrValPair, -1, true, aclMap, anonymizedIdList);
 		
+		Thread.sleep(2000);
 		
-		List<byte[]> acl2 = new LinkedList<byte[]>();
-		acl2.add(guidsVector.get(1).getPublicKeyByteArray());
-		acl2.add(guidsVector.get(2).getPublicKeyByteArray());
-		ACLEntry attr2ACL = new ACLEntry("attr2", acl2);
+		String searchQuery = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE attr1 >= 5 AND attr1 <= 15";
+		JSONArray replyArray = new JSONArray();
+		GuidEntry queryingGuid = guidsVector.get(3);
+		csClient.sendSearchQuerySecure(searchQuery, replyArray, 300000, queryingGuid);
+		
+		System.out.println("Query GUID "+ queryingGuid.getGuid()+
+				" Real GUID "+guid0+" reply Arr "+replyArray);
 		
 		
-		List<byte[]> acl3 = new LinkedList<byte[]>();
-		acl3.add(guidsVector.get(1).getPublicKeyByteArray());
-		acl3.add(guidsVector.get(2).getPublicKeyByteArray());
-		acl3.add(guidsVector.get(3).getPublicKeyByteArray());
-		ACLEntry attr3ACL = new ACLEntry("attr3", acl3);
+		searchQuery = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE attr1 >= 5 AND attr1 <= 15"
+				+ " AND attr2 >= 10 AND attr2 <= 20";
+		replyArray = new JSONArray();
+		queryingGuid = guidsVector.get(3);
+		csClient.sendSearchQuerySecure(searchQuery, replyArray, 300000, queryingGuid);
 		
-		
-		List<byte[]> acl4 = new LinkedList<byte[]>();
-		acl4.add(guidsVector.get(6).getPublicKeyByteArray());
-		acl4.add(guidsVector.get(7).getPublicKeyByteArray());
-		ACLEntry attr4ACL = new ACLEntry("attr4", acl4);
-		
-		
-		List<byte[]> acl5 = new LinkedList<byte[]>();
-		acl5.add(guidsVector.get(4).getPublicKeyByteArray());
-		acl5.add(guidsVector.get(5).getPublicKeyByteArray());
-		acl5.add(guidsVector.get(3).getPublicKeyByteArray());
-		
-		ACLEntry attr5ACL = new ACLEntry("attr5", acl5);
-		
-		JSONArray ACLInfo = new JSONArray();
-		ACLInfo.put(attr0ACL);
-		ACLInfo.put(attr1ACL);
-		ACLInfo.put(attr2ACL);
-		ACLInfo.put(attr3ACL);
-		ACLInfo.put(attr4ACL);
-		ACLInfo.put(attr5ACL);
-		
-		JSONArray anonymizedIds = csClient.computeAnonymizedIDs(myGUID, ACLInfo);
-		System.out.println("Number of anonymizedIds "+anonymizedIds.length());*/
+		System.out.println("Query GUID "+ queryingGuid.getGuid()+
+				" Real GUID "+guid0+" reply Arr "+replyArray);
 	}
 }

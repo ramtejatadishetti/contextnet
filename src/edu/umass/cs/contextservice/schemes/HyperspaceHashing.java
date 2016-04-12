@@ -38,6 +38,8 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ClientConfigReply;
 import edu.umass.cs.contextservice.messages.ClientConfigRequest;
 import edu.umass.cs.contextservice.messages.ContextServicePacket.PacketType;
+import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
+import edu.umass.cs.contextservice.messages.dataformat.ParsingMethods;
 import edu.umass.cs.contextservice.messages.GetMessage;
 import edu.umass.cs.contextservice.messages.GetReplyMessage;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegion;
@@ -705,13 +707,13 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		//int userPort        	= queryMesgToSubspaceRegion.getUserPort();
 		//int hashCode        	= queryMesgToSubspaceRegion.getHashCode();
 		JSONArray resultGUIDs = new JSONArray();
-		JSONObject encryptedRealIDObject = new JSONObject();
 		
-		int resultSize = this.hyperspaceDB.processSearchQueryInSubspaceRegion(subspaceId, query, resultGUIDs, encryptedRealIDObject);
+		int resultSize = this.hyperspaceDB.processSearchQueryInSubspaceRegion
+				(subspaceId, query, resultGUIDs);
 		
 		QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply = 
 				new QueryMesgToSubspaceRegionReply<NodeIDType>( getMyID(), queryMesgToSubspaceRegion.getRequestId(), 
-						groupGUID, resultGUIDs, resultSize, encryptedRealIDObject);
+						groupGUID, resultGUIDs, resultSize);
 		
 		try
 		{
@@ -743,7 +745,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		if( allRepRecvd )
 		{
 			JSONArray concatResult 							 = new JSONArray();
-			JSONArray concatEncryptedRealIDObjects			 = new JSONArray();
 			
 			int totalNumReplies 							 = 0;
 			
@@ -758,7 +759,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				{
 					OverlappingInfoClass currArray 			 = repliesHashMap.get(nodeIdIter.next());
 					concatResult.put(currArray.replyArray);
-					concatEncryptedRealIDObjects.put(currArray.encryptedRealIDJSON);
 					totalNumReplies = totalNumReplies + currArray.replyArray.length();
 				}
 			}
@@ -778,7 +778,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			QueryMsgFromUserReply<NodeIDType> queryMsgFromUserReply 
 			= new QueryMsgFromUserReply<NodeIDType>(this.getMyID(), 
 					queryInfo.getQuery(), queryInfo.getGroupGUID(), concatResult, 
-					queryInfo.getUserReqID(), totalNumReplies, concatEncryptedRealIDObjects);
+					queryInfo.getUserReqID(), totalNumReplies);
 			
 			try
 			{
@@ -990,7 +990,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		String GUID = updateReq.getValueUpdateFromGNS().getGUID();
 		JSONObject attrValuePairs = updateReq.getValueUpdateFromGNS().getAttrValuePairs();
-		JSONObject encryptedReadIDJSONObject = updateReq.getValueUpdateFromGNS().getAttrEncryptedRealIDPair();
 		long requestID = updateReq.getRequestId();
 		
 		// get the old value and process the update in primary subspace and other subspaces.
@@ -998,6 +997,14 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		try
 		{
+			HashMap<String, AttrValueRepresentationJSON> attrValMap 
+				= ParsingMethods.getAttrValueMap(attrValuePairs);
+			String byteArrHexString = 
+			attrValMap.get(attrValMap.keySet().iterator().next()).getRealIDMappingInfo().getString(0);
+			
+			ContextServiceLogger.getLogger().fine
+			("getValueUpdateFromGNS byteArrHexString size "+byteArrHexString.length());
+			
 			JSONObject oldValueJSON 	= this.hyperspaceDB.getGUIDRecordFromPrimarySubspace(GUID);
 			int updateOrInsert 			= -1;
 			
@@ -1054,7 +1061,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			// ACL info doesn't need to be stored in primary subspace.
 			// so just passing an empty JSONObject()
 			this.hyperspaceDB.storeGUIDInSubspace
-			(tableName, GUID, attrValuePairs, updateOrInsert, new JSONObject());
+			(tableName, GUID, attrValMap, updateOrInsert);
 			//JSONObject oldValueJSON 	= this.hyperspaceDB.storeGUIDInSubspace(tableName, GUID, attrValuePairs);
 			// process update at other subspaces.
 			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap
@@ -1119,9 +1126,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						String attrName = subspaceAttrIter1.next();
 						
 						String value;
-						if( attrValuePairs.has(attrName) )
+						if( attrValMap.containsKey(attrName) )
 						{
-							value = attrValuePairs.getString(attrName);
+							value = attrValMap.get(attrName).getActualAttrValue();
 						}
 						else
 						{
@@ -1159,7 +1166,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						
 						ValueUpdateToSubspaceRegionMessage<NodeIDType>  valueUpdateToSubspaceRegionMessage 
 							= new ValueUpdateToSubspaceRegionMessage<NodeIDType>(this.getMyID(), -1, GUID, attrValuePairs,
-								ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, subspaceId, requestID, encryptedReadIDJSONObject);
+								ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, subspaceId, requestID);
 						
 						try
 						{
@@ -1181,7 +1188,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						
 						ValueUpdateToSubspaceRegionMessage<NodeIDType>  oldValueUpdateToSubspaceRegionMessage 
 							= new ValueUpdateToSubspaceRegionMessage<NodeIDType>(this.getMyID(), -1, GUID, attrValuePairs,
-								ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY, subspaceId, requestID, encryptedReadIDJSONObject);
+								ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY, subspaceId, requestID);
 						
 						try
 						{
@@ -1196,7 +1203,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						
 						ValueUpdateToSubspaceRegionMessage<NodeIDType>  newValueUpdateToSubspaceRegionMessage 
 						 = new ValueUpdateToSubspaceRegionMessage<NodeIDType>(this.getMyID(), -1, GUID, attrValuePairs,
-								ValueUpdateToSubspaceRegionMessage.ADD_ENTRY, subspaceId, requestID, encryptedReadIDJSONObject);
+								ValueUpdateToSubspaceRegionMessage.ADD_ENTRY, subspaceId, requestID);
 						
 						try
 						{
@@ -1362,19 +1369,22 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		JSONObject attrValuePairs = valueUpdateToSubspaceRegionMessage.getAttrValuePairs();
 		int operType = valueUpdateToSubspaceRegionMessage.getOperType();
 		int replicaNum = getTheReplicaNumForASubspace(subspaceId);
-		JSONObject encryptedRealIDObject = valueUpdateToSubspaceRegionMessage.getEncryptedRealIDJSONObject();
 		
 		
 		String tableName 	= "subspaceId"+subspaceId+"DataStorage";
 		try 
 		{
+			HashMap<String, AttrValueRepresentationJSON> attrValMap =
+					ParsingMethods.getAttrValueMap(attrValuePairs);
+			
 			int numRep = 1;
 			switch(operType)
 			{
 				case ValueUpdateToSubspaceRegionMessage.ADD_ENTRY:
 				{
 					numRep = 2;
-					this.hyperspaceDB.storeGUIDInSubspace(tableName, GUID, attrValuePairs, HyperspaceMySQLDB.INSERT_REC, encryptedRealIDObject);
+					this.hyperspaceDB.storeGUIDInSubspace
+					(tableName, GUID, attrValMap, HyperspaceMySQLDB.INSERT_REC);
 					break;
 				}
 				case ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY:
@@ -1386,7 +1396,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				case ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY:
 				{
 					numRep = 1;
-					this.hyperspaceDB.storeGUIDInSubspace(tableName, GUID, attrValuePairs, HyperspaceMySQLDB.UPDATE_REC, encryptedRealIDObject);
+					this.hyperspaceDB.storeGUIDInSubspace(tableName, GUID, attrValMap, 
+							HyperspaceMySQLDB.UPDATE_REC);
 					break;
 				}
 			}

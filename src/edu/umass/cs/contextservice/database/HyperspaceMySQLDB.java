@@ -25,6 +25,8 @@ import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.UpdateTriggerMessage;
+import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
+import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
@@ -656,8 +658,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		return isFun;
 	}
 	
-	public int processSearchQueryInSubspaceRegion(int subspaceId, String query, JSONArray resultArray, 
-			JSONObject encryptedRealIDObject)
+	public int processSearchQueryInSubspaceRegion(int subspaceId, String query, JSONArray resultArray)
 	{
 		long t0 = System.currentTimeMillis();
 		
@@ -843,14 +844,24 @@ public class HyperspaceMySQLDB<NodeIDType>
 					// it is actually a JSONArray in hexformat byte array representation.
 					// reverse conversion is byte array to String and then string to JSONArray.
 					byte[] realIDEncryptedArray = rs.getBytes(ACLattr);
-					
+					String hexRep = Utils.bytArrayToHex(realIDEncryptedArray);
+					//FIXME: add the case when no privacy
 					//ValueTableInfo valobj = new ValueTableInfo(value, nodeGUID);
 					//answerList.add(valobj);
 					if(ContextServiceConfig.sendFullReplies)
 					{
 						String nodeGUID = Utils.bytArrayToHex(nodeGUIDBytes);
-						resultArray.put(nodeGUID);
-						encryptedRealIDObject.put(nodeGUID, realIDEncryptedArray);
+						//TODO: this conversion may be removed and byte[] sent
+						String jsonArrayString = new String(realIDEncryptedArray);
+						JSONArray jsonArr = new JSONArray(jsonArrayString);
+						String byteArr0Hex =  jsonArr.getString(0);
+						
+						ContextServiceLogger.getLogger().fine("byteArr0Hex size "+byteArr0Hex.length()
+						+" REAL ID MAPPING INFO jsonArr size "
+								+jsonArr.length());
+						SearchReplyGUIDRepresentationJSON searchReplyRep 
+							= new SearchReplyGUIDRepresentationJSON(nodeGUID, jsonArr);
+						resultArray.put(searchReplyRep.toJSONObject());
 						resultSize++;
 					}
 					else
@@ -1704,16 +1715,16 @@ public class HyperspaceMySQLDB<NodeIDType>
      * @throws JSONException
      */
     @SuppressWarnings("unchecked")
-    public void storeGUIDInSubspace(String tableName, String nodeGUID, JSONObject attrValuePairs, int updateOrInsert, 
-    		JSONObject encryptedRealIDObject ) throws JSONException
+    public void storeGUIDInSubspace(String tableName, String nodeGUID, 
+    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert ) throws JSONException
     {
-    	ContextServiceLogger.getLogger().fine("storeGUIDInSubspace "+tableName+" nodeGUID "+nodeGUID+" attrValuePairs "
-    			+attrValuePairs+" updateOrInsert "+updateOrInsert);
+    	ContextServiceLogger.getLogger().fine("storeGUIDInSubspace "+tableName+" nodeGUID "+nodeGUID+
+    			" updateOrInsert "+updateOrInsert);
     	
         long t0 = System.currentTimeMillis();
         Connection myConn      = null;
         Statement stmt         = null;
-       
+        
         String updateSqlQuery     	= "UPDATE "+tableName
                 + " SET ";
        
@@ -1723,12 +1734,15 @@ public class HyperspaceMySQLDB<NodeIDType>
         //JSONObject oldValueJSON = new JSONObject();
         try 
         {
-        	Iterator<String> jsoObjKeysIter = attrValuePairs.keys();
+        	Iterator<String> attrNameIter = atrToValueRep.keySet().iterator();
         	int i=0;
-	        while( jsoObjKeysIter.hasNext() )
+	        while( attrNameIter.hasNext() )
 	        {
-	            String attrName = jsoObjKeysIter.next();            
-	            String newVal   = attrValuePairs.getString(attrName);
+	            String attrName = attrNameIter.next();  
+	            AttrValueRepresentationJSON attrValRep 
+	            		= atrToValueRep.get(attrName);
+	            
+	            String newVal   = attrValRep.getActualAttrValue();
 	            
 	            AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
 				assert(attrMetaInfo != null);
@@ -1752,20 +1766,22 @@ public class HyperspaceMySQLDB<NodeIDType>
 	                insertQuery = insertQuery +", "+attrName;
 	            }
 	            
-	            if( ContextServiceConfig.PRIVACY_ENABLED && encryptedRealIDObject.has(attrName) )
+	            if( ContextServiceConfig.PRIVACY_ENABLED 
+	            		&& (attrValRep.getRealIDMappingInfo() != null) )
                 {
-                	JSONArray encryptedRealIDArray = encryptedRealIDObject.getJSONArray(attrName);
-                	if( encryptedRealIDArray != null )
-                	{
-                		if( encryptedRealIDArray.length() > 0 )
-                		{
-                			String hexRep 
-                				= Utils.bytArrayToHex( encryptedRealIDArray.toString().getBytes() );
-                			// now add it in the query
-                			updateSqlQuery = updateSqlQuery + " , ACL"+attrName +" = X'"+hexRep+"'";
-        	                insertQuery = insertQuery + " , ACL"+attrName;
-                		}
-                	}
+                	JSONArray encryptedRealIDArray = attrValRep.getRealIDMappingInfo();
+                	
+            		if( encryptedRealIDArray.length() > 0 )
+            		{
+            			String byteArr0Hex =  encryptedRealIDArray.getString(0);
+            			
+            			String hexRep 
+            				= Utils.bytArrayToHex( encryptedRealIDArray.toString().getBytes() );
+            			// now add it in the query
+            			updateSqlQuery = updateSqlQuery + " , ACL"+attrName +" = X'"+hexRep+"'";
+    	                insertQuery = insertQuery + " , ACL"+attrName;
+            		}
+                	
                 }
 	            i++;
 	        }
@@ -1779,12 +1795,14 @@ public class HyperspaceMySQLDB<NodeIDType>
 	        
             i = 0;
             //try insert, if fails then update
-            jsoObjKeysIter = attrValuePairs.keys();
-            while( jsoObjKeysIter.hasNext() )
+            attrNameIter = atrToValueRep.keySet().iterator();
+            while( attrNameIter.hasNext() )
             {
-                String attrName = jsoObjKeysIter.next();
+                String attrName = attrNameIter.next();
+                AttrValueRepresentationJSON attrValRep 
+        							= atrToValueRep.get(attrName);
                 
-                String newValue = attrValuePairs.getString(attrName);
+                String newValue = attrValRep.getActualAttrValue();
                 
                 AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
     			
@@ -1802,19 +1820,18 @@ public class HyperspaceMySQLDB<NodeIDType>
                     insertQuery = insertQuery +" , "+newValue;
                 }
                 
-                if(ContextServiceConfig.PRIVACY_ENABLED &&  encryptedRealIDObject.has(attrName) )
+                if(ContextServiceConfig.PRIVACY_ENABLED &&  
+                		(attrValRep.getRealIDMappingInfo() != null) )
                 {
-                	JSONArray encryptedRealIDArray = encryptedRealIDObject.getJSONArray(attrName);
-                	if( encryptedRealIDArray != null )
-                	{
-                		if( encryptedRealIDArray.length() > 0 )
-                		{
-                			String hexRep 
-                				= Utils.bytArrayToHex( encryptedRealIDArray.toString().getBytes() );
-                			// now add it in the query    	                
-        	                insertQuery = insertQuery +" , X'"+hexRep+"'";
-                		}
-                	}
+                	JSONArray encryptedRealIDArray = attrValRep.getRealIDMappingInfo();
+                	
+            		if( encryptedRealIDArray.length() > 0 )
+            		{
+            			String hexRep 
+            				= Utils.bytArrayToHex( encryptedRealIDArray.toString().getBytes() );
+            			// now add it in the query    	                
+    	                insertQuery = insertQuery +" , X'"+hexRep+"'";
+            		}
                 }
                 
                 i++;

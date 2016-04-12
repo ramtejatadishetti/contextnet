@@ -132,7 +132,7 @@ public class ClientRequestTest
 			attrValuePair.put(longitudeAttrName, longitude);
 			
 			// true fo blocking update
-			contextClient.sendUpdate(myGUID, attrValuePair, currID, true);
+			contextClient.sendUpdate(myGUID, null, attrValuePair, currID, true);
 		} catch (JSONException e)
 		{
 			e.printStackTrace();

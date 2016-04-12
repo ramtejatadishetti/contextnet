@@ -263,7 +263,7 @@ public class FourNodeLocalCSSetup extends ContextServiceNode<Integer>
 				attrValuePair.put("geoLocationCurrentLong", longitude);
 				
 				long startTime = System.currentTimeMillis();
-				csClient.sendUpdate(myGUID, attrValuePair, currID, true);
+				csClient.sendUpdate(myGUID, null, attrValuePair, currID, true);
 				System.out.println("Update completion requestID "+requestID+" time "
 						+(System.currentTimeMillis()-startTime));
 			} catch (JSONException e)

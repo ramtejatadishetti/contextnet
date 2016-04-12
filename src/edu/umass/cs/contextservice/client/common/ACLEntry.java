@@ -1,5 +1,8 @@
 package edu.umass.cs.contextservice.client.common;
 
+import java.security.PublicKey;
+
+import edu.umass.cs.contextservice.utils.Utils;
 
 /**
  * Class that is used to represent ACL and also contains a 
@@ -16,6 +19,13 @@ public class ACLEntry
 		this.guidACLMember = guidACLMember;
 		this.publicKeyACLMember = publicKeyACLMember;
 	}
+	
+	public ACLEntry(String guidString, PublicKey publicKey)
+	{
+		this.guidACLMember = Utils.hexStringToByteArray(guidString);
+		this.publicKeyACLMember = publicKey.getEncoded();
+	}
+	
 	
 	public byte[] getACLMemberGUID()
 	{

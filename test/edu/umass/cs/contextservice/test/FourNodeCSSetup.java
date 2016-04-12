@@ -307,7 +307,7 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 				ValueUpdateFromGNS<Integer> valUpdFromGNS = 
 						new ValueUpdateFromGNS<Integer>
 				(myID, currID, myGUID, attrValuePair, currID, 
-						sourceIP, sourcePort, System.currentTimeMillis(), new JSONObject() );
+						sourceIP, sourcePort, System.currentTimeMillis());
 				
 				niot.sendToAddress(getRandomNodeSock(), valUpdFromGNS.toJSONObject());
 			} catch (JSONException e)
@@ -343,10 +343,10 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 			try 
 			{
 				niot.sendToAddress(sockAddr, qmesgU.toJSONObject());
-			} catch (IOException e)
+			} catch ( IOException e )
 			{
 				e.printStackTrace();
-			} catch (JSONException e)
+			} catch ( JSONException e )
 			{
 				e.printStackTrace();
 			}

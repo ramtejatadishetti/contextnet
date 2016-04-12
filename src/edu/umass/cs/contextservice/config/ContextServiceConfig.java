@@ -117,7 +117,7 @@ public class ContextServiceConfig
 	public static final int MAXIMUM_NUM_ATTRS_IN_SUBSPACE			= 10;
 	
 	
-	public static final boolean PRIVACY_ENABLED						= false;
+	public static final boolean PRIVACY_ENABLED						= true;
 	
 	//  model paramters
 	// search/(search+update) ratio

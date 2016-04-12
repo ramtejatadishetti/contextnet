@@ -324,7 +324,7 @@ public class UpdateTriggerTest extends ContextServiceNode<Integer>
 				ValueUpdateFromGNS<Integer> valUpdFromGNS = 
 					new ValueUpdateFromGNS<Integer>
 				(myID, currID, myGUID, attrValuePair, currID, sourceIP, sourcePort, 
-						System.currentTimeMillis(), new JSONObject() );
+						System.currentTimeMillis());
 				
 				niot.sendToAddress(getRandomNodeSock(), valUpdFromGNS.toJSONObject());
 			} catch (JSONException e)
