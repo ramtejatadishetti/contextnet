@@ -86,7 +86,7 @@
 	<target name="context-client-jar"
 	        depends="clean,compile"
 	        description="Builds the context client Jar">
-		<jar jarfile="${release.dir}/context-client-${VERSION}-${RELEASE}.jar">
+		<jar jarfile="${release.dir}/context-client.jar">
 	  
 		<fileset dir="${build.dir}/">
 			<include name="edu/umass/cs/contextservice/common/**" />
