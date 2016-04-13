@@ -844,24 +844,29 @@ public class HyperspaceMySQLDB<NodeIDType>
 					// it is actually a JSONArray in hexformat byte array representation.
 					// reverse conversion is byte array to String and then string to JSONArray.
 					byte[] realIDEncryptedArray = rs.getBytes(ACLattr);
-					String hexRep = Utils.bytArrayToHex(realIDEncryptedArray);
-					//FIXME: add the case when no privacy
 					//ValueTableInfo valobj = new ValueTableInfo(value, nodeGUID);
 					//answerList.add(valobj);
 					if(ContextServiceConfig.sendFullReplies)
 					{
 						String nodeGUID = Utils.bytArrayToHex(nodeGUIDBytes);
 						//TODO: this conversion may be removed and byte[] sent
-						String jsonArrayString = new String(realIDEncryptedArray);
-						JSONArray jsonArr = new JSONArray(jsonArrayString);
-						String byteArr0Hex =  jsonArr.getString(0);
-						
-						ContextServiceLogger.getLogger().fine("byteArr0Hex size "+byteArr0Hex.length()
-						+" REAL ID MAPPING INFO jsonArr size "
-								+jsonArr.length());
-						SearchReplyGUIDRepresentationJSON searchReplyRep 
-							= new SearchReplyGUIDRepresentationJSON(nodeGUID, jsonArr);
-						resultArray.put(searchReplyRep.toJSONObject());
+						//FIXME: fix this string encoding.
+						if(realIDEncryptedArray != null)
+						{
+							String jsonArrayString = new String(realIDEncryptedArray);
+							JSONArray jsonArr = new JSONArray(jsonArrayString);
+							
+							
+							SearchReplyGUIDRepresentationJSON searchReplyRep 
+								= new SearchReplyGUIDRepresentationJSON(nodeGUID, jsonArr);
+							resultArray.put(searchReplyRep.toJSONObject());
+						}
+						else
+						{
+							SearchReplyGUIDRepresentationJSON searchReplyRep 
+								= new SearchReplyGUIDRepresentationJSON(nodeGUID);
+							resultArray.put(searchReplyRep.toJSONObject());
+						}
 						resultSize++;
 					}
 					else

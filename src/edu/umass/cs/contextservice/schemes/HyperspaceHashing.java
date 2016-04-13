@@ -1002,11 +1002,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		{
 			HashMap<String, AttrValueRepresentationJSON> attrValMap 
 				= ParsingMethods.getAttrValueMap(attrValuePairs);
-			String byteArrHexString = 
-			attrValMap.get(attrValMap.keySet().iterator().next()).getRealIDMappingInfo().getString(0);
-			
-			ContextServiceLogger.getLogger().fine
-			("getValueUpdateFromGNS byteArrHexString size "+byteArrHexString.length());
 			
 			JSONObject oldValueJSON 	= this.hyperspaceDB.getGUIDRecordFromPrimarySubspace(GUID);
 			int updateOrInsert 			= -1;
