@@ -66,6 +66,9 @@ import edu.umass.cs.protocoltask.ProtocolTask;
 
 public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 {
+	//TODO: make the trigger handlign part in separate interfaces and classes.
+	// also the privacy stuff. 
+	// this files is getting very big.
 	private final ExecutorService nodeES;
 	
 	private long numberOfQueryFromUser													= 0;

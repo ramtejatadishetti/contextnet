@@ -31,7 +31,6 @@ import edu.umass.cs.contextservice.client.csprivacytransform.SubspaceBasedCSTran
 import edu.umass.cs.contextservice.client.gnsprivacytransform.EncryptionBasedGNSPrivacyTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSPrivacyTransformInterface;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSTransformedMessage;
-import edu.umass.cs.contextservice.client.gnsprivacytransform.NoopGNSPrivacyTransform;
 import edu.umass.cs.contextservice.client.storage.GetStorage;
 import edu.umass.cs.contextservice.client.storage.SearchQueryStorage;
 import edu.umass.cs.contextservice.client.storage.UpdateStorage;
@@ -51,7 +50,6 @@ import edu.umass.cs.contextservice.messages.dataformat.ParsingMethods;
 import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.gnsclient.client.GNSClient;
-import edu.umass.cs.gnsclient.client.GNSClientConfig;
 import edu.umass.cs.gnsclient.client.GuidEntry;
 import edu.umass.cs.gnsclient.client.UniversalTcpClientExtended;
 import edu.umass.cs.gnsclient.client.util.GuidUtils;
