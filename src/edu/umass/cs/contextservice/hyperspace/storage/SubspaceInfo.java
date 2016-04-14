@@ -82,6 +82,23 @@ public class SubspaceInfo<NodeIDType>
 		return this.nodesOfSubspace;
 	}
 	
+	/**
+	 * checks if the subspace nodes have my id.
+	 * @return
+	 */
+	public boolean checkIfSubspaceHasMyID(NodeIDType idToCheck)
+	{
+		for(int i=0;i<nodesOfSubspace.size();i++)
+		{
+			NodeIDType currID = nodesOfSubspace.get(i);
+			if(currID == idToCheck)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	
 //	public int getKeyOfHashMap()
 //	{
 //		return this.keyForMap;
