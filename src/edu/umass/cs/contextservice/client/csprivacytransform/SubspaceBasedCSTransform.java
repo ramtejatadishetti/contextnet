@@ -330,10 +330,11 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 		byte[] plainText = null;
 		boolean found = false;
 		JSONArray realIDMappingInfo = seachReply.getRealIDMappingInfo();
-		ContextServiceLogger.getLogger().fine("realIDMappingInfo JSONArray "
-				+ realIDMappingInfo.length()+" "+realIDMappingInfo);
 		if(realIDMappingInfo != null)
 		{
+			ContextServiceLogger.getLogger().fine("realIDMappingInfo JSONArray "
+					+ realIDMappingInfo.length() );
+			
 			for( int i=0; i<realIDMappingInfo.length(); i++ )
 			{	
 				try

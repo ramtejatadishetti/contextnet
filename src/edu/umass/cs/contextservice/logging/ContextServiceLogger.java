@@ -10,11 +10,12 @@ public class ContextServiceLogger
 	private static Logger LOGGER = null;
 	static 
 	{
-		LOGGER = Logger.getLogger(ContextServiceLogger.class.getName());
+		LOGGER = Logger.getLogger(
+				ContextServiceLogger.class.getName());
 		ConsoleHandler ch = new ConsoleHandler();
-        ch.setLevel(Level.OFF);
+        ch.setLevel(Level.FINE);
         LOGGER.addHandler(ch);
-        LOGGER.setLevel(Level.OFF);
+        LOGGER.setLevel(Level.FINE);
 	}
 	
 	public static Logger getLogger()
