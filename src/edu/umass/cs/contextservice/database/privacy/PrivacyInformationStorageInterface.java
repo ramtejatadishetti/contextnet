@@ -13,4 +13,13 @@ public interface PrivacyInformationStorageInterface
 	 * @return
 	 */
 	public void createTables();
+	
+	
+	/**
+	 * Returns the partial join query, to be completed with 
+	 * the processSearchQueryInSubspaceRegion query before execution.
+	 * @param query
+	 * @return
+	 */
+	public String getMySQLQueryForFetchingRealIDMappingForQuery(String query);
 }

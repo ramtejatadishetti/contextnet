@@ -1,7 +1,10 @@
 package edu.umass.cs.contextservice.database;
 
 import java.net.UnknownHostException;
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
@@ -22,7 +25,10 @@ import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorageIn
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
+import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
+import edu.umass.cs.contextservice.utils.Utils;
+
 
 public class HyperspaceMySQLDB<NodeIDType>
 {
@@ -129,12 +135,136 @@ public class HyperspaceMySQLDB<NodeIDType>
 	}
 	
 	
-	
-	public int processSearchQueryInSubspaceRegion(int subspaceId, String query, JSONArray resultArray)
+	/**
+	 * This function is implemented here as it involves joining guidAttrValueStorage
+	 * and privacy storage tables.
+	 * @param subspaceId
+	 * @param query
+	 * @param resultArray
+	 * @return
+	 */
+	public int processSearchQueryInSubspaceRegion(int subspaceId, String query, 
+			JSONArray resultArray)
 	{
-		int resultSize = this.guidAttributesStorage.processSearchQueryInSubspaceRegion
+		if( !ContextServiceConfig.PRIVACY_ENABLED )
+		{
+			int resultSize = this.guidAttributesStorage.processSearchQueryInSubspaceRegion
 				(subspaceId, query, resultArray);
-		return resultSize;
+			return resultSize;
+		}
+		else
+		{
+			// get nested search query for subspace region
+			String nestedSearchQuery = guidAttributesStorage.getMySQLQueryForProcessSearchQueryInSubspaceRegion
+					(subspaceId, query);
+			
+			String joinQuery = 
+					privacyInformationStroage.getMySQLQueryForFetchingRealIDMappingForQuery(query);
+			
+			// just ordering by nodeGUID so that we can aggregate without creating an additional map
+			// not sure what overhead it adds, as it adds sorting overhead.
+			String fullQuery = joinQuery + nestedSearchQuery + " ) ORDER BY nodeGUID";
+			
+			
+			Connection myConn  = null;
+			Statement stmt     = null;
+			int resultSize = 0;
+			try
+			{
+				myConn = this.mysqlDataSource.getConnection();
+				// for row by row fetching, otherwise default is fetching whole result
+				// set in memory. http://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html
+				stmt   = myConn.createStatement(java.sql.ResultSet.TYPE_FORWARD_ONLY, 
+						java.sql.ResultSet.CONCUR_READ_ONLY);
+				stmt.setFetchSize(ContextServiceConfig.MYSQL_CURSOR_FETCH_SIZE);
+				
+				String currID = "";
+				ResultSet rs = stmt.executeQuery(fullQuery);
+				while( rs.next() )
+				{
+					byte[] nodeGUIDBytes = rs.getBytes("nodeGUID");
+					// it is actually a JSONArray in hexformat byte array representation.
+					// reverse conversion is byte array to String and then string to JSONArray.
+					byte[] realIDEncryptedBytes = rs.getBytes("realIDEncryption");
+					//ValueTableInfo valobj = new ValueTableInfo(value, nodeGUID);
+					//answerList.add(valobj);
+					JSONArray encryptedReadIDArray = null;
+					if(ContextServiceConfig.sendFullReplies)
+					{
+						String nodeGUID = Utils.bytArrayToHex(nodeGUIDBytes);
+						
+						if( currID.equals(nodeGUID) )
+						{
+							if( realIDEncryptedBytes != null )
+							{
+								String encryptedHex = Utils.bytArrayToHex(realIDEncryptedBytes);
+								// ignore warning, will not be null here
+								encryptedReadIDArray.put(encryptedHex);
+							}
+						}
+						else
+						{
+							// ignore the starting with empty string  case
+							if( currID.length() > 0 )
+							{
+								SearchReplyGUIDRepresentationJSON searchReplyRep 
+									= new SearchReplyGUIDRepresentationJSON(currID, encryptedReadIDArray);
+								resultArray.put(searchReplyRep.toJSONObject());
+							}
+							
+							currID = nodeGUID;
+							// old reference gets copied in the SearchReplyGUIDRepresentationJSON
+							// and just recreating a new JSONArray for the new anonymizedID
+							encryptedReadIDArray = new JSONArray();
+							
+							
+							if( realIDEncryptedBytes != null )
+							{
+								String encryptedHex = Utils.bytArrayToHex(realIDEncryptedBytes);
+								encryptedReadIDArray.put(encryptedHex);
+							}
+						}
+						
+						// do the last one
+						if( currID.length() > 0 )
+						{
+							SearchReplyGUIDRepresentationJSON searchReplyRep 
+								= new SearchReplyGUIDRepresentationJSON(currID, 
+										encryptedReadIDArray);
+							resultArray.put(searchReplyRep.toJSONObject());
+						}
+						resultSize++;
+					}
+					else
+					{
+						resultSize++;
+					}
+				}
+				
+				rs.close();
+				stmt.close();
+			} catch(SQLException sqlex)
+			{
+				sqlex.printStackTrace();
+			} catch (JSONException e) 
+			{
+				e.printStackTrace();
+			}
+			finally
+			{
+				try
+				{
+					if( stmt != null )
+						stmt.close();
+					if( myConn != null )
+						myConn.close();
+				} catch(SQLException sqlex)
+				{
+					sqlex.printStackTrace();
+				}
+			}
+			return resultSize;
+		}
 	}
 	
 	/**

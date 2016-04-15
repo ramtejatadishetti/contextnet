@@ -1003,7 +1003,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			HashMap<String, AttrValueRepresentationJSON> attrValMap 
 				= ParsingMethods.getAttrValueMap(attrValuePairs);
 			
-			JSONObject oldValueJSON 	= this.hyperspaceDB.getGUIDRecordFromPrimarySubspace(GUID);
+			JSONObject oldValueJSON 	= this.hyperspaceDB.getGUIDStoredInPrimarySubspace(GUID);
 			int updateOrInsert 			= -1;
 			
 			if( oldValueJSON.length() == 0 )
@@ -1443,7 +1443,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		for( int i=0;i<replicasVect.size();i++ )
 		{
 			SubspaceInfo<NodeIDType> subInfo = replicasVect.get(i);
-			if( this.hyperspaceDB.checkIfSubspaceHasMyID(subInfo.getNodesOfSubspace()))
+			if( subInfo.checkIfSubspaceHasMyID(this.getMyID()) )
 			{
 				replicaNum = subInfo.getReplicaNum();
 				break;
@@ -1475,7 +1475,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		else
 		{
 			//String tableName = "primarySubspaceDataStorage";
-			JSONObject valueJSON= this.hyperspaceDB.getGUIDRecordFromPrimarySubspace(GUID);
+			JSONObject valueJSON= this.hyperspaceDB.getGUIDStoredInPrimarySubspace(GUID);
 			
 			
 			GetReplyMessage<NodeIDType> getReplyMessage = new GetReplyMessage<NodeIDType>(this.getMyID(),

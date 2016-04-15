@@ -43,4 +43,7 @@ public interface GUIDAttributeStorageInterface<NodeIDType>
 	public HashMap<Integer, OverlappingInfoClass> 
 		getOverlappingRegionsInSubspace(int subspaceId, int replicaNum, 
 			Vector<ProcessingQueryComponent> matchingQueryComponents);
+	
+	public String getMySQLQueryForProcessSearchQueryInSubspaceRegion
+								(int subspaceId, String query);
 }

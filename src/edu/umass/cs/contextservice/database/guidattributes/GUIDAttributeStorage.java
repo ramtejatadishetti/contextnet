@@ -66,6 +66,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 			myConn = dataSource.getConnection();
 			stmt   =  myConn.createStatement();
 			Iterator<Integer> subspaceIter = this.subspaceInfoMap.keySet().iterator();
+			
 			while( subspaceIter.hasNext() )
 			{
 				int subspaceId = subspaceIter.next();
@@ -88,7 +89,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 					
 					//	      + ", upperRange DOUBLE NOT NULL, nodeID INT NOT NULL, "
 					//	      + "   partitionNum INT AUTO_INCREMENT, INDEX USING BTREE (lowerRange, upperRange) )";
-					//FIXME: which indexing scheme is better, indexing two attribute once or creating a index over all 
+					//TODO: which indexing scheme is better, indexing two attribute once or creating a index over all 
 					// attributes
 					Iterator<String> attrIter = subspaceAttributes.keySet().iterator();
 					while( attrIter.hasNext() )
@@ -118,7 +119,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 						continue;
 					}
 					
-					//FIXME: which indexing scheme is better, indexing two attribute once or creating a index over all 
+					//TODO: which indexing scheme is better, indexing two attribute once or creating a index over all 
 					// attributes
 					// datastorage table of each subspace
 					tableName = "subspaceId"+subspaceId+"DataStorage";
@@ -159,58 +160,18 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		}
 	}
 	
-	
-	private String getDataStorageString(String newTableCommand)
+	/**
+	 * Returns the search query, it doesn't execute. This
+	 * is done so that this can be executed as a nested query in privacy case.
+	 * HyperspaceMySQLDB calling this function has more info.
+	 * @param subspaceId
+	 * @param query
+	 * @param resultArray
+	 * @return
+	 */
+	public String getMySQLQueryForProcessSearchQueryInSubspaceRegion
+										(int subspaceId, String query)
 	{
-		Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
-		
-		while( subapceIdIter.hasNext() )
-		{
-			int subspaceId = subapceIdIter.next();
-			// at least one replica and all replica have same default value for each attribute.
-			SubspaceInfo<NodeIDType> currSubspaceInfo = subspaceInfoMap.get(subspaceId).get(0);
-			HashMap<String, AttributePartitionInfo> attrSubspaceMap = currSubspaceInfo.getAttributesOfSubspace();
-			
-			Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
-			while(attrIter.hasNext())
-			{
-				String attrName = attrIter.next();
-				AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
-				AttributeMetaInfo attrMetaInfo = attrPartInfo.getAttrMetaInfo();
-				String dataType = attrMetaInfo.getDataType();
-				String defaultVal = attrPartInfo.getDefaultValue();
-				String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
-				
-				if( ContextServiceConfig.PRIVACY_ENABLED )
-				{
-					//ACL<attrName> is ACL info for each attribute needed in privacy scheme.
-					// not sure if BLOB is right datatype. ALso not sure if this is most optimized way to do this.
-					// ACL info can be very large, CS can parse each element of JSONArray and store it row wise in a separate table.
-					// but that will require CS parsing, which is not needed for CS for any other purpose and 
-					// another drawback is after result Anonymized IDs are computed then there is another database 
-					// lookup to fetch ACL info of all those Anonymized IDs.
-					// So doing it like this now and see the performance.
-					// Benefit of this approach is that everything can be selected in one select query.
-					
-					newTableCommand 
-						= newTableCommand + ", "+attrName+" "+mySQLDataType+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
-						+" , INDEX USING BTREE("+attrName+") , ACL"+attrName+" BLOB";
-				}
-				else
-				{
-					newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
-						+" , INDEX USING BTREE("+attrName+")";
-				}
-			}
-		}
-		return newTableCommand;
-	}
-	
-	
-	public int processSearchQueryInSubspaceRegion(int subspaceId, String query, JSONArray resultArray)
-	{
-		long t0 = System.currentTimeMillis();
-		
 		QueryInfo<NodeIDType> qinfo = new QueryInfo<NodeIDType>(query);
 		
 		HashMap<String, ProcessingQueryComponent> pqComponents = qinfo.getProcessingQC();
@@ -220,34 +181,16 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		
 		String tableName = "subspaceId"+subspaceId+"DataStorage";
 		String mysqlQuery = "";
-		String ACLattr = "";
-		
-		// getting a query attribute to fetch its encrypted ACL info.
-		//TODO: for now, we are not taking conjunction of encryptedRealIDs
-		// across all query attributes. as that requires CS to read all of those lists
-		// and take an intersection..  For now we are just returning one list, which will be superset
-		
-		if(pqComponents.size() > 0)
-		{
-			ACLattr = pqComponents.keySet().iterator().next();
-			ACLattr = "ACL"+ACLattr;
-		}
-		else
-		{
-			assert(false);
-		}
 		
 		if( isFun )
 		{
 			// get all fields as function might need to check them
 			// for post processing
-			// FIXME: need to add support for hex
-			// FIXME: remove the ACL attrs columns, as those are big and consume a lot of memory.
 			mysqlQuery = "SELECT * from "+tableName+" WHERE ( ";
 		}
 		else
 		{
-			mysqlQuery = "SELECT nodeGUID , "+ACLattr+" from "+tableName+" WHERE ( ";	
+			mysqlQuery = "SELECT nodeGUID from "+tableName+" WHERE ( ";	
 		}
 		
 		
@@ -267,9 +210,8 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				String dataType = attrMetaInfo.getDataType();
 				
 				ContextServiceLogger.getLogger().fine("attrName "+attrName+" dataType "+dataType+
-						" pqc.getLowerBound() "+pqc.getLowerBound()+" pqc.getUpperBound() "+pqc.getUpperBound()+" pqComponents "+pqComponents.size());
-				
-				
+						" pqc.getLowerBound() "+pqc.getLowerBound()+" pqc.getUpperBound() "+pqc.getUpperBound()+
+						" pqComponents "+pqComponents.size());
 				
 				// normal case of lower value being lesser than the upper value
 				if(AttributeTypes.compareTwoValues(pqc.getLowerBound(), pqc.getUpperBound(), dataType))
@@ -277,7 +219,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 					String queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getLowerBound(), dataType)+"";
 					String queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getUpperBound(), dataType)+"";
 					
-					if(counter == (pqComponents.size()-1) )
+					if( counter == (pqComponents.size()-1) )
 					{
 						// it is assumed that the strings in query(pqc.getLowerBound() or pqc.getUpperBound()) 
 						// will have single or double quotes in them so we don't need to them separately in mysql query
@@ -325,12 +267,32 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				}
 				
 				counter++;
-				ContextServiceLogger.getLogger().fine(mysqlQuery);
+				//ContextServiceLogger.getLogger().fine(mysqlQuery);
 			}
+			return mysqlQuery;
 		} catch(Exception | Error ex)
 		{
 			ex.printStackTrace();
 		}
+		return null;
+	}
+	
+	public int processSearchQueryInSubspaceRegion(int subspaceId, String query, 
+			JSONArray resultArray)
+	{
+		long t0 = System.currentTimeMillis();
+		
+		String mysqlQuery = getMySQLQueryForProcessSearchQueryInSubspaceRegion
+				(subspaceId, query);
+		
+		//should not be expensive operation to be performed twice.
+		QueryInfo<NodeIDType> qinfo = new QueryInfo<NodeIDType>(query);
+		
+		Vector<QueryComponent> qcomponents = qinfo.getQueryComponents();
+		
+		boolean isFun = ifQueryHasFunctions(qcomponents);
+		
+		assert(mysqlQuery != null);
 		
 		Connection myConn  = null;
 		Statement stmt     = null;
@@ -355,7 +317,6 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				if(isFun)
 				{
 					//String nodeGUID = rs.getString("nodeGUID");
-					//FIXME: privacy in function
 					byte[] nodeGUIDBytes = rs.getBytes("nodeGUID");
 					boolean satisfies = true;
 					// checks against all such functions
@@ -392,30 +353,35 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 					byte[] nodeGUIDBytes = rs.getBytes("nodeGUID");
 					// it is actually a JSONArray in hexformat byte array representation.
 					// reverse conversion is byte array to String and then string to JSONArray.
-					byte[] realIDEncryptedArray = rs.getBytes(ACLattr);
+					//byte[] realIDEncryptedArray = rs.getBytes(ACLattr);
 					//ValueTableInfo valobj = new ValueTableInfo(value, nodeGUID);
 					//answerList.add(valobj);
 					if(ContextServiceConfig.sendFullReplies)
 					{
 						String nodeGUID = Utils.bytArrayToHex(nodeGUIDBytes);
+						
+						SearchReplyGUIDRepresentationJSON searchReplyRep 
+						= new SearchReplyGUIDRepresentationJSON(nodeGUID);
+						resultArray.put(searchReplyRep.toJSONObject());
+						
 						//TODO: this conversion may be removed and byte[] sent
 						//FIXME: fix this string encoding.
-						if(realIDEncryptedArray != null)
-						{
-							String jsonArrayString = new String(realIDEncryptedArray);
-							JSONArray jsonArr = new JSONArray(jsonArrayString);
-							
-							
-							SearchReplyGUIDRepresentationJSON searchReplyRep 
-								= new SearchReplyGUIDRepresentationJSON(nodeGUID, jsonArr);
-							resultArray.put(searchReplyRep.toJSONObject());
-						}
-						else
-						{
-							SearchReplyGUIDRepresentationJSON searchReplyRep 
-								= new SearchReplyGUIDRepresentationJSON(nodeGUID);
-							resultArray.put(searchReplyRep.toJSONObject());
-						}
+//						if(realIDEncryptedArray != null)
+//						{
+//							String jsonArrayString = new String(realIDEncryptedArray);
+//							JSONArray jsonArr = new JSONArray(jsonArrayString);						
+//							
+//							SearchReplyGUIDRepresentationJSON searchReplyRep 
+//								= new SearchReplyGUIDRepresentationJSON(nodeGUID, jsonArr);
+//							resultArray.put(searchReplyRep.toJSONObject());
+//						}
+//						else
+//						{
+//							SearchReplyGUIDRepresentationJSON searchReplyRep 
+//							= new SearchReplyGUIDRepresentationJSON(nodeGUID);
+//							resultArray.put(searchReplyRep.toJSONObject());
+//						}
+						
 						resultSize++;
 					}
 					else
@@ -454,7 +420,6 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		}
 		return resultSize;
 	}
-	
 	
 	public JSONObject getGUIDStoredInPrimarySubspace( String guid )
 	{
@@ -770,7 +735,6 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		}
 	}
 	
-	
 	/**
      * stores GUID in a subspace. The decision to store a guid on this node
      * in this subspace is not made in this function.
@@ -831,23 +795,23 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	                insertQuery = insertQuery +", "+attrName;
 	            }
 	            
-	            if( ContextServiceConfig.PRIVACY_ENABLED 
-	            		&& (attrValRep.getRealIDMappingInfo() != null) )
-                {
-                	JSONArray encryptedRealIDArray = attrValRep.getRealIDMappingInfo();
-                	
-            		if( encryptedRealIDArray.length() > 0 )
-            		{
-            			String byteArr0Hex =  encryptedRealIDArray.getString(0);
-            			
-            			String hexRep 
-            				= Utils.bytArrayToHex( encryptedRealIDArray.toString().getBytes() );
-            			// now add it in the query
-            			updateSqlQuery = updateSqlQuery + " , ACL"+attrName +" = X'"+hexRep+"'";
-    	                insertQuery = insertQuery + " , ACL"+attrName;
-            		}
-                	
-                }
+//	            if( ContextServiceConfig.PRIVACY_ENABLED 
+//	            		&& (attrValRep.getRealIDMappingInfo() != null) )
+//                {
+//                	JSONArray encryptedRealIDArray = attrValRep.getRealIDMappingInfo();
+//                	
+//            		if( encryptedRealIDArray.length() > 0 )
+//            		{
+//            			String byteArr0Hex =  encryptedRealIDArray.getString(0);
+//            			
+//            			String hexRep 
+//            				= Utils.bytArrayToHex( encryptedRealIDArray.toString().getBytes() );
+//            			// now add it in the query
+//            			updateSqlQuery = updateSqlQuery + " , ACL"+attrName +" = X'"+hexRep+"'";
+//    	                insertQuery = insertQuery + " , ACL"+attrName;
+//            		}
+//                	
+//                }
 	            i++;
 	        }
 	        
@@ -885,19 +849,19 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
                     insertQuery = insertQuery +" , "+newValue;
                 }
                 
-                if(ContextServiceConfig.PRIVACY_ENABLED &&  
-                		(attrValRep.getRealIDMappingInfo() != null) )
-                {
-                	JSONArray encryptedRealIDArray = attrValRep.getRealIDMappingInfo();
-                	
-            		if( encryptedRealIDArray.length() > 0 )
-            		{
-            			String hexRep 
-            				= Utils.bytArrayToHex( encryptedRealIDArray.toString().getBytes() );
-            			// now add it in the query    	                
-    	                insertQuery = insertQuery +" , X'"+hexRep+"'";
-            		}
-                }
+//                if(ContextServiceConfig.PRIVACY_ENABLED &&  
+//                		(attrValRep.getRealIDMappingInfo() != null) )
+//                {
+//                	JSONArray encryptedRealIDArray = attrValRep.getRealIDMappingInfo();
+//                	
+//            		if( encryptedRealIDArray.length() > 0 )
+//            		{
+//            			String hexRep 
+//            				= Utils.bytArrayToHex( encryptedRealIDArray.toString().getBytes() );
+//            			// now add it in the query    	                
+//    	                insertQuery = insertQuery +" , X'"+hexRep+"'";
+//            		}
+//                }
                 
                 i++;
             }
@@ -1149,6 +1113,57 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 			DelayProfiler.updateDelay("getOverlappingRegionsInSubspace", t0);
 		}
 		return answerList;
+	}
+	
+	
+	private String getDataStorageString(String newTableCommand)
+	{
+		Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
+		
+		while( subapceIdIter.hasNext() )
+		{
+			int subspaceId = subapceIdIter.next();
+			// at least one replica and all replica have same default value for each attribute.
+			SubspaceInfo<NodeIDType> currSubspaceInfo = subspaceInfoMap.get(subspaceId).get(0);
+			HashMap<String, AttributePartitionInfo> attrSubspaceMap = currSubspaceInfo.getAttributesOfSubspace();
+			
+			Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
+			while(attrIter.hasNext())
+			{
+				String attrName = attrIter.next();
+				AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
+				AttributeMetaInfo attrMetaInfo = attrPartInfo.getAttrMetaInfo();
+				String dataType = attrMetaInfo.getDataType();
+				String defaultVal = attrPartInfo.getDefaultValue();
+				String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
+				
+				
+				newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType
+						+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
+						+" , INDEX USING BTREE("+attrName+")";
+				
+				// FIXME: to be removed later on
+//				if( ContextServiceConfig.PRIVACY_ENABLED )
+//				{
+//					//ACL<attrName> is ACL info for each attribute needed in privacy scheme.
+//					// not sure if BLOB is right datatype. ALso not sure if this is most optimized way to do this.
+//					// ACL info can be very large, CS can parse each element of JSONArray and store it row wise in a separate table.
+//					// but that will require CS parsing, which is not needed for CS for any other purpose and 
+//					// another drawback is after result Anonymized IDs are computed then there is another database 
+//					// lookup to fetch ACL info of all those Anonymized IDs.
+//					// So doing it like this now and see the performance.
+//					// Benefit of this approach is that everything can be selected in one select query.
+//					
+//					newTableCommand 
+//						= newTableCommand + ", "+attrName+" "+mySQLDataType+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
+//						+" , INDEX USING BTREE("+attrName+") , ACL"+attrName+" BLOB";
+//				}
+//				else
+//				{	
+//				}
+			}
+		}
+		return newTableCommand;
 	}
 	
 	/**

@@ -1,4 +1,3 @@
-
 package edu.umass.cs.contextservice.database.triggers;
 
 import java.net.UnknownHostException;
@@ -10,21 +9,19 @@ import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 
 /**
+ * 
  * This interface defines the trigger information storage 
  * tables and its search and update calls.
  * @author adipc
- *
  */
 public interface TriggerInformationStorageInterface<NodeIDType>
 {
 	/**
-	 * creates trigger tables
+	 * Creates trigger tables
 	 */
 	public void createTables();
 	
-	
 	/**
-	 * 
 	 * @param subspaceId
 	 * @param replicaNum
 	 * @param attrName
