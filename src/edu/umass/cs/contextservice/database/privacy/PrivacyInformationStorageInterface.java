@@ -1,5 +1,9 @@
 package edu.umass.cs.contextservice.database.privacy;
 
+import java.util.HashMap;
+
+import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
+
 /**
  * This interface defines mysql DB table for privacy information
  * storage and also defines function doing select queries and updates.
@@ -14,12 +18,17 @@ public interface PrivacyInformationStorageInterface
 	 */
 	public void createTables();
 	
-	
 	/**
 	 * Returns the partial join query, to be completed with 
 	 * the processSearchQueryInSubspaceRegion query before execution.
 	 * @param query
 	 * @return
 	 */
-	public String getMySQLQueryForFetchingRealIDMappingForQuery(String query);
+	public String getMySQLQueryForFetchingRealIDMappingForQuery(String query, int subspaceId);
+	
+	public void bulkInsertPrivacyInformation( String ID, 
+    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep , int subsapceId);
+	
+	public void deleteAnonymizedIDFromPrivacyInfoStorage(String nodeGUID, 
+			int deleteSubspaceId);
 }

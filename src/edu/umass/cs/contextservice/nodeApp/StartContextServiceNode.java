@@ -37,7 +37,7 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 	private static StartContextServiceNode myObj						= null;
 	
 	public StartContextServiceNode(Integer id, NodeConfig<Integer> nc)
-			throws IOException
+			throws Exception
 	{
 		super(id, nc);
 	}

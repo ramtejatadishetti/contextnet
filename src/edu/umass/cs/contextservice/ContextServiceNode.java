@@ -25,7 +25,7 @@ public abstract class ContextServiceNode<NodeIDType>
 	private final Object startMonitor = new Object();
 	
 	
-	public ContextServiceNode(NodeIDType id, NodeConfig<NodeIDType> nc) throws IOException
+	public ContextServiceNode(NodeIDType id, NodeConfig<NodeIDType> nc) throws Exception
 	{
 		this.myID = id;
 		AbstractJSONPacketDemultiplexer pd = new ContextServiceDemultiplexer();

@@ -50,10 +50,6 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 	// stores the pending queries
 	protected ConcurrentHashMap<Long, QueryInfo<NodeIDType>> pendingQueryRequests		= null;
 	
-	protected long queryIdCounter														= 0;
-	
-	protected final Object pendingQueryLock												= new Object();
-	
 	protected ConcurrentHashMap<Long, UpdateInfo<NodeIDType>> pendingUpdateRequests		= null;
 	
 	

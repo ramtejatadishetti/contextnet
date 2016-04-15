@@ -46,7 +46,7 @@ public class FourNodeLocalCSSetup extends ContextServiceNode<Integer>
 	private static final Object startedLock = new Object();
 	
 	public FourNodeLocalCSSetup(Integer id, NodeConfig<Integer> nc)
-			throws IOException
+			throws Exception
 	{
 		super(id, nc);
 		waitToFinishStart();
@@ -153,7 +153,7 @@ public class FourNodeLocalCSSetup extends ContextServiceNode<Integer>
 			{
 				nodes[myIndex] = new FourNodeLocalCSSetup(nodeID, csNodeConfig);
 				
-			} catch (IOException e)
+			} catch ( Exception e)
 			{
 				e.printStackTrace();
 			}

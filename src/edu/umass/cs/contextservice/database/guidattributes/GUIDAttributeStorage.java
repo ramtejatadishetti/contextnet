@@ -421,6 +421,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		return resultSize;
 	}
 	
+	
 	public JSONObject getGUIDStoredInPrimarySubspace( String guid )
 	{
 		long t0 = System.currentTimeMillis();
@@ -735,6 +736,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		}
 	}
 	
+	
 	/**
      * stores GUID in a subspace. The decision to store a guid on this node
      * in this subspace is not made in this function.
@@ -940,7 +942,6 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
             DelayProfiler.updateDelay("storeGUIDInSubspace", t0);
         }
     }
-    
     
     public void deleteGUIDFromSubspaceRegion(String tableName, String nodeGUID)
 	{

@@ -19,6 +19,7 @@ import edu.umass.cs.contextservice.database.guidattributes.GUIDAttributeStorage;
 import edu.umass.cs.contextservice.database.guidattributes.GUIDAttributeStorageInterface;
 import edu.umass.cs.contextservice.database.privacy.PrivacyInformationStorage;
 import edu.umass.cs.contextservice.database.privacy.PrivacyInformationStorageInterface;
+import edu.umass.cs.contextservice.database.privacy.PrivacyUpdateThread;
 import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorage;
 import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorageInterface;
@@ -59,6 +60,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		
 		guidAttributesStorage = new GUIDAttributeStorage<NodeIDType>
 							( myNodeID, subspaceInfoMap , mysqlDataSource);
+		
 		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
@@ -119,16 +121,17 @@ public class HyperspaceMySQLDB<NodeIDType>
 	}
 	
 	/**
-	 * Returns a list of nodes that overlap with a query in a trigger paritions single subspaces
+	 * Returns a list of nodes that overlap with a query in a trigger 
+	 * partitions single subspaces
 	 * @param subspaceNum
 	 * @param qcomponents, takes matching attributes as input
 	 * @return
 	 */
 	public HashMap<Integer, OverlappingInfoClass> 
-		getOverlappingPartitionsInTriggers(int subspaceId, int replicaNum, String attrName, 
-				ProcessingQueryComponent matchingQueryComponent)
+		getOverlappingPartitionsInTriggers( int subspaceId, int replicaNum, 
+				String attrName, ProcessingQueryComponent matchingQueryComponent )
 	{
-		HashMap<Integer, OverlappingInfoClass> answerlist =
+		HashMap<Integer, OverlappingInfoClass> answerlist = 
 				triggerInformationStorage.getOverlappingPartitionsInTriggers
 				(subspaceId, replicaNum, attrName, matchingQueryComponent);
 		return answerlist;
@@ -148,7 +151,8 @@ public class HyperspaceMySQLDB<NodeIDType>
 	{
 		if( !ContextServiceConfig.PRIVACY_ENABLED )
 		{
-			int resultSize = this.guidAttributesStorage.processSearchQueryInSubspaceRegion
+			int resultSize 
+				= this.guidAttributesStorage.processSearchQueryInSubspaceRegion
 				(subspaceId, query, resultArray);
 			return resultSize;
 		}
@@ -159,7 +163,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 					(subspaceId, query);
 			
 			String joinQuery = 
-					privacyInformationStroage.getMySQLQueryForFetchingRealIDMappingForQuery(query);
+					privacyInformationStroage.getMySQLQueryForFetchingRealIDMappingForQuery(query, subspaceId);
 			
 			// just ordering by nodeGUID so that we can aggregate without creating an additional map
 			// not sure what overhead it adds, as it adds sorting overhead.
@@ -330,7 +334,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 			HashMap<String, JSONObject> newValGroupGUIDMap, int oldOrNewOrBoth) throws InterruptedException
 	{
 		this.triggerInformationStorage.getTriggerDataInfo
-		(subspaceId, replicaNum, attrName, oldValJSON, newUpdateVal, oldValGroupGUIDMap, 
+			(subspaceId, replicaNum, attrName, oldValJSON, newUpdateVal, oldValGroupGUIDMap, 
 				newValGroupGUIDMap, oldOrNewOrBoth);
 	}
 	
@@ -346,24 +350,85 @@ public class HyperspaceMySQLDB<NodeIDType>
 	}
 	
 	/**
-     * stores GUID in a subspace. The decision to store a guid on this node
+     * Stores GUID in a subspace. The decision to store a guid on this node
      * in this subspace is not made in this function.
      * @param subspaceNum
      * @param nodeGUID
      * @param attrValuePairs
+     * @param primaryOrSecondarySubspaces true if update is happening 
+     * to primary subspace, false if update is for subspaces.
      * @return
      * @throws JSONException
      */
-    public void storeGUIDInSubspace(String tableName, String nodeGUID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert ) throws JSONException
+    public void storeGUIDInSubspace( String tableName, String nodeGUID, 
+    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert 
+    		, boolean primaryOrSecondarySubspaces , int subspaceId ) throws JSONException
     {
-    	this.guidAttributesStorage.storeGUIDInSubspace
-    			(tableName, nodeGUID, atrToValueRep, updateOrInsert);
+    	if( primaryOrSecondarySubspaces || !ContextServiceConfig.PRIVACY_ENABLED )
+    	{
+    		// no need to add realIDEntryption Info in primary subspaces.
+    		this.guidAttributesStorage.storeGUIDInSubspace
+						(tableName, nodeGUID, atrToValueRep, updateOrInsert);
+    	}
+    	else
+    	{
+    		//FIXME: need to think about updating privacy info, which is change in ACLs
+    		// I think there are no updates in privacy info.
+    		// if ACL changes then old anonymized IDs are removed and new ones are inserted.
+    		
+    		// do both in parallel.
+    		PrivacyUpdateThread privacyThread 
+    					= new PrivacyUpdateThread(nodeGUID, 
+    				    		atrToValueRep, subspaceId, 
+    				    		this.privacyInformationStroage);
+    		
+    		Thread t = new Thread(privacyThread);
+    		t.start();
+    		
+    		this.guidAttributesStorage.storeGUIDInSubspace
+				(tableName, nodeGUID, atrToValueRep, updateOrInsert);
+    		
+    		// wait for privacy update to finish
+    		try 
+    		{
+    			t.join();
+			} catch (InterruptedException e) 
+    		{
+				e.printStackTrace();
+			}
+    	}
     }
 	
-	public void deleteGUIDFromSubspaceRegion(String tableName, String nodeGUID)
+	public void deleteGUIDFromSubspaceRegion(String tableName, String nodeGUID, 
+			int subspaceId)
 	{
-		this.guidAttributesStorage.deleteGUIDFromSubspaceRegion(tableName, nodeGUID);
+		//FIXME: also remove the privacy info on deleting 
+		// a guid from subspace.
+		if( !ContextServiceConfig.PRIVACY_ENABLED )
+		{
+			this.guidAttributesStorage.deleteGUIDFromSubspaceRegion(tableName, nodeGUID);
+		}
+		else
+		{
+			// do both in parallel.
+    		PrivacyUpdateThread privacyThread 
+    					= new PrivacyUpdateThread(nodeGUID, subspaceId, 
+    				    		this.privacyInformationStroage);
+    		
+    		Thread t = new Thread(privacyThread);
+    		t.start();
+    		
+    		this.guidAttributesStorage.deleteGUIDFromSubspaceRegion(tableName, nodeGUID);
+    		
+    		// wait for privacy update to finish
+    		try 
+    		{
+    			t.join();
+			} catch (InterruptedException e) 
+    		{
+				e.printStackTrace();
+			}
+		}
 	}
 	
 	public boolean getSearchQueryRecordFromPrimaryTriggerSubspace(String groupGUID, 
