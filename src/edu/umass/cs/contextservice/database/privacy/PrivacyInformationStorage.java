@@ -33,7 +33,8 @@ public class PrivacyInformationStorage<NodeIDType>
 {	
 	//FIXME: need t fins out the exact size of realIDEncryption.
 	
-	public static final int REAL_ID_ENCRYPTION_SIZE			= 100;
+	// current encryption generated 128 bytes, if that changes then this has to change.
+	public static final int REAL_ID_ENCRYPTION_SIZE			= 128;
 	
 	private final HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;
 	private final DataSource<NodeIDType> dataSource;
@@ -81,9 +82,9 @@ public class PrivacyInformationStorage<NodeIDType>
 				// and on deletion a subsapce Id can be specified to delete only that rows.
 				String attrName = attrIter.next();
 				String tableName = attrName+"EncryptionInfoStorage";
-				newTableCommand = "create table ( "+tableName+" "
-					      + " nodeGUID Binary(20) , realIDEncryption Binary("+REAL_ID_ENCRYPTION_SIZE+") , "
-					      		+ " subspaceId INTEGER , "
+				newTableCommand = "create table "+tableName+" ( "
+					      + " nodeGUID Binary(20) NOT NULL , realIDEncryption Binary("+REAL_ID_ENCRYPTION_SIZE+") NOT NULL , "
+					      		+ " subspaceId INTEGER NOT NULL , "
 					      		+ " INDEX USING HASH(nodeGUID) , INDEX USING HASH(realIDEncryption) , "
 					      		+ " INDEX USING HASH(subspaceId) )";
 				
@@ -255,6 +256,9 @@ public class PrivacyInformationStorage<NodeIDType>
 						{
 							String hexStringRep = realIDMappingArray.getString(i);
 							byte[] encryptionBytes = Utils.hexStringToByteArray(hexStringRep);
+							
+							//ContextServiceLogger.getLogger().fine("encryptionBytes length "+encryptionBytes.length);
+							
 							byte[] IDBytes = Utils.hexStringToByteArray(ID);
 		
 							prepStmt.setBytes(1, IDBytes);

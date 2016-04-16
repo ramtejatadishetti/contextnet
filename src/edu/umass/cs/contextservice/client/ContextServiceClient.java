@@ -281,9 +281,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 	
 	@Override
-	public void sendUpdateSecure(String GUID, GuidEntry myGUIDInfo, 
+	public void sendUpdateSecure( String GUID, GuidEntry myGUIDInfo, 
 			JSONObject attrValuePairs, long versionNum, boolean blocking,
-			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList)
+			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList )
 	{
 		try
 		{

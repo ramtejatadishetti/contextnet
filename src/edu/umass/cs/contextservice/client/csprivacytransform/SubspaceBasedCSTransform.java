@@ -351,15 +351,22 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 				{
 					// just catching this one, as this one results when wrong key is used 
 					// to decrypt.
-				} catch (InvalidKeyException | NoSuchAlgorithmException
+				} catch ( InvalidKeyException | NoSuchAlgorithmException
 						| InvalidKeySpecException | NoSuchPaddingException
 						| IllegalBlockSizeException | JSONException
-						e ) 
+						e )
 				{
 					e.printStackTrace();
 				}
 			}
 		}
+		
+		if(plainText != null)
+		{
+			ContextServiceLogger.getLogger().fine("Anonymized ID "+seachReply.getID()
+									+ "realID "+Utils.bytArrayToHex(plainText) );
+		}
+		
 		return plainText;
 	}
 	
@@ -397,7 +404,6 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 	}
 	
 	// test this Class implementation
-	
 	public static void main(String[] args) throws NoSuchAlgorithmException
 	{
 		// testing based on the example in the draft.

@@ -54,12 +54,13 @@ public class CSClientTesting
 		
 		gnsAttrValuePairs.put("attr3", 15.0);
 		
+		csClient.sendUpdateSecure( masterGuid.getGuid() , masterGuid , 
+				gnsAttrValuePairs , -1 , true , 
+				aclMap , anonymizedIDList );
 		
-		csClient.sendUpdateSecure(masterGuid, aclMap, 
-				anonymizedIDList, gnsAttrValuePairs, -1, true);
+		JSONObject getRep 
+			= csClient.sendGetRequestSecure(masterGuid.getGuid(), masterGuid);
 		
-		JSONObject getRep = csClient.sendGetRequestSecure(masterGuid, masterGuid.getGuid());
-		
-		System.out.println("getRep "+getRep);
+		System.out.println( "getRep "+getRep );
 	}
 }

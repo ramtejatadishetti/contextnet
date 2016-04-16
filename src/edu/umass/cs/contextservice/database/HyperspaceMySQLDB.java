@@ -184,6 +184,8 @@ public class HyperspaceMySQLDB<NodeIDType>
 				
 				String currID = "";
 				ResultSet rs = stmt.executeQuery(fullQuery);
+				JSONArray encryptedReadIDArray = null;
+				
 				while( rs.next() )
 				{
 					byte[] nodeGUIDBytes = rs.getBytes("nodeGUID");
@@ -192,7 +194,6 @@ public class HyperspaceMySQLDB<NodeIDType>
 					byte[] realIDEncryptedBytes = rs.getBytes("realIDEncryption");
 					//ValueTableInfo valobj = new ValueTableInfo(value, nodeGUID);
 					//answerList.add(valobj);
-					JSONArray encryptedReadIDArray = null;
 					if(ContextServiceConfig.sendFullReplies)
 					{
 						String nodeGUID = Utils.bytArrayToHex(nodeGUIDBytes);
@@ -228,20 +229,23 @@ public class HyperspaceMySQLDB<NodeIDType>
 								encryptedReadIDArray.put(encryptedHex);
 							}
 						}
-						
-						// do the last one
-						if( currID.length() > 0 )
-						{
-							SearchReplyGUIDRepresentationJSON searchReplyRep 
-								= new SearchReplyGUIDRepresentationJSON(currID, 
-										encryptedReadIDArray);
-							resultArray.put(searchReplyRep.toJSONObject());
-						}
 						resultSize++;
 					}
 					else
 					{
 						resultSize++;
+					}
+				}
+				
+				// do the last anonymized ID
+				if(ContextServiceConfig.sendFullReplies)
+				{
+					if( currID.length() > 0 )
+					{
+						SearchReplyGUIDRepresentationJSON searchReplyRep 
+							= new SearchReplyGUIDRepresentationJSON(currID, 
+									encryptedReadIDArray);
+						resultArray.put(searchReplyRep.toJSONObject());
 					}
 				}
 				

@@ -44,7 +44,7 @@ public class UpdateTriggerTest extends ContextServiceNode<Integer>
 	private static UpdateTriggerTest[] nodes							= null;
 	
 	public UpdateTriggerTest(Integer id, NodeConfig<Integer> nc)
-			throws IOException
+			throws Exception
 	{
 		super(id, nc);
 	}
@@ -127,7 +127,8 @@ public class UpdateTriggerTest extends ContextServiceNode<Integer>
 			try
 			{
 				nodes[myIndex] = new UpdateTriggerTest(nodeID, csNodeConfig);
-			} catch (IOException e)
+			} 
+			catch (Exception e) 
 			{
 				e.printStackTrace();
 			}

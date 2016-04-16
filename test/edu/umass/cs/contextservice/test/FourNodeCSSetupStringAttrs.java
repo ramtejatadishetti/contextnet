@@ -45,7 +45,7 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 	
 	
 	public FourNodeCSSetupStringAttrs(Integer id, NodeConfig<Integer> nc)
-			throws IOException
+			throws Exception
 	{
 		super(id, nc);
 	}
@@ -93,9 +93,11 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 	{
 		csNodeConfig = new CSNodeConfig<Integer>();
 		
-		BufferedReader reader = new BufferedReader(new FileReader(ContextServiceConfig.nodeSetupFileName));
-		String line = null;
-		while ((line = reader.readLine()) != null)
+		BufferedReader reader 
+				= new BufferedReader(new FileReader(ContextServiceConfig.nodeSetupFileName));
+		String line 
+				= null;
+		while ( (line = reader.readLine()) != null )
 		{
 			String [] parsed = line.split(" ");
 			int readNodeId = Integer.parseInt(parsed[0]);
@@ -123,7 +125,8 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 			try
 			{
 				nodes[myIndex] = new FourNodeCSSetupStringAttrs(nodeID, csNodeConfig);
-			} catch (IOException e)
+			} 
+			catch (Exception e) 
 			{
 				e.printStackTrace();
 			}
@@ -146,7 +149,6 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 		private final int sourcePort;
 		
 		private CSNodeConfig<Integer> localNodeConfig							= null;
-		
 		
 		private final Object replyWaitMonitor									= new Object();
 			

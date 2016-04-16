@@ -49,7 +49,7 @@ public class LargeNumNodesCSSetup extends ContextServiceNode<Integer>
 	//private static FourNodeCSSetup[] nodes								= null;
 	
 	public LargeNumNodesCSSetup(Integer id, NodeConfig<Integer> nc)
-			throws IOException
+			throws Exception
 	{
 		super(id, nc);
 	}
@@ -171,7 +171,8 @@ public class LargeNumNodesCSSetup extends ContextServiceNode<Integer>
 			try
 			{
 				new LargeNumNodesCSSetup(nodeID, csNodeConfig);
-			} catch (IOException e)
+			}  
+			catch (Exception e) 
 			{
 				e.printStackTrace();
 			}

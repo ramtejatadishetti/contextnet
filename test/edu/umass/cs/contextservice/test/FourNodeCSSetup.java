@@ -26,9 +26,9 @@ import edu.umass.cs.contextservice.queryparsing.GeoJSON;
 import edu.umass.cs.nio.interfaces.NodeConfig;
 
 /**
+ * 
  * Just a simple four node CS setup for local testing.
  * @author adipc
- *
  */
 public class FourNodeCSSetup extends ContextServiceNode<Integer>
 {
@@ -39,7 +39,7 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 	private static FourNodeCSSetup[] nodes								= null;
 	
 	public FourNodeCSSetup(Integer id, NodeConfig<Integer> nc)
-			throws IOException
+			throws Exception
 	{
 		super(id, nc);
 	}
@@ -47,7 +47,7 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 	public static void main(String[] args) throws NumberFormatException, UnknownHostException, IOException
 	{
 		ContextServiceConfig.configFileDirectory 
-		= "/home/adipc/Documents/MobilityFirstGitHub/ContextNet/contextnet/conf/singleNodeConf/contextServiceConf";
+			= "/home/adipc/Documents/MobilityFirstGitHub/ContextNet/contextnet/conf/singleNodeConf/contextServiceConf";
 		ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERSPACE_HASHING;		
 		
 		CSConfigFileLoader configFileLoader = new CSConfigFileLoader(
@@ -80,13 +80,13 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 		}
 		
 		System.out.println("All CS servers ready");
-		try 
-		{
-			RequestClass.startRequests();
-		} catch (Exception e) 
-		{
-			e.printStackTrace();
-		}
+//		try 
+//		{
+//			RequestClass.startRequests();
+//		} catch (Exception e) 
+//		{
+//			e.printStackTrace();
+//		}
 	}
 	
 	
@@ -125,7 +125,8 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 			try
 			{
 				nodes[myIndex] = new FourNodeCSSetup(nodeID, csNodeConfig);
-			} catch (IOException e)
+			} 
+			catch (Exception e) 
 			{
 				e.printStackTrace();
 			}
