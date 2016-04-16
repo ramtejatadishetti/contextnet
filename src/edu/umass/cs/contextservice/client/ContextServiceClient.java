@@ -14,7 +14,8 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.Vector;
-
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -67,6 +68,8 @@ import edu.umass.cs.gnscommon.exceptions.client.GnsClientException;
 public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClient<NodeIDType> 
 												implements ContextClientInterfaceWithPrivacy, ContextServiceClientInterfaceWithoutPrivacy
 {
+	public static final int NUM_THREADS = 32;
+	
 	private Queue<JSONObject> refreshTriggerQueue;
 	//private final Object refreshQueueLock 						= new Object();
 	
@@ -81,8 +84,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	private GNSPrivacyTransformInterface gnsPrivacyTransform;
 	
 	// for cs transform
+	private CSPrivacyTransformInterface csPrivacyTransform;
 	
-	private CSPrivacyTransformInterface csPrivacyTransform;    
+	private ExecutorService executorService;
 	/**
 	 * Use this constructor if you want to directly communicate with CS, bypassing GNS.
 	 * @param csHostName
@@ -94,7 +98,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	{
 		super( csHostName, csPortNum );
 		gnsClient = null;
-		
+		executorService = Executors.newFixedThreadPool(NUM_THREADS);
 		initializeClient();
 	}
 	
@@ -814,12 +818,12 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 		// for anonymized ID
 		anonymizedIDCreation = new SubspaceBasedAnonymizedIDCreator(subspaceAttrMap);
-				
+		
 		// for gnsTransform
 		gnsPrivacyTransform = new EncryptionBasedGNSPrivacyTransform();
-				
+		
 		// for cs transform
-		csPrivacyTransform = new SubspaceBasedCSTransform();
+		csPrivacyTransform = new SubspaceBasedCSTransform(executorService);
 	}
 	
 	// testing secure client code

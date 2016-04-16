@@ -12,6 +12,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -23,7 +25,6 @@ import org.json.JSONException;
 import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
-import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
 import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.utils.Utils;
@@ -32,6 +33,13 @@ import edu.umass.cs.gnsclient.client.util.GuidUtils;
 
 public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 {
+	private final ExecutorService exectutorService;
+	
+	public SubspaceBasedCSTransform(ExecutorService exectutorService)
+	{
+		this.exectutorService = exectutorService;
+	}
+	
 	@Override
 	public List<CSUpdateTransformedMessage> transformUpdateForCSPrivacy(String targetGuid, 
 			HashMap<String, AttrValueRepresentationJSON> attrValueMap , 
@@ -90,25 +98,33 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 			List<CSSearchReplyTransformedMessage> csTransformedList
 			, JSONArray replyArray)
 	{
-		for(int i=0; i<csTransformedList.size();i++)
-		{
-			CSSearchReplyTransformedMessage csSearchRepMessage 
-							= csTransformedList.get(i);
-			
-			byte[] realGuidBytes 
-					= decryptRealIDFromSearchRep(myGuid, csSearchRepMessage.getSearchGUIDObj());
-			
-			// just adding the  ID
-			if(realGuidBytes == null)
-			{
-				ContextServiceLogger.getLogger().info("Unable to map this ID "+
-						csSearchRepMessage.getSearchGUIDObj().getID());
-			}
-			else
-			{
-				replyArray.put(Utils.bytArrayToHex(realGuidBytes));
-			}
-		}
+		
+		ParallelSearchReplyDecryption parallelSearchDecryption =
+				new ParallelSearchReplyDecryption(myGuid , csTransformedList
+						, replyArray, exectutorService);
+		
+		
+		parallelSearchDecryption.doDecryption();
+		
+//		for(int i=0; i<csTransformedList.size();i++)
+//		{
+//			CSSearchReplyTransformedMessage csSearchRepMessage 
+//							= csTransformedList.get(i);
+//			
+//			byte[] realGuidBytes 
+//					= decryptRealIDFromSearchRep(myGuid, csSearchRepMessage.getSearchGUIDObj());
+//			
+//			// just adding the  ID
+//			if(realGuidBytes == null)
+//			{
+//				ContextServiceLogger.getLogger().info("Unable to map this ID "+
+//						csSearchRepMessage.getSearchGUIDObj().getID());
+//			}
+//			else
+//			{
+//				replyArray.put(Utils.bytArrayToHex(realGuidBytes));
+//			}
+//		}
 	}
 	
 	/**
@@ -323,52 +339,52 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 	 * @return
 	 * @throws JSONException 
 	 */
-	private byte[] decryptRealIDFromSearchRep( GuidEntry myGUIDInfo, 
-			SearchReplyGUIDRepresentationJSON seachReply ) 
-	{
-		byte[] privateKey = myGUIDInfo.getPrivateKey().getEncoded();
-		byte[] plainText = null;
-		boolean found = false;
-		JSONArray realIDMappingInfo = seachReply.getRealIDMappingInfo();
-		if(realIDMappingInfo != null)
-		{
-			ContextServiceLogger.getLogger().fine("realIDMappingInfo JSONArray "
-					+ realIDMappingInfo.length() );
-			
-			for( int i=0; i<realIDMappingInfo.length(); i++ )
-			{	
-				try
-				{
-					byte[] encryptedElement = (byte[]) (Utils.hexStringToByteArray(
-							realIDMappingInfo.getString(i)));
-					
-					plainText = Utils.doPrivateKeyDecryption(privateKey, encryptedElement);
-					// non exception, just break;
-					found = true;
-					break;
-				}
-				catch(javax.crypto.BadPaddingException wrongKeyException)
-				{
-					// just catching this one, as this one results when wrong key is used 
-					// to decrypt.
-				} catch ( InvalidKeyException | NoSuchAlgorithmException
-						| InvalidKeySpecException | NoSuchPaddingException
-						| IllegalBlockSizeException | JSONException
-						e )
-				{
-					e.printStackTrace();
-				}
-			}
-		}
-		
-		if(plainText != null)
-		{
-			ContextServiceLogger.getLogger().fine("Anonymized ID "+seachReply.getID()
-									+ "realID "+Utils.bytArrayToHex(plainText) );
-		}
-		
-		return plainText;
-	}
+//	private byte[] decryptRealIDFromSearchRep( GuidEntry myGUIDInfo, 
+//			SearchReplyGUIDRepresentationJSON seachReply ) 
+//	{
+//		byte[] privateKey = myGUIDInfo.getPrivateKey().getEncoded();
+//		byte[] plainText = null;
+//		boolean found = false;
+//		JSONArray realIDMappingInfo = seachReply.getRealIDMappingInfo();
+//		if(realIDMappingInfo != null)
+//		{
+//			ContextServiceLogger.getLogger().fine("realIDMappingInfo JSONArray "
+//					+ realIDMappingInfo.length() );
+//			
+//			for( int i=0; i<realIDMappingInfo.length(); i++ )
+//			{	
+//				try
+//				{
+//					byte[] encryptedElement = (byte[]) (Utils.hexStringToByteArray(
+//							realIDMappingInfo.getString(i)));
+//					
+//					plainText = Utils.doPrivateKeyDecryption(privateKey, encryptedElement);
+//					// non exception, just break;
+//					found = true;
+//					break;
+//				}
+//				catch(javax.crypto.BadPaddingException wrongKeyException)
+//				{
+//					// just catching this one, as this one results when wrong key is used 
+//					// to decrypt.
+//				} catch ( InvalidKeyException | NoSuchAlgorithmException
+//						| InvalidKeySpecException | NoSuchPaddingException
+//						| IllegalBlockSizeException | JSONException
+//						e )
+//				{
+//					e.printStackTrace();
+//				}
+//			}
+//		}
+//		
+//		if(plainText != null)
+//		{
+//			ContextServiceLogger.getLogger().fine("Anonymized ID "+seachReply.getID()
+//									+ "realID "+Utils.bytArrayToHex(plainText) );
+//		}
+//		
+//		return plainText;
+//	}
 	
 	
 	/**
@@ -530,7 +546,7 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 		
 		attrValueMap.put("attr1", valRep);
 		
-		SubspaceBasedCSTransform csTransform = new SubspaceBasedCSTransform();
+		SubspaceBasedCSTransform csTransform = new SubspaceBasedCSTransform(Executors.newFixedThreadPool(1));
 		List<CSUpdateTransformedMessage> transformedUpdateList = 
 		csTransform.transformUpdateForCSPrivacy(guid0, attrValueMap, aclMap, anonymizedIdList);
 		
