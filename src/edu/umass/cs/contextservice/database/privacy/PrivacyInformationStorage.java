@@ -189,7 +189,7 @@ public class PrivacyInformationStorage<NodeIDType>
 							currAttrTable+".realIDEncryption = "+nextAttrTable+".realIDEncryption ";
 				mysqlQuery = mysqlQuery + currCondition;
 			}
-			mysqlQuery = mysqlQuery + " ) WHERE subspaceId = "+subspaceId+" AND "
+			mysqlQuery = mysqlQuery + " ) WHERE "+firstAttrTable+".subspaceId = "+subspaceId+" AND "
 			+firstAttrTable+".nodeGUID IN ( ";
 			
 			return mysqlQuery;
@@ -201,7 +201,7 @@ public class PrivacyInformationStorage<NodeIDType>
 			
 			String mysqlQuery = "SELECT "+firstAttrTable+".nodeGUID as nodeGUID , "
 					+ firstAttrTable+".realIDEncryption as realIDEncryption "
-							+ " FROM "+firstAttrTable+" WHERE subspaceId = "+subspaceId+" AND "
+							+ " FROM "+firstAttrTable+" WHERE "+firstAttrTable+".subspaceId = "+subspaceId+" AND "
 					+firstAttrTable+".nodeGUID IN ( ";
 			return mysqlQuery;
 		}
