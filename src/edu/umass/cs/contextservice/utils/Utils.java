@@ -377,6 +377,8 @@ public class Utils
 	public static byte[] doPublicKeyEncryption(byte[] publicKeyBytes, byte[] plainTextByteArray) 
 			throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException
 	{
+		
+		long start = System.currentTimeMillis();
 //		byte[] privateKeyBytes;
 //		byte[] publicKeyBytes;
 //		KeyFactory kf = KeyFactory.getInstance("RSA"); // or "EC" or whatever
@@ -394,6 +396,10 @@ public class Utils
 		// encrypt the plain text using the public key
 		cipher.init(Cipher.ENCRYPT_MODE, publicKey);
 		cipherText = cipher.doFinal(plainTextByteArray);
+		long end = System.currentTimeMillis();
+		
+		System.out.println("doPublicKeyEncryption time "+(end-start)+" plainTextByteArray "
+						+plainTextByteArray.length);
 	    return cipherText;
 	}
 	
@@ -419,6 +425,8 @@ public class Utils
 //		PrivateKey private = kf.generatePrivate(new PKCS8EncodedKeySpec(privateKeyBytes));
 //		PublicKey public = kf.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
 		
+		long start = System.currentTimeMillis();
+		
 		KeyFactory kf = KeyFactory.getInstance("RSA"); // or "EC" or whatever
 		PrivateKey privateKey = kf.generatePrivate(new PKCS8EncodedKeySpec(privateKeyBytes));
 		//PublicKey publicKey = kf.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
@@ -431,6 +439,9 @@ public class Utils
 		cipher.init(Cipher.DECRYPT_MODE, privateKey);
 		plainText = cipher.doFinal(encryptedTextByteArray);
 		
+		long end = System.currentTimeMillis();
+		
+		System.out.println("doPrivateKeyDecryption time "+(end-start));
 	    return plainText;
 	}
 	
@@ -438,11 +449,16 @@ public class Utils
 			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, 
 			IllegalBlockSizeException, BadPaddingException
 	{
+		long start = System.currentTimeMillis();
 		SecretKey keyObj = new SecretKeySpec(symmetricKey, 0, symmetricKey.length, 
 				ContextServiceConfig.SymmetricEncAlgorithm);
 		
 		Cipher c = Cipher.getInstance(ContextServiceConfig.SymmetricEncAlgorithm);
 		c.init(Cipher.ENCRYPT_MODE, keyObj);
+		long end = System.currentTimeMillis();
+		
+		System.out.println("doSymmetricEncryption time "+(end-start));
+		
 		return c.doFinal(plainTextByteArray);
 	}
 	
@@ -451,14 +467,20 @@ public class Utils
 			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, 
 			IllegalBlockSizeException, BadPaddingException
 	{
+		long start = System.currentTimeMillis();
+		
 		SecretKey keyObj = new SecretKeySpec(symmetricKey, 0, symmetricKey.length, 
 				ContextServiceConfig.SymmetricEncAlgorithm);
 		
 		Cipher c = Cipher.getInstance(ContextServiceConfig.SymmetricEncAlgorithm);
 		c.init(Cipher.DECRYPT_MODE, keyObj);
+		
+		long end = System.currentTimeMillis();
+		
+		System.out.println("doSymmetricDecryption time "+(end-start));
+		
 		return c.doFinal(encryptedByteArray);
-	}
-	
+	}	
 	
 	public static void main( String[] args )
 	{

@@ -28,6 +28,7 @@ import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSPrivacyTransformInterface;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSSearchReplyTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSUpdateTransformedMessage;
+import edu.umass.cs.contextservice.client.csprivacytransform.ParallelUpdateStateStorage;
 import edu.umass.cs.contextservice.client.csprivacytransform.SubspaceBasedCSTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.EncryptionBasedGNSPrivacyTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSPrivacyTransformInterface;
@@ -68,7 +69,7 @@ import edu.umass.cs.gnscommon.exceptions.client.GnsClientException;
 public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClient<NodeIDType> 
 												implements ContextClientInterfaceWithPrivacy, ContextServiceClientInterfaceWithoutPrivacy
 {
-	public static final int NUM_THREADS = 32;
+	public static final int NUM_THREADS = 200;
 	
 	private Queue<JSONObject> refreshTriggerQueue;
 	//private final Object refreshQueueLock 						= new Object();
@@ -291,12 +292,15 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	{
 		try
 		{
-			GNSTransformedMessage gnsTransformMesg = 
-					this.gnsPrivacyTransform.transformUpdateForGNSPrivacy
-					(attrValuePairs, aclmap);
-		
-			sendUpdateToGNS(myGUIDInfo, 
-					gnsTransformMesg.getEncryptedAttrValuePair());
+			if(gnsClient != null)
+			{
+				GNSTransformedMessage gnsTransformMesg = 
+						this.gnsPrivacyTransform.transformUpdateForGNSPrivacy
+						(attrValuePairs, aclmap);
+				
+				sendUpdateToGNS( myGUIDInfo, 
+						gnsTransformMesg.getEncryptedAttrValuePair() );
+			}
 			
 			
 			JSONObject csAttrValuePairs = filterCSAttributes(attrValuePairs);
@@ -309,23 +313,46 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			HashMap<String, AttrValueRepresentationJSON> attrValueMap =
 					convertAttrValueToSystemFormat(csAttrValuePairs);
 			
+			// TODO: Different CSUpdateTransformedMessage messages can be computed
+			// in parallel.
+			
+			long start1 = System.currentTimeMillis();
+			
 			List<CSUpdateTransformedMessage> transformedMesgList 
 				= this.csPrivacyTransform.transformUpdateForCSPrivacy
 				(myGUIDInfo.getGuid(), attrValueMap, aclmap, anonymizedIDList);
 			
+			long end1 = System.currentTimeMillis();
+			
 			// now all the anonymized IDs and the attributes that needs to be updated
 			// are calculated, 
-			// just need to send out updates
+			// just need to send out updates\
+			
+			ParallelUpdateStateStorage updateState 
+								= new ParallelUpdateStateStorage(transformedMesgList);
+			
 			
 			for( int i=0;i<transformedMesgList.size();i++ )
 			{
 				CSUpdateTransformedMessage csTransformedMessage = transformedMesgList.get(i);
+			
+				UpdateOperationThread updateThread = new UpdateOperationThread(
+						csTransformedMessage, versionNum, blocking, 
+						updateState );
+				this.executorService.execute(updateThread);
 				
-				String IDString = Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
+				//String IDString = Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
 				
-				sendUpdateToCS( IDString, csTransformedMessage.getAttrValMap() , 
-						versionNum, blocking );
+				//sendUpdateToCS( IDString, csTransformedMessage.getAttrValMap() , 
+				//		versionNum, blocking );
 			}
+			updateState.waitForCompletion();
+			
+			long end2 = System.currentTimeMillis();
+			
+			System.out.println("Transform time "+(end1-start1)+" sending time "+(end2-end1)+
+					" length "+attrValuePairs.length()+" transformedMesgList size "
+					+transformedMesgList.size() );
 		}
 		catch( JSONException jsoEx )
 		{
@@ -401,70 +428,12 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		return this.anonymizedIDCreation.computeAnonymizedIDs(aclMap);
 	}
 	
-	
-	@Override
-	public boolean handleMessage(JSONObject jsonObject)
-	{
-		try
-		{
-			if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE) 
-					== ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY.getInt() )
-			{
-				handleQueryReply(jsonObject);
-			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-					== ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY.getInt() )
-			{
-				handleUpdateReply(jsonObject);
-			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-					== ContextServicePacket.PacketType.REFRESH_TRIGGER.getInt() )
-			{
-				handleRefreshTrigger(jsonObject);
-			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-					== ContextServicePacket.PacketType.GET_REPLY_MESSAGE.getInt() )
-			{
-				handleGetReply(jsonObject);
-			} else if(jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-					== ContextServicePacket.PacketType.CONFIG_REPLY.getInt() )
-			{
-				handleConfigReply(jsonObject);
-			}
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-		return true;
-	}
-	
-	
-	/**
-	 * COnverts attr value JSON given in the api calls to
-	 * attr AttrValueRepresentationJSON map
-	 * @return
-	 * @throws JSONException 
-	 */
-	private HashMap<String, AttrValueRepresentationJSON> convertAttrValueToSystemFormat
-								(JSONObject attrValuePairs) throws JSONException
-	{
-		HashMap<String, AttrValueRepresentationJSON> map 
-							= new HashMap<String, AttrValueRepresentationJSON>();
-		
-		Iterator<String> jsonIter = attrValuePairs.keys();
-		while(jsonIter.hasNext())
-		{
-			String attrName = jsonIter.next();
-			String value = attrValuePairs.getString(attrName);
-			AttrValueRepresentationJSON valRep = new AttrValueRepresentationJSON(value);
-			
-			map.put(attrName, valRep);
-		}
-		return map;
-	}
 	/**
 	 * Sends update to CS in both privacy and non privacy case.
 	 * filtering of CS attributes has already happened before this function call.
 	 * It assumes all attributes in csAttrValMap are CS attributes.
 	 */
-	private void sendUpdateToCS( String GUID, 
+	public void sendUpdateToCS( String GUID, 
 			HashMap<String, AttrValueRepresentationJSON> csAttrValMap, 
 			long versionNum, boolean blocking )
 	{
@@ -524,6 +493,65 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		{
 			e.printStackTrace();
 		}
+	}
+	
+	
+	@Override
+	public boolean handleMessage(JSONObject jsonObject)
+	{
+		try
+		{
+			if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE) 
+					== ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY.getInt() )
+			{
+				handleQueryReply(jsonObject);
+			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
+					== ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY.getInt() )
+			{
+				handleUpdateReply(jsonObject);
+			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
+					== ContextServicePacket.PacketType.REFRESH_TRIGGER.getInt() )
+			{
+				handleRefreshTrigger(jsonObject);
+			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
+					== ContextServicePacket.PacketType.GET_REPLY_MESSAGE.getInt() )
+			{
+				handleGetReply(jsonObject);
+			} else if(jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
+					== ContextServicePacket.PacketType.CONFIG_REPLY.getInt() )
+			{
+				handleConfigReply(jsonObject);
+			}
+		} catch (JSONException e)
+		{
+			e.printStackTrace();
+		}
+		return true;
+	}
+	
+	
+	/**
+	 * COnverts attr value JSON given in the api calls to
+	 * attr AttrValueRepresentationJSON map
+	 * @return
+	 * @throws JSONException 
+	 */
+	private HashMap<String, AttrValueRepresentationJSON> convertAttrValueToSystemFormat
+								(JSONObject attrValuePairs) throws JSONException
+	{
+		HashMap<String, AttrValueRepresentationJSON> map 
+							= new HashMap<String, AttrValueRepresentationJSON>();
+		
+		Iterator<String> jsonIter = attrValuePairs.keys();
+		while(jsonIter.hasNext())
+		{
+			String attrName = jsonIter.next();
+			String value = attrValuePairs.getString(attrName);
+			AttrValueRepresentationJSON valRep = new AttrValueRepresentationJSON(value);
+			
+			map.put(attrName, valRep);
+		}
+		return map;
 	}
 	
 	private void sendUpdateToGNS(GuidEntry writingGuid, 
@@ -785,7 +813,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 	}
 	
-	
 	/**
 	 * filters attributes, returns only attributes value pairs 
 	 * that are supported by CS
@@ -824,6 +851,39 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 		// for cs transform
 		csPrivacyTransform = new SubspaceBasedCSTransform(executorService);
+	}
+	
+	/**
+	 * Thread tha performs the update.
+	 * @author adipc
+	 *
+	 */
+	private class UpdateOperationThread implements Runnable
+	{
+		private final CSUpdateTransformedMessage csTransformedMessage;
+		private final long versionNum;
+		private final boolean blocking;
+		private final ParallelUpdateStateStorage updateState;
+		
+		public UpdateOperationThread(CSUpdateTransformedMessage csTransformedMessage
+				, long versionNum, boolean blocking, ParallelUpdateStateStorage updateState)
+		{
+			this.csTransformedMessage = csTransformedMessage;
+			this.versionNum = versionNum;
+			this.blocking = blocking;
+			this.updateState = updateState;
+		}
+		
+		@Override
+		public void run() 
+		{	
+			String IDString = Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
+			
+			sendUpdateToCS( IDString, csTransformedMessage.getAttrValMap() , 
+					versionNum, blocking );
+			
+			updateState.incrementNumCompleted();
+		}
 	}
 	
 	// testing secure client code

@@ -33,6 +33,7 @@ public class ParallelSearchReplyDecryption
 	private long numFinished 				= 0;
 	private final Object lock 				= new Object();
 	
+	private int totalDecryptionsOverall		= 0;
 	
 	public ParallelSearchReplyDecryption(GuidEntry myGuid , 
 			List<CSSearchReplyTransformedMessage> csTransformedList
@@ -75,6 +76,11 @@ public class ParallelSearchReplyDecryption
 		}
 	}
 	
+	public int getTotalDecryptionsOverall()
+	{
+		return this.totalDecryptionsOverall;
+	}
+	
 	/**
 	 * Decrypts the anonymized ID in the search reply.
 	 * @author adipc
@@ -84,6 +90,8 @@ public class ParallelSearchReplyDecryption
 		private final GuidEntry myGUIDInfo;
 		private final SearchReplyGUIDRepresentationJSON seachReply;
 		
+		private int totalDecryptionsThread = 0;
+		
 		public SearchReplyDecryptionThread( GuidEntry myGUIDInfo , 
 				SearchReplyGUIDRepresentationJSON seachReply )
 		{
@@ -92,7 +100,7 @@ public class ParallelSearchReplyDecryption
 		}
 		
 		@Override
-		public void run() 
+		public void run()
 		{
 			byte[] plainTextBytes = 
 					decryptRealIDFromSearchRep( myGUIDInfo, seachReply );
@@ -102,7 +110,7 @@ public class ParallelSearchReplyDecryption
 				synchronized(lock)
 				{
 					numFinished++;
-					
+					totalDecryptionsOverall = totalDecryptionsOverall + totalDecryptionsThread;
 					replyArray.put( Utils.bytArrayToHex(plainTextBytes) );
 					if( numFinished == csTransformedList.size() )
 					{
@@ -115,6 +123,7 @@ public class ParallelSearchReplyDecryption
 				synchronized(lock)
 				{
 					numFinished++;
+					totalDecryptionsOverall = totalDecryptionsOverall + totalDecryptionsThread;
 					if( numFinished == csTransformedList.size() )
 					{
 						lock.notify();
@@ -150,6 +159,7 @@ public class ParallelSearchReplyDecryption
 								realIDMappingInfo.getString(i)));
 						
 						plainText = Utils.doPrivateKeyDecryption(privateKey, encryptedElement);
+						totalDecryptionsThread++;
 						// non exception, just break;
 						break;
 					}

@@ -66,7 +66,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	// this files is getting very big.
 	private final ExecutorService nodeES;
 	
-	
 	private HashMap<String, GUIDUpdateInfo<NodeIDType>> guidUpdateInfoMap				= null;
 	
 	private final AbstractSubspaceConfigurator<NodeIDType> subspaceConfigurator;

@@ -122,6 +122,9 @@ public class ContextServiceConfig
 	public static final String AssymmetricEncAlgorithm				= "RSA";
 	public static final String SymmetricEncAlgorithm				= "DES";
 	
+	// if true some debugging information will be computed and printed.
+	public static final boolean DEBUG_MODE							= true;
+	
 	
 	//  model paramters
 	// search/(search+update) ratio

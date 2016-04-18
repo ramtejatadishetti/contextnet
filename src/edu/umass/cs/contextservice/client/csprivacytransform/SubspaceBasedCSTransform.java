@@ -25,6 +25,7 @@ import org.json.JSONException;
 import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
+import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
 import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.utils.Utils;
@@ -83,13 +84,20 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 				transformedMesgList.add(transforMessage);
 			}
 			
+			if( ContextServiceConfig.DEBUG_MODE )
+			{
+				int totalEncryptions = 
+						calculateTotalEncryptionsOnAnUpdate( anonymizedIDToAttributesMap );
+				System.out.println("targetGuid "+targetGuid+" number attrs updated "+attrValueMap.size()
+				+ " number of anonymized IDs updated "+anonymizedIDToAttributesMap.size()+
+				" total encryptions "+totalEncryptions);
+			}
 			return transformedMesgList;	
 		}
 		catch(Exception | Error ex)
 		{
 			ex.printStackTrace();
 		}
-		
 		return null;
 	}
 
@@ -105,6 +113,11 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 		
 		
 		parallelSearchDecryption.doDecryption();
+		
+		if(ContextServiceConfig.DEBUG_MODE)
+		{
+			System.out.println("Total decryptions "+parallelSearchDecryption.getTotalDecryptionsOverall());
+		}
 		
 //		for(int i=0; i<csTransformedList.size();i++)
 //		{
@@ -329,6 +342,36 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 		AttrValueRepresentationJSON currAttrValRep 
 							= new AttrValueRepresentationJSON(value, realIDMappingInfo);
 		return currAttrValRep;
+	}
+	
+	/**
+	 * 
+	 * This function calculates total encryptions on 
+	 * an update, just for debugging purposes.
+	 * @return
+	 */
+	private int calculateTotalEncryptionsOnAnUpdate
+			( HashMap<String, List<AttributeUpdateInfo>> anonymizedIDToAttributesMap )
+	{
+		int totalEncryptions = 0;
+		Iterator<String> anonymizedIDIter 
+						= anonymizedIDToAttributesMap.keySet().iterator();
+		
+		while( anonymizedIDIter.hasNext() )
+		{
+			String anonymizedID = anonymizedIDIter.next();
+			
+			List<AttributeUpdateInfo> attrUpdateInfoList 
+										= anonymizedIDToAttributesMap.get(anonymizedID);
+			
+			for(int i=0; i < attrUpdateInfoList.size(); i++)
+			{
+				AttributeUpdateInfo attrUpdInfo = attrUpdateInfoList.get(i);
+				totalEncryptions = totalEncryptions + attrUpdInfo.getIntersectingACLEntries().size();
+			}
+		}
+		
+		return totalEncryptions;
 	}
 	
 	/**

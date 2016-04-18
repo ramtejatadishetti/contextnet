@@ -1,6 +1,5 @@
 package edu.umass.cs.contextservice.client.anonymizedID;
 
-
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -39,6 +38,9 @@ public class SubspaceBasedAnonymizedIDCreator implements AnonymizedIDCreationInt
 	public List<AnonymizedIDEntry> computeAnonymizedIDs
 							( HashMap<String, List<ACLEntry>> aclMap ) 
 	{
+		//TODO: check List<ACLEntry> doesn't contain repeated guids, that causes more anonymized Ids to be generated
+		// and 2^H max num of anonymized IDs for a subspace also gets violated.
+		
 		try
 		{
 			// each element is AnonymizedIDStoringClass
@@ -55,10 +57,13 @@ public class SubspaceBasedAnonymizedIDCreator implements AnonymizedIDCreationInt
 				
 				JSONArray attrArray = this.subspaceAttrMap.get(mapKey);
 				
+				System.out.println("subspace attrs "+attrArray);
+				
 				// String is GUIDString
 				HashMap<String, List<String>> guidToAttributesMap 
 								= computeGuidToAttributesMap(attrArray, aclMap);
 				
+				printGuidToAttributesMap( guidToAttributesMap );
 				
 				// guidToAttributesMap computed now compute anonymized IDs
 				// we sort the list of attributes, so that different permutations of same set 
@@ -225,6 +230,28 @@ public class SubspaceBasedAnonymizedIDCreator implements AnonymizedIDCreationInt
 		return attributesToGuidsMap;
 	}
 	
+	private void printGuidToAttributesMap( HashMap<String, 
+			List<String>> guidToAttributesMap )
+	{
+		Iterator<String> guidIter = guidToAttributesMap.keySet().iterator();
+		//guidToAttributesMap
+		while( guidIter.hasNext() )
+		{
+			String printStr = "";
+			String guidStr = guidIter.next();
+			
+			List<String> attrList = guidToAttributesMap.get(guidStr);
+			
+			printStr = "Guid "+guidStr+" Attrs ";
+			
+			for( int i=0; i<attrList.size() ; i++ )
+			{
+				printStr = printStr + " , "+attrList.get(i);
+			}
+			System.out.println("printStr "+printStr);
+		}
+	}
+	
 	// testing the class.
 	public static void main(String[] args) throws NoSuchAlgorithmException
 	{
@@ -335,10 +362,11 @@ public class SubspaceBasedAnonymizedIDCreator implements AnonymizedIDCreationInt
 		System.out.println("Number of anonymizedIds "+anonymizedIds.size());
 		
 		System.out.println("\n\n\n##################################\n\n\n");
+		
 		for(int i=0;i<anonymizedIds.size();i++)
 		{
 			AnonymizedIDEntry anonymizedEntry = anonymizedIds.get(i);
-			System.out.println(anonymizedEntry.toString());
+			System.out.println( anonymizedEntry.toString() );
 		}
 	}
 }
