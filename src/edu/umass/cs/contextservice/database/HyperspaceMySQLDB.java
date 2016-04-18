@@ -388,7 +388,7 @@ public class HyperspaceMySQLDB<NodeIDType>
     		
     		Thread t = new Thread(privacyThread);
     		t.start();
-    		
+ 
     		this.guidAttributesStorage.storeGUIDInSubspace
 				(tableName, nodeGUID, atrToValueRep, updateOrInsert);
     		

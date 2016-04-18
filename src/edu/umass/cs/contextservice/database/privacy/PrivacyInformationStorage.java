@@ -2,6 +2,7 @@ package edu.umass.cs.contextservice.database.privacy;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
@@ -146,6 +147,8 @@ public class PrivacyInformationStorage<NodeIDType>
 		// SELECT HEX(attr0Encryption.nodeGUID), HEX(attr0Encryption.realIDEncryption) 
 		// FROM attr0Encryption INNER JOIN (attr1Encryption , attr2Encryption) ON 
 		// (attr0Encryption.nodeGUID = attr1Encryption.nodeGUID AND attr1Encryption.nodeGUID = attr2Encryption.nodeGUID AND attr0Encryption.realIDEncryption = attr1Encryption.realIDEncryption AND attr1Encryption.realIDEncryption = attr2Encryption.realIDEncryption) WHERE attr0Encryption.nodeGUID IN (SELECT nodeGUID FROM subspaceId0DataStorage);
+		
+		
 		// in one attribute case no need to join, considered in else
 		if(queryAttribtues.size() >= 2)
 		{
@@ -236,6 +239,17 @@ public class PrivacyInformationStorage<NodeIDType>
 				String currAttrName = attrIter.next();
 				
 				String tableName = currAttrName+"EncryptionInfoStorage";
+				
+				boolean ifExists = checkIfAlreadyExists(ID, subspaceId, tableName, 
+					myConn);
+				
+				// just checking if this acl info for this ID anf this attribute 
+				// already exists, if it is already there then no need to insert.
+				// on acl update, whole ID changes, sol older ID acl info just gets 
+				// deleted, it is never updated. There are only inserts and deletes of 
+				// acl info, no updates.
+				if( ifExists )
+					continue;
 				
 				String insertTableSQL = " INSERT INTO "+tableName 
 						+" ( nodeGUID , realIDEncryption , subspaceId ) VALUES ( ? , ? , ? )";
@@ -376,4 +390,32 @@ public class PrivacyInformationStorage<NodeIDType>
 		}
 	}
 	
+	/**
+	 * Checks if privacy info already exists, returns true
+	 * otherwise returns false.
+	 * If true returns then insert doesn't happen.
+	 * @return
+	 * @throws SQLException 
+	 */
+	private boolean checkIfAlreadyExists(String ID, int subspaceId, String tableName, 
+			Connection myConn) throws SQLException
+	{		
+		String mysqlQuery = "SELECT COUNT(nodeGUID) as RowCount FROM "+tableName+
+				" WHERE nodeGUID = X'"+ID+"' AND "
+				+" subspaceId = "+subspaceId;
+		Statement stmt = myConn.createStatement();
+		ResultSet rs = stmt.executeQuery(mysqlQuery);
+		
+		while( rs.next() )
+		{
+			int rowCount = rs.getInt("RowCount");
+			ContextServiceLogger.getLogger().fine("ID "+ID+" subspaceId "+subspaceId+" tableName "
+					+tableName+" rowCount "+rowCount);
+			if(rowCount >= 1)
+				return true;
+			else
+				return false;
+		}
+		return false;
+	}
 }
