@@ -430,19 +430,12 @@ public class HyperspaceMySQLDB<NodeIDType>
     					= new PrivacyUpdateThread(nodeGUID, subspaceId, 
     				    		this.privacyInformationStroage);
     		
-    		Thread t = new Thread(privacyThread);
-    		t.start();
+    		execService.execute(privacyThread);
     		
     		this.guidAttributesStorage.deleteGUIDFromSubspaceRegion(tableName, nodeGUID);
     		
     		// wait for privacy update to finish
-    		try 
-    		{
-    			t.join();
-			} catch (InterruptedException e) 
-    		{
-				e.printStackTrace();
-			}
+    		privacyThread.waitForFinish();
 		}
 	}
 	

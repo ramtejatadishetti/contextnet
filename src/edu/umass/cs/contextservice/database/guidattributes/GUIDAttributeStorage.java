@@ -998,7 +998,15 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		{
 			myConn = this.dataSource.getConnection();
 			stmt = myConn.createStatement();
+			long start = System.currentTimeMillis();
 			stmt.executeUpdate(deleteCommand);
+			long end = System.currentTimeMillis();
+			
+			if(ContextServiceConfig.DEBUG_MODE)
+        	{
+        		System.out.println("TIME_DEBUG: deleteGUIDFromSubspaceRegion "+(end-start));
+        	}
+			
 		} catch(SQLException sqex)
 		{
 			sqex.printStackTrace();

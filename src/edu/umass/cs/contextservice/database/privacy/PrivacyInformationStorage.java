@@ -330,8 +330,8 @@ public class PrivacyInformationStorage<NodeIDType>
 	}
 	
 	
-	public void deleteAnonymizedIDFromPrivacyInfoStorage(String nodeGUID, 
-			int deleteSubspaceId)
+	public void deleteAnonymizedIDFromPrivacyInfoStorage( String nodeGUID, 
+			int deleteSubspaceId )
 	{
 		long t0 = System.currentTimeMillis();
 		
@@ -366,7 +366,16 @@ public class PrivacyInformationStorage<NodeIDType>
 				{
 					myConn = this.dataSource.getConnection();
 					stmt = myConn.createStatement();
+					long start = System.currentTimeMillis();
 					stmt.executeUpdate(deleteCommand);
+					long end = System.currentTimeMillis();
+					
+					if(ContextServiceConfig.DEBUG_MODE)
+		        	{
+		        		System.out.println("TIME_DEBUG: deleteAnonymizedIDFromPrivacyInfoStorage "
+		        							+(end-start));
+		        	}
+					
 				} catch(SQLException sqex)
 				{
 					sqex.printStackTrace();
