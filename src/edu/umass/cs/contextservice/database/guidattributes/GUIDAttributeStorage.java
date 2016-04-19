@@ -1043,7 +1043,8 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	 * @return
 	 */
 	public HashMap<Integer, OverlappingInfoClass> 
-		getOverlappingRegionsInSubspace(int subspaceId, int replicaNum, Vector<ProcessingQueryComponent> matchingQueryComponents)
+		getOverlappingRegionsInSubspace( int subspaceId, int replicaNum, 
+				Vector<ProcessingQueryComponent> matchingQueryComponents )
 	{
 		long t0 = System.currentTimeMillis();
 		HashMap<Integer, OverlappingInfoClass> answerList 
@@ -1124,7 +1125,15 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 			myConn = this.dataSource.getConnection();
 			stmt = myConn.createStatement();
 			ContextServiceLogger.getLogger().fine("selectTableSQL "+selectTableSQL);
+			long start = System.currentTimeMillis();
 			ResultSet rs = stmt.executeQuery(selectTableSQL);
+			long end = System.currentTimeMillis();
+			
+			if(ContextServiceConfig.DEBUG_MODE)
+			{
+				System.out.println("TIME_DEBUG: getOverlappingRegionsInSubspace time "+(end-start));
+			}
+			
 		    while( rs.next() )
 		    {
 		    	//Retrieve by column name
