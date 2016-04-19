@@ -20,6 +20,9 @@ public class PrivacyUpdateThread implements Runnable
 	private final HashMap<String, AttrValueRepresentationJSON> atrToValueRep;
 	private final int subspaceId;
 	private final PrivacyInformationStorageInterface privacyInformationStorage;
+	private boolean finished;
+	
+	private final Object lock = new Object();
 	
 	public PrivacyUpdateThread( String ID, 
     		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int subspaceId, 
@@ -30,6 +33,7 @@ public class PrivacyUpdateThread implements Runnable
 		this.atrToValueRep = atrToValueRep;
 		this.subspaceId = subspaceId;
 		this.privacyInformationStorage = privacyInformationStorage;
+		finished = false;
 	}
 	
 	public PrivacyUpdateThread( String ID, int subspaceId, 
@@ -40,6 +44,7 @@ public class PrivacyUpdateThread implements Runnable
 		this.subspaceId = subspaceId;
 		atrToValueRep  = null;
 		this.privacyInformationStorage = privacyInformationStorage;
+		finished = false;
 	}
 	
 	
@@ -50,11 +55,36 @@ public class PrivacyUpdateThread implements Runnable
 		{
 			privacyInformationStorage.bulkInsertPrivacyInformation
 			(ID, atrToValueRep, subspaceId);
+			finished = true;
 		}
 		else if( operation == PERFORM_DELETION )
 		{
 			privacyInformationStorage.deleteAnonymizedIDFromPrivacyInfoStorage
 			(ID, subspaceId);
+			
+			finished = true;
+		}
+		synchronized(lock)
+		{
+			lock.notify();
 		}
 	}
+	
+	public void waitForFinish()
+	{
+		while( !finished )
+		{
+			synchronized(lock)
+			{
+				try 
+				{
+					lock.wait();
+				} catch (InterruptedException e) 
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
 }

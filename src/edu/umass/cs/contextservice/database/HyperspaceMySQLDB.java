@@ -8,6 +8,7 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -51,11 +52,15 @@ public class HyperspaceMySQLDB<NodeIDType>
 	public static final String userIP = "userIP";
 	public static final String userPort = "userPort";
 	
+	private final ExecutorService execService;
+	
 	
 	public HyperspaceMySQLDB(NodeIDType myNodeID, 
-			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap)
+			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap, 
+			ExecutorService execService)
 			throws Exception
 	{
+		this.execService = execService;
 		this.mysqlDataSource = new DataSource<NodeIDType>(myNodeID);
 		
 		guidAttributesStorage = new GUIDAttributeStorage<NodeIDType>
@@ -371,35 +376,40 @@ public class HyperspaceMySQLDB<NodeIDType>
     	if( primaryOrSecondarySubspaces || !ContextServiceConfig.PRIVACY_ENABLED )
     	{
     		// no need to add realIDEntryption Info in primary subspaces.
+    		long start = System.currentTimeMillis();
     		this.guidAttributesStorage.storeGUIDInSubspace
 						(tableName, nodeGUID, atrToValueRep, updateOrInsert);
+    		long end = System.currentTimeMillis();
+    		
+    		if(ContextServiceConfig.DEBUG_MODE)
+    		{
+    			System.out.println("storeGUIDInSubspace without privacy storage "+(end-start));
+    		}
     	}
     	else
     	{
     		//FIXME: need to think about updating privacy info, which is change in ACLs
     		// I think there are no updates in privacy info.
     		// if ACL changes then old anonymized IDs are removed and new ones are inserted.
-    		
+    		long start = System.currentTimeMillis();
     		// do both in parallel.
     		PrivacyUpdateThread privacyThread 
     					= new PrivacyUpdateThread(nodeGUID, 
     				    		atrToValueRep, subspaceId, 
     				    		this.privacyInformationStroage);
-    		
-    		Thread t = new Thread(privacyThread);
-    		t.start();
+    		execService.execute(privacyThread);
  
     		this.guidAttributesStorage.storeGUIDInSubspace
 				(tableName, nodeGUID, atrToValueRep, updateOrInsert);
     		
     		// wait for privacy update to finish
-    		try 
+    		privacyThread.waitForFinish();
+    		long end = System.currentTimeMillis();
+    		
+    		if(ContextServiceConfig.DEBUG_MODE)
     		{
-    			t.join();
-			} catch (InterruptedException e) 
-    		{
-				e.printStackTrace();
-			}
+    			System.out.println("storeGUIDInSubspace with privacy storage "+(end-start));
+    		}
     	}
     }
 	

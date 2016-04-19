@@ -83,6 +83,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	{
 		super(nc, m);
 		
+		nodeES = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
+		
 		guidUpdateInfoMap = new HashMap<String, GUIDUpdateInfo<NodeIDType>>();
 		
 
@@ -107,10 +109,10 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		
 		hyperspaceDB = new HyperspaceMySQLDB<NodeIDType>(this.getMyID(), 
-					subspaceConfigurator.getSubspaceInfoMap());
+					subspaceConfigurator.getSubspaceInfoMap(), nodeES);
 		
 		ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
-		nodeES = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
+		
 		
 		guidAttrValProcessing = new GUIDAttrValueProcessing<NodeIDType>(
 				this.getMyID(), subspaceConfigurator.getSubspaceInfoMap(), 
