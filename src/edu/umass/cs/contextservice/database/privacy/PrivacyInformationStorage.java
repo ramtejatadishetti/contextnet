@@ -412,7 +412,16 @@ public class PrivacyInformationStorage<NodeIDType>
 				" WHERE nodeGUID = X'"+ID+"' AND "
 				+" subspaceId = "+subspaceId;
 		Statement stmt = myConn.createStatement();
+		
+		long start = System.currentTimeMillis();
 		ResultSet rs = stmt.executeQuery(mysqlQuery);
+		long end = System.currentTimeMillis();
+		
+		if(ContextServiceConfig.DEBUG_MODE)
+		{
+			System.out.println("TIME_DEBUG: checkIfAlreadyExists time "
+					+ (end-start));
+		}
 		
 		while( rs.next() )
 		{
