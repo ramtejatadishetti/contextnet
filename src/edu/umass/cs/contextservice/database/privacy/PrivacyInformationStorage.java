@@ -31,7 +31,7 @@ import edu.umass.cs.utils.DelayProfiler;
  */
 public class PrivacyInformationStorage<NodeIDType> 
 									implements PrivacyInformationStorageInterface
-{	
+{
 	//FIXME: need t fins out the exact size of realIDEncryption.
 	
 	// current encryption generated 128 bytes, if that changes then this has to change.
@@ -286,7 +286,15 @@ public class PrivacyInformationStorage<NodeIDType>
 						}
 					}
 					
+					long start = System.currentTimeMillis();
 					prepStmt.executeBatch();
+					long end = System.currentTimeMillis();
+					
+					if(ContextServiceConfig.DEBUG_MODE)
+					{
+						System.out.println("TIME_DEBUG: bulkInsertPrivacyInformation "
+								+ (end-start));
+					}
 				}
 			}
 		}

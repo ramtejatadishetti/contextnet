@@ -383,7 +383,8 @@ public class HyperspaceMySQLDB<NodeIDType>
     		
     		if(ContextServiceConfig.DEBUG_MODE)
     		{
-    			System.out.println("storeGUIDInSubspace without privacy storage "+(end-start));
+    			System.out.println
+    			( "storeGUIDInSubspace without privacy storage "+(end-start) );
     		}
     	}
     	else

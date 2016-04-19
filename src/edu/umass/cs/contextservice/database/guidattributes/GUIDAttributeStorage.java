@@ -702,8 +702,8 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				}
 				prepStmt.addBatch();
 			}
-			//stmt = myConn.createStatement();
-			// execute insert SQL stetement
+			// stmt = myConn.createStatement();
+			// execute insert SQL statement
 			prepStmt.executeBatch();
 		} catch(SQLException sqlex)
 		{
@@ -738,7 +738,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	
 	
 	/**
-     * stores GUID in a subspace. The decision to store a guid on this node
+     * Stores GUID in a subspace. The decision to store a guid on this node
      * in this subspace is not made in this function.
      * @param subspaceNum
      * @param nodeGUID
@@ -763,7 +763,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
         String insertQuery         = "INSERT INTO "+tableName+ " (";
         
         //JSONObject oldValueJSON = new JSONObject();
-        try 
+        try
         {
         	Iterator<String> attrNameIter = atrToValueRep.keySet().iterator();
         	int i=0;
@@ -863,41 +863,69 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 //            			// now add it in the query    	                
 //    	                insertQuery = insertQuery +" , X'"+hexRep+"'";
 //            		}
-//                }
-                
+//                }    
                 i++;
             }
             insertQuery = insertQuery +" , X'"+nodeGUID+"' )";
             
             myConn = this.dataSource.getConnection();
             stmt = myConn.createStatement();   
-            if(updateOrInsert == HyperspaceMySQLDB.UPDATE_REC)
+            
+            if( updateOrInsert == HyperspaceMySQLDB.UPDATE_REC )
             {
             	// if update fails then insert
             	try
                 {
             		//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE "+updateSqlQuery);
+            		long start   = System.currentTimeMillis();
                 	int rowCount = stmt.executeUpdate(updateSqlQuery);
+                	long end     = System.currentTimeMillis();
+                	
+                	if(ContextServiceConfig.DEBUG_MODE)
+                	{
+                		System.out.println("TIME_DEBUG: storeGUIDInSubspace update "+(end-start));
+                	}
+                	
                 	//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE rowCount "+rowCount);
                 	// update failed try insert
                 	if(rowCount == 0)
                 	{
                 		//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE EXCP "+insertQuery);
-                    	rowCount = stmt.executeUpdate(insertQuery);
-                    	//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE EXCP rowCount "+rowCount);
+                		start   = System.currentTimeMillis();
+                		rowCount = stmt.executeUpdate(insertQuery);
+                		end     = System.currentTimeMillis();
+                		
+                		if(ContextServiceConfig.DEBUG_MODE)
+                    	{
+                    		System.out.println("TIME_DEBUG: storeGUIDInSubspace insert "+(end-start));
+                    	}
+                		//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE EXCP rowCount "+rowCount);
                 	}
                 } catch(SQLException sqlEx)
                 {
                 	try
                 	{
 	                	//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE EXCP "+insertQuery);
-	                	int rowCount = stmt.executeUpdate(insertQuery);
-	                	//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE EXCP rowCount "+rowCount);
+                		long start   = System.currentTimeMillis();
+                		int rowCount = stmt.executeUpdate(insertQuery);
+                		long end     = System.currentTimeMillis();
+                		if(ContextServiceConfig.DEBUG_MODE)
+                    	{
+                    		System.out.println("TIME_DEBUG: storeGUIDInSubspace insert "+(end-start));
+                    	}
+                		//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE EXCP rowCount "+rowCount);
                 	}
                 	// insert failed because of another insert, which caused primary key violation
-                	catch(SQLException sqlEx2)
+                	catch( SQLException sqlEx2 )
                 	{
+                		long start   = System.currentTimeMillis();
                 		int rowCount = stmt.executeUpdate(updateSqlQuery);
+                		long end     = System.currentTimeMillis();
+                		
+                		if(ContextServiceConfig.DEBUG_MODE)
+                    	{
+                    		System.out.println("TIME_DEBUG: storeGUIDInSubspace update "+(end-start));
+                    	}
                 	}
                 }
             }
@@ -906,14 +934,29 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
             	try
                 {
             		ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING INSERT "+insertQuery);
+            		long start   = System.currentTimeMillis();
             		int rowCount = stmt.executeUpdate(insertQuery);
+            		long end     = System.currentTimeMillis();
+            		
+            		if(ContextServiceConfig.DEBUG_MODE)
+                	{
+                		System.out.println("TIME_DEBUG: storeGUIDInSubspace insert "+(end-start));
+                	}
+            		
             		ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING INSERT rowCount "+rowCount+" insertQuery "+insertQuery);
             		// duplicate insert always gives exception so no need to check rowCount and do update
             		// it happends in exception code
                 } catch( SQLException sqlEx )
                 {
                 	// ContextServiceLogger.getLogger().fine("EXECUTING INSERT "+updateSqlQuery);
+                	long start   = System.currentTimeMillis();
                 	int rowCount = stmt.executeUpdate(updateSqlQuery);
+                	long end     = System.currentTimeMillis();
+                	
+                	if(ContextServiceConfig.DEBUG_MODE)
+                	{
+                		System.out.println("TIME_DEBUG: storeGUIDInSubspace update "+(end-start));
+                	}
                 	// ContextServiceLogger.getLogger().fine("EXECUTING INSERT rowCount "+rowCount);
                 }
             }
@@ -928,6 +971,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
             {
                 if ( stmt != null )
                     stmt.close();
+                
                 if ( myConn != null )
                     myConn.close();
             }
@@ -939,7 +983,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
         
         if( ContextServiceConfig.DELAY_PROFILER_ON )
         {
-            DelayProfiler.updateDelay("storeGUIDInSubspace", t0);
+            DelayProfiler.updateDelay("StoreGUIDInSubspace", t0);
         }
     }
     
