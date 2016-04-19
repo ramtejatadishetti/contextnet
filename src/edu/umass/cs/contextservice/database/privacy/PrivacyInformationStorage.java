@@ -292,8 +292,8 @@ public class PrivacyInformationStorage<NodeIDType>
 					
 					if(ContextServiceConfig.DEBUG_MODE)
 					{
-						System.out.println("TIME_DEBUG: bulkInsertPrivacyInformation "
-								+ (end-start));
+						System.out.println("TIME_DEBUG: bulkInsertPrivacyInformation time "
+								+ (end-start)+" batch length "+realIDMappingArray.length());
 					}
 				}
 			}
