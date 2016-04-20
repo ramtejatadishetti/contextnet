@@ -413,7 +413,15 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			HashMap<String, AttrValueRepresentationJSON> attrValMap 
 				= ParsingMethods.getAttrValueMap(attrValuePairs);
 			
+			long start = System.currentTimeMillis();
 			JSONObject oldValueJSON 	= this.hyperspaceDB.getGUIDStoredInPrimarySubspace(GUID);
+			long end = System.currentTimeMillis();
+			
+			if(ContextServiceConfig.DEBUG_MODE)
+			{
+				System.out.println("getGUIDStoredInPrimarySubspace time "+(end-start));
+			}
+			
 			int updateOrInsert 			= -1;
 			
 			if( oldValueJSON.length() == 0 )

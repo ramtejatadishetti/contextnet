@@ -404,7 +404,6 @@ public class PrivacyInformationStorage<NodeIDType>
 					
 					//insertTableSQL = insertTableSQL+;
 					stmt = myConn.createStatement();
-					System.out.println("insertTableSQL "+insertTableSQL);
 					long start = System.currentTimeMillis();
 					stmt.executeUpdate(insertTableSQL);
 					long end = System.currentTimeMillis();

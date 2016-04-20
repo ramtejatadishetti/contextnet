@@ -92,7 +92,16 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 				+ " number of anonymized IDs updated "+anonymizedIDToAttributesMap.size()+
 				" total encryptions "+totalEncryptions);
 			}
-			return transformedMesgList;	
+			
+			// just returning 1 anonymized ID for testing update secure latency
+			List<CSUpdateTransformedMessage> testMesgList 	
+				= new LinkedList<CSUpdateTransformedMessage>();
+			if( transformedMesgList.size() > 0 )
+			{
+				testMesgList.add(transformedMesgList.get(0));
+			}
+			return testMesgList;
+			//return transformedMesgList;	
 		}
 		catch(Exception | Error ex)
 		{

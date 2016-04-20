@@ -425,6 +425,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		}
 		else
 		{
+			long start = System.currentTimeMillis();
 			// do both in parallel.
     		PrivacyUpdateThread privacyThread 
     					= new PrivacyUpdateThread(nodeGUID, subspaceId, 
@@ -436,7 +437,14 @@ public class HyperspaceMySQLDB<NodeIDType>
     		
     		// wait for privacy update to finish
     		privacyThread.waitForFinish();
+    		long end = System.currentTimeMillis();
+    		
+    		if(ContextServiceConfig.DEBUG_MODE)
+    		{
+    			System.out.println("deleteGUIDFromSubspaceRegion with privacy storage "+(end-start));
+    		}
 		}
+		
 	}
 	
 	public boolean getSearchQueryRecordFromPrimaryTriggerSubspace(String groupGUID, 
