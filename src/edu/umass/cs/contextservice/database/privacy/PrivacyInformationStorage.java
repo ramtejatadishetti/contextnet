@@ -217,7 +217,7 @@ public class PrivacyInformationStorage<NodeIDType>
 	 * @param atrToValueRep attrValue map 
 	 * @param respNodeIdList
 	 */
-	public void bulkInsertPrivacyInformation( String ID, 
+	/*public void bulkInsertPrivacyInformation( String ID, 
     		HashMap<String, AttrValueRepresentationJSON> atrToValueRep , int subspaceId)
 	{
 		ContextServiceLogger.getLogger().fine
@@ -327,8 +327,126 @@ public class PrivacyInformationStorage<NodeIDType>
 		{
 			DelayProfiler.updateDelay("bulkInsertPrivacyInformation ", t0);
 		}
-	}
+	}*/
 	
+	
+	public void bulkInsertPrivacyInformation( String ID, 
+    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep , int subspaceId)
+	{
+		ContextServiceLogger.getLogger().fine
+								("bulkInsertPrivacyInformation called ");
+		
+		long t0 							= System.currentTimeMillis();
+		Connection myConn   				= null;
+		Statement stmt      				= null;
+		
+		// do it for each attribute separately
+		Iterator<String> attrIter = atrToValueRep.keySet().iterator();
+		
+		try
+		{
+			myConn = this.dataSource.getConnection();
+			
+			while( attrIter.hasNext() )
+			{
+				String currAttrName = attrIter.next();
+				
+				String tableName = currAttrName+"EncryptionInfoStorage";
+				
+				boolean ifExists = checkIfAlreadyExists(ID, subspaceId, tableName, 
+					myConn);
+				
+				// just checking if this acl info for this ID anf this attribute 
+				// already exists, if it is already there then no need to insert.
+				// on acl update, whole ID changes, sol older ID acl info just gets 
+				// deleted, it is never updated. There are only inserts and deletes of 
+				// acl info, no updates.
+				if( ifExists )
+					continue;
+				
+				String insertTableSQL = "INSERT INTO "+tableName 
+						+" ( nodeGUID , realIDEncryption , subspaceId ) VALUES ";
+					
+				//prepStmt = myConn.prepareStatement(insertTableSQL);
+				
+				AttrValueRepresentationJSON attrValRep = atrToValueRep.get( currAttrName );
+				
+				// array of hex String representation of encryption
+				JSONArray realIDMappingArray = attrValRep.getRealIDMappingInfo();
+				
+				if( realIDMappingArray != null )
+				{
+					for( int i=0; i<realIDMappingArray.length() ; i++ )
+					{
+						// catching JSON Exception here, so other insertions can proceed
+						try
+						{
+							String hexStringRep = realIDMappingArray.getString(i);
+							//byte[] encryptionBytes = Utils.hexStringToByteArray(hexStringRep);
+							
+							//ContextServiceLogger.getLogger().fine("encryptionBytes length "+encryptionBytes.length);
+							
+							//byte[] IDBytes = Utils.hexStringToByteArray(ID);
+		
+							if(i != 0)
+							{
+								insertTableSQL = insertTableSQL + " , ";
+							}
+							insertTableSQL = insertTableSQL +"( X'"+ID+"' , X'"+hexStringRep
+									+"' , "+subspaceId +" ) ";
+							
+							//prepStmt.addBatch();
+						} catch(JSONException jsoExcp)
+						{
+							jsoExcp.printStackTrace();
+						}
+					}
+					
+					//insertTableSQL = insertTableSQL+;
+					stmt = myConn.createStatement();
+					System.out.println("insertTableSQL "+insertTableSQL);
+					long start = System.currentTimeMillis();
+					stmt.executeUpdate(insertTableSQL);
+					long end = System.currentTimeMillis();
+					
+					if(ContextServiceConfig.DEBUG_MODE)
+					{
+						System.out.println("TIME_DEBUG: bulkInsertPrivacyInformation time "
+								+ (end-start)+" batch length "+realIDMappingArray.length());
+					}
+				}
+			}
+		}
+		catch(SQLException sqlex)
+		{
+			sqlex.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if( myConn != null )
+				{
+					myConn.close();
+				}
+				if( stmt != null )
+				{
+					stmt.close();
+				}
+			} catch(SQLException sqex)
+			{
+				sqex.printStackTrace();
+			}
+		}
+		
+		ContextServiceLogger.getLogger().fine("bulkInsertIntoSubspacePartitionInfo "
+				+ "completed");
+		
+		if( ContextServiceConfig.DELAY_PROFILER_ON )
+		{
+			DelayProfiler.updateDelay("bulkInsertPrivacyInformation ", t0);
+		}
+	}
 	
 	public void deleteAnonymizedIDFromPrivacyInfoStorage( String nodeGUID, 
 			int deleteSubspaceId )

@@ -7,6 +7,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateKey;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -915,6 +916,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		KeyPair kp0 = kpg.genKeyPair();
 		PublicKey publicKey0 = kp0.getPublic();
 		PrivateKey privateKey0 = kp0.getPrivate();
+		
+		System.out.println("privateKey0 "+((RSAPrivateKey)privateKey0).getModulus().bitLength());
 		byte[] publicKeyByteArray0 = publicKey0.getEncoded();
 		byte[] privateKeyByteArray0 = privateKey0.getEncoded();
 		
