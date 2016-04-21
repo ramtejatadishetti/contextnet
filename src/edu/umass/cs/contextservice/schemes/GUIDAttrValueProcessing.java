@@ -332,13 +332,9 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 	public void processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion<NodeIDType> 
 													queryMesgToSubspaceRegion)
 	{
-		//long requestId 		= queryMesgToSubspaceRegion.getRequestId();
 		String query 			= queryMesgToSubspaceRegion.getQuery();
 		String groupGUID 		= queryMesgToSubspaceRegion.getGroupGUID();
 		int subspaceId 			= queryMesgToSubspaceRegion.getSubspaceNum();
-		//String userIP       	= queryMesgToSubspaceRegion.getUserIP();
-		//int userPort        	= queryMesgToSubspaceRegion.getUserPort();
-		//int hashCode        	= queryMesgToSubspaceRegion.getHashCode();
 		JSONArray resultGUIDs = new JSONArray();
 		
 		int resultSize = this.hyperspaceDB.processSearchQueryInSubspaceRegion
@@ -513,16 +509,19 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 	{
 		int subspaceId = valueUpdateToSubspaceRegionMessage.getSubspaceNum();
 		String GUID = valueUpdateToSubspaceRegionMessage.getGUID();
-		JSONObject attrValuePairs = valueUpdateToSubspaceRegionMessage.getAttrValuePairs();
+		JSONObject updateValPairs = valueUpdateToSubspaceRegionMessage.getUpdateAttrValuePairs();
 		int operType = valueUpdateToSubspaceRegionMessage.getOperType();
 		int replicaNum = getTheReplicaNumForASubspace(subspaceId);
-		
+		boolean firstTimeInsert = valueUpdateToSubspaceRegionMessage.getFirstTimeInsert();
+		// format of this json is different than updateValPairs, this json is created after 
+		// reading attribute value pairs and ACL<attrName> info from primary subspace
+		JSONObject oldValJSON = valueUpdateToSubspaceRegionMessage.getOldAttrValuePairs();
 		
 		String tableName 	= "subspaceId"+subspaceId+"DataStorage";
 		try 
 		{
 			HashMap<String, AttrValueRepresentationJSON> attrValMap =
-					ParsingMethods.getAttrValueMap(attrValuePairs);
+					ParsingMethods.getAttrValueMap(updateValPairs);
 			
 			int numRep = 1;
 			switch(operType)
@@ -530,21 +529,32 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 				case ValueUpdateToSubspaceRegionMessage.ADD_ENTRY:
 				{
 					numRep = 2;
-					this.hyperspaceDB.storeGUIDInSubspace
-					(tableName, GUID, attrValMap, HyperspaceMySQLDB.INSERT_REC, false, subspaceId);
+					this.hyperspaceDB.storeGUIDInSecondarySubspace
+					(tableName, GUID, attrValMap, HyperspaceMySQLDB.INSERT_REC, 
+							subspaceId, oldValJSON);
 					break;
 				}
 				case ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY:
 				{
 					numRep = 2;
-					this.hyperspaceDB.deleteGUIDFromSubspaceRegion(tableName, GUID, subspaceId);
+					this.hyperspaceDB.deleteGUIDFromSubspaceRegion
+											(tableName, GUID, subspaceId);
 					break;
 				}
 				case ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY:
 				{
 					numRep = 1;
-					this.hyperspaceDB.storeGUIDInSubspace(tableName, GUID, attrValMap, 
-							HyperspaceMySQLDB.UPDATE_REC, false, subspaceId);
+					if(firstTimeInsert)
+					{
+						this.hyperspaceDB.storeGUIDInSecondarySubspace
+						(tableName, GUID, attrValMap, HyperspaceMySQLDB.INSERT_REC, 
+								subspaceId, oldValJSON);
+					}
+					else
+					{
+						this.hyperspaceDB.storeGUIDInSecondarySubspace(tableName, GUID, attrValMap, 
+								HyperspaceMySQLDB.UPDATE_REC, subspaceId, oldValJSON);
+					}
 					break;
 				}
 			}

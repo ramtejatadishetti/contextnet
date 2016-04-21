@@ -37,6 +37,7 @@ import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSTransformedMess
 import edu.umass.cs.contextservice.client.storage.GetStorage;
 import edu.umass.cs.contextservice.client.storage.SearchQueryStorage;
 import edu.umass.cs.contextservice.client.storage.UpdateStorage;
+import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ClientConfigReply;
 import edu.umass.cs.contextservice.messages.ClientConfigRequest;
@@ -337,7 +338,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			{
 				CSUpdateTransformedMessage csTransformedMessage = transformedMesgList.get(i);
 			
-				UpdateOperationThread updateThread = new UpdateOperationThread(
+				UpdateOperationThread updateThread = new UpdateOperationThread(GUID, 
 						csTransformedMessage, versionNum, blocking, 
 						updateState );
 				this.executorService.execute(updateThread);
@@ -362,8 +363,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 
 	@Override
-	public int sendSearchQuerySecure(String searchQuery, JSONArray replyArray, 
-			long expiryTime, GuidEntry myGUIDInfo) 
+	public int sendSearchQuerySecure( String searchQuery, JSONArray replyArray, 
+			long expiryTime, GuidEntry myGUIDInfo )
 	{
 		if( replyArray == null )
 		{
@@ -855,24 +856,28 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 	
 	/**
+	 * 
 	 * Thread tha performs the update.
 	 * @author adipc
-	 *
 	 */
 	private class UpdateOperationThread implements Runnable
 	{
+		private final String guid;
 		private final CSUpdateTransformedMessage csTransformedMessage;
 		private final long versionNum;
 		private final boolean blocking;
 		private final ParallelUpdateStateStorage updateState;
 		
-		public UpdateOperationThread(CSUpdateTransformedMessage csTransformedMessage
+		private final long startTime;
+		public UpdateOperationThread(String guid, CSUpdateTransformedMessage csTransformedMessage
 				, long versionNum, boolean blocking, ParallelUpdateStateStorage updateState)
 		{
+			this.guid = guid;
 			this.csTransformedMessage = csTransformedMessage;
 			this.versionNum = versionNum;
 			this.blocking = blocking;
 			this.updateState = updateState;
+			startTime = System.currentTimeMillis();
 		}
 		
 		@Override
@@ -883,6 +888,12 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			sendUpdateToCS( IDString, csTransformedMessage.getAttrValMap() , 
 					versionNum, blocking );
 			
+			long endTime = System.currentTimeMillis();
+			if(ContextServiceConfig.DEBUG_MODE )
+			{
+				System.out.println("GUID "+guid+" AnonymizedID "+IDString+" update finished at "
+							+(endTime-startTime));
+			}
 			updateState.incrementNumCompleted();
 		}
 	}

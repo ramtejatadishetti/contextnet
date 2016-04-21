@@ -49,7 +49,7 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 	{
 		try
 		{
-			 List<CSUpdateTransformedMessage> transformedMesgList 	
+			 List<CSUpdateTransformedMessage> transformedMesgList 
 			 						= new LinkedList<CSUpdateTransformedMessage>();
 			
 			// a map is computed that contains anonymized IDs whose Gul, guid set, intersects with
@@ -100,8 +100,8 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 			{
 				testMesgList.add(transformedMesgList.get(0));
 			}
-			return testMesgList;
-			//return transformedMesgList;	
+			//return testMesgList;
+			return transformedMesgList;	
 		}
 		catch(Exception | Error ex)
 		{

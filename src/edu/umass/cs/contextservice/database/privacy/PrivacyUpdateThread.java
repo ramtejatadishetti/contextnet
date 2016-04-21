@@ -2,6 +2,8 @@ package edu.umass.cs.contextservice.database.privacy;
 
 import java.util.HashMap;
 
+import org.json.JSONObject;
+
 import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
 
 /**
@@ -19,6 +21,7 @@ public class PrivacyUpdateThread implements Runnable
 	private final String ID;
 	private final HashMap<String, AttrValueRepresentationJSON> atrToValueRep;
 	private final int subspaceId;
+	private final JSONObject oldValJSON;
 	private final PrivacyInformationStorageInterface privacyInformationStorage;
 	private boolean finished;
 	
@@ -26,12 +29,13 @@ public class PrivacyUpdateThread implements Runnable
 	
 	public PrivacyUpdateThread( String ID, 
     		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int subspaceId, 
-    		PrivacyInformationStorageInterface privacyInformationStorage )
+    		JSONObject oldValJSON, PrivacyInformationStorageInterface privacyInformationStorage )
 	{
 		this.operation = PERFORM_INSERT;
 		this.ID = ID;
 		this.atrToValueRep = atrToValueRep;
 		this.subspaceId = subspaceId;
+		this.oldValJSON = oldValJSON;
 		this.privacyInformationStorage = privacyInformationStorage;
 		finished = false;
 	}
@@ -43,6 +47,7 @@ public class PrivacyUpdateThread implements Runnable
 		this.ID = ID;
 		this.subspaceId = subspaceId;
 		atrToValueRep  = null;
+		oldValJSON = null;
 		this.privacyInformationStorage = privacyInformationStorage;
 		finished = false;
 	}
@@ -54,7 +59,7 @@ public class PrivacyUpdateThread implements Runnable
 		if( operation == PERFORM_INSERT )
 		{
 			privacyInformationStorage.bulkInsertPrivacyInformation
-			(ID, atrToValueRep, subspaceId);
+			(ID, atrToValueRep, subspaceId, oldValJSON);
 			finished = true;
 		}
 		else if( operation == PERFORM_DELETION )

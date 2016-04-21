@@ -12,38 +12,44 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 	public static final int REMOVE_ENTRY			= 2;
 	public static final int UPDATE_ENTRY			= 3;
 	
-	private enum Keys {VERSION_NUM, GUID, ATTR_VAL_PAIRS, 
-		OPER_TYPE, SUBSPACENUM, REQUEST_ID};
+	private enum Keys {VERSION_NUM, GUID, UPDATE_ATTR_VAL_PAIRS, 
+		OPER_TYPE, SUBSPACENUM, REQUEST_ID, OLD_ATTR_VAL_PAIRS, FIRST_TIME_INSERT};
 	
 	private final long versionNum;
 	//GUID of the update
 	private final String GUID;
-	//private final String attributeName;
-	// old value of attribute, in the beginning
-	// the old value and the new value is same.
-	//private final double oldValue;
-	//private final double newValue;
-	private final JSONObject attrValuePairs;
+	
+	// denotes attr value pairs that are updated in the update that generated this message.
+	private final JSONObject updateAttrValuePairs;
+	
+	// old attr value pairs, contains all attributes, which are needed in ADD_ENTRY case,
+	// as when an entry is added to a subspace all the attributes are added.
+	private final JSONObject oldAttrValuePairs;
 	
 	private final int operType;
 	private final int subspaceNum;
 	
 	private final long requestID;
 	
-	//private final JSONObject allAttrs;
-	//private final NodeIDType sourceID;
-	//private final long requestID;
+	// is true if an entry is inserted first,
+	// then UPDATE_ENTRY is treated as insert.
+	// even when both old and new val fall on one node.
+	private final boolean firstTimeInsert;
 	
-	public ValueUpdateToSubspaceRegionMessage(NodeIDType initiator, long versionNum, String GUID, 
-			JSONObject attrValuePairs, int operType, int subspaceNum, long requestID)
+	
+	public ValueUpdateToSubspaceRegionMessage( NodeIDType initiator, long versionNum, String GUID, 
+			JSONObject updateAttrValuePairs, int operType, int subspaceNum, long requestID, 
+			JSONObject oldAttrValuePairs, boolean firstTimeInsert )
 	{
 		super(initiator, ContextServicePacket.PacketType.VALUEUPDATE_TO_SUBSPACE_REGION_MESSAGE);
 		this.versionNum = versionNum;
 		this.GUID = GUID;
-		this.attrValuePairs = attrValuePairs;
+		this.updateAttrValuePairs = updateAttrValuePairs;
 		this.operType = operType;
 		this.subspaceNum = subspaceNum;
 		this.requestID = requestID;
+		this.oldAttrValuePairs = oldAttrValuePairs;
+		this.firstTimeInsert = firstTimeInsert;
 	}
 	
 	public ValueUpdateToSubspaceRegionMessage(JSONObject json) throws JSONException
@@ -51,14 +57,12 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		super(json);
 		this.versionNum = json.getLong(Keys.VERSION_NUM.toString());
 		this.GUID = json.getString(Keys.GUID.toString());
-		//this.attributeName = json.getString(Keys.ATTR_NAME.toString());
-		//this.oldValue = json.getDouble(Keys.OLD_VAL.toString());
-		//this.newValue = json.getDouble(Keys.NEW_VAL.toString());
-		this.attrValuePairs = json.getJSONObject(Keys.ATTR_VAL_PAIRS.toString());
+		this.updateAttrValuePairs = json.getJSONObject(Keys.UPDATE_ATTR_VAL_PAIRS.toString());
 		this.operType = json.getInt(Keys.OPER_TYPE.toString());
 		this.subspaceNum = json.getInt(Keys.SUBSPACENUM.toString());
-		
 		this.requestID = json.getLong( Keys.REQUEST_ID.toString() );
+		this.oldAttrValuePairs = json.getJSONObject(Keys.OLD_ATTR_VAL_PAIRS.toString());
+		this.firstTimeInsert = json.getBoolean(Keys.FIRST_TIME_INSERT.toString());
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException 
@@ -66,10 +70,12 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		JSONObject json = super.toJSONObjectImpl();
 		json.put(Keys.VERSION_NUM.toString(), this.versionNum);
 		json.put(Keys.GUID.toString(), GUID);
-		json.put(Keys.ATTR_VAL_PAIRS.toString(), this.attrValuePairs);
+		json.put(Keys.UPDATE_ATTR_VAL_PAIRS.toString(), this.updateAttrValuePairs);
 		json.put(Keys.OPER_TYPE.toString(), this.operType);
 		json.put(Keys.SUBSPACENUM.toString(), this.subspaceNum);
 		json.put(Keys.REQUEST_ID.toString(), this.requestID);
+		json.put(Keys.OLD_ATTR_VAL_PAIRS.toString(), this.oldAttrValuePairs);
+		json.put(Keys.FIRST_TIME_INSERT.toString(), this.firstTimeInsert);
 		return json;
 	}
 	
@@ -78,9 +84,9 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		return this.GUID;
 	}
 	
-	public JSONObject getAttrValuePairs()
+	public JSONObject getUpdateAttrValuePairs()
 	{
-		return this.attrValuePairs;
+		return this.updateAttrValuePairs;
 	}
 	
 	public long getVersionNum()
@@ -103,22 +109,17 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		return this.requestID;
 	}
 	
+	public JSONObject getOldAttrValuePairs()
+	{
+		return this.oldAttrValuePairs;
+	}
+	
+	public boolean getFirstTimeInsert()
+	{
+		return this.firstTimeInsert;
+	}
+	
 	public static void main(String[] args)
 	{
-		/*int[] group = {3, 45, 6, 19};
-		MetadataMsgToValuenode<Integer> se = 
-				new MetadataMsgToValuenode<Integer>(4, "name1", 2, Util.arrayToIntSet(group), Util.arrayToIntSet(group));
-		try
-		{
-			ContextServiceLogger.getLogger().fine(se);
-			MetadataMsgToValuenode<Integer> se2 = new MetadataMsgToValuenode<Integer>(se.toJSONObject());
-			ContextServiceLogger.getLogger().fine(se2);
-			assert(se.toString().length()==se2.toString().length());
-			assert(se.toString().indexOf("}") == se2.toString().indexOf("}"));
-			assert(se.toString().equals(se2.toString())) : se.toString() + "!=" + se2.toString();
-		} catch(JSONException je)
-		{
-			je.printStackTrace();
-		}*/
 	}
 }

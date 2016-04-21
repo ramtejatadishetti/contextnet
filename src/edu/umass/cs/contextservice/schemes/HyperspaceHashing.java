@@ -1,6 +1,5 @@
 package edu.umass.cs.contextservice.schemes;
 
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -118,7 +117,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				this.getMyID(), subspaceConfigurator.getSubspaceInfoMap(), 
 				hyperspaceDB, messenger , nodeES ,
 				pendingQueryRequests );
-
+		
 		
 		if(ContextServiceConfig.TRIGGER_ENABLED)
 		{
@@ -128,9 +127,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		//ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
 		//nodeES = Executors.newCachedThreadPool();
-		
 		//new Thread(new ProfilerStatClass()).start();
-		
 	}
 	
 	@Override
@@ -309,7 +306,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		QueryInfo<NodeIDType> currReq = 
 				this.guidAttrValProcessing.processQueryMsgFromUser(queryMsgFromUser);
-	    
+		
 	    // trigger information like userIP, userPort 
 	    // are stored for each attribute in the query one at a time
 	    // We use value of one attribute and use the default value of other attributes 
@@ -384,8 +381,54 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
+	private void setDefaultAttrValuesInJSON(JSONObject oldValueJSON)
+	{
+		try
+		{
+			// attributes which are not set should be set to default value
+			// for subspace hashing
+			//if( oldValueJSON.length() != AttributeTypes.attributeMap.size() )
+			{
+				HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap = 
+						this.subspaceConfigurator.getSubspaceInfoMap();					
+				
+				Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
+				while(subapceIdIter.hasNext())
+				{
+					int subspaceId = subapceIdIter.next();
+					// at least one replica and all replica have same default value for each attribute.
+					SubspaceInfo<NodeIDType> currSubspaceInfo 
+												= subspaceInfoMap.get(subspaceId).get(0);
+					HashMap<String, AttributePartitionInfo> attrSubspaceMap 
+												= currSubspaceInfo.getAttributesOfSubspace();
+					
+					Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
+					while(attrIter.hasNext())
+					{
+						String attrName = attrIter.next();
+						AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
+						if( !oldValueJSON.has(attrName) )
+						{
+							try
+							{
+								oldValueJSON.put(attrName, attrPartInfo.getDefaultValue());
+							} catch (JSONException e)
+							{
+								e.printStackTrace();
+							}
+						}
+					}
+				}
+			}
+		} catch(Error | Exception ex)
+		{
+			ex.printStackTrace();
+		}
+	}
+	
+	
 	/**
-	 * this function processes a request serially.
+	 * This function processes a request serially.
 	 * when one outstanding request completes.
 	 */
 	private void processUpdateSerially(UpdateInfo<NodeIDType> updateReq)
@@ -394,7 +437,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		try
 		{
 			ContextServiceLogger.getLogger().fine
-			("processUpdateSerially called "+updateReq.getRequestId() +" JSON"+updateReq.getValueUpdateFromGNS().toJSONObject().toString());
+			("processUpdateSerially called "+updateReq.getRequestId() +
+					" JSON"+updateReq.getValueUpdateFromGNS().toJSONObject().toString());
 		}
 		catch(JSONException jso)
 		{
@@ -413,6 +457,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			HashMap<String, AttrValueRepresentationJSON> attrValMap 
 				= ParsingMethods.getAttrValueMap(attrValuePairs);
 			
+			boolean firstTimeInsert = false;
+			
 			long start = System.currentTimeMillis();
 			JSONObject oldValueJSON 	= this.hyperspaceDB.getGUIDStoredInPrimarySubspace(GUID);
 			long end = System.currentTimeMillis();
@@ -426,60 +472,23 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			
 			if( oldValueJSON.length() == 0 )
 			{
+				firstTimeInsert = true;
 				updateOrInsert = HyperspaceMySQLDB.INSERT_REC;
 			}
 			else
 			{
+				firstTimeInsert = false;
 				updateOrInsert = HyperspaceMySQLDB.UPDATE_REC;
 			}
-			
-			try
-			{
-				// attributes which are not set should be set to default value
-				// for subspace hashing
-				if( oldValueJSON.length() != AttributeTypes.attributeMap.size() )
-				{
-					HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap = 
-							this.subspaceConfigurator.getSubspaceInfoMap();					
-					
-					Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
-					while(subapceIdIter.hasNext())
-					{
-						int subspaceId = subapceIdIter.next();
-						// at least one replica and all replica have same default value for each attribute.
-						SubspaceInfo<NodeIDType> currSubspaceInfo = subspaceInfoMap.get(subspaceId).get(0);
-						HashMap<String, AttributePartitionInfo> attrSubspaceMap = currSubspaceInfo.getAttributesOfSubspace();
-						
-						Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
-						while(attrIter.hasNext())
-						{
-							String attrName = attrIter.next();
-							AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
-							if( !oldValueJSON.has(attrName) )
-							{
-								try
-								{
-									
-									oldValueJSON.put(attrName, attrPartInfo.getDefaultValue());
-								} catch (JSONException e)
-								{
-									e.printStackTrace();
-								}
-							}
-						}
-					}
-				}
-			} catch(Error | Exception ex)
-			{
-				ex.printStackTrace();
-			}
+		
+			// default values are set for all attributes for hyperspace indexing.
+			setDefaultAttrValuesInJSON(oldValueJSON);
 			
 			// ACL info doesn't need to be stored in primary subspace.
 			// so just passing an empty JSONObject()
 			// update for primary subspace
-			this.hyperspaceDB.storeGUIDInSubspace
-			(tableName, GUID, attrValMap, updateOrInsert, true, -1);
-			//JSONObject oldValueJSON 	= this.hyperspaceDB.storeGUIDInSubspace(tableName, GUID, attrValuePairs);
+			this.hyperspaceDB.storeGUIDInPrimarySubspace
+			(tableName, GUID, attrValMap, updateOrInsert);
 			// process update at other subspaces.
 			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap
 					= this.subspaceConfigurator.getSubspaceInfoMap();
@@ -581,9 +590,24 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						// before recv replies from all subspaces.
 						//updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
 						
-						ValueUpdateToSubspaceRegionMessage<NodeIDType>  valueUpdateToSubspaceRegionMessage 
+						
+						ValueUpdateToSubspaceRegionMessage<NodeIDType>  valueUpdateToSubspaceRegionMessage = null;
+						
+						if(firstTimeInsert)
+						{
+							// need to send oldValueJSON as it is performed as insert
+							valueUpdateToSubspaceRegionMessage 
 							= new ValueUpdateToSubspaceRegionMessage<NodeIDType>(this.getMyID(), -1, GUID, attrValuePairs,
-								ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, subspaceId, requestID);
+								ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, subspaceId, requestID, oldValueJSON, firstTimeInsert);
+						}
+						else
+						{
+							// no need to send any oldJSON, as it is an update, so we save space by not sending oldJSON.
+							valueUpdateToSubspaceRegionMessage 
+							= new ValueUpdateToSubspaceRegionMessage<NodeIDType>(this.getMyID(), -1, GUID, attrValuePairs,
+								ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, subspaceId, requestID, new JSONObject(), firstTimeInsert);
+						}
+						
 						
 						try
 						{
@@ -602,10 +626,10 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						// add entry for reply
 						// 2 reply as both old and new goes to different node
 						//updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
-						
+						// it is a remove, so no need for update and old JSON.
 						ValueUpdateToSubspaceRegionMessage<NodeIDType>  oldValueUpdateToSubspaceRegionMessage 
-							= new ValueUpdateToSubspaceRegionMessage<NodeIDType>(this.getMyID(), -1, GUID, attrValuePairs,
-								ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY, subspaceId, requestID);
+							= new ValueUpdateToSubspaceRegionMessage<NodeIDType>(this.getMyID(), -1, GUID, new JSONObject(),
+								ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY, subspaceId, requestID, new JSONObject(), firstTimeInsert);
 						
 						try
 						{
@@ -618,9 +642,12 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 							e.printStackTrace();
 						}
 						
+						//FIXME: send full JSON, so that a new entry can be inserted 
+						// involving attributes which were not updated.
+						// need to send old JSON here, so that full guid entry can be added not just the updated attrs
 						ValueUpdateToSubspaceRegionMessage<NodeIDType>  newValueUpdateToSubspaceRegionMessage 
 						 = new ValueUpdateToSubspaceRegionMessage<NodeIDType>(this.getMyID(), -1, GUID, attrValuePairs,
-								ValueUpdateToSubspaceRegionMessage.ADD_ENTRY, subspaceId, requestID);
+								ValueUpdateToSubspaceRegionMessage.ADD_ENTRY, subspaceId, requestID, oldValueJSON, firstTimeInsert);
 						
 						try
 						{
@@ -643,12 +670,13 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					// before recv replies from all subspaces.
 					if( ContextServiceConfig.TRIGGER_ENABLED )
 					{
+						// FIXME: need to check if we need oldJSON here.
 						this.triggerProcessing.triggerProcessingOnUpdate( attrValuePairs, attrsSubspaceInfo, 
 								subspaceId, replicaNum, oldValueJSON, requestID );
 					}
 				}
 			}
-		} catch (JSONException e)
+		} catch ( JSONException e )
 		{
 			e.printStackTrace();
 		}

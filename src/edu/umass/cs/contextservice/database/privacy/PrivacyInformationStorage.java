@@ -1,16 +1,16 @@
 package edu.umass.cs.contextservice.database.privacy;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.DataSource;
@@ -20,8 +20,6 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
-import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.utils.DelayProfiler;
 
 /**
  * Implements the Privacy information storage interface.
@@ -39,14 +37,15 @@ public class PrivacyInformationStorage<NodeIDType>
 	
 	private final HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;
 	private final DataSource<NodeIDType> dataSource;
+	private final ExecutorService execService;
 	
-	
-	public PrivacyInformationStorage( 
+	public PrivacyInformationStorage(
 			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap , 
-			DataSource<NodeIDType> dataSource )
+			DataSource<NodeIDType> dataSource, ExecutorService execService )
 	{
 		this.subspaceInfoMap = subspaceInfoMap;
 		this.dataSource = dataSource;
+		this.execService = execService;
 	}
 	
 	@Override
@@ -210,258 +209,31 @@ public class PrivacyInformationStorage<NodeIDType>
 		}
 	}
 	
-	/**
-	 * Inserts multiple attributes and their associated realIDEncryption lists in
-	 * a bulk/batched insert so that we don't have to do multiple mysql inserts.
-	 * @param ID can be anonymized or GUID
-	 * @param atrToValueRep attrValue map 
-	 * @param respNodeIdList
-	 */
-	/*public void bulkInsertPrivacyInformation( String ID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep , int subspaceId)
-	{
-		ContextServiceLogger.getLogger().fine
-								("bulkInsertPrivacyInformation called ");
-		
-		long t0 							= System.currentTimeMillis();
-		Connection myConn   				= null;
-		PreparedStatement prepStmt      	= null;
-		
-		// do it for each attribute separately
-		Iterator<String> attrIter = atrToValueRep.keySet().iterator();
-		
-		try
-		{
-			myConn = this.dataSource.getConnection();
-			
-			while( attrIter.hasNext() )
-			{
-				String currAttrName = attrIter.next();
-				
-				String tableName = currAttrName+"EncryptionInfoStorage";
-				
-				boolean ifExists = checkIfAlreadyExists(ID, subspaceId, tableName, 
-					myConn);
-				
-				// just checking if this acl info for this ID anf this attribute 
-				// already exists, if it is already there then no need to insert.
-				// on acl update, whole ID changes, sol older ID acl info just gets 
-				// deleted, it is never updated. There are only inserts and deletes of 
-				// acl info, no updates.
-				if( ifExists )
-					continue;
-				
-				String insertTableSQL = " INSERT INTO "+tableName 
-						+" ( nodeGUID , realIDEncryption , subspaceId ) VALUES ( ? , ? , ? )";
-					
-				prepStmt = myConn.prepareStatement(insertTableSQL);
-				
-				AttrValueRepresentationJSON attrValRep = atrToValueRep.get( currAttrName );
-				
-				// array of hex String representation of encryption
-				JSONArray realIDMappingArray = attrValRep.getRealIDMappingInfo();
-				
-				if( realIDMappingArray != null )
-				{
-					for( int i=0; i<realIDMappingArray.length() ; i++ )
-					{
-						// catching JSON Exception here, so other insertions can proceed
-						try
-						{
-							String hexStringRep = realIDMappingArray.getString(i);
-							byte[] encryptionBytes = Utils.hexStringToByteArray(hexStringRep);
-							
-							//ContextServiceLogger.getLogger().fine("encryptionBytes length "+encryptionBytes.length);
-							
-							byte[] IDBytes = Utils.hexStringToByteArray(ID);
-		
-							prepStmt.setBytes(1, IDBytes);
-							prepStmt.setBytes(2, encryptionBytes);
-							prepStmt.setInt(3, subspaceId);
-							
-							prepStmt.addBatch();
-						} catch(JSONException jsoExcp)
-						{
-							jsoExcp.printStackTrace();
-						}
-					}
-					
-					long start = System.currentTimeMillis();
-					prepStmt.executeBatch();
-					long end = System.currentTimeMillis();
-					
-					if(ContextServiceConfig.DEBUG_MODE)
-					{
-						System.out.println("TIME_DEBUG: bulkInsertPrivacyInformation time "
-								+ (end-start)+" batch length "+realIDMappingArray.length());
-					}
-				}
-			}
-		}
-		catch(SQLException sqlex)
-		{
-			sqlex.printStackTrace();
-		}
-		finally
-		{
-			try
-			{
-				if( myConn != null )
-				{
-					myConn.close();
-				}
-				if( prepStmt != null )
-				{
-					prepStmt.close();
-				}
-			} catch(SQLException sqex)
-			{
-				sqex.printStackTrace();
-			}
-		}
-		
-		ContextServiceLogger.getLogger().fine("bulkInsertIntoSubspacePartitionInfo "
-				+ "completed");
-		
-		if( ContextServiceConfig.DELAY_PROFILER_ON )
-		{
-			DelayProfiler.updateDelay("bulkInsertPrivacyInformation ", t0);
-		}
-	}*/
-	
 	
 	public void bulkInsertPrivacyInformation( String ID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep , int subspaceId)
+    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep , int insertsubspaceId,
+    		JSONObject oldValJSON )
 	{
 		ContextServiceLogger.getLogger().fine
 								("bulkInsertPrivacyInformation called ");
-		
-		long t0 							= System.currentTimeMillis();
-		Connection myConn   				= null;
-		Statement stmt      				= null;
+		long start = System.currentTimeMillis();
 		
 		// do it for each attribute separately
-		Iterator<String> attrIter = atrToValueRep.keySet().iterator();
+		Vector<PrivacyUpdateInAttrTableThread<NodeIDType>> attrUpdates 
+							= new Vector<PrivacyUpdateInAttrTableThread<NodeIDType>>();
 		
-		try
-		{
-			myConn = this.dataSource.getConnection();
-			
-			while( attrIter.hasNext() )
-			{
-				String currAttrName = attrIter.next();
-				
-				String tableName = currAttrName+"EncryptionInfoStorage";
-				
-				boolean ifExists = checkIfAlreadyExists(ID, subspaceId, tableName, 
-					myConn);
-				
-				// just checking if this acl info for this ID anf this attribute 
-				// already exists, if it is already there then no need to insert.
-				// on acl update, whole ID changes, sol older ID acl info just gets 
-				// deleted, it is never updated. There are only inserts and deletes of 
-				// acl info, no updates.
-				if( ifExists )
-					continue;
-				
-				String insertTableSQL = "INSERT INTO "+tableName 
-						+" ( nodeGUID , realIDEncryption , subspaceId ) VALUES ";
-					
-				//prepStmt = myConn.prepareStatement(insertTableSQL);
-				
-				AttrValueRepresentationJSON attrValRep = atrToValueRep.get( currAttrName );
-				
-				// array of hex String representation of encryption
-				JSONArray realIDMappingArray = attrValRep.getRealIDMappingInfo();
-				
-				if( realIDMappingArray != null )
-				{
-					for( int i=0; i<realIDMappingArray.length() ; i++ )
-					{
-						// catching JSON Exception here, so other insertions can proceed
-						try
-						{
-							String hexStringRep = realIDMappingArray.getString(i);
-							//byte[] encryptionBytes = Utils.hexStringToByteArray(hexStringRep);
-							
-							//ContextServiceLogger.getLogger().fine("encryptionBytes length "+encryptionBytes.length);
-							
-							//byte[] IDBytes = Utils.hexStringToByteArray(ID);
+		PrivacyUpdateStateStorage<NodeIDType> updateState 
+							= new PrivacyUpdateStateStorage<NodeIDType>(attrUpdates);
 		
-							if(i != 0)
-							{
-								insertTableSQL = insertTableSQL + " , ";
-							}
-							insertTableSQL = insertTableSQL +"( X'"+ID+"' , X'"+hexStringRep
-									+"' , "+subspaceId +" ) ";
-							
-							//prepStmt.addBatch();
-						} catch(JSONException jsoExcp)
-						{
-							jsoExcp.printStackTrace();
-						}
-					}
-					
-					//insertTableSQL = insertTableSQL+;
-					stmt = myConn.createStatement();
-					long start = System.currentTimeMillis();
-					stmt.executeUpdate(insertTableSQL);
-					long end = System.currentTimeMillis();
-					
-					if(ContextServiceConfig.DEBUG_MODE)
-					{
-						System.out.println("TIME_DEBUG: bulkInsertPrivacyInformation time "
-								+ (end-start)+" batch length "+realIDMappingArray.length());
-					}
-				}
-			}
-		}
-		catch(SQLException sqlex)
-		{
-			sqlex.printStackTrace();
-		}
-		finally
-		{
-			try
-			{
-				if( myConn != null )
-				{
-					myConn.close();
-				}
-				if( stmt != null )
-				{
-					stmt.close();
-				}
-			} catch(SQLException sqex)
-			{
-				sqex.printStackTrace();
-			}
-		}
-		
-		ContextServiceLogger.getLogger().fine("bulkInsertIntoSubspacePartitionInfo "
-				+ "completed");
-		
-		if( ContextServiceConfig.DELAY_PROFILER_ON )
-		{
-			DelayProfiler.updateDelay("bulkInsertPrivacyInformation ", t0);
-		}
-	}
-	
-	public void deleteAnonymizedIDFromPrivacyInfoStorage( String nodeGUID, 
-			int deleteSubspaceId )
-	{
-		long t0 = System.currentTimeMillis();
-		
-		// delete from all attribute tables.
-		// as one subspace can contain all attributes.
+		// just a way to get attributes.
 		Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
 		
 		while( subapceIdIter.hasNext() )
 		{
-			int subspaceId = subapceIdIter.next();
+			int currsubspaceId = subapceIdIter.next();
 			// at least one replica and all replica have same default value for each attribute.
 			SubspaceInfo<NodeIDType> currSubspaceInfo 
-										= subspaceInfoMap.get(subspaceId).get(0);
+										= subspaceInfoMap.get(currsubspaceId).get(0);
 			
 			HashMap<String, AttributePartitionInfo> attrSubspaceMap 
 										= currSubspaceInfo.getAttributesOfSubspace();
@@ -471,94 +243,134 @@ public class PrivacyInformationStorage<NodeIDType>
 			while( attrIter.hasNext() )
 			{
 				String currAttrName = attrIter.next();
+				
 				String tableName = currAttrName+"EncryptionInfoStorage";
 				
+				JSONArray realIDMappingArray = null;
 				
-				String deleteCommand = "DELETE FROM "+tableName+" WHERE nodeGUID = X'"+nodeGUID+"' AND "
-						+" subspaceId = "+deleteSubspaceId;
-				Connection myConn 	= null;
-				Statement stmt 		= null;
+				if( atrToValueRep.containsKey(currAttrName) )
+				{
+					AttrValueRepresentationJSON attrValRep = atrToValueRep.get( currAttrName );
 				
-				try
-				{
-					myConn = this.dataSource.getConnection();
-					stmt = myConn.createStatement();
-					long start = System.currentTimeMillis();
-					stmt.executeUpdate(deleteCommand);
-					long end = System.currentTimeMillis();
-					
-					if(ContextServiceConfig.DEBUG_MODE)
-		        	{
-		        		System.out.println("TIME_DEBUG: deleteAnonymizedIDFromPrivacyInfoStorage "
-		        							+(end-start));
-		        	}
-					
-				} catch(SQLException sqex)
-				{
-					sqex.printStackTrace();
+					// array of hex String representation of encryption
+					realIDMappingArray = attrValRep.getRealIDMappingInfo();
 				}
-				finally
+				else
 				{
-					try
+					// check oldVal JSON
+					// this is convention in table creation too.
+					// check the primarGUIDStroage table in HyperspaceMySQLDB,
+					// this is the column name and keys in oldValJSON is table column names.
+					String aclEntryKey = "ACL"+currAttrName;
+					
+					if( oldValJSON.has(aclEntryKey) )
 					{
-						if(myConn != null)
+						try
 						{
-							myConn.close();
+							String jsonArString = oldValJSON.getString(aclEntryKey);
+							if(jsonArString.length() > 0)
+							{
+								
+								// catching here so other attrs not get affected.
+								
+									realIDMappingArray = new JSONArray(jsonArString);
+							}
 						}
-						if(	stmt != null )
+						catch(JSONException jsonEx)
 						{
-							stmt.close();
+							jsonEx.printStackTrace();
 						}
-					} catch(SQLException sqex)
-					{
-						sqex.printStackTrace();
 					}
 				}
 				
+				if(realIDMappingArray != null)
+				{
+					PrivacyUpdateInAttrTableThread<NodeIDType> attrUpdateThread 
+						= new PrivacyUpdateInAttrTableThread<NodeIDType>(
+						PrivacyUpdateInAttrTableThread.PERFORM_INSERT,  tableName , ID, 
+						realIDMappingArray, insertsubspaceId, dataSource, updateState);
+					
+					attrUpdates.add(attrUpdateThread);
+				}
 			}
 		}
 		
-		if(ContextServiceConfig.DELAY_PROFILER_ON)
-		{
-			DelayProfiler.updateDelay("deleteAnonymizedIDFromPrivacyInfoStorage", t0);
-		}
-	}
-	
-	/**
-	 * Checks if privacy info already exists, returns true
-	 * otherwise returns false.
-	 * If true returns then insert doesn't happen.
-	 * @return
-	 * @throws SQLException 
-	 */
-	private boolean checkIfAlreadyExists(String ID, int subspaceId, String tableName, 
-			Connection myConn) throws SQLException
-	{		
-		String mysqlQuery = "SELECT COUNT(nodeGUID) as RowCount FROM "+tableName+
-				" WHERE nodeGUID = X'"+ID+"' AND "
-				+" subspaceId = "+subspaceId;
-		Statement stmt = myConn.createStatement();
 		
-		long start = System.currentTimeMillis();
-		ResultSet rs = stmt.executeQuery(mysqlQuery);
+		for(int i=0; i<attrUpdates.size(); i++)
+		{
+			this.execService.execute(attrUpdates.get(i));
+		}
+		updateState.waitForFinish();
+		
 		long end = System.currentTimeMillis();
 		
-		if(ContextServiceConfig.DEBUG_MODE)
+		if( ContextServiceConfig.DEBUG_MODE )
 		{
-			System.out.println("TIME_DEBUG: checkIfAlreadyExists time "
-					+ (end-start));
+			System.out.println("TIME_DEBUG: bulkInsertPrivacyInformation time "
+																		+(end-start) );
 		}
 		
-		while( rs.next() )
+		ContextServiceLogger.getLogger().fine("bulkInsertIntoSubspacePartitionInfo "
+				+ "completed");
+	}
+	
+	public void deleteAnonymizedIDFromPrivacyInfoStorage( String nodeGUID, 
+			int deleteSubspaceId )
+	{	
+		ContextServiceLogger.getLogger().fine("deleteAnonymizedIDFromPrivacyInfoStorage called ");
+		
+		long start = System.currentTimeMillis();
+
+		// do it for each attribute separately
+		Vector<PrivacyUpdateInAttrTableThread<NodeIDType>> attrUpdates 
+					= new Vector<PrivacyUpdateInAttrTableThread<NodeIDType>>();
+
+		PrivacyUpdateStateStorage<NodeIDType> updateState 
+					= new PrivacyUpdateStateStorage<NodeIDType>(attrUpdates);
+
+		// just a way to get attributes.
+		Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
+
+		while( subapceIdIter.hasNext() )
 		{
-			int rowCount = rs.getInt("RowCount");
-			ContextServiceLogger.getLogger().fine("ID "+ID+" subspaceId "+subspaceId+" tableName "
-					+tableName+" rowCount "+rowCount);
-			if(rowCount >= 1)
-				return true;
-			else
-				return false;
+			int currsubspaceId = subapceIdIter.next();
+			// at least one replica and all replica have same default value for each attribute.
+			SubspaceInfo<NodeIDType> currSubspaceInfo 
+				= subspaceInfoMap.get(currsubspaceId).get(0);
+
+			HashMap<String, AttributePartitionInfo> attrSubspaceMap 
+				= currSubspaceInfo.getAttributesOfSubspace();
+
+			Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
+
+			while( attrIter.hasNext() )
+			{
+				String currAttrName = attrIter.next();
+
+				String tableName = currAttrName+"EncryptionInfoStorage";
+
+				PrivacyUpdateInAttrTableThread<NodeIDType> attrUpdateThread 
+					= new PrivacyUpdateInAttrTableThread<NodeIDType>(
+							PrivacyUpdateInAttrTableThread.PERFORM_DELETION,  tableName , 
+							nodeGUID, null, deleteSubspaceId, dataSource, updateState);
+
+				attrUpdates.add(attrUpdateThread);
+			}
 		}
-		return false;
+
+
+		for(int i=0; i<attrUpdates.size(); i++)
+		{
+			this.execService.execute(attrUpdates.get(i));
+		}
+		updateState.waitForFinish();
+
+		long end = System.currentTimeMillis();
+
+		if( ContextServiceConfig.DEBUG_MODE )
+		{
+			System.out.println("TIME_DEBUG: deleteAnonymizedIDFromPrivacyInfoStorage time "
+									+(end-start) );
+		}
 	}
 }

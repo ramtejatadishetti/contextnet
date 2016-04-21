@@ -36,7 +36,7 @@ public interface GUIDAttributeStorageInterface<NodeIDType>
 	
 	public void storeGUIDInSubspace(String tableName, String nodeGUID, 
     		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, 
-    		int updateOrInsert ) throws JSONException;
+    		int updateOrInsert, JSONObject oldValJSON ) throws JSONException;
 	
 	public void deleteGUIDFromSubspaceRegion(String tableName, String nodeGUID);
 	
