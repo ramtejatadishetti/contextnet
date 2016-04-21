@@ -360,9 +360,20 @@ public class HyperspaceMySQLDB<NodeIDType>
 	
 	
 	public void storeGUIDInPrimarySubspace( String tableName, String nodeGUID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert ) throws JSONException
+    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert ) 
+    				throws JSONException
 	{
+		// no need to add realIDEntryption Info in primary subspaces.
+		long start = System.currentTimeMillis();
+		this.guidAttributesStorage.storeGUIDInPrimarySubspace
+			(tableName, nodeGUID, atrToValueRep, updateOrInsert);
+		long end = System.currentTimeMillis();
 		
+		if(ContextServiceConfig.DEBUG_MODE)
+		{
+			System.out.println
+			( "storeGUIDInPrimarySubspace "+(end-start) );
+		}
 	}
 	
 	/**
@@ -384,7 +395,7 @@ public class HyperspaceMySQLDB<NodeIDType>
     	{
     		// no need to add realIDEntryption Info in primary subspaces.
     		long start = System.currentTimeMillis();
-    		this.guidAttributesStorage.storeGUIDInSubspace
+    		this.guidAttributesStorage.storeGUIDInSecondarySubspace
 						(tableName, nodeGUID, atrToValueRep, updateOrInsert, oldValJSON);
     		long end = System.currentTimeMillis();
     		
@@ -407,7 +418,7 @@ public class HyperspaceMySQLDB<NodeIDType>
     				    		this.privacyInformationStroage);
     		execService.execute(privacyThread);
  
-    		this.guidAttributesStorage.storeGUIDInSubspace
+    		this.guidAttributesStorage.storeGUIDInSecondarySubspace
 				(tableName, nodeGUID, atrToValueRep, updateOrInsert, oldValJSON);
     		
     		// wait for privacy update to finish
@@ -416,7 +427,8 @@ public class HyperspaceMySQLDB<NodeIDType>
     		
     		if(ContextServiceConfig.DEBUG_MODE)
     		{
-    			System.out.println("storeGUIDInSubspace with privacy storage "+(end-start));
+    			System.out.println("storeGUIDInSubspace with privacy storage "
+    																	+(end-start));
     		}
     	}
     }

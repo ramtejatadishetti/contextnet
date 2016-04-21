@@ -137,7 +137,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 			
 			String tableName = "primarySubspaceDataStorage";
 			String newTableCommand = "create table "+tableName+" ( "
-				      + "   nodeGUID Binary(20) PRIMARY KEY";
+				      + " nodeGUID Binary(20) PRIMARY KEY";
 			
 			newTableCommand = getDataStorageString(newTableCommand);
 			newTableCommand	= getPrivacyStorageString(newTableCommand);
@@ -737,6 +737,30 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		}
 	}
 	
+	/**
+     * Stores GUID in a subspace. The decision to store a guid on this node
+     * in this subspace is not made in this function.
+     * @param subspaceNum
+     * @param nodeGUID
+     * @param attrValuePairs
+     * @return
+     * @throws JSONException
+     */
+    public void storeGUIDInPrimarySubspace(String tableName, String nodeGUID, 
+    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert ) throws JSONException
+    {
+    	if( updateOrInsert == HyperspaceMySQLDB.INSERT_REC )
+    	{
+    		this.performStoreGUIDInPrimarySubspaceInsert
+    			(tableName, nodeGUID, atrToValueRep);
+    	}
+    	else if( updateOrInsert == HyperspaceMySQLDB.UPDATE_REC )
+    	{
+    		this.performStoreGUIDInPrimarySubspaceUpdate
+    				(tableName, nodeGUID, atrToValueRep);
+    	}
+    }
+    
 	
 	/**
      * Stores GUID in a subspace. The decision to store a guid on this node
@@ -747,18 +771,18 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
      * @return
      * @throws JSONException
      */
-    public void storeGUIDInSubspace(String tableName, String nodeGUID, 
+    public void storeGUIDInSecondarySubspace(String tableName, String nodeGUID, 
     		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert
     		, JSONObject oldValJSON ) throws JSONException
     {
     	if( updateOrInsert == HyperspaceMySQLDB.INSERT_REC )
     	{
-    		this.performStoreGUIDInSubspaceInsert
+    		this.performStoreGUIDInSecondarySubspaceInsert
     			(tableName, nodeGUID, atrToValueRep, oldValJSON);
     	}
     	else if( updateOrInsert == HyperspaceMySQLDB.UPDATE_REC )
     	{
-    		this.performStoreGUIDInSubspaceUpdate
+    		this.performStoreGUIDInSecondarySubspaceUpdate
     				(tableName, nodeGUID, atrToValueRep);
     	}
     }
@@ -959,7 +983,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	 * @param nodeGUID
 	 * @param atrToValueRep
 	 */
-	private void performStoreGUIDInSubspaceUpdate(String tableName, String nodeGUID, 
+	private void performStoreGUIDInSecondarySubspaceUpdate(String tableName, String nodeGUID, 
     		HashMap<String, AttrValueRepresentationJSON> atrToValueRep)
 	{
 		ContextServiceLogger.getLogger().fine("storeGUIDInSubspace "+tableName
@@ -1051,12 +1075,12 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
         }
 	}
 	
-	private void performStoreGUIDInSubspaceInsert(String tableName, String nodeGUID, 
+	private void performStoreGUIDInSecondarySubspaceInsert(String tableName, String nodeGUID, 
     		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, 
     		JSONObject oldValJSON)
 	{
 		ContextServiceLogger.getLogger().fine("performStoreGUIDInSubspaceInsert "
-	+tableName+" nodeGUID "+nodeGUID);
+				+tableName+" nodeGUID "+nodeGUID);
     	
         Connection myConn      = null;
         Statement stmt         = null;
@@ -1188,6 +1212,261 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
         }
 	}
 	
+	/**
+	 * Only need to update attributes in atToValRep,
+	 * as other attribtues are already there.
+	 * @param tableName
+	 * @param nodeGUID
+	 * @param atrToValueRep
+	 */
+	private void performStoreGUIDInPrimarySubspaceUpdate(String tableName, String nodeGUID, 
+    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep)
+	{
+		ContextServiceLogger.getLogger().fine("performStoreGUIDInPrimarySubspaceUpdate "+tableName
+				+" nodeGUID "+nodeGUID);
+    	
+        Connection myConn      		= null;
+        Statement stmt         		= null;
+        
+        String updateSqlQuery     	= "UPDATE "+tableName+ " SET ";
+        
+        try
+        {
+        	Iterator<String> attrNameIter = atrToValueRep.keySet().iterator();
+        	int i = 0;
+	        
+        	while( attrNameIter.hasNext() )
+	        {
+	            String attrName = attrNameIter.next();  
+	            AttrValueRepresentationJSON attrValRep 
+	            		= atrToValueRep.get(attrName);
+	            
+	            String newVal   = attrValRep.getActualAttrValue();
+	            
+	            AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
+				assert(attrMetaInfo != null);
+	            String dataType = attrMetaInfo.getDataType();
+				
+				newVal = AttributeTypes.convertStringToDataTypeForMySQL
+						(newVal, dataType)+"";	
+                
+	            if( i == 0 )
+	            {
+	                //selectQuery = selectQuery + attrName;
+	                updateSqlQuery = updateSqlQuery + attrName +" = "+newVal;
+	            }
+	            else
+	            {
+	                //selectQuery = selectQuery + ", "+attrName+" ";
+	                updateSqlQuery = updateSqlQuery +" , "+ attrName +" = "+newVal;
+	            }
+	            
+	            //oldValueJSON.put(attrName, AttributeTypes.NOT_SET);
+				// store the ACL info when privacy is enabled
+				JSONArray realIDMappingArray = null;
+                if( ContextServiceConfig.PRIVACY_ENABLED )
+                {
+                	realIDMappingArray = attrValRep.getRealIDMappingInfo();
+                	
+                	if( realIDMappingArray != null )
+                	{
+                		String currColName 		= "ACL"+attrName;
+                		String jsonArrayString  = realIDMappingArray.toString();
+                		updateSqlQuery = updateSqlQuery +" , "+ currColName +" = '"+jsonArrayString+"'";
+                	}
+                }
+	            i++;
+	        }
+	        
+	        //selectQuery = selectQuery + " FROM "+tableName+" WHERE nodeGUID = '"+nodeGUID+"'";
+	        updateSqlQuery = updateSqlQuery + " WHERE nodeGUID = X'"+nodeGUID+"'";
+            
+            myConn = this.dataSource.getConnection();
+            stmt = myConn.createStatement();
+            
+        	// if update fails then insert
+    		//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE "+updateSqlQuery);
+    		long start   = System.currentTimeMillis();
+        	int rowCount = stmt.executeUpdate(updateSqlQuery);
+        	long end     = System.currentTimeMillis();
+        	
+        	if(ContextServiceConfig.DEBUG_MODE)
+        	{
+        		System.out.println("TIME_DEBUG: performStoreGUIDInPrimarySubspaceUpdate "
+        						+(end-start));
+        	}
+        	
+        	//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE rowCount "+rowCount);
+        	// update failed try insert
+        	if(rowCount == 0)
+        	{
+        		// should not happen, rowCount should always be 1
+        		assert(false);
+        	}
+        } catch ( Exception  | Error ex )
+        {
+            ex.printStackTrace();
+        } finally
+        {
+            try
+            {
+                if ( stmt != null )
+                    stmt.close();
+                
+                if ( myConn != null )
+                    myConn.close();
+            }
+            catch(SQLException e)
+            {
+            	e.printStackTrace();
+            }
+        }
+	}
+	
+	private void performStoreGUIDInPrimarySubspaceInsert( String tableName, String nodeGUID, 
+    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep )
+	{
+		ContextServiceLogger.getLogger().fine("performStoreGUIDInPrimarySubspaceInsert "
+				+tableName+" nodeGUID "+nodeGUID );
+    	
+        Connection myConn          = null;
+        Statement stmt         	   = null;
+        
+        // delayed insert performs better than just insert
+        String insertQuery         = "INSERT INTO "+tableName+ " (";
+        
+        try
+        {
+        	// insert happens for all attributes,
+        	// updated attributes are taken from atrToValueRep and
+        	// other attributes are taken from oldValJSON
+        	//Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
+        	Iterator<String> attrIter = atrToValueRep.keySet().iterator();
+        	
+        	boolean first = true;
+        	
+        	// just a way to iterate over attributes.
+    		while( attrIter.hasNext() )
+    		{
+				String currAttrName = attrIter.next();
+				
+				if(first)
+	            {
+	                insertQuery = insertQuery + currAttrName;
+	                first = false;
+	            }
+	            else
+	            {
+	                insertQuery = insertQuery +", "+currAttrName;
+	            }
+				
+				JSONArray realIDMappingArray = null;
+                if( ContextServiceConfig.PRIVACY_ENABLED )
+                {
+                	AttrValueRepresentationJSON attrValRep 
+                						= atrToValueRep.get(currAttrName);
+                	
+                	realIDMappingArray = attrValRep.getRealIDMappingInfo();
+                	
+                	if( realIDMappingArray != null )
+                	{
+                		String currColName 		= "ACL"+currAttrName;
+                		//String jsonArrayString  = realIDMappingArray.toString();
+                		insertQuery = insertQuery +" , "+currColName;
+                		//updateSqlQuery = updateSqlQuery +" , "+ currColName +" = '"+jsonArrayString+"'";
+                	}
+                }
+    		}
+    		
+    		insertQuery = insertQuery + ", nodeGUID) " + "VALUES"+ "(";
+    		
+    		
+    		first = true;
+    		attrIter = atrToValueRep.keySet().iterator();
+        	// just a way to iterate over attributes.
+    			
+			while( attrIter.hasNext() )
+			{
+				String currAttrName = attrIter.next();
+				String currAttrValue = "";
+				
+				AttrValueRepresentationJSON attrValRep 
+									= atrToValueRep.get(currAttrName);
+
+				currAttrValue = attrValRep.getActualAttrValue();
+				
+				
+				AttributeMetaInfo attrMetaInfo 
+							= AttributeTypes.attributeMap.get(currAttrName);
+				
+			    String dataType = attrMetaInfo.getDataType();
+				
+			    currAttrValue = AttributeTypes.convertStringToDataTypeForMySQL
+						(currAttrValue, dataType)+"";
+			    
+				if(first)
+	            {
+					insertQuery = insertQuery + currAttrValue;
+	                first = false;
+	            }
+	            else
+	            {
+	            	insertQuery = insertQuery +" , "+currAttrValue;
+	            }
+				
+				JSONArray realIDMappingArray = null;
+                if( ContextServiceConfig.PRIVACY_ENABLED )
+                {        	
+                	realIDMappingArray = attrValRep.getRealIDMappingInfo();
+                	
+                	if( realIDMappingArray != null )
+                	{
+                		insertQuery = insertQuery +" , '"+realIDMappingArray.toString()+"'";
+                	}
+                }
+			}
+    		
+    		insertQuery = insertQuery +" , X'"+nodeGUID+"' )";
+    		
+    		myConn = this.dataSource.getConnection();
+            stmt = myConn.createStatement();  
+            
+    		ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING INSERT "+insertQuery);
+    		long start   = System.currentTimeMillis();
+    		int rowCount = stmt.executeUpdate(insertQuery);
+    		long end     = System.currentTimeMillis();
+    		
+    		if( ContextServiceConfig.DEBUG_MODE )
+        	{
+    			System.out.println("TIME_DEBUG: performStoreGUIDInPrimarySubspaceInsert "
+        															+(end-start) );
+        	}
+    		
+    		ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING INSERT rowCount "+rowCount
+    					+" insertQuery "+insertQuery);	
+        }
+        catch ( Exception  | Error ex )
+        {
+        	ex.printStackTrace();
+        }
+        finally
+        {
+            try
+            {
+                if ( stmt != null )
+                    stmt.close();
+                
+                if ( myConn != null )
+                    myConn.close();
+            }
+            catch(SQLException e)
+            {
+            	e.printStackTrace();
+            }
+        }
+	}
+	
+	
 	private String getDataStorageString(String newTableCommand)
 	{
 		Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
@@ -1196,18 +1475,23 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		{
 			int subspaceId = subapceIdIter.next();
 			// at least one replica and all replica have same default value for each attribute.
-			SubspaceInfo<NodeIDType> currSubspaceInfo = subspaceInfoMap.get(subspaceId).get(0);
-			HashMap<String, AttributePartitionInfo> attrSubspaceMap = currSubspaceInfo.getAttributesOfSubspace();
+			SubspaceInfo<NodeIDType> currSubspaceInfo 
+												= subspaceInfoMap.get(subspaceId).get(0);
+			HashMap<String, AttributePartitionInfo> attrSubspaceMap 
+												= currSubspaceInfo.getAttributesOfSubspace();
 			
-			Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
-			while(attrIter.hasNext())
+			Iterator<String> attrIter 			= attrSubspaceMap.keySet().iterator();
+			
+			while( attrIter.hasNext() )
 			{
-				String attrName = attrIter.next();
-				AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
-				AttributeMetaInfo attrMetaInfo = attrPartInfo.getAttrMetaInfo();
-				String dataType = attrMetaInfo.getDataType();
-				String defaultVal = attrPartInfo.getDefaultValue();
-				String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
+				String attrName 				= attrIter.next();
+				AttributePartitionInfo attrPartInfo 
+												= attrSubspaceMap.get(attrName);
+				AttributeMetaInfo attrMetaInfo 	  
+												= attrPartInfo.getAttrMetaInfo();
+				String dataType 				= attrMetaInfo.getDataType();
+				String defaultVal 				= attrPartInfo.getDefaultValue();
+				String mySQLDataType 			= AttributeTypes.mySQLDataType.get(dataType);
 				
 				
 				newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType
@@ -1237,6 +1521,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		}
 		return newTableCommand;
 	}
+	
 	
 	private String getPrivacyStorageString( String newTableCommand )
 	{
