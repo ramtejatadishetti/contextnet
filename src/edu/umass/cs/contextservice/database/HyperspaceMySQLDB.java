@@ -419,18 +419,31 @@ public class HyperspaceMySQLDB<NodeIDType>
     		// do both in parallel.
     		
     		long start = System.currentTimeMillis();
-    		PrivacyUpdateCallBack callBack = privacyInformationStroage.bulkInsertPrivacyInformationNonBlocking
-    		(nodeGUID, atrToValueRep, subspaceId, oldValJSON);
+//    		PrivacyUpdateCallBack callBack = privacyInformationStroage.bulkInsertPrivacyInformationNonBlocking
+//    		(nodeGUID, atrToValueRep, subspaceId, oldValJSON);
 
 //    		this.privacyInformationStroage.bulkInsertPrivacyInformationBlocking
 //    		(nodeGUID, atrToValueRep, subspaceId, oldValJSON);
+    		
+    		PrivacyUpdateCallBack privacyThread 
+			= new PrivacyUpdateCallBack(nodeGUID, 
+	    		atrToValueRep, subspaceId, oldValJSON, 
+	    		this.privacyInformationStroage);
+    		
+    		Thread t = new Thread(privacyThread);
+    		t.start();
     		
     		this.guidAttributesStorage.storeGUIDInSecondarySubspace
 				(tableName, nodeGUID, atrToValueRep, updateOrInsert, oldValJSON);
     		
     		// wait for privacy update to finish
-    		callBack.waitForFinish();
-    		
+    		//callBack.waitForFinish();
+    		try {
+				t.join();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
     		long end = System.currentTimeMillis();
     		
     		if(ContextServiceConfig.DEBUG_MODE)
@@ -461,9 +474,15 @@ public class HyperspaceMySQLDB<NodeIDType>
 			long start = System.currentTimeMillis();
 			// do both in parallel.
     		
-			PrivacyUpdateCallBack callback 
-			= privacyInformationStroage.deleteAnonymizedIDFromPrivacyInfoStorageNOnBlocking
-																		(nodeGUID, subspaceId);
+//			PrivacyUpdateCallBack callback 
+//			= privacyInformationStroage.deleteAnonymizedIDFromPrivacyInfoStorageNOnBlocking
+//																		(nodeGUID, subspaceId);
+			
+			PrivacyUpdateCallBack privacyThread 
+			= new PrivacyUpdateCallBack(nodeGUID, subspaceId, 
+		    		this.privacyInformationStroage);
+			Thread t = new Thread(privacyThread);
+			t.start();
 			
 //			privacyInformationStroage.deleteAnonymizedIDFromPrivacyInfoStorageBlocking
 //			(nodeGUID, subspaceId);
@@ -472,7 +491,13 @@ public class HyperspaceMySQLDB<NodeIDType>
     		this.guidAttributesStorage.deleteGUIDFromSubspaceRegion(tableName, nodeGUID);
     		
     		// wait for privacy update to finish
-    		callback.waitForFinish();
+    		//callback.waitForFinish();
+    		try {
+				t.join();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
     		long end = System.currentTimeMillis();
     		
     		if(ContextServiceConfig.DEBUG_MODE)

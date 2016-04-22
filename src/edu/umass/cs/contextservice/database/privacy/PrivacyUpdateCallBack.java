@@ -23,7 +23,7 @@ public class PrivacyUpdateCallBack implements Runnable
 	private final int subspaceId;
 	private final JSONObject oldValJSON;
 	private final PrivacyInformationStorageInterface privacyInformationStorage;
-	private boolean finished;
+	private boolean finished = false;
 	
 	private final Object lock = new Object();
 	
