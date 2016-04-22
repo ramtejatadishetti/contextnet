@@ -520,6 +520,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		String tableName 	= "subspaceId"+subspaceId+"DataStorage";
 		try 
 		{
+			
 			HashMap<String, AttrValueRepresentationJSON> attrValMap =
 					ParsingMethods.getAttrValueMap(updateValPairs);
 			
@@ -529,31 +530,41 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 				case ValueUpdateToSubspaceRegionMessage.ADD_ENTRY:
 				{
 					numRep = 2;
-					this.hyperspaceDB.storeGUIDInSecondarySubspace
-					(tableName, GUID, attrValMap, HyperspaceMySQLDB.INSERT_REC, 
-							subspaceId, oldValJSON);
+					//if(!ContextServiceConfig.DISABLE_SECONDARY_SUBSPACES_UPDATES)
+					{
+						
+						this.hyperspaceDB.storeGUIDInSecondarySubspace
+						(tableName, GUID, attrValMap, HyperspaceMySQLDB.INSERT_REC, 
+								subspaceId, oldValJSON);
+					}
 					break;
 				}
 				case ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY:
 				{
 					numRep = 2;
-					this.hyperspaceDB.deleteGUIDFromSubspaceRegion
+					if(!ContextServiceConfig.DISABLE_SECONDARY_SUBSPACES_UPDATES)
+					{
+						this.hyperspaceDB.deleteGUIDFromSubspaceRegion
 											(tableName, GUID, subspaceId);
+					}
 					break;
 				}
 				case ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY:
 				{
 					numRep = 1;
-					if(firstTimeInsert)
+					//if(!ContextServiceConfig.DISABLE_SECONDARY_SUBSPACES_UPDATES)
 					{
-						this.hyperspaceDB.storeGUIDInSecondarySubspace
-						(tableName, GUID, attrValMap, HyperspaceMySQLDB.INSERT_REC, 
-								subspaceId, oldValJSON);
-					}
-					else
-					{
-						this.hyperspaceDB.storeGUIDInSecondarySubspace(tableName, GUID, attrValMap, 
-								HyperspaceMySQLDB.UPDATE_REC, subspaceId, oldValJSON);
+						if(firstTimeInsert)
+						{
+							this.hyperspaceDB.storeGUIDInSecondarySubspace
+							(tableName, GUID, attrValMap, HyperspaceMySQLDB.INSERT_REC, 
+									subspaceId, oldValJSON);
+						}
+						else
+						{
+							this.hyperspaceDB.storeGUIDInSecondarySubspace(tableName, GUID, attrValMap, 
+									HyperspaceMySQLDB.UPDATE_REC, subspaceId, oldValJSON);
+						}
 					}
 					break;
 				}

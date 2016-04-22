@@ -80,13 +80,13 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 		}
 		
 		System.out.println("All CS servers ready");
-		try 
-		{
-			RequestClass.startRequests();
-		} catch (Exception e) 
-		{
-			e.printStackTrace();
-		}
+//		try 
+//		{
+//			RequestClass.startRequests();
+//		} catch (Exception e) 
+//		{
+//			e.printStackTrace();
+//		}
 	}
 	
 	

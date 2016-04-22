@@ -56,22 +56,27 @@ public class PrivacyUpdateThread implements Runnable
 	@Override
 	public void run()
 	{
-		if( operation == PERFORM_INSERT )
+		try
 		{
-			privacyInformationStorage.bulkInsertPrivacyInformation
-			(ID, atrToValueRep, subspaceId, oldValJSON);
-			finished = true;
+			if( operation == PERFORM_INSERT )
+			{
+				privacyInformationStorage.bulkInsertPrivacyInformation
+				(ID, atrToValueRep, subspaceId, oldValJSON);
+			}
+			else if( operation == PERFORM_DELETION )
+			{
+				privacyInformationStorage.deleteAnonymizedIDFromPrivacyInfoStorage
+				(ID, subspaceId);
+			}
+			synchronized(lock)
+			{
+				finished = true;
+				lock.notify();
+			}
 		}
-		else if( operation == PERFORM_DELETION )
+		catch(Exception | Error ex)
 		{
-			privacyInformationStorage.deleteAnonymizedIDFromPrivacyInfoStorage
-			(ID, subspaceId);
-			
-			finished = true;
-		}
-		synchronized(lock)
-		{
-			lock.notify();
+			ex.printStackTrace();
 		}
 	}
 	

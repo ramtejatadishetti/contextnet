@@ -62,6 +62,19 @@ public class PrivacyUpdateInAttrTableThread<NodeIDType> implements Runnable
 		updateState.indicateFinished();
 	}
 	
+	public String toString()
+	{
+		String str = "";
+		if(realIDMappingArray != null)
+			str = "operation: "+this.operation+" tableName: "+this.tableName+
+				" ID: "+ this.ID+" subspaceId: "+subspaceId+" realIDMappingArray: "+realIDMappingArray.length();
+		else
+			str = "operation: "+this.operation+" tableName: "+this.tableName+
+			" ID: "+ this.ID+" subspaceId: "+subspaceId+" realIDMappingArray: NULL";
+		return str;
+	}
+	
+	
 	private void performInsert()
 	{
 		Connection myConn = null;
@@ -69,7 +82,8 @@ public class PrivacyUpdateInAttrTableThread<NodeIDType> implements Runnable
 		try
 		{
 			myConn = dataSource.getConnection();
-			boolean ifExists = checkIfAlreadyExists(ID, subspaceId, tableName, myConn);
+			stmt = myConn.createStatement();
+			boolean ifExists = checkIfAlreadyExists(ID, subspaceId, tableName, stmt);
 			
 			// just checking if this acl info for this ID anf this attribute 
 			// already exists, if it is already there then no need to insert.
@@ -102,12 +116,8 @@ public class PrivacyUpdateInAttrTableThread<NodeIDType> implements Runnable
 					{
 						jsoExcp.printStackTrace();
 					}
-				
-				
-					myConn = this.dataSource.getConnection();
 					
 					//insertTableSQL = insertTableSQL+;
-					stmt = myConn.createStatement();
 					long start = System.currentTimeMillis();
 					stmt.executeUpdate(insertTableSQL);
 					long end = System.currentTimeMillis();
@@ -199,12 +209,11 @@ public class PrivacyUpdateInAttrTableThread<NodeIDType> implements Runnable
 	 * @throws SQLException 
 	 */
 	private boolean checkIfAlreadyExists(String ID, int subspaceId, String tableName, 
-			Connection myConn) throws SQLException
+			Statement stmt) throws SQLException
 	{		
 		String mysqlQuery = "SELECT COUNT(nodeGUID) as RowCount FROM "+tableName+
 				" WHERE nodeGUID = X'"+ID+"' AND "
 				+" subspaceId = "+subspaceId;
-		Statement stmt = myConn.createStatement();
 		
 		long start = System.currentTimeMillis();
 		ResultSet rs = stmt.executeQuery(mysqlQuery);
@@ -222,10 +231,17 @@ public class PrivacyUpdateInAttrTableThread<NodeIDType> implements Runnable
 			ContextServiceLogger.getLogger().fine("ID "+ID+" subspaceId "+subspaceId+" tableName "
 					+tableName+" rowCount "+rowCount);
 			if(rowCount >= 1)
+			{
+				rs.close();
 				return true;
+			}
 			else
+			{
+				rs.close();
 				return false;
+			}
 		}
+		rs.close();
 		return false;
 	}
 }

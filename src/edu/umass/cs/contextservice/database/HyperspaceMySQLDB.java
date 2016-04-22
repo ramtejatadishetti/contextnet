@@ -410,6 +410,12 @@ public class HyperspaceMySQLDB<NodeIDType>
     		//FIXME: need to think about updating privacy info, which is change in ACLs
     		// I think there are no updates in privacy info.
     		// if ACL changes then old anonymized IDs are removed and new ones are inserted.
+    		
+    		if(ContextServiceConfig.DEBUG_MODE)
+    		{
+    			System.out.println("STARTED storeGUIDInSecondarySubspace with privacy storage "+nodeGUID
+    													);
+    		}
     		long start = System.currentTimeMillis();
     		// do both in parallel.
     		PrivacyUpdateThread privacyThread 
@@ -427,7 +433,7 @@ public class HyperspaceMySQLDB<NodeIDType>
     		
     		if(ContextServiceConfig.DEBUG_MODE)
     		{
-    			System.out.println("storeGUIDInSubspace with privacy storage "
+    			System.out.println("FINISHED storeGUIDInSecondarySubspace with privacy storage "+nodeGUID+" "
     																	+(end-start));
     		}
     	}

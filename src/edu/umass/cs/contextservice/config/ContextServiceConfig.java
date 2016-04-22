@@ -99,10 +99,13 @@ public class ContextServiceConfig
     // actually default mysql server max connection is 151. So this should be
     // set in conjuction with that. and also the hyperpsace hashing thread pool
     // size should be set greater than that. These things affect system performance a lot.
-	public static final int MYSQL_MAX_CONNECTIONS					= 214;
+	// change back to 214 for experiments.
+	//FIXME: change this back to 214 for emulab d710 machines.
+	// 10 for my laptop testing.
+	public static final int MYSQL_MAX_CONNECTIONS					= 10;
 	
 	// it is also important to set this at least the size of the database connection pool.
-	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 214;
+	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 10;
 	
 	// mysql result cursor fetches 1 guid at once and stores in memory
 	// need this becuase otherwise in large guids case , all the result 
@@ -118,7 +121,7 @@ public class ContextServiceConfig
 	public static final int MAXIMUM_NUM_ATTRS_IN_SUBSPACE			= 10;
 	
 	
-	public static boolean PRIVACY_ENABLED						= false;
+	public static boolean PRIVACY_ENABLED							= true;
 	
 	public static final String AssymmetricEncAlgorithm				= "RSA";
 	public static final String SymmetricEncAlgorithm				= "DES";
@@ -159,4 +162,9 @@ public class ContextServiceConfig
 	
 	// security things
 	public static final int KEY_LENGTH_SIZE							= 1024;
+	
+	
+	// just for debugging different components separately.
+	public static final boolean DISABLE_SECONDARY_SUBSPACES_UPDATES			= false;
+	public static final boolean DISABLE_PRIMARY_SUBSPACE_UPDATES			= false;
 }

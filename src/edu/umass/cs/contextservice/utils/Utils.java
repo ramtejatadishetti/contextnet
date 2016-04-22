@@ -398,8 +398,8 @@ public class Utils
 		cipherText = cipher.doFinal(plainTextByteArray);
 		long end = System.currentTimeMillis();
 		
-		System.out.println("doPublicKeyEncryption time "+(end-start)+" plainTextByteArray "
-						+plainTextByteArray.length);
+//		System.out.println("doPublicKeyEncryption time "+(end-start)+" plainTextByteArray "
+//						+plainTextByteArray.length);
 	    return cipherText;
 	}
 	

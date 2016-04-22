@@ -775,6 +775,10 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert
     		, JSONObject oldValJSON ) throws JSONException
     {
+    	if(ContextServiceConfig.DEBUG_MODE)
+    	{
+    		ContextServiceLogger.getLogger().fine("STARTED storeGUIDInSecondarySubspace "+nodeGUID);
+    	}
     	if( updateOrInsert == HyperspaceMySQLDB.INSERT_REC )
     	{
     		this.performStoreGUIDInSecondarySubspaceInsert
@@ -784,6 +788,10 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     	{
     		this.performStoreGUIDInSecondarySubspaceUpdate
     				(tableName, nodeGUID, atrToValueRep);
+    	}
+    	if(ContextServiceConfig.DEBUG_MODE)
+    	{
+    		ContextServiceLogger.getLogger().fine("FINISHED storeGUIDInSecondarySubspace "+nodeGUID);
     	}
     }
     
@@ -1043,7 +1051,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
         	
         	if(ContextServiceConfig.DEBUG_MODE)
         	{
-        		System.out.println("TIME_DEBUG: storeGUIDInSubspace update "
+        		System.out.println("TIME_DEBUG: performStoreGUIDInSecondarySubspaceUpdate "
         						+(end-start));
         	}
         	
@@ -1051,6 +1059,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
         	// update failed try insert
         	if(rowCount == 0)
         	{
+        		ContextServiceLogger.getLogger().fine("ASSERTION FAIL");
         		// should not happen, rowCount should always be 1
         		assert(false);
         	}
@@ -1187,7 +1196,8 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     		
     		if(ContextServiceConfig.DEBUG_MODE)
         	{
-        		System.out.println("TIME_DEBUG: storeGUIDInSubspace insert "+(end-start));
+        		System.out.println("TIME_DEBUG: performStoreGUIDInSecondarySubspaceInsert insert  "+tableName+" nodeGUID "+nodeGUID
+        				+(end-start));
         	}
     		
     		ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING INSERT rowCount "+rowCount+" insertQuery "+insertQuery);

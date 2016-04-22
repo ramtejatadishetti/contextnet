@@ -215,7 +215,7 @@ public class PrivacyInformationStorage<NodeIDType>
     		JSONObject oldValJSON )
 	{
 		ContextServiceLogger.getLogger().fine
-								("bulkInsertPrivacyInformation called ");
+								("STARTED bulkInsertPrivacyInformation called ");
 		long start = System.currentTimeMillis();
 		
 		// do it for each attribute separately
@@ -294,12 +294,20 @@ public class PrivacyInformationStorage<NodeIDType>
 				}
 			}
 		}
-		
-		
+		//perform sequential for testing
 		for(int i=0; i<attrUpdates.size(); i++)
 		{
-			this.execService.execute(attrUpdates.get(i));
+			PrivacyUpdateInAttrTableThread<NodeIDType> attrUpdateThread = attrUpdates.get(i);
+			ContextServiceLogger.getLogger().fine("Start attrUpdateThread "+attrUpdateThread.toString());
+			attrUpdateThread.run();
+			ContextServiceLogger.getLogger().fine("Finish attrUpdateThread "+attrUpdateThread.toString());
 		}
+			
+		
+//		for(int i=0; i<attrUpdates.size(); i++)
+//		{
+//			this.execService.execute(attrUpdates.get(i));
+//		}
 		updateState.waitForFinish();
 		
 		long end = System.currentTimeMillis();
