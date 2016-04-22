@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -56,11 +57,10 @@ public class HyperspaceMySQLDB<NodeIDType>
 	
 	
 	public HyperspaceMySQLDB(NodeIDType myNodeID, 
-			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap, 
-			ExecutorService execService)
+			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap)
 			throws Exception
 	{
-		this.execService = execService;
+		execService = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
 		this.mysqlDataSource = new DataSource<NodeIDType>(myNodeID);
 		
 		guidAttributesStorage = new GUIDAttributeStorage<NodeIDType>
@@ -430,20 +430,21 @@ public class HyperspaceMySQLDB<NodeIDType>
 	    		atrToValueRep, subspaceId, oldValJSON, 
 	    		this.privacyInformationStroage);
     		
-    		Thread t = new Thread(privacyThread);
-    		t.start();
+    		this.execService.execute(privacyThread);
+    		//Thread t = new Thread(privacyThread);
+    		//t.start();
     		
     		this.guidAttributesStorage.storeGUIDInSecondarySubspace
 				(tableName, nodeGUID, atrToValueRep, updateOrInsert, oldValJSON);
     		
     		// wait for privacy update to finish
-    		//callBack.waitForFinish();
-    		try {
-				t.join();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+    		privacyThread.waitForFinish();
+//    		try {
+//				t.join();
+//			} catch (InterruptedException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
     		long end = System.currentTimeMillis();
     		
     		if(ContextServiceConfig.DEBUG_MODE)
@@ -481,8 +482,9 @@ public class HyperspaceMySQLDB<NodeIDType>
 			PrivacyUpdateCallBack privacyThread 
 			= new PrivacyUpdateCallBack(nodeGUID, subspaceId, 
 		    		this.privacyInformationStroage);
-			Thread t = new Thread(privacyThread);
-			t.start();
+			//Thread t = new Thread(privacyThread);
+			//t.start();
+			this.execService.execute(privacyThread);
 			
 //			privacyInformationStroage.deleteAnonymizedIDFromPrivacyInfoStorageBlocking
 //			(nodeGUID, subspaceId);
@@ -491,13 +493,13 @@ public class HyperspaceMySQLDB<NodeIDType>
     		this.guidAttributesStorage.deleteGUIDFromSubspaceRegion(tableName, nodeGUID);
     		
     		// wait for privacy update to finish
-    		//callback.waitForFinish();
-    		try {
-				t.join();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+    		privacyThread.waitForFinish();
+//    		try {
+//				t.join();
+//			} catch (InterruptedException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
     		long end = System.currentTimeMillis();
     		
     		if(ContextServiceConfig.DEBUG_MODE)
