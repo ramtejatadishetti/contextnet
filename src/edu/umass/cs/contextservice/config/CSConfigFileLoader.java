@@ -97,6 +97,10 @@ public class CSConfigFileLoader
 			  properties.getProperty(ContextServiceConfig.optimalHString, ContextServiceConfig.optimalH+"") );
 	  
 	  
+	  ContextServiceConfig.PRIVACY_ENABLED = Boolean.parseBoolean(
+	    		properties.getProperty(ContextServiceConfig.privacyEnabledString, 
+	    				ContextServiceConfig.PRIVACY_ENABLED+"") );
+	  
 	  System.out.println("read props ContextServiceConfig.modelRho "+ContextServiceConfig.modelRho
     		+" ContextServiceConfig.modelCsByC "+ContextServiceConfig.modelCsByC
     		+" ContextServiceConfig.modelCuByC "+ContextServiceConfig.modelCuByC
@@ -108,7 +112,9 @@ public class CSConfigFileLoader
     		+" ContextServiceConfig.modelSearchRes "+ContextServiceConfig.modelSearchRes
     		+" ContextServiceConfig.disableOptimizer "+ ContextServiceConfig.disableOptimizer 
     		+" ContextServiceConfig.basicConfig "+ContextServiceConfig.basicConfig
-    		+" ContextServiceConfig.optimalH "+ContextServiceConfig.optimalH );
+    		+" ContextServiceConfig.optimalH "+ContextServiceConfig.optimalH 
+    		+" ContextServiceConfig.PRIVACY_ENABLED "+ContextServiceConfig.PRIVACY_ENABLED);
+	  
   }
   
   /**
