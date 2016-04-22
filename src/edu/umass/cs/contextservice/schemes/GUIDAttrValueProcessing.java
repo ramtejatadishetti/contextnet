@@ -18,7 +18,6 @@ import org.paukov.combinatorics.Factory;
 import org.paukov.combinatorics.Generator;
 import org.paukov.combinatorics.ICombinatoricsVector;
 
-import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
 import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
@@ -36,7 +35,6 @@ import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJS
 import edu.umass.cs.contextservice.messages.dataformat.ParsingMethods;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
-import edu.umass.cs.contextservice.updates.UpdateInfo;
 import edu.umass.cs.nio.JSONMessenger;
 
 public class GUIDAttrValueProcessing<NodeIDType> implements 
@@ -189,9 +187,10 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			}
 		}
 		
-		while(this.subspacePartitionInsertSent != this.subspacePartitionInsertCompl)
+		
+		synchronized(this.subspacePartitionInsertLock)
 		{
-			synchronized(this.subspacePartitionInsertLock)
+			while(this.subspacePartitionInsertSent != this.subspacePartitionInsertCompl)
 			{
 				try {
 					this.subspacePartitionInsertLock.wait();
@@ -200,7 +199,8 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 					e.printStackTrace();
 				}
 			}
-		}	
+		}
+		
 		ContextServiceLogger.getLogger().fine(" generateSubspacePartitions() completed " );
 	}
 	

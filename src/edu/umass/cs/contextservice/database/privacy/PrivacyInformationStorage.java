@@ -357,14 +357,18 @@ public class PrivacyInformationStorage<NodeIDType>
 				attrUpdates.add(attrUpdateThread);
 			}
 		}
+		
+		ContextServiceLogger.getLogger().fine("attrUpdates size "+attrUpdates.size());
 
 
 		for(int i=0; i<attrUpdates.size(); i++)
 		{
 			this.execService.execute(attrUpdates.get(i));
 		}
+		ContextServiceLogger.getLogger().fine("deleteAnonymizedIDFromPrivacyInfoStorage waiting updateState.waitForFinish()");
 		updateState.waitForFinish();
-
+		ContextServiceLogger.getLogger().fine("deleteAnonymizedIDFromPrivacyInfoStorage waiting updateState.waitForFinish() finished");
+		
 		long end = System.currentTimeMillis();
 
 		if( ContextServiceConfig.DEBUG_MODE )

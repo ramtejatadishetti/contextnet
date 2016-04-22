@@ -2,6 +2,8 @@ package edu.umass.cs.contextservice.database.privacy;
 
 import java.util.Vector;
 
+import edu.umass.cs.contextservice.logging.ContextServiceLogger;
+
 /**
  * This class stores the state of privacy update 
  * or deletions that happen for multiple attributes in parallel.
@@ -9,7 +11,7 @@ import java.util.Vector;
  */
 public class PrivacyUpdateStateStorage<NodeIDType> 
 {
-	private Object lock = new Object();
+	private final Object lock = new Object();
 	private int numFinished	= 0;
 	
 	private Vector<PrivacyUpdateInAttrTableThread<NodeIDType>> attrUpdVect;
@@ -25,7 +27,6 @@ public class PrivacyUpdateStateStorage<NodeIDType>
 		synchronized( lock )
 		{
 			numFinished++;
-			
 			if( numFinished == attrUpdVect.size() )
 			{
 				lock.notify();
@@ -35,9 +36,9 @@ public class PrivacyUpdateStateStorage<NodeIDType>
 	
 	public void waitForFinish()
 	{
-		while( numFinished != attrUpdVect.size() )
+		synchronized(lock)
 		{
-			synchronized(lock)
+			while( numFinished != attrUpdVect.size() )
 			{
 				try 
 				{

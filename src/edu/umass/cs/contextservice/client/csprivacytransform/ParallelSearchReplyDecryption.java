@@ -61,9 +61,9 @@ public class ParallelSearchReplyDecryption
 					( myGuid, csSearchRepMessage.getSearchGUIDObj() ) );
 		}
 		
-		while( numFinished != csTransformedList.size() )
+		synchronized( lock )
 		{
-			synchronized( lock )
+			while( numFinished != csTransformedList.size() )
 			{
 				try 
 				{
@@ -74,6 +74,7 @@ public class ParallelSearchReplyDecryption
 				}
 			}
 		}
+		
 	}
 	
 	public int getTotalDecryptionsOverall()

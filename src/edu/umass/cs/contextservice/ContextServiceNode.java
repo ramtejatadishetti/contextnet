@@ -88,9 +88,9 @@ public abstract class ContextServiceNode<NodeIDType>
 	 */
 	public void waitToFinishStart()
 	{
-		while( !started )
+		synchronized( startMonitor )
 		{
-			synchronized( startMonitor )
+			while( !started )
 			{
 				try 
 				{

@@ -36,9 +36,9 @@ public class ParallelUpdateStateStorage
 	
 	public void waitForCompletion()
 	{
-		while( numCompletion != updateMesgList.size() )
+		synchronized(lock)
 		{
-			synchronized(lock)
+			while( numCompletion != updateMesgList.size() )
 			{
 				try 
 				{

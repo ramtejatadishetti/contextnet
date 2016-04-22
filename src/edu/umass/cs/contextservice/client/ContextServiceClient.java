@@ -239,7 +239,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		{
 			while( getQ.getReplyMessage == null )
 			{
-				try 
+				try
 				{
 					getQ.wait();
 				} catch (InterruptedException e) 

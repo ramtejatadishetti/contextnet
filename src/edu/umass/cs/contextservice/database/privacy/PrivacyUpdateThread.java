@@ -77,9 +77,9 @@ public class PrivacyUpdateThread implements Runnable
 	
 	public void waitForFinish()
 	{
-		while( !finished )
+		synchronized(lock)
 		{
-			synchronized(lock)
+			while( !finished )
 			{
 				try 
 				{

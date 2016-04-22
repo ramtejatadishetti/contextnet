@@ -90,9 +90,10 @@ public class FourNodeLocalCSSetup extends ContextServiceNode<Integer>
 		System.out.println("Starting context service 3");
 		new Thread(new StartNode(3, 3)).start();
 		
-		while(numStarted != csNodeConfig.getNodeIDs().size())
+		
+		synchronized(startedLock)
 		{
-			synchronized(startedLock)
+			while(numStarted != csNodeConfig.getNodeIDs().size())
 			{
 				try {
 					startedLock.wait();
