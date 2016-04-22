@@ -107,6 +107,8 @@ public class ContextServiceConfig
 	// it is also important to set this at least the size of the database connection pool.
 	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 10;
 	
+	public static final int PRIVACY_THREAD_POOL_SIZE				= 10;
+	
 	// mysql result cursor fetches 1 guid at once and stores in memory
 	// need this becuase otherwise in large guids case , all the result 
 	// is stored in memory by default.
@@ -165,6 +167,6 @@ public class ContextServiceConfig
 	
 	
 	// just for debugging different components separately.
-	public static final boolean DISABLE_SECONDARY_SUBSPACES_UPDATES			= false;
-	public static final boolean DISABLE_PRIMARY_SUBSPACE_UPDATES			= false;
+	//public static final boolean DISABLE_SECONDARY_SUBSPACES_UPDATES			= false;
+	//public static final boolean DISABLE_PRIMARY_SUBSPACE_UPDATES			= false;
 }

@@ -12,7 +12,7 @@ import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJS
  * with update to guidAttrValue storage tables.
  * @author adipc
  */
-public class PrivacyUpdateThread implements Runnable
+public class PrivacyUpdateCallBack implements Runnable
 {
 	public static final int PERFORM_INSERT				= 1;
 	public static final int PERFORM_DELETION			= 2;
@@ -27,7 +27,7 @@ public class PrivacyUpdateThread implements Runnable
 	
 	private final Object lock = new Object();
 	
-	public PrivacyUpdateThread( String ID, 
+	public PrivacyUpdateCallBack( String ID, 
     		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int subspaceId, 
     		JSONObject oldValJSON, PrivacyInformationStorageInterface privacyInformationStorage )
 	{
@@ -40,7 +40,7 @@ public class PrivacyUpdateThread implements Runnable
 		finished = false;
 	}
 	
-	public PrivacyUpdateThread( String ID, int subspaceId, 
+	public PrivacyUpdateCallBack( String ID, int subspaceId, 
     		PrivacyInformationStorageInterface privacyInformationStorage )
 	{
 		this.operation = PERFORM_DELETION;
@@ -60,12 +60,12 @@ public class PrivacyUpdateThread implements Runnable
 		{
 			if( operation == PERFORM_INSERT )
 			{
-				privacyInformationStorage.bulkInsertPrivacyInformation
+				privacyInformationStorage.bulkInsertPrivacyInformationBlocking
 				(ID, atrToValueRep, subspaceId, oldValJSON);
 			}
 			else if( operation == PERFORM_DELETION )
 			{
-				privacyInformationStorage.deleteAnonymizedIDFromPrivacyInfoStorage
+				privacyInformationStorage.deleteAnonymizedIDFromPrivacyInfoStorageBlocking
 				(ID, subspaceId);
 			}
 			synchronized(lock)

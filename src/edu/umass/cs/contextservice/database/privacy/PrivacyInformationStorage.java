@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -41,11 +42,11 @@ public class PrivacyInformationStorage<NodeIDType>
 	
 	public PrivacyInformationStorage(
 			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap , 
-			DataSource<NodeIDType> dataSource, ExecutorService execService )
+			DataSource<NodeIDType> dataSource )
 	{
 		this.subspaceInfoMap = subspaceInfoMap;
 		this.dataSource = dataSource;
-		this.execService = execService;
+		this.execService = Executors.newFixedThreadPool(ContextServiceConfig.PRIVACY_THREAD_POOL_SIZE);
 	}
 	
 	@Override
@@ -210,7 +211,7 @@ public class PrivacyInformationStorage<NodeIDType>
 	}
 	
 	
-	public void bulkInsertPrivacyInformation( String ID, 
+	public void bulkInsertPrivacyInformationBlocking( String ID, 
     		HashMap<String, AttrValueRepresentationJSON> atrToValueRep , int insertsubspaceId,
     		JSONObject oldValJSON )
 	{
@@ -295,19 +296,19 @@ public class PrivacyInformationStorage<NodeIDType>
 			}
 		}
 		//perform sequential for testing
-		for(int i=0; i<attrUpdates.size(); i++)
-		{
-			PrivacyUpdateInAttrTableThread<NodeIDType> attrUpdateThread = attrUpdates.get(i);
-			ContextServiceLogger.getLogger().fine("Start attrUpdateThread "+attrUpdateThread.toString());
-			attrUpdateThread.run();
-			ContextServiceLogger.getLogger().fine("Finish attrUpdateThread "+attrUpdateThread.toString());
-		}
-			
-		
 //		for(int i=0; i<attrUpdates.size(); i++)
 //		{
-//			this.execService.execute(attrUpdates.get(i));
+//			PrivacyUpdateInAttrTableThread<NodeIDType> attrUpdateThread = attrUpdates.get(i);
+//			ContextServiceLogger.getLogger().fine("Start attrUpdateThread insert "+attrUpdateThread.toString());
+//			attrUpdateThread.run();
+//			ContextServiceLogger.getLogger().fine("Finish attrUpdateThread insert "+attrUpdateThread.toString());
 //		}
+			
+		
+		for(int i=0; i<attrUpdates.size(); i++)
+		{
+			this.execService.execute(attrUpdates.get(i));
+		}
 		updateState.waitForFinish();
 		
 		long end = System.currentTimeMillis();
@@ -322,9 +323,9 @@ public class PrivacyInformationStorage<NodeIDType>
 				+ "completed");
 	}
 	
-	public void deleteAnonymizedIDFromPrivacyInfoStorage( String nodeGUID, 
+	public void deleteAnonymizedIDFromPrivacyInfoStorageBlocking( String nodeGUID, 
 			int deleteSubspaceId )
-	{	
+	{
 		ContextServiceLogger.getLogger().fine("deleteAnonymizedIDFromPrivacyInfoStorage called ");
 		
 		long start = System.currentTimeMillis();
@@ -369,10 +370,20 @@ public class PrivacyInformationStorage<NodeIDType>
 		ContextServiceLogger.getLogger().fine("attrUpdates size "+attrUpdates.size());
 
 
+//		for(int i=0; i<attrUpdates.size(); i++)
+//		{
+//			PrivacyUpdateInAttrTableThread<NodeIDType> attrUpdateThread = attrUpdates.get(i);
+//			ContextServiceLogger.getLogger().fine("Start attrUpdateThread delete "+attrUpdateThread.toString());
+//			attrUpdateThread.run();
+//			ContextServiceLogger.getLogger().fine("Finish attrUpdateThread delete "+attrUpdateThread.toString());
+//		}
+		
 		for(int i=0; i<attrUpdates.size(); i++)
 		{
+		
 			this.execService.execute(attrUpdates.get(i));
 		}
+		
 		ContextServiceLogger.getLogger().fine("deleteAnonymizedIDFromPrivacyInfoStorage waiting updateState.waitForFinish()");
 		updateState.waitForFinish();
 		ContextServiceLogger.getLogger().fine("deleteAnonymizedIDFromPrivacyInfoStorage waiting updateState.waitForFinish() finished");
@@ -384,5 +395,31 @@ public class PrivacyInformationStorage<NodeIDType>
 			System.out.println("TIME_DEBUG: deleteAnonymizedIDFromPrivacyInfoStorage time "
 									+(end-start) );
 		}
+	}
+	
+	
+	@Override
+	public PrivacyUpdateCallBack bulkInsertPrivacyInformationNonBlocking(String ID,
+			HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int subsapceId, JSONObject oldValJSON) 
+	{
+		PrivacyUpdateCallBack privacyThread 
+			= new PrivacyUpdateCallBack(ID, 
+	    		atrToValueRep, subsapceId, oldValJSON, 
+	    		this);
+		this.execService.execute(privacyThread);
+		
+		return privacyThread;
+	}
+
+	@Override
+	public PrivacyUpdateCallBack deleteAnonymizedIDFromPrivacyInfoStorageNOnBlocking(String nodeGUID,
+			int deleteSubspaceId) 
+	{
+		PrivacyUpdateCallBack privacyThread 
+		= new PrivacyUpdateCallBack(nodeGUID, deleteSubspaceId, 
+	    		this);
+		
+		this.execService.execute(privacyThread);
+		return privacyThread;
 	}
 }

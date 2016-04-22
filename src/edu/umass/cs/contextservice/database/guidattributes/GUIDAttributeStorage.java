@@ -994,7 +994,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	private void performStoreGUIDInSecondarySubspaceUpdate(String tableName, String nodeGUID, 
     		HashMap<String, AttrValueRepresentationJSON> atrToValueRep)
 	{
-		ContextServiceLogger.getLogger().fine("storeGUIDInSubspace "+tableName
+		ContextServiceLogger.getLogger().fine("STARTED performStoreGUIDInSecondarySubspaceUpdate "+tableName
 				+" nodeGUID "+nodeGUID);
     	
         Connection myConn      = null;
@@ -1088,7 +1088,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, 
     		JSONObject oldValJSON)
 	{
-		ContextServiceLogger.getLogger().fine("performStoreGUIDInSubspaceInsert "
+		ContextServiceLogger.getLogger().fine("STARTED performStoreGUIDInSubspaceInsert "
 				+tableName+" nodeGUID "+nodeGUID);
     	
         Connection myConn      = null;

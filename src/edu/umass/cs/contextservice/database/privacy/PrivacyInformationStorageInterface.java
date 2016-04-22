@@ -28,10 +28,20 @@ public interface PrivacyInformationStorageInterface
 	 */
 	public String getMySQLQueryForFetchingRealIDMappingForQuery(String query, int subspaceId);
 	
-	public void bulkInsertPrivacyInformation( String ID, 
+	
+	public void bulkInsertPrivacyInformationBlocking( String ID, 
     		HashMap<String, AttrValueRepresentationJSON> atrToValueRep , int subsapceId, 
     		JSONObject oldValJSON);
 	
-	public void deleteAnonymizedIDFromPrivacyInfoStorage(String nodeGUID, 
+	public void deleteAnonymizedIDFromPrivacyInfoStorageBlocking(String nodeGUID, 
 			int deleteSubspaceId);
+	
+	
+	public PrivacyUpdateCallBack bulkInsertPrivacyInformationNonBlocking( String ID, 
+    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep , int subsapceId, 
+    		JSONObject oldValJSON);
+	
+	public PrivacyUpdateCallBack deleteAnonymizedIDFromPrivacyInfoStorageNOnBlocking(String nodeGUID, 
+			int deleteSubspaceId);
+	
 }

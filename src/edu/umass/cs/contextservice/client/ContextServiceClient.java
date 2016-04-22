@@ -97,7 +97,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	 * @throws IOException
 	 * @throws NoSuchAlgorithmException 
 	 */
-	public ContextServiceClient(String csHostName, int csPortNum) throws IOException, NoSuchAlgorithmException
+	public ContextServiceClient(String csHostName, int csPortNum) 
+			throws IOException, NoSuchAlgorithmException
 	{
 		super( csHostName, csPortNum );
 		gnsClient = null;

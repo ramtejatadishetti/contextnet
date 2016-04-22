@@ -12,13 +12,14 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 public class PrivacyUpdateStateStorage<NodeIDType> 
 {
 	private final Object lock = new Object();
-	private int numFinished	= 0;
+	private int numFinished;
 	
 	private Vector<PrivacyUpdateInAttrTableThread<NodeIDType>> attrUpdVect;
 	
 	public PrivacyUpdateStateStorage(Vector<PrivacyUpdateInAttrTableThread<NodeIDType>> attrUpdVect)
 	{
 		this.attrUpdVect = attrUpdVect;
+		numFinished = 0;
 	}
 	
 	

@@ -20,7 +20,7 @@ import edu.umass.cs.contextservice.database.guidattributes.GUIDAttributeStorage;
 import edu.umass.cs.contextservice.database.guidattributes.GUIDAttributeStorageInterface;
 import edu.umass.cs.contextservice.database.privacy.PrivacyInformationStorage;
 import edu.umass.cs.contextservice.database.privacy.PrivacyInformationStorageInterface;
-import edu.umass.cs.contextservice.database.privacy.PrivacyUpdateThread;
+import edu.umass.cs.contextservice.database.privacy.PrivacyUpdateCallBack;
 import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorage;
 import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorageInterface;
@@ -80,7 +80,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		if( ContextServiceConfig.PRIVACY_ENABLED )
 		{
 			privacyInformationStroage = new PrivacyInformationStorage<NodeIDType>
-										(subspaceInfoMap, mysqlDataSource, execService);
+										(subspaceInfoMap, mysqlDataSource);
 		}
 		
 		createTables();
@@ -416,19 +416,21 @@ public class HyperspaceMySQLDB<NodeIDType>
     			System.out.println("STARTED storeGUIDInSecondarySubspace with privacy storage "+nodeGUID
     													);
     		}
-    		long start = System.currentTimeMillis();
     		// do both in parallel.
-    		PrivacyUpdateThread privacyThread 
-    					= new PrivacyUpdateThread(nodeGUID, 
-    				    		atrToValueRep, subspaceId, oldValJSON, 
-    				    		this.privacyInformationStroage);
-    		execService.execute(privacyThread);
- 
+    		
+    		long start = System.currentTimeMillis();
+    		PrivacyUpdateCallBack callBack = privacyInformationStroage.bulkInsertPrivacyInformationNonBlocking
+    		(nodeGUID, atrToValueRep, subspaceId, oldValJSON);
+
+//    		this.privacyInformationStroage.bulkInsertPrivacyInformationBlocking
+//    		(nodeGUID, atrToValueRep, subspaceId, oldValJSON);
+    		
     		this.guidAttributesStorage.storeGUIDInSecondarySubspace
 				(tableName, nodeGUID, atrToValueRep, updateOrInsert, oldValJSON);
     		
     		// wait for privacy update to finish
-    		privacyThread.waitForFinish();
+    		callBack.waitForFinish();
+    		
     		long end = System.currentTimeMillis();
     		
     		if(ContextServiceConfig.DEBUG_MODE)
@@ -458,16 +460,19 @@ public class HyperspaceMySQLDB<NodeIDType>
 		{
 			long start = System.currentTimeMillis();
 			// do both in parallel.
-    		PrivacyUpdateThread privacyThread 
-    					= new PrivacyUpdateThread(nodeGUID, subspaceId, 
-    				    		this.privacyInformationStroage);
     		
-    		execService.execute(privacyThread);
-    		
+			PrivacyUpdateCallBack callback 
+			= privacyInformationStroage.deleteAnonymizedIDFromPrivacyInfoStorageNOnBlocking
+																		(nodeGUID, subspaceId);
+			
+//			privacyInformationStroage.deleteAnonymizedIDFromPrivacyInfoStorageBlocking
+//			(nodeGUID, subspaceId);
+			
+			
     		this.guidAttributesStorage.deleteGUIDFromSubspaceRegion(tableName, nodeGUID);
     		
     		// wait for privacy update to finish
-    		privacyThread.waitForFinish();
+    		callback.waitForFinish();
     		long end = System.currentTimeMillis();
     		
     		if(ContextServiceConfig.DEBUG_MODE)

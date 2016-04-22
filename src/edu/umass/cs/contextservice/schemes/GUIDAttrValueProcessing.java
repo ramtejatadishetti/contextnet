@@ -153,7 +153,10 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 						DatabaseOperationClass dbOper = new DatabaseOperationClass(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
 								subspaceVectList, respNodeIdList);
 						//dbOper.run();
-						nodeES.execute(dbOper);
+						synchronized(nodeES)
+						{
+							nodeES.execute(dbOper);
+						}
 						// repointing it to a new list, and the pointer to the old list is passed to the DatabaseOperation class
 						subspaceVectList = new LinkedList<List<Integer>>();
 						respNodeIdList = new LinkedList<NodeIDType>();
@@ -178,8 +181,10 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 					
 					DatabaseOperationClass dbOper = new DatabaseOperationClass(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
 							subspaceVectList, respNodeIdList);
-					nodeES.execute(dbOper);
-					
+					synchronized(nodeES)
+					{
+						nodeES.execute(dbOper);
+					}
 					// repointing it to a new list, and the pointer to the old list is passed to the DatabaseOperation class
 					subspaceVectList = new LinkedList<List<Integer>>();
 					respNodeIdList = new LinkedList<NodeIDType>();
@@ -542,7 +547,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 				case ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY:
 				{
 					numRep = 2;
-					if(!ContextServiceConfig.DISABLE_SECONDARY_SUBSPACES_UPDATES)
+					//if(!ContextServiceConfig.DISABLE_SECONDARY_SUBSPACES_UPDATES)
 					{
 						this.hyperspaceDB.deleteGUIDFromSubspaceRegion
 											(tableName, GUID, subspaceId);
