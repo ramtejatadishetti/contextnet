@@ -1235,7 +1235,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	{
 		ContextServiceLogger.getLogger().fine("performStoreGUIDInPrimarySubspaceUpdate "+tableName
 				+" nodeGUID "+nodeGUID);
-    	
+		
         Connection myConn      		= null;
         Statement stmt         		= null;
         

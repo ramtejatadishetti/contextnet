@@ -430,7 +430,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 	    		atrToValueRep, subspaceId, oldValJSON, 
 	    		this.privacyInformationStroage);
     		
-    		this.execService.execute(privacyThread);
+    		this.execService.submit(privacyThread);
     		//Thread t = new Thread(privacyThread);
     		//t.start();
     		
@@ -484,7 +484,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		    		this.privacyInformationStroage);
 			//Thread t = new Thread(privacyThread);
 			//t.start();
-			this.execService.execute(privacyThread);
+			this.execService.submit(privacyThread);
 			
 //			privacyInformationStroage.deleteAnonymizedIDFromPrivacyInfoStorageBlocking
 //			(nodeGUID, subspaceId);
