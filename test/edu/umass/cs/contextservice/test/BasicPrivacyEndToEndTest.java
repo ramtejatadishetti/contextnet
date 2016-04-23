@@ -97,33 +97,33 @@ public class BasicPrivacyEndToEndTest
 		acl0.add(new ACLEntry(guidsVector.get(1).getGuid(), guidsVector.get(1).getPublicKey()));
 		acl0.add(new ACLEntry(guidsVector.get(2).getGuid(), guidsVector.get(2).getPublicKey()));
 		acl0.add(new ACLEntry(guidsVector.get(3).getGuid(), guidsVector.get(3).getPublicKey()));
-		aclMap.put("attr1", acl0);
+		aclMap.put("attr0", acl0);
 		
 		
 		List<ACLEntry> acl1 = new LinkedList<ACLEntry>();
 		acl1.add(new ACLEntry(guidsVector.get(4).getGuid(), guidsVector.get(4).getPublicKey()));
 		acl1.add(new ACLEntry(guidsVector.get(5).getGuid(), guidsVector.get(5).getPublicKey()));
 		acl1.add(new ACLEntry(guidsVector.get(3).getGuid(), guidsVector.get(3).getPublicKey()));
-		aclMap.put("attr2", acl1);
+		aclMap.put("attr1", acl1);
 		
 		
 		List<ACLEntry> acl2 = new LinkedList<ACLEntry>();
 		acl2.add(new ACLEntry(guidsVector.get(1).getGuid(), guidsVector.get(1).getPublicKey()));
 		acl2.add(new ACLEntry(guidsVector.get(2).getGuid(), guidsVector.get(2).getPublicKey()));
-		aclMap.put("attr3", acl2);
+		aclMap.put("attr2", acl2);
 		
 		
 		List<ACLEntry> acl3 = new LinkedList<ACLEntry>();
 		acl3.add(new ACLEntry(guidsVector.get(1).getGuid(), guidsVector.get(1).getPublicKey()));
 		acl3.add(new ACLEntry(guidsVector.get(2).getGuid(), guidsVector.get(2).getPublicKey()));
 		acl3.add(new ACLEntry(guidsVector.get(3).getGuid(), guidsVector.get(3).getPublicKey()));
-		aclMap.put("attr4", acl3);
+		aclMap.put("attr3", acl3);
 		
 		
 		List<ACLEntry> acl4 = new LinkedList<ACLEntry>();
 		acl4.add(new ACLEntry(guidsVector.get(6).getGuid(), guidsVector.get(6).getPublicKey()));
 		acl4.add(new ACLEntry(guidsVector.get(7).getGuid(), guidsVector.get(7).getPublicKey()));
-		aclMap.put("attr5", acl4);
+		aclMap.put("attr4", acl4);
 		
 		
 		List<ACLEntry> acl5 = new LinkedList<ACLEntry>();
@@ -131,22 +131,22 @@ public class BasicPrivacyEndToEndTest
 		acl5.add(new ACLEntry(guidsVector.get(5).getGuid(), guidsVector.get(5).getPublicKey()));
 		acl5.add(new ACLEntry(guidsVector.get(1).getGuid(), guidsVector.get(1).getPublicKey()));
 		
-		aclMap.put("attr6", acl5);
+		aclMap.put("attr5", acl5);
 		
 		
 		ContextServiceClient<Integer> csClient = new ContextServiceClient<Integer>("127.0.0.1", 8000);
 		
 		List<AnonymizedIDEntry> anonymizedIdList = csClient.computeAnonymizedIDs(aclMap);
 		JSONObject attrValPair = new JSONObject();
-		attrValPair.put("attr1", 10+"");
+		attrValPair.put("attr0", 10+"");
 		
-		attrValPair.put("attr2", 15+"");
+		attrValPair.put("attr1", 15+"");
 		
 		csClient.sendUpdateSecure(guid0, myGUID, attrValPair, -1, true, aclMap, anonymizedIdList);
 		
 		Thread.sleep(2000);
 		
-		String searchQuery = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE attr1 >= 5 AND attr1 <= 15";
+		String searchQuery = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE attr0 >= 5 AND attr0 <= 15";
 		JSONArray replyArray = new JSONArray();
 		GuidEntry queryingGuid = guidsVector.get(3);
 		csClient.sendSearchQuerySecure(searchQuery, replyArray, 300000, queryingGuid);
@@ -155,13 +155,13 @@ public class BasicPrivacyEndToEndTest
 				" Real GUID "+guid0+" reply Arr "+replyArray);
 		
 		
-		searchQuery = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE attr1 >= 5 AND attr1 <= 15"
-				+ " AND attr2 >= 10 AND attr2 <= 20";
+		searchQuery = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE attr0 >= 5 AND attr0 <= 15"
+				+ " AND attr1 >= 10 AND attr1 <= 20";
 		replyArray = new JSONArray();
 		queryingGuid = guidsVector.get(1);
 		csClient.sendSearchQuerySecure(searchQuery, replyArray, 300000, queryingGuid);
 		
-		System.out.println("Query for att1 and attr4 querying GUID "+ queryingGuid.getGuid()+
+		System.out.println("Query for att0 and attr3 querying GUID "+ queryingGuid.getGuid()+
 				" Real GUID "+guid0+" reply Arr "+replyArray);
 		
 //			queryingGuid = guidsVector.get(1);

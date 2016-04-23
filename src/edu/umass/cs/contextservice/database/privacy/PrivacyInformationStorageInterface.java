@@ -35,13 +35,4 @@ public interface PrivacyInformationStorageInterface
 	
 	public void deleteAnonymizedIDFromPrivacyInfoStorageBlocking(String nodeGUID, 
 			int deleteSubspaceId);
-	
-	
-	public PrivacyUpdateCallBack bulkInsertPrivacyInformationNonBlocking( String ID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep , int subsapceId, 
-    		JSONObject oldValJSON);
-	
-	public PrivacyUpdateCallBack deleteAnonymizedIDFromPrivacyInfoStorageNOnBlocking(String nodeGUID, 
-			int deleteSubspaceId);
-	
 }

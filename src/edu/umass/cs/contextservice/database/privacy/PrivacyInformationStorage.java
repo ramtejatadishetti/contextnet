@@ -397,30 +397,4 @@ public class PrivacyInformationStorage<NodeIDType>
 									+(end-start) );
 		}
 	}
-	
-	
-	@Override
-	public PrivacyUpdateCallBack bulkInsertPrivacyInformationNonBlocking(String ID,
-			HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int subsapceId, JSONObject oldValJSON) 
-	{
-		PrivacyUpdateCallBack privacyThread 
-			= new PrivacyUpdateCallBack(ID, 
-	    		atrToValueRep, subsapceId, oldValJSON, 
-	    		this);
-		this.execService.execute(privacyThread);
-		
-		return privacyThread;
-	}
-
-	@Override
-	public PrivacyUpdateCallBack deleteAnonymizedIDFromPrivacyInfoStorageNOnBlocking(String nodeGUID,
-			int deleteSubspaceId) 
-	{
-		PrivacyUpdateCallBack privacyThread 
-		= new PrivacyUpdateCallBack(nodeGUID, deleteSubspaceId, 
-	    		this);
-		
-		this.execService.execute(privacyThread);
-		return privacyThread;
-	}
 }

@@ -37,7 +37,6 @@ import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSTransformedMess
 import edu.umass.cs.contextservice.client.storage.GetStorage;
 import edu.umass.cs.contextservice.client.storage.SearchQueryStorage;
 import edu.umass.cs.contextservice.client.storage.UpdateStorage;
-import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ClientConfigReply;
 import edu.umass.cs.contextservice.messages.ClientConfigRequest;
@@ -305,7 +304,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 						gnsTransformMesg.getEncryptedAttrValuePair() );
 			}
 			
-			
 			JSONObject csAttrValuePairs = filterCSAttributes(attrValuePairs);
 			// no context service attribute matching.
 			if( csAttrValuePairs.length() <= 0 )
@@ -329,13 +327,15 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			
 			// now all the anonymized IDs and the attributes that needs to be updated
 			// are calculated, 
-			// just need to send out updates\
+			// just need to send out updates
+			
+			List<Long> finishTimeList = new LinkedList<Long>();
 			
 			ParallelUpdateStateStorage updateState 
-								= new ParallelUpdateStateStorage(transformedMesgList);
+								= new ParallelUpdateStateStorage(transformedMesgList, 
+										finishTimeList);
 			
-			
-			for( int i=0;i<transformedMesgList.size();i++ )
+			for( int i=0; i<transformedMesgList.size(); i++ )
 			{
 				CSUpdateTransformedMessage csTransformedMessage = transformedMesgList.get(i);
 			
@@ -353,9 +353,17 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			
 			long end2 = System.currentTimeMillis();
 			
-			System.out.println("Transform time "+(end1-start1)+" sending time "+(end2-end1)+
+			finishTimeList.sort(null);
+			
+			if(transformedMesgList.size() > 0)
+			{
+				System.out.println
+				("sendUpdateSecure complete GUID "+GUID+" transform time "+(end1-start1)
+					+" total time "+(end2-start1)+
 					" length "+attrValuePairs.length()+" transformedMesgList size "
-					+transformedMesgList.size() );
+					+transformedMesgList.size() +" first anonymized ID finish time "
+					+finishTimeList.get(0) );
+			}
 		}
 		catch( JSONException jsoEx )
 		{
@@ -857,7 +865,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 	
 	/**
-	 * 
 	 * Thread tha performs the update.
 	 * @author adipc
 	 */
@@ -868,8 +875,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		private final long versionNum;
 		private final boolean blocking;
 		private final ParallelUpdateStateStorage updateState;
-		
 		private final long startTime;
+		
+		
 		public UpdateOperationThread(String guid, CSUpdateTransformedMessage csTransformedMessage
 				, long versionNum, boolean blocking, ParallelUpdateStateStorage updateState)
 		{
@@ -883,19 +891,20 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 		@Override
 		public void run() 
-		{	
+		{
 			String IDString = Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
 			
 			sendUpdateToCS( IDString, csTransformedMessage.getAttrValMap() , 
 					versionNum, blocking );
 			
 			long endTime = System.currentTimeMillis();
-			if(ContextServiceConfig.DEBUG_MODE )
-			{
-				System.out.println("GUID "+guid+" AnonymizedID "+IDString+" update finished at "
-							+(endTime-startTime)+" full mesg "+csTransformedMessage.toString());
-			}
-			updateState.incrementNumCompleted();
+//			if(ContextServiceConfig.DEBUG_MODE )
+//			{
+//				System.out.println("GUID "+guid+" AnonymizedID "+IDString+" update finished at "
+//							+(endTime-startTime)+" full mesg "+csTransformedMessage.toString());
+//			}
+			
+			updateState.incrementNumCompleted((endTime-startTime));
 		}
 	}
 	

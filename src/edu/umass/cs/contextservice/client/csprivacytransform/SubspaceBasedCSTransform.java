@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -281,8 +282,15 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 				AttrValueRepresentationJSON attrValRep = attrValueMap.get(currAttrName);
 				String value = attrValRep.getActualAttrValue();
 				
+				
+				//just adding a random value for testing.
+//				Random rand = new Random(System.currentTimeMillis());
+//				double randVal = rand.nextDouble()*1400+10;
+//				value = randVal+"";
+				
+				
 				// create a new AttrValueRepresentationJSON, 
-				// because multiple anonymized IDs might update same attribute value pair
+				// because multiple anonymized IDs might not update same attribute value pair
 				// so using the input AttrValueRepresentationJSON will casuse contention and serious bug
 				AttrValueRepresentationJSON currValRep =
 						addRealIDMappingInfo( realGUID, value, attrUpdInfo);
