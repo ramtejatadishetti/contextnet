@@ -118,7 +118,6 @@ public class PrivacyUpdateInAttrTableThread<NodeIDType> implements Runnable
 					}
 				}
 				
-				//insertTableSQL = insertTableSQL+;
 				long start = System.currentTimeMillis();
 				stmt.executeUpdate(insertTableSQL);
 				long end = System.currentTimeMillis();

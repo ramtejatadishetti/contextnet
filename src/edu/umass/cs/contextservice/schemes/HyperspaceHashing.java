@@ -137,10 +137,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ProtocolEvent<PacketType, String> event,
 			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
 	{
-		synchronized(nodeES)
-		{
-			nodeES.submit(new HandleEventThread(event));
-		}
+		nodeES.submit(new HandleEventThread(event));
 		return null;
 	}
 	
@@ -149,10 +146,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ProtocolEvent<PacketType, String> event,
 			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
 	{
-		synchronized(nodeES)
-		{
-			nodeES.submit(new HandleEventThread(event));
-		}
+		nodeES.submit(new HandleEventThread(event));
 		return null;
 	}
 	
@@ -161,10 +155,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ProtocolEvent<PacketType, String> event,
 			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
 	{
-		synchronized(nodeES)
-		{
-			nodeES.submit(new HandleEventThread(event));
-		}
+		nodeES.submit(new HandleEventThread(event));
 		return null;
 	}
 
@@ -173,10 +164,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ProtocolEvent<PacketType, String> event,
 			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
 	{
-		synchronized(nodeES)
-		{
-			nodeES.submit(new HandleEventThread(event));
-		}
+		nodeES.submit(new HandleEventThread(event));
 		return null;
 	}
 
@@ -185,10 +173,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ProtocolEvent<PacketType, String> event,
 			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
 	{
-		synchronized(nodeES)
-		{
-			nodeES.submit(new HandleEventThread(event));
-		}
+		nodeES.submit(new HandleEventThread(event));
 		return null;
 	}
 	
@@ -197,10 +182,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ProtocolEvent<PacketType, String> event,
 			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
 	{
-		synchronized(nodeES)
-		{
-			nodeES.submit(new HandleEventThread(event));
-		}
+		nodeES.submit(new HandleEventThread(event));
 		return null;
 	}
 
@@ -209,10 +191,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ProtocolEvent<PacketType, String> event,
 			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
 	{
-		synchronized(nodeES)
-		{
-			nodeES.submit(new HandleEventThread(event));
-		}
+		nodeES.submit(new HandleEventThread(event));
 		return null;
 	}
 	
@@ -221,10 +200,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ProtocolEvent<PacketType, String> event,
 			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
 	{
-		synchronized(nodeES)
-		{
-			nodeES.submit(new HandleEventThread(event));
-		}
+		nodeES.submit(new HandleEventThread(event));
 		return null;
 	}
 	
@@ -233,10 +209,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ProtocolEvent<PacketType, String> event,
 			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
 	{
-		synchronized(nodeES)
-		{
-			nodeES.submit(new HandleEventThread(event));
-		}
+		nodeES.submit(new HandleEventThread(event));
 		return null;
 	}
 
@@ -245,10 +218,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ProtocolEvent<PacketType, String> event,
 			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
 	{
-		synchronized(nodeES)
-		{
-			nodeES.submit(new HandleEventThread(event));
-		}
+		nodeES.submit(new HandleEventThread(event));
 		return null;
 	}
 	
@@ -257,10 +227,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ProtocolEvent<PacketType, String> event,
 			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
 	{
-		synchronized(nodeES)
-		{
-			nodeES.submit(new HandleEventThread(event));
-		}
+		nodeES.submit(new HandleEventThread(event));
 		return null;
 	}
 	
@@ -268,10 +235,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	public GenericMessagingTask<NodeIDType, ?>[] handleClientConfigRequest(ProtocolEvent<PacketType, String> event,
 			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
 	{
-		synchronized(nodeES)
-		{
-			nodeES.submit(new HandleEventThread(event));
-		}
+		nodeES.submit(new HandleEventThread(event));
 		return null;
 	}
 	
@@ -458,7 +422,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
-	
 	/**
 	 * This function processes a request serially.
 	 * when one outstanding request completes.
@@ -520,7 +483,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			// so just passing an empty JSONObject()
 			// update for primary subspace
 			this.hyperspaceDB.storeGUIDInPrimarySubspace
-			(tableName, GUID, attrValMap, updateOrInsert);
+			(tableName, GUID, attrValMap, updateOrInsert, oldValueJSON);
 			// process update at other subspaces.
 			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap
 					= this.subspaceConfigurator.getSubspaceInfoMap();

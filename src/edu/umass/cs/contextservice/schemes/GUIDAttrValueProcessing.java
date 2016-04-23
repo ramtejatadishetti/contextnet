@@ -51,7 +51,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 
 	private final JSONMessenger<NodeIDType> messenger;
 
-	private final Object subspacePartitionInsertLock		= new Object();
+	private final Object subspacePartitionInsertLock									= new Object();
 	private final ExecutorService nodeES;
 	
 	private final ConcurrentHashMap<Long, QueryInfo<NodeIDType>> pendingQueryRequests;
@@ -153,10 +153,9 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 						DatabaseOperationClass dbOper = new DatabaseOperationClass(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
 								subspaceVectList, respNodeIdList);
 						//dbOper.run();
-						synchronized(nodeES)
-						{
-							nodeES.execute(dbOper);
-						}
+						
+						nodeES.execute(dbOper);
+						
 						// repointing it to a new list, and the pointer to the old list is passed to the DatabaseOperation class
 						subspaceVectList = new LinkedList<List<Integer>>();
 						respNodeIdList = new LinkedList<NodeIDType>();
@@ -181,10 +180,9 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 					
 					DatabaseOperationClass dbOper = new DatabaseOperationClass(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
 							subspaceVectList, respNodeIdList);
-					synchronized(nodeES)
-					{
-						nodeES.execute(dbOper);
-					}
+					
+					nodeES.execute(dbOper);
+					
 					// repointing it to a new list, and the pointer to the old list is passed to the DatabaseOperation class
 					subspaceVectList = new LinkedList<List<Integer>>();
 					respNodeIdList = new LinkedList<NodeIDType>();

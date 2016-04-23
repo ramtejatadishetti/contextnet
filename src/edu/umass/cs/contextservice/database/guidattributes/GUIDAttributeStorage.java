@@ -747,7 +747,8 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
      * @throws JSONException
      */
     public void storeGUIDInPrimarySubspace(String tableName, String nodeGUID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert ) throws JSONException
+    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert, 
+    		JSONObject oldValJSON ) throws JSONException
     {
     	if( updateOrInsert == HyperspaceMySQLDB.INSERT_REC )
     	{
@@ -757,7 +758,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     	else if( updateOrInsert == HyperspaceMySQLDB.UPDATE_REC )
     	{
     		this.performStoreGUIDInPrimarySubspaceUpdate
-    				(tableName, nodeGUID, atrToValueRep);
+    				(tableName, nodeGUID, atrToValueRep, oldValJSON);
     	}
     }
     
@@ -1229,8 +1230,8 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	 * @param nodeGUID
 	 * @param atrToValueRep
 	 */
-	private void performStoreGUIDInPrimarySubspaceUpdate(String tableName, String nodeGUID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep)
+	private void performStoreGUIDInPrimarySubspaceUpdate( String tableName, String nodeGUID, 
+    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, JSONObject oldValJSON )
 	{
 		ContextServiceLogger.getLogger().fine("performStoreGUIDInPrimarySubspaceUpdate "+tableName
 				+" nodeGUID "+nodeGUID);
@@ -1273,18 +1274,27 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	            
 	            //oldValueJSON.put(attrName, AttributeTypes.NOT_SET);
 				// store the ACL info when privacy is enabled
-				JSONArray realIDMappingArray = null;
-                if( ContextServiceConfig.PRIVACY_ENABLED )
-                {
-                	realIDMappingArray = attrValRep.getRealIDMappingInfo();
-                	
-                	if( realIDMappingArray != null )
-                	{
-                		String currColName 		= "ACL"+attrName;
-                		String jsonArrayString  = realIDMappingArray.toString();
-                		updateSqlQuery = updateSqlQuery +" , "+ currColName +" = '"+jsonArrayString+"'";
-                	}
-                }
+	            String currColName 		= "ACL"+attrName;
+	            
+	            // if oldValJSON has the ACLAttName column then it means
+	            // that it has the ACL info stored and we don't need to update.
+	            // as ACL info is never updated. It is either deleted or inserted.
+	            // because change in ACL will require re-computation of anonymized ID itself. 
+	            if(!oldValJSON.has(currColName))
+	            {
+					JSONArray realIDMappingArray = null;
+	                if( ContextServiceConfig.PRIVACY_ENABLED )
+	                {
+	                	realIDMappingArray = attrValRep.getRealIDMappingInfo();
+	                	
+	                	if( realIDMappingArray != null )
+	                	{
+	                		String jsonArrayString  = realIDMappingArray.toString();
+	                		updateSqlQuery = updateSqlQuery +" , "+ currColName +" = '"+jsonArrayString+"'";
+	                	}
+	                }
+	            }
+                
 	            i++;
 	        }
 	        

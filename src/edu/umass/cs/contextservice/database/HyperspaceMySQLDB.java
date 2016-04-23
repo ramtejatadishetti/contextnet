@@ -360,13 +360,13 @@ public class HyperspaceMySQLDB<NodeIDType>
 	
 	
 	public void storeGUIDInPrimarySubspace( String tableName, String nodeGUID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert ) 
+    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert, 
+    		JSONObject oldValJSON ) 
     				throws JSONException
 	{
-		// no need to add realIDEntryption Info in primary subspaces.
 		long start = System.currentTimeMillis();
 		this.guidAttributesStorage.storeGUIDInPrimarySubspace
-			(tableName, nodeGUID, atrToValueRep, updateOrInsert);
+			(tableName, nodeGUID, atrToValueRep, updateOrInsert, oldValJSON);
 		long end = System.currentTimeMillis();
 		
 		if(ContextServiceConfig.DEBUG_MODE)
