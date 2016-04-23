@@ -93,7 +93,7 @@ public class PrivacyUpdateInAttrTableThread<NodeIDType> implements Runnable
 			if( ifExists )
 				return;
 			
-			String insertTableSQL = "INSERT INTO "+tableName 
+			String insertTableSQL = "BEGIN; INSERT INTO "+tableName 
 				+" ( nodeGUID , realIDEncryption , subspaceId ) VALUES ";
 		
 			if( realIDMappingArray != null )
