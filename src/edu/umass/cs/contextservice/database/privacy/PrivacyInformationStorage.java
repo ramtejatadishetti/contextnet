@@ -309,7 +309,7 @@ public class PrivacyInformationStorage<NodeIDType>
 		
 		for(int i=0; i<attrUpdates.size(); i++)
 		{
-			this.execService.submit(attrUpdates.get(i));
+			this.execService.execute(attrUpdates.get(i));
 		}
 		updateState.waitForFinish();
 		
@@ -382,7 +382,7 @@ public class PrivacyInformationStorage<NodeIDType>
 		
 		for(int i=0; i<attrUpdates.size(); i++)
 		{
-			this.execService.submit(attrUpdates.get(i));
+			this.execService.execute(attrUpdates.get(i));
 		}
 		
 		ContextServiceLogger.getLogger().fine("deleteAnonymizedIDFromPrivacyInfoStorage waiting updateState.waitForFinish()");
