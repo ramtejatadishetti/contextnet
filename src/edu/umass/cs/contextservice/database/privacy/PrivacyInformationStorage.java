@@ -46,7 +46,9 @@ public class PrivacyInformationStorage<NodeIDType>
 	{
 		this.subspaceInfoMap = subspaceInfoMap;
 		this.dataSource = dataSource;
-		this.execService = Executors.newFixedThreadPool(ContextServiceConfig.PRIVACY_THREAD_POOL_SIZE);
+		//this.execService = Executors.newFixedThreadPool(ContextServiceConfig.PRIVACY_THREAD_POOL_SIZE);
+		// creating new cached and its size is limited by hypersapce pool, as it can't get more requests than that
+		this.execService = Executors.newCachedThreadPool();
 	}
 	
 	@Override

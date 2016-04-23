@@ -107,9 +107,9 @@ public class ContextServiceConfig
 	// it is also important to set this at least the size of the database connection pool.
 	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 214;
 	
-	public static final int PRIVACY_THREAD_POOL_SIZE				= 214;
+	//public static final int PRIVACY_THREAD_POOL_SIZE				= 214;
 	
-	public static final int HYPERSPACEDB_THREAD_POOL_SIZE			= 214;
+	//public static final int HYPERSPACEDB_THREAD_POOL_SIZE			= 214;
 	
 	// mysql result cursor fetches 1 guid at once and stores in memory
 	// need this becuase otherwise in large guids case , all the result 

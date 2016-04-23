@@ -60,7 +60,8 @@ public class HyperspaceMySQLDB<NodeIDType>
 			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap)
 			throws Exception
 	{
-		execService = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
+		//execService = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
+		execService = Executors.newCachedThreadPool();
 		this.mysqlDataSource = new DataSource<NodeIDType>(myNodeID);
 		
 		guidAttributesStorage = new GUIDAttributeStorage<NodeIDType>
