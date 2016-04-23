@@ -1196,8 +1196,8 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     		
     		if(ContextServiceConfig.DEBUG_MODE)
         	{
-        		System.out.println("TIME_DEBUG: performStoreGUIDInSecondarySubspaceInsert insert  "+tableName+" nodeGUID "+nodeGUID
-        				+(end-start));
+        		System.out.println("TIME_DEBUG: performStoreGUIDInSecondarySubspaceInsert insert  "+tableName
+        				+" nodeGUID "+nodeGUID+" "+(end-start));
         	}
     		
     		ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING INSERT rowCount "+rowCount+" insertQuery "+insertQuery);

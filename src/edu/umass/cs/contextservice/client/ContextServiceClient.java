@@ -893,7 +893,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			if(ContextServiceConfig.DEBUG_MODE )
 			{
 				System.out.println("GUID "+guid+" AnonymizedID "+IDString+" update finished at "
-							+(endTime-startTime));
+							+(endTime-startTime)+" full mesg "+csTransformedMessage.toString());
 			}
 			updateState.incrementNumCompleted();
 		}

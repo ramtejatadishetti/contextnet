@@ -116,18 +116,18 @@ public class PrivacyUpdateInAttrTableThread<NodeIDType> implements Runnable
 					{
 						jsoExcp.printStackTrace();
 					}
-					
-					//insertTableSQL = insertTableSQL+;
-					long start = System.currentTimeMillis();
-					stmt.executeUpdate(insertTableSQL);
-					long end = System.currentTimeMillis();
-					
-					if(ContextServiceConfig.DEBUG_MODE)
-					{
-						System.out.println("TIME_DEBUG: bulkInsertPrivacyInformation performInsert "
-								+ "time "
-								+ (end-start)+" batch length "+realIDMappingArray.length());
-					}
+				}
+				
+				//insertTableSQL = insertTableSQL+;
+				long start = System.currentTimeMillis();
+				stmt.executeUpdate(insertTableSQL);
+				long end = System.currentTimeMillis();
+				
+				if(ContextServiceConfig.DEBUG_MODE)
+				{
+					System.out.println("TIME_DEBUG: bulkInsertPrivacyInformation performInsert "
+							+ "time "
+							+ (end-start)+" batch length "+realIDMappingArray.length());
 				}
 			}
 		}

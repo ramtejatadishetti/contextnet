@@ -83,7 +83,6 @@ public class HyperspaceMySQLDB<NodeIDType>
 			privacyInformationStroage = new PrivacyInformationStorage<NodeIDType>
 										(subspaceInfoMap, mysqlDataSource);
 		}
-		
 		createTables();
 	}
 	

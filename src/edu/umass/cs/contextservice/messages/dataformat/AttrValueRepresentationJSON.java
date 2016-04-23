@@ -79,7 +79,7 @@ public class AttrValueRepresentationJSON
 		String str = "Value: "+actualAttrValue;
 		if(realIDMappingInfo != null)
 		{
-			str= str+" realIDMappingInfo length "+realIDMappingInfo.length()+" realIDMappingInfo "+realIDMappingInfo;
+			str= str+" realIDMappingInfo length "+realIDMappingInfo.length();
 		}
 		return str;
 	}
