@@ -91,7 +91,25 @@ public class PrivacyUpdateInAttrTableThread<NodeIDType> implements Runnable
 			// deleted, it is never updated. There are only inserts and deletes of 
 			// acl info, no updates.
 			if( ifExists )
+			{
+				// release the connection info here.
+				try
+				{
+					if( myConn != null )
+					{
+						myConn.close();
+					}
+					if( stmt != null )
+					{
+						stmt.close();
+					}
+				} catch( SQLException sqex )
+				{
+					sqex.printStackTrace();
+				}
+				
 				return;
+			}
 			
 			String insertTableSQL = "INSERT INTO "+tableName 
 				+" ( nodeGUID , realIDEncryption , subspaceId ) VALUES ";

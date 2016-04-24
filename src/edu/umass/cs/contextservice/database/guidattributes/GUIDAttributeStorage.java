@@ -776,6 +776,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert
     		, JSONObject oldValJSON ) throws JSONException
     {
+    	long start = System.currentTimeMillis();
     	if(ContextServiceConfig.DEBUG_MODE)
     	{
     		ContextServiceLogger.getLogger().fine("STARTED storeGUIDInSecondarySubspace "+nodeGUID);
@@ -792,7 +793,9 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     	}
     	if(ContextServiceConfig.DEBUG_MODE)
     	{
-    		ContextServiceLogger.getLogger().fine("FINISHED storeGUIDInSecondarySubspace "+nodeGUID);
+    		long end = System.currentTimeMillis();
+    		ContextServiceLogger.getLogger().fine
+    		("FINISHED storeGUIDInSecondarySubspace "+nodeGUID+" time "+(end-start));
     	}
     }
     
