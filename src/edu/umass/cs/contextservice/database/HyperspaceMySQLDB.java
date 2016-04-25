@@ -156,9 +156,19 @@ public class HyperspaceMySQLDB<NodeIDType>
 	{
 		if( !ContextServiceConfig.PRIVACY_ENABLED )
 		{
+			
+			long start = System.currentTimeMillis();
 			int resultSize 
 				= this.guidAttributesStorage.processSearchQueryInSubspaceRegion
 				(subspaceId, query, resultArray);
+			long end = System.currentTimeMillis();
+			
+			if( ContextServiceConfig.DEBUG_MODE )
+			{
+				System.out.println("TIME_DEBUG: processSearchQueryInSubspaceRegion without privacy time "
+						+(end-start));
+			}
+			
 			return resultSize;
 		}
 		else
@@ -188,6 +198,9 @@ public class HyperspaceMySQLDB<NodeIDType>
 				stmt.setFetchSize(ContextServiceConfig.MYSQL_CURSOR_FETCH_SIZE);
 				
 				String currID = "";
+				
+				long start = System.currentTimeMillis();
+				
 				ResultSet rs = stmt.executeQuery(fullQuery);
 				JSONArray encryptedReadIDArray = null;
 				
@@ -240,6 +253,13 @@ public class HyperspaceMySQLDB<NodeIDType>
 					{
 						resultSize++;
 					}
+				}
+				long end = System.currentTimeMillis();
+				
+				if( ContextServiceConfig.DEBUG_MODE )
+				{
+					System.out.println("TIME_DEBUG: processSearchQueryInSubspaceRegion with privacy time "
+							+(end-start));
 				}
 				
 				// do the last anonymized ID

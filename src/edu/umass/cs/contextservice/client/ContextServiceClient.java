@@ -382,6 +382,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			return -1;
 		}
 		
+		long start = System.currentTimeMillis();
 		SearchReplyAnswer searchAnswer 
 						= sendSearchQueryToCS(searchQuery, expiryTime);
 		
@@ -408,8 +409,16 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			}
 		}
 		
+		long end1 = System.currentTimeMillis();
+		
 		this.csPrivacyTransform.unTransformSearchReply(myGUIDInfo,
 				searchRepTransformList, replyArray);
+		
+		long end2 = System.currentTimeMillis();
+		
+		System.out.println("sendSearchQuerySecure search reply from CS time "+ 
+		(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
+				+searchRepTransformList.size()+" final reply size "+replyArray.length());
 		
 		return searchAnswer.resultSize;
 	}

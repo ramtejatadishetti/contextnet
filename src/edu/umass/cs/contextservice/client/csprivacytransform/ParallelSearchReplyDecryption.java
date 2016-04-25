@@ -158,9 +158,9 @@ public class ParallelSearchReplyDecryption
 					{
 						byte[] encryptedElement = (byte[]) (Utils.hexStringToByteArray(
 								realIDMappingInfo.getString(i)));
-						
-						plainText = Utils.doPrivateKeyDecryption(privateKey, encryptedElement);
 						totalDecryptionsThread++;
+						plainText = Utils.doPrivateKeyDecryption(privateKey, encryptedElement);
+						
 						// non exception, just break;
 						break;
 					}
