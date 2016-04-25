@@ -10,6 +10,7 @@ import org.json.JSONObject;
 import edu.umass.cs.contextservice.client.ContextServiceClient;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
+import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.gnsclient.client.GNSClient;
 import edu.umass.cs.gnsclient.client.GNSClientConfig;
 import edu.umass.cs.gnsclient.client.GuidEntry;
@@ -40,7 +41,8 @@ public class CSClientTesting
 		
 		ContextServiceClient<Integer> csClient = new
 					ContextServiceClient<Integer>( "127.0.0.1", 8000, 
-									"127.0.0.1", GNSClientConfig.LNS_PORT );
+									"127.0.0.1", GNSClientConfig.LNS_PORT,
+									ContextServiceClient.SUBSPACE_BASED_CS_TRANSFORM );
 		
 		
 		HashMap<String, List<ACLEntry>> aclMap 

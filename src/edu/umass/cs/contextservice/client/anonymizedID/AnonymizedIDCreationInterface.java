@@ -15,7 +15,7 @@ import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
  * @author adipc
  *
  */
-public interface AnonymizedIDCreationInterface 
+public interface AnonymizedIDCreationInterface
 {
 	public List<AnonymizedIDEntry> 
 					computeAnonymizedIDs(HashMap<String, List<ACLEntry>> aclList);

@@ -24,6 +24,8 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.anonymizedID.AnonymizedIDCreationInterface;
+import edu.umass.cs.contextservice.client.anonymizedID.GUIDBasedAnonymizedIDCreator;
+import edu.umass.cs.contextservice.client.anonymizedID.HyperspaceBasedAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSPrivacyTransformInterface;
@@ -59,7 +61,7 @@ import edu.umass.cs.gnsclient.client.util.GuidUtils;
 import edu.umass.cs.gnscommon.exceptions.client.GnsClientException;
 
 /**
- * Contextservice client.
+ * ContextService client.
  * It is used to send and recv replies from context service.
  * It knows context service node addresses from a file in the conf folder.
  * It is thread safe, means same client can be used by multiple threads without any 
@@ -68,9 +70,13 @@ import edu.umass.cs.gnscommon.exceptions.client.GnsClientException;
  * @param <NodeIDType>
  */
 public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClient<NodeIDType> 
-												implements ContextClientInterfaceWithPrivacy, ContextServiceClientInterfaceWithoutPrivacy
+			implements ContextClientInterfaceWithPrivacy, ContextServiceClientInterfaceWithoutPrivacy
 {
-	public static final int NUM_THREADS = 200;
+	public static final int SUBSPACE_BASED_CS_TRANSFORM				= 1;
+	public static final int HYPERSPACE_BASED_CS_TRANSFORM			= 2;
+	public static final int GUID_BASED_CS_TRANSFORM					= 3;
+	
+	public static final int NUM_THREADS 							= 200;
 	
 	private Queue<JSONObject> refreshTriggerQueue;
 	//private final Object refreshQueueLock 						= new Object();
@@ -89,6 +95,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	private CSPrivacyTransformInterface csPrivacyTransform;
 	
 	private ExecutorService executorService;
+	
+	// indicates the transform type.
+	private final int transformType;
 	/**
 	 * Use this constructor if you want to directly communicate with CS, bypassing GNS.
 	 * @param csHostName
@@ -96,10 +105,11 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	 * @throws IOException
 	 * @throws NoSuchAlgorithmException 
 	 */
-	public ContextServiceClient(String csHostName, int csPortNum) 
+	public ContextServiceClient(String csHostName, int csPortNum, int transformType) 
 			throws IOException, NoSuchAlgorithmException
 	{
 		super( csHostName, csPortNum );
+		this.transformType = transformType;
 		gnsClient = null;
 		executorService = Executors.newFixedThreadPool(NUM_THREADS);
 		initializeClient();
@@ -115,7 +125,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	 * @throws NoSuchAlgorithmException 
 	 */
 	public ContextServiceClient( String csHostName, int csPortNum, 
-			String gnsHostName, int gnsPort ) 
+			String gnsHostName, int gnsPort, int transformType ) 
 			throws IOException, NoSuchAlgorithmException
 	{
 		super( csHostName, csPortNum );
@@ -127,6 +137,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		props.setProperty("javax.net.ssl.trustStore", "conf/gnsClientConf/trustStore/node100.jks");
 		props.setProperty("javax.net.ssl.keyStorePassword", "qwerty");
 		props.setProperty("javax.net.ssl.keyStore", "conf/gnsClientConf/keyStore/node100.jks");	
+		
+		this.transformType = transformType;
 		
 		InetSocketAddress gnsAddress 
 					= new InetSocketAddress(gnsHostName, gnsPort);
@@ -864,7 +876,19 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		sendConfigRequest();
 		
 		// for anonymized ID
-		anonymizedIDCreation = new SubspaceBasedAnonymizedIDCreator(subspaceAttrMap);
+		if( this.transformType == SUBSPACE_BASED_CS_TRANSFORM )
+		{
+			anonymizedIDCreation 
+				= new SubspaceBasedAnonymizedIDCreator(subspaceAttrMap);
+		}
+		else if( this.transformType == HYPERSPACE_BASED_CS_TRANSFORM )
+		{
+			anonymizedIDCreation = new HyperspaceBasedAnonymizedIDCreator();
+		}
+		else if( this.transformType == GUID_BASED_CS_TRANSFORM )
+		{
+			anonymizedIDCreation = new GUIDBasedAnonymizedIDCreator();
+		}
 		
 		// for gnsTransform
 		gnsPrivacyTransform = new EncryptionBasedGNSPrivacyTransform();
@@ -1030,7 +1054,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		aclMap.put("attr6", acl5);
 		
 		
-		ContextServiceClient<Integer> csClient = new ContextServiceClient<Integer>("127.0.0.1", 8000);
+		ContextServiceClient<Integer> csClient = new ContextServiceClient<Integer>("127.0.0.1", 8000, 
+				ContextServiceClient.SUBSPACE_BASED_CS_TRANSFORM);
 		
 		List<AnonymizedIDEntry> anonymizedIdList = csClient.computeAnonymizedIDs(aclMap);
 		JSONObject attrValPair = new JSONObject();

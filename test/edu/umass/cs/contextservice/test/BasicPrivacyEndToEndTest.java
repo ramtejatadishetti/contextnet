@@ -134,7 +134,9 @@ public class BasicPrivacyEndToEndTest
 		aclMap.put("attr5", acl5);
 		
 		
-		ContextServiceClient<Integer> csClient = new ContextServiceClient<Integer>("127.0.0.1", 8000);
+		ContextServiceClient<Integer> csClient = new 
+				ContextServiceClient<Integer>("127.0.0.1", 8000, 
+						ContextServiceClient.SUBSPACE_BASED_CS_TRANSFORM);
 		
 		List<AnonymizedIDEntry> anonymizedIdList = csClient.computeAnonymizedIDs(aclMap);
 		JSONObject attrValPair = new JSONObject();

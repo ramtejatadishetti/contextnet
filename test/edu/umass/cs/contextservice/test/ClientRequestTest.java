@@ -87,7 +87,9 @@ public class ClientRequestTest
 	public ClientRequestTest(String csHost, int csPort) throws Exception
 	{
 		requestID = 0;
-		contextClient = new ContextServiceClient<String>(csHost, csPort);
+		contextClient 
+			= new ContextServiceClient<String>(csHost, csPort, 
+					ContextServiceClient.SUBSPACE_BASED_CS_TRANSFORM);
 	}
 	
 	/**

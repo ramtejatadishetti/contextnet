@@ -203,7 +203,8 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 		{			
 			requestID = 0;
 			
-			csClient = new ContextServiceClient<Integer>("127.0.0.1", 8000);
+			csClient = new ContextServiceClient<Integer>( "127.0.0.1", 8000,
+					ContextServiceClient.SUBSPACE_BASED_CS_TRANSFORM );
 		}
 		
 		/**
