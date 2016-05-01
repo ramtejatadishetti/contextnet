@@ -24,6 +24,12 @@ import edu.umass.cs.gnsclient.client.GuidEntry;
 import edu.umass.cs.gnsclient.client.util.GuidUtils;
 
 
+/**
+ * Implements the subspace based anonymized creator,
+ * this scheme is used in the system. It implements the best heuristic 
+ * we have for minimal anonymized ID creation.
+ * @author adipc
+ */
 public class SubspaceBasedAnonymizedIDCreator implements AnonymizedIDCreationInterface
 {
 	private final HashMap<Integer, JSONArray> subspaceAttrMap;
@@ -73,20 +79,25 @@ public class SubspaceBasedAnonymizedIDCreator implements AnonymizedIDCreationInt
 				// JSONArray cannot be directly used.
 				HashMap<String, JSONArray> attributesToGuidsMap 
 						= computeAttributesToGuidsMap(guidToAttributesMap);
+			
+				// apply minimization heursitic
+				HashMap<String, JSONArray> minimizedAttrSet = removeRedundantAnonymizedIDs
+				( attributesToGuidsMap );
 				
-				
+				ContextServiceLogger.getLogger().fine("Reduction from minimization before "+
+						attributesToGuidsMap.size()+" after "+minimizedAttrSet.size());
 				// now assign anonymized ID
 				//HashMap<String, List<byte[]>> attributesToGuidsMap 
 				//	= new HashMap<String, List<byte[]>>();
 
-				Iterator<String> attrSetIter = attributesToGuidsMap.keySet().iterator();
+				Iterator<String> attrSetIter = minimizedAttrSet.keySet().iterator();
 				
 				while( attrSetIter.hasNext() )
 				{
 					// JSONArray in string format
 					String key = attrSetIter.next();
 					JSONArray attrSet = new JSONArray(key);
-					JSONArray guidSet = attributesToGuidsMap.get(key);
+					JSONArray guidSet = minimizedAttrSet.get(key);
 					assert(attrSet != null);
 					assert(guidSet != null);
 					
@@ -225,10 +236,269 @@ public class SubspaceBasedAnonymizedIDCreator implements AnonymizedIDCreationInt
 		}
 		
 		ContextServiceLogger.getLogger().fine("Size of attributesToGuidsMap "
-							+attributesToGuidsMap.size());
-		
+							+attributesToGuidsMap.size() );	
 		return attributesToGuidsMap;
 	}
+	
+	
+	/**
+	 * This function minimizes the anononymized IDs,
+	 * It first tries to remove anonymized IDs whose corresponding set
+	 * is of length 1 and then proceeds to length 2, and so on.
+	 * 
+	 * @param attributesToGuidsMap
+	 * @return
+	 */
+	private HashMap<String, JSONArray> removeRedundantAnonymizedIDs
+									( HashMap<String, JSONArray> attributesToGuidsMap )
+	{
+		HashMap<String, JSONArray> afterRemoval = new HashMap<String, JSONArray>();
+		
+		// store attribute sets based on length.
+		// key is the attr set length and 
+		// the value is the list of such sets, each set is represented by JSONArray
+		HashMap<Integer, List<JSONArray>> lengthIndexedAttrSets 
+									= new HashMap<Integer, List<JSONArray>>();
+		
+		Iterator<String> attrsToGuidsMapIter = attributesToGuidsMap.keySet().iterator();
+		
+		int minLength = -1;
+		int maxLength = -1;
+		
+		while( attrsToGuidsMapIter.hasNext() )
+		{
+			String jsonArrayString = attrsToGuidsMapIter.next();
+			try
+			{
+				JSONArray attrSetArray = new JSONArray(jsonArrayString);
+				int arrLength = attrSetArray.length();
+				
+				if( minLength == -1 )
+				{
+					minLength = arrLength;
+				}
+				else
+				{
+					if( arrLength < minLength )
+					{
+						minLength = arrLength;
+					}
+				}
+				
+				if( maxLength == -1 )
+				{
+					maxLength = arrLength;
+				}
+				else
+				{
+					if( arrLength > maxLength )
+					{
+						maxLength = arrLength;
+					}
+				}
+				
+				
+				List<JSONArray> currArrList = lengthIndexedAttrSets.get(arrLength);
+				
+				if( currArrList == null )
+				{
+					currArrList = new LinkedList<JSONArray>();
+					currArrList.add(attrSetArray);
+					lengthIndexedAttrSets.put(arrLength, currArrList);
+				}
+				else
+				{
+					currArrList.add(attrSetArray);
+				}
+			} catch ( JSONException e )
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		// the heuristic removes the redundant sets from 
+		// minimum length to the maximum length
+		for( int i=minLength; i <= maxLength; i++ )
+		{
+			List<JSONArray> attrSetList = lengthIndexedAttrSets.get(i);
+			
+			// all attr set length may not be there
+			if( attrSetList != null )
+			{
+				for( int j=0; j<attrSetList.size() ; j++ )
+				{
+					JSONArray currAttrSet = attrSetList.get(j);
+					
+					List<JSONArray> superSetList = 
+							getSuperSetsOfASet( lengthIndexedAttrSets , 
+									currAttrSet );
+					
+					JSONArray currGuidSet = attributesToGuidsMap.get(currAttrSet.toString());
+					
+					assert(currGuidSet != null);
+					
+					boolean inUnion = checkIfGuidSetContainedInUnion( currGuidSet, 
+							attributesToGuidsMap , superSetList );
+					
+					// if not in the union then it should be included, as it is not redundant
+					if( !inUnion )
+					{
+						afterRemoval.put
+								(currAttrSet.toString(), currGuidSet);
+					}
+				}
+			}
+		}
+		return afterRemoval;
+	}
+	
+	
+	/**
+	 * Returns the list of sets that are 
+	 * supersets of the current set.
+	 * 
+	 * @param lengthIndexedAttrSets
+	 * @param currSet
+	 * @return
+	 */
+	private List<JSONArray> getSuperSetsOfASet( HashMap<Integer, List<JSONArray>> lengthIndexedAttrSets , 
+								JSONArray currSet )
+	{
+		int setLength = currSet.length();
+		
+		List<JSONArray> superSetList =  new LinkedList<JSONArray>();
+		
+		Iterator<Integer> mapIter = lengthIndexedAttrSets.keySet().iterator();
+		
+		while( mapIter.hasNext() )
+		{
+			int currLen = mapIter.next();
+			
+			// a superset can be a set with higher length.
+			if( currLen > setLength )
+			{
+				
+				List<JSONArray> toCheckList = lengthIndexedAttrSets.get(currLen);
+				
+				for( int i=0; i<toCheckList.size(); i++ )
+				{
+					JSONArray checkForSuperSet = toCheckList.get(i);
+					
+					if( checkForSuperset(currSet, checkForSuperSet) )
+					{
+						superSetList.add(checkForSuperSet);
+					}
+				}
+				//superSetList.
+			}
+		}
+		return superSetList;
+	}
+	
+	
+	/**
+	 * Checks if the second set is the superset of the first
+	 * set. JSONArrays are the attribute strings
+	 * @return
+	 */
+	private boolean checkForSuperset(JSONArray subset, JSONArray superset)
+	{
+		HashMap<String, Boolean> mapToCheck = new HashMap<String, Boolean>();
+		
+		for( int i=0; i < superset.length(); i++)
+		{
+			try 
+			{
+				String attrName = superset.getString(i);
+				mapToCheck.put(attrName, true);
+			} catch (JSONException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		boolean isSubset = true;
+		
+		for( int i=0; i < subset.length(); i++ )
+		{
+			try 
+			{
+				String attrname = subset.getString(i);
+				if( !mapToCheck.containsKey(attrname) )
+				{
+					isSubset = false;
+					break;
+				}
+			} 
+			catch (JSONException e) 
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		return isSubset;
+	}
+	
+	/**
+	 * Checks if the guid set of an attribute set is containied in the
+	 * union of super sets.
+	 * gudset is in byte[] 
+	 * @return
+	 */
+	private boolean checkIfGuidSetContainedInUnion( JSONArray guidSet, 
+			HashMap<String, JSONArray> attributesToGuidsMap , List<JSONArray> superSetList )
+	{
+		// denotes the union of of guid sets of all attribute sets in 
+		// in the superlist
+		HashMap<String, Boolean> unionOfGuidSets = new HashMap<String, Boolean>();
+		
+		for( int i=0; i < superSetList.size(); i++ )
+		{
+			JSONArray currAttrArray = superSetList.get(i);
+			String jsonArrString = currAttrArray.toString();
+			
+			// each element of this JSONArray is a byte[]
+			JSONArray guidSetArr = attributesToGuidsMap.get(jsonArrString);
+			
+			assert(guidSetArr != null);
+			
+			for( int j=0; j < guidSetArr.length(); j++ )
+			{
+				try
+				{
+					byte[] guidBytes = (byte[]) guidSetArr.get(j);
+					String guidString = Utils.bytArrayToHex(guidBytes);
+					unionOfGuidSets.put(guidString, true);
+				} 
+				catch (JSONException e) 
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		boolean inUnuion = true;
+		
+		for(int i=0 ; i<guidSet.length(); i++)
+		{
+			try 
+			{
+				byte[] guidBytes = (byte[])guidSet.get(i);
+				String guidString = Utils.bytArrayToHex(guidBytes);
+				
+				if( !unionOfGuidSets.containsKey(guidString) )
+				{
+					inUnuion = false;
+					break;
+				}
+			} catch (JSONException e) 
+			{
+				e.printStackTrace();
+			}
+		}
+		return inUnuion;
+	}
+	
 	
 	private void printGuidToAttributesMap( HashMap<String, 
 			List<String>> guidToAttributesMap )
