@@ -69,7 +69,7 @@ public class SubspaceBasedAnonymizedIDCreator implements AnonymizedIDCreationInt
 				HashMap<String, List<String>> guidToAttributesMap 
 								= computeGuidToAttributesMap(attrArray, aclMap);
 				
-				printGuidToAttributesMap( guidToAttributesMap );
+				//printGuidToAttributesMap( guidToAttributesMap );
 				
 				// guidToAttributesMap computed now compute anonymized IDs
 				// we sort the list of attributes, so that different permutations of same set 
@@ -84,7 +84,7 @@ public class SubspaceBasedAnonymizedIDCreator implements AnonymizedIDCreationInt
 				HashMap<String, JSONArray> minimizedAttrSet = removeRedundantAnonymizedIDs
 				( attributesToGuidsMap );
 				
-				ContextServiceLogger.getLogger().fine("Reduction from minimization before "+
+				System.out.println("Reduction from minimization before "+
 						attributesToGuidsMap.size()+" after "+minimizedAttrSet.size());
 				// now assign anonymized ID
 				//HashMap<String, List<byte[]>> attributesToGuidsMap 
