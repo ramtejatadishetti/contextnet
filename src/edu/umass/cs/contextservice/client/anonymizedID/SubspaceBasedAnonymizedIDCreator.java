@@ -28,9 +28,13 @@ import edu.umass.cs.gnsclient.client.util.GuidUtils;
  * Implements the subspace based anonymized creator,
  * this scheme is used in the system. It implements the best heuristic 
  * we have for minimal anonymized ID creation.
+ * 
+ * This anonymized ID creator is depracated and wrong.
+ * HyperspaceBasedAnonymizedIDCreator is used.
  * @author adipc
  */
-public class SubspaceBasedAnonymizedIDCreator implements AnonymizedIDCreationInterface
+public class SubspaceBasedAnonymizedIDCreator 
+									implements AnonymizedIDCreationInterface
 {
 	private final HashMap<Integer, JSONArray> subspaceAttrMap;
 	private final Random anonymizedIDRand					= new Random();

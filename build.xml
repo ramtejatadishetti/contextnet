@@ -95,6 +95,7 @@
 			<include name="edu/umass/cs/contextservice/utils/**" />
 			<include name="edu/umass/cs/contextservice/logging/**" />
 			<include name="edu/umass/cs/contextservice/config/**" />
+			<include name="edu/umass/cs/contextservice/queryparsing/**" />
 			<!--<exclude name="edu/umass/cs/msocket/watchdog/**" />-->
 		</fileset>
 	  
@@ -122,6 +123,7 @@
 				<include name="edu/umass/cs/contextservice/utils/**" />
 				<include name="edu/umass/cs/contextservice/logging/**" />
 				<include name="edu/umass/cs/contextservice/config/**" />
+				<include name="edu/umass/cs/contextservice/queryparsing/**" />
 				<!--<exclude name="edu/umass/cs/msocket/watchdog/**" />-->
 			</fileset>
 			

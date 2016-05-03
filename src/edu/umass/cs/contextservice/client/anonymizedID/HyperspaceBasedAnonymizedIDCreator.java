@@ -26,9 +26,7 @@ import edu.umass.cs.gnsclient.client.util.GuidUtils;
 /**
  * This class implements hyperspace based anonymized ID creator.
  * It creates anonymized IDs over full set of attributes rather than
- * the subspace based creation. The creation process and most of the code
- * would be similar to subspace based creation, just there would be one
- * hyperspace of attributes. 
+ * the subspace based creation. 
  * 
  * It is not used in the system, mainly used in experiments.
  * @author adipc
@@ -39,16 +37,16 @@ public class HyperspaceBasedAnonymizedIDCreator
 {
 	private final Random anonymizedIDRand				= new Random();
 	
-	
 	@Override
 	public List<AnonymizedIDEntry> computeAnonymizedIDs
-							( HashMap<String, List<ACLEntry>> aclMap )
+							( HashMap<String , List<ACLEntry>> aclMap )
 	{
+		// maximum anonymized IDs that this method can give 
+		// is the number of distinct GUIDs in the ACLs
+		
 		// TODO: check List<ACLEntry> doesn't contain repeated guids, 
-		// that causes more anonymized Ids to be generated
-		// and 2^H max num of anonymized IDs for a subspace also gets violated.
-		// TODO: now this method can give very large number of anonymized IDs, like 
-		// for 20 attrs 2^{20} anonymized IDs
+		// that causes more anonymized Ids to be generated.
+		
 		try
 		{
 			// each element is AnonymizedIDStoringClass
@@ -56,11 +54,9 @@ public class HyperspaceBasedAnonymizedIDCreator
 								= new LinkedList<AnonymizedIDEntry>();
 			
 			ContextServiceLogger.getLogger().fine
-								("Size of attrACLMap "+aclMap.size() );			
-
+								("Size of attrACLMap "+aclMap.size() );
 			
 			JSONArray attrArray = getAllAttrs( aclMap );
-			
 			
 			System.out.println("subspace attrs "+attrArray);
 			
@@ -68,7 +64,7 @@ public class HyperspaceBasedAnonymizedIDCreator
 			HashMap<String, List<String>> guidToAttributesMap 
 							= computeGuidToAttributesMap(attrArray, aclMap);
 			
-			printGuidToAttributesMap( guidToAttributesMap );
+			//printGuidToAttributesMap( guidToAttributesMap );
 			
 			// guidToAttributesMap computed now compute anonymized IDs
 			// we sort the list of attributes, so that different permutations of same set 
@@ -82,7 +78,7 @@ public class HyperspaceBasedAnonymizedIDCreator
 			// now assign anonymized ID
 			//HashMap<String, List<byte[]>> attributesToGuidsMap 
 			//	= new HashMap<String, List<byte[]>>();
-
+			
 			Iterator<String> attrSetIter = attributesToGuidsMap.keySet().iterator();
 			
 			while( attrSetIter.hasNext() )
@@ -101,8 +97,7 @@ public class HyperspaceBasedAnonymizedIDCreator
 				
 				AnonymizedIDEntry anonymizedIDObj 
 					= new AnonymizedIDEntry(anonymizedID, attrSet, guidSet);
-				
-				
+					
 				anonymizedIDList.add(anonymizedIDObj);
 			}
 			//}
@@ -330,11 +325,11 @@ public class HyperspaceBasedAnonymizedIDCreator
 		subspaceAttrMap.put(0, attrArr1);
 		subspaceAttrMap.put(1, attrArr2);
 		
-		
 		HyperspaceBasedAnonymizedIDCreator anonymizedIDCreator 
 						= new HyperspaceBasedAnonymizedIDCreator();
 		
-		HashMap<String, List<ACLEntry>> aclMap = new HashMap<String, List<ACLEntry>>();
+		HashMap<String, List<ACLEntry>> aclMap 
+						= new HashMap<String, List<ACLEntry>>();
 		
 		List<ACLEntry> acl0 = new LinkedList<ACLEntry>();
 		
@@ -378,7 +373,9 @@ public class HyperspaceBasedAnonymizedIDCreator
 		aclMap.put("attr6", acl5);
 		
 		
-		List<AnonymizedIDEntry> anonymizedIds = anonymizedIDCreator.computeAnonymizedIDs(aclMap);
+		List<AnonymizedIDEntry> anonymizedIds 
+							= anonymizedIDCreator.computeAnonymizedIDs(aclMap);
+		
 		System.out.println("Number of anonymizedIds "+anonymizedIds.size());
 		
 		System.out.println("\n\n\n##################################\n\n\n");

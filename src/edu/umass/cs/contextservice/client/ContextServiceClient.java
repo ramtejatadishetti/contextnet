@@ -31,6 +31,7 @@ import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSPrivacyTransformInterface;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSSearchReplyTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSUpdateTransformedMessage;
+import edu.umass.cs.contextservice.client.csprivacytransform.HyperspaceBasedCSTransform;
 import edu.umass.cs.contextservice.client.csprivacytransform.ParallelUpdateStateStorage;
 import edu.umass.cs.contextservice.client.csprivacytransform.SubspaceBasedCSTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.EncryptionBasedGNSPrivacyTransform;
@@ -382,7 +383,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			jsoEx.printStackTrace();
 		}
 	}
-
+	
 	@Override
 	public int sendSearchQuerySecure( String searchQuery, JSONArray replyArray, 
 			long expiryTime, GuidEntry myGUIDInfo )
@@ -880,10 +881,16 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		{
 			anonymizedIDCreation 
 				= new SubspaceBasedAnonymizedIDCreator(subspaceAttrMap);
+			
+			// for cs transform
+			csPrivacyTransform = new SubspaceBasedCSTransform(executorService);
 		}
 		else if( this.transformType == HYPERSPACE_BASED_CS_TRANSFORM )
 		{
 			anonymizedIDCreation = new HyperspaceBasedAnonymizedIDCreator();
+			
+			// for cs transform
+			csPrivacyTransform = new HyperspaceBasedCSTransform(executorService);
 		}
 		else if( this.transformType == GUID_BASED_CS_TRANSFORM )
 		{
@@ -892,9 +899,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 		// for gnsTransform
 		gnsPrivacyTransform = new EncryptionBasedGNSPrivacyTransform();
-		
-		// for cs transform
-		csPrivacyTransform = new SubspaceBasedCSTransform(executorService);
 	}
 	
 	/**

@@ -15,7 +15,7 @@ public class ProcessingQueryComponent
 {	
 	// macros as JSON Keys
 	public static final String AttrName					= "ATTR_NAME";
-	//public static final String LeftOper					= "LEFT_OPER";
+	//public static final String LeftOper				= "LEFT_OPER";
 	//public static final String LeftValue				= "LEFT_VAL";
 	//public static final String RightOper				= "RIGHT_OPER";
 	//public static final String RightVal					= "RIGHT_VAL";
@@ -109,6 +109,19 @@ public class ProcessingQueryComponent
 		return numCompReplyRecvd;
 	}
 	
+	/**
+	 * Converts the predicate back into 
+	 * the query format.
+	 * Needed in privacy case when a query is parsed
+	 * at the client and sent based on privacy mechanism.
+	 */
+	public String toString()
+	{
+		String str = this.attributeName +" >= "+lowerBound+" AND "+
+				this.attributeName+" <= "+upperBound;
+		return str;
+	}
+	
 	/*public JSONObject getJSONObject() throws JSONException
 	{
 		JSONObject qcJSON = new JSONObject();
@@ -129,12 +142,7 @@ public class ProcessingQueryComponent
 		qc.setComponentID(jobj.getInt(QueryComponent.CompId));	
 		return qc;
 	}
-	
-	public String toString()
-	{
-		return this.leftValue + " " + this.leftOperator
-				+ " " + this.attributeName + " " + this.rightOperator + " " + this.rightValue;
-	}*/
+	*/
 	
 	/**
 	 * Function checks if the parameter value 

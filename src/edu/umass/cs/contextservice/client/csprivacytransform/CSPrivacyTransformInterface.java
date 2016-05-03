@@ -31,6 +31,18 @@ public interface CSPrivacyTransformInterface
 			HashMap<String, AttrValueRepresentationJSON> attrValueMap , 
 			HashMap<String, List<ACLEntry>> aclMap, 
 			List<AnonymizedIDEntry> anonymizedIDList);
+	
+	/**
+	 * Returns a list of search queries.
+	 * All attributes in a search query, in the list, belongs to 
+	 * one subspace. Each search query returns anonymized IDs, those are then 
+	 * conjuncted by the querier.
+	 * @param userSearchQuery
+	 * @param subspaceAttrMap
+	 * @return
+	 */
+//	public List<String> transformSearchQueryForCSPrivacy( String userSearchQuery, 
+//			HashMap<Integer, JSONArray> subspaceAttrMap );
 
 	/**
 	 * untransforms the result of anonymized IDs obtained in a search reply.
@@ -41,6 +53,7 @@ public interface CSPrivacyTransformInterface
 	 * @param replyArray
 	 * @return
 	 */
-	public void unTransformSearchReply(GuidEntry myGuid, List<CSSearchReplyTransformedMessage> csTransformedList
-			, JSONArray replyArray);
+	public void unTransformSearchReply(GuidEntry myGuid, 
+			List<CSSearchReplyTransformedMessage> csTransformedList, 
+			JSONArray replyArray);
 }

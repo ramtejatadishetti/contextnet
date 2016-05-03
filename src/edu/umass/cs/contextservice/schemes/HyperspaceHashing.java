@@ -251,7 +251,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		return allNodeIDArr[mapIndex];
 	}
 	
-	
 	private void processQueryMsgFromUser
 		(QueryMsgFromUser<NodeIDType> queryMsgFromUser)
 	{

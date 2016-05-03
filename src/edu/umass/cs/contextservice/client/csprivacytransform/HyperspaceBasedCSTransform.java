@@ -32,11 +32,11 @@ import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.gnsclient.client.GuidEntry;
 import edu.umass.cs.gnsclient.client.util.GuidUtils;
 
-public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
+public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 {
 	private final ExecutorService exectutorService;
 	
-	public SubspaceBasedCSTransform(ExecutorService exectutorService)
+	public HyperspaceBasedCSTransform(ExecutorService exectutorService)
 	{
 		this.exectutorService = exectutorService;
 	}
@@ -114,12 +114,10 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 	public void unTransformSearchReply(GuidEntry myGuid, 
 			List<CSSearchReplyTransformedMessage> csTransformedList
 			, JSONArray replyArray)
-	{
-		
+	{	
 		ParallelSearchReplyDecryption parallelSearchDecryption =
 				new ParallelSearchReplyDecryption(myGuid , csTransformedList
-						, replyArray, exectutorService);
-		
+						, replyArray, exectutorService);	
 		
 		parallelSearchDecryption.doDecryption();
 		
@@ -217,7 +215,6 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 		return anonymizedIDToAttributesMap;
 	}
 	
-	
 	/**
 	 * computes the interection of ACL of an attribute with the guid set of an 
 	 * anonymized ID. 
@@ -298,7 +295,8 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 	 * @param transformMessageList
 	 * @return
 	 */
-	private HashMap<String, AttrValueRepresentationJSON> getTransformedAnonymizedIDUpdateAttrValueMap(
+	private HashMap<String, AttrValueRepresentationJSON> 
+					getTransformedAnonymizedIDUpdateAttrValueMap(
 			byte[] anonymizedID, byte[] realGUID, 
 			List<AttributeUpdateInfo> updateAttrList, 
 			HashMap<String, AttrValueRepresentationJSON> attrValueMap, 
@@ -317,12 +315,10 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 				AttrValueRepresentationJSON attrValRep = attrValueMap.get(currAttrName);
 				String value = attrValRep.getActualAttrValue();
 				
-				
 				//just adding a random value for testing.
 //				Random rand = new Random(System.currentTimeMillis());
 //				double randVal = rand.nextDouble()*1400+10;
-//				value = randVal+"";
-				
+//				value = randVal+"";			
 				
 				// create a new AttrValueRepresentationJSON, 
 				// because multiple anonymized IDs might not update same attribute value pair
@@ -397,7 +393,6 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 	}
 	
 	/**
-	 * 
 	 * This function calculates total encryptions on 
 	 * an update, just for debugging purposes.
 	 * @return
@@ -421,66 +416,9 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 				AttributeUpdateInfo attrUpdInfo = attrUpdateInfoList.get(i);
 				totalEncryptions = totalEncryptions + attrUpdInfo.getIntersectingACLEntries().size();
 			}
-		}
-		
+		}	
 		return totalEncryptions;
 	}
-	
-	/**
-	 * Decrypts the real ID from search reply using realID mapping info.
-	 * Returns null if it cannot be decrypted.
-	 * @param myGUIDInfo
-	 * @param encryptedRealJsonArray
-	 * @return
-	 * @throws JSONException 
-	 */
-//	private byte[] decryptRealIDFromSearchRep( GuidEntry myGUIDInfo, 
-//			SearchReplyGUIDRepresentationJSON seachReply ) 
-//	{
-//		byte[] privateKey = myGUIDInfo.getPrivateKey().getEncoded();
-//		byte[] plainText = null;
-//		boolean found = false;
-//		JSONArray realIDMappingInfo = seachReply.getRealIDMappingInfo();
-//		if(realIDMappingInfo != null)
-//		{
-//			ContextServiceLogger.getLogger().fine("realIDMappingInfo JSONArray "
-//					+ realIDMappingInfo.length() );
-//			
-//			for( int i=0; i<realIDMappingInfo.length(); i++ )
-//			{	
-//				try
-//				{
-//					byte[] encryptedElement = (byte[]) (Utils.hexStringToByteArray(
-//							realIDMappingInfo.getString(i)));
-//					
-//					plainText = Utils.doPrivateKeyDecryption(privateKey, encryptedElement);
-//					// non exception, just break;
-//					found = true;
-//					break;
-//				}
-//				catch(javax.crypto.BadPaddingException wrongKeyException)
-//				{
-//					// just catching this one, as this one results when wrong key is used 
-//					// to decrypt.
-//				} catch ( InvalidKeyException | NoSuchAlgorithmException
-//						| InvalidKeySpecException | NoSuchPaddingException
-//						| IllegalBlockSizeException | JSONException
-//						e )
-//				{
-//					e.printStackTrace();
-//				}
-//			}
-//		}
-//		
-//		if(plainText != null)
-//		{
-//			ContextServiceLogger.getLogger().fine("Anonymized ID "+seachReply.getID()
-//									+ "realID "+Utils.bytArrayToHex(plainText) );
-//		}
-//		
-//		return plainText;
-//	}
-	
 	
 	/**
 	 * This class stores attribute info on an update 
@@ -513,13 +451,6 @@ public class SubspaceBasedCSTransform implements CSPrivacyTransformInterface
 			return this.intersectingACLEntries;
 		}
 	}
-	
-//	@Override
-//	public List<String> transformSearchQueryForCSPrivacy(String userSearchQuery,
-//			HashMap<Integer, JSONArray> subspaceAttrMap) 
-//	{
-//		return null;
-//	}
 	
 	// test this Class implementation
 	public static void main(String[] args) throws NoSuchAlgorithmException
