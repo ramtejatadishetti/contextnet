@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -36,11 +37,11 @@ public class PrivacyInformationStorage<NodeIDType>
 	
 	public PrivacyInformationStorage(
 			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap , 
-			DataSource<NodeIDType> dataSource , ExecutorService eservice )
+			DataSource<NodeIDType> dataSource )
 	{
 		this.subspaceInfoMap = subspaceInfoMap;
 		this.dataSource = dataSource;
-		this.eservice = eservice;
+		this.eservice = Executors.newCachedThreadPool();
 	}
 	
 	@Override

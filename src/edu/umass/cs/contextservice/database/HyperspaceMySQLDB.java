@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -55,11 +56,10 @@ public class HyperspaceMySQLDB<NodeIDType>
 	
 	
 	public HyperspaceMySQLDB(NodeIDType myNodeID, 
-			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap , 
-			ExecutorService eservice)
+			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap )
 			throws Exception
 	{
-		this.eservice = eservice;
+		this.eservice = Executors.newCachedThreadPool();
 		this.mysqlDataSource = new DataSource<NodeIDType>(myNodeID);
 		
 		guidAttributesStorage = new GUIDAttributeStorage<NodeIDType>
@@ -79,7 +79,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		if( ContextServiceConfig.PRIVACY_ENABLED )
 		{
 			privacyInformationStroage = new PrivacyInformationStorage<NodeIDType>
-										(subspaceInfoMap, mysqlDataSource, eservice);
+										(subspaceInfoMap, mysqlDataSource);
 		}
 		createTables();
 	}
