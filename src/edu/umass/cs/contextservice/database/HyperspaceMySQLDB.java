@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -41,27 +40,26 @@ public class HyperspaceMySQLDB<NodeIDType>
 	// maximum query length of 1000bytes
 	public static final int MAX_QUERY_LENGTH						= 1000;
 	
+	//public static final String userQuery = "userQuery";
+	public static final String groupGUID = "groupGUID";
+	public static final String userIP = "userIP";
+	public static final String userPort = "userPort";
+	
 	private final DataSource<NodeIDType> mysqlDataSource;
 	
 	private final GUIDAttributeStorageInterface<NodeIDType> guidAttributesStorage;
 	private  TriggerInformationStorageInterface<NodeIDType> triggerInformationStorage;
 	
 	private  PrivacyInformationStorageInterface privacyInformationStroage;
-	
-	//public static final String userQuery = "userQuery";
-	public static final String groupGUID = "groupGUID";
-	public static final String userIP = "userIP";
-	public static final String userPort = "userPort";
-	
-	private final ExecutorService execService;
+	private ExecutorService eservice;
 	
 	
 	public HyperspaceMySQLDB(NodeIDType myNodeID, 
-			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap)
+			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap , 
+			ExecutorService eservice)
 			throws Exception
 	{
-		//execService = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
-		execService = Executors.newCachedThreadPool();
+		this.eservice = eservice;
 		this.mysqlDataSource = new DataSource<NodeIDType>(myNodeID);
 		
 		guidAttributesStorage = new GUIDAttributeStorage<NodeIDType>
@@ -81,7 +79,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		if( ContextServiceConfig.PRIVACY_ENABLED )
 		{
 			privacyInformationStroage = new PrivacyInformationStorage<NodeIDType>
-										(subspaceInfoMap, mysqlDataSource);
+										(subspaceInfoMap, mysqlDataSource, eservice);
 		}
 		createTables();
 	}
@@ -450,7 +448,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 	    		atrToValueRep, subspaceId, oldValJSON, 
 	    		this.privacyInformationStroage);
     		
-    		this.execService.execute(privacyThread);
+    		this.eservice.execute(privacyThread);
     		//Thread t = new Thread(privacyThread);
     		//t.start();
     		
@@ -504,7 +502,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		    		this.privacyInformationStroage);
 			//Thread t = new Thread(privacyThread);
 			//t.start();
-			this.execService.execute(privacyThread);
+			this.eservice.execute(privacyThread);
 			
 //			privacyInformationStroage.deleteAnonymizedIDFromPrivacyInfoStorageBlocking
 //			(nodeGUID, subspaceId);

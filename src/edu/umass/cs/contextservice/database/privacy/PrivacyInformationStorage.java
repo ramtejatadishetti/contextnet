@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -31,24 +30,17 @@ import edu.umass.cs.contextservice.queryparsing.QueryInfo;
 public class PrivacyInformationStorage<NodeIDType> 
 									implements PrivacyInformationStorageInterface
 {
-	//FIXME: need t fins out the exact size of realIDEncryption.
-	
-	// current encryption generated 128 bytes, if that changes then this has to change.
-	public static final int REAL_ID_ENCRYPTION_SIZE			= 128;
-	
 	private final HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;
 	private final DataSource<NodeIDType> dataSource;
-	private final ExecutorService execService;
+	private ExecutorService eservice;
 	
 	public PrivacyInformationStorage(
 			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap , 
-			DataSource<NodeIDType> dataSource )
+			DataSource<NodeIDType> dataSource , ExecutorService eservice )
 	{
 		this.subspaceInfoMap = subspaceInfoMap;
 		this.dataSource = dataSource;
-		//this.execService = Executors.newFixedThreadPool(ContextServiceConfig.PRIVACY_THREAD_POOL_SIZE);
-		// creating new cached and its size is limited by hypersapce pool, as it can't get more requests than that
-		this.execService = Executors.newCachedThreadPool();
+		this.eservice = eservice;
 	}
 	
 	@Override
@@ -86,7 +78,8 @@ public class PrivacyInformationStorage<NodeIDType>
 				String attrName = attrIter.next();
 				String tableName = attrName+"EncryptionInfoStorage";
 				newTableCommand = "create table "+tableName+" ( "
-					      + " nodeGUID Binary(20) NOT NULL , realIDEncryption Binary("+REAL_ID_ENCRYPTION_SIZE+") NOT NULL , "
+					      + " nodeGUID Binary(20) NOT NULL , realIDEncryption Binary("+
+						ContextServiceConfig.REAL_ID_ENCRYPTION_SIZE+") NOT NULL , "
 					      		+ " subspaceId INTEGER NOT NULL , "
 					      		+ " INDEX USING HASH(nodeGUID) , INDEX USING HASH(realIDEncryption) , "
 					      		+ " INDEX USING HASH(subspaceId) )";
@@ -309,7 +302,7 @@ public class PrivacyInformationStorage<NodeIDType>
 		
 		for(int i=0; i<attrUpdates.size(); i++)
 		{
-			this.execService.execute(attrUpdates.get(i));
+			this.eservice.execute(attrUpdates.get(i));
 		}
 		updateState.waitForFinish();
 		
@@ -382,7 +375,7 @@ public class PrivacyInformationStorage<NodeIDType>
 		
 		for(int i=0; i<attrUpdates.size(); i++)
 		{
-			this.execService.execute(attrUpdates.get(i));
+			this.eservice.execute(attrUpdates.get(i));
 		}
 		
 		ContextServiceLogger.getLogger().fine("deleteAnonymizedIDFromPrivacyInfoStorage waiting updateState.waitForFinish()");

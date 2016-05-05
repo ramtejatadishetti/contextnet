@@ -108,7 +108,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		
 		hyperspaceDB = new HyperspaceMySQLDB<NodeIDType>(this.getMyID(), 
-					subspaceConfigurator.getSubspaceInfoMap());
+					subspaceConfigurator.getSubspaceInfoMap(), nodeES);
 		
 		ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
 		

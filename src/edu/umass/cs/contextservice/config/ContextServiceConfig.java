@@ -168,7 +168,10 @@ public class ContextServiceConfig
 	public static final int KEY_LENGTH_SIZE							= 1024;
 	
 	
+	// current encryption generated 128 bytes, if that changes then this has to change.
+	public static final int REAL_ID_ENCRYPTION_SIZE					= 128;
+	
 	// just for debugging different components separately.
 	//public static final boolean DISABLE_SECONDARY_SUBSPACES_UPDATES			= false;
-	//public static final boolean DISABLE_PRIMARY_SUBSPACE_UPDATES			= false;
+	//public static final boolean DISABLE_PRIMARY_SUBSPACE_UPDATES				= false;
 }
