@@ -141,7 +141,10 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 			
 			newTableCommand = getDataStorageString(newTableCommand);
 			newTableCommand	= getPrivacyStorageString(newTableCommand);
-			newTableCommand = newTableCommand +" )";
+			
+			// row format dynamic because we want TEXT columns to be stored completely off the row, 
+			// only pointer should be stored in the row, otherwise default is storing 700 bytes for each TEXT in row.
+			newTableCommand = newTableCommand +" ) ROW_FORMAT=DYNAMIC ";
 			stmt.executeUpdate(newTableCommand);
 			
 		} catch( SQLException mysqlEx )

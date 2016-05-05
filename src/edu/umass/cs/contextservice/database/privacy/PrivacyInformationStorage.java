@@ -47,71 +47,80 @@ public class PrivacyInformationStorage<NodeIDType>
 	@Override
 	public void createTables()
 	{
-		// On an update  of an attribute, each anonymized ID comes with a list of RealIDMappingInfo, this list consists 
-		// for realID encrypted with a subset of ACL members of the updated attribute. Precisely, it is the 
-		// intersection of the guid set of the anonymizedID and the ACL of the attribute. 
-		// Each element of that list is stored as a separately in the corresponding attribute table.
+		Connection myConn  = null;
+		Statement  stmt    = null;
 		
-		Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
-		
-		while( subapceIdIter.hasNext() )
+		try
 		{
-			int subspaceId = subapceIdIter.next();
-			// at least one replica and all replica have same default value for each attribute.
-			SubspaceInfo<NodeIDType> currSubspaceInfo 
-										= subspaceInfoMap.get(subspaceId).get(0);
+			myConn = dataSource.getConnection();
+			stmt   = myConn.createStatement();
 			
-			HashMap<String, AttributePartitionInfo> attrSubspaceMap 
-										= currSubspaceInfo.getAttributesOfSubspace();
+			// On an update  of an attribute, each anonymized ID comes with a list of RealIDMappingInfo, this list consists 
+			// for realID encrypted with a subset of ACL members of the updated attribute. Precisely, it is the 
+			// intersection of the guid set of the anonymizedID and the ACL of the attribute. 
+			// Each element of that list is stored as a separately in the corresponding attribute table.
+			Iterator<Integer> subapceIdIter 
+											= subspaceInfoMap.keySet().iterator();
 			
-			Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
-			
-			while( attrIter.hasNext() )
+			while( subapceIdIter.hasNext() )
 			{
-				String newTableCommand = "";
+				int subspaceId = subapceIdIter.next();
+				// at least one replica and all replica have same default value for each attribute.
+				SubspaceInfo<NodeIDType> currSubspaceInfo 
+											= subspaceInfoMap.get(subspaceId).get(0);
 				
-				// FIXME: not sure whether to add the uniquness check, adding uniqueness
-				// check to db just adds more checks for inserts and increases update time.
-				// that property should be true in most cases but we don't need to assert that all time.
+				HashMap<String, AttributePartitionInfo> attrSubspaceMap 
+											= currSubspaceInfo.getAttributesOfSubspace();
 				
-				// adding a subspace Id field, so that this table can be shared by multiple subspaces
-				// and on deletion a subsapce Id can be specified to delete only that rows.
-				String attrName = attrIter.next();
-				String tableName = attrName+"EncryptionInfoStorage";
-				newTableCommand = "create table "+tableName+" ( "
-					      + " nodeGUID Binary(20) NOT NULL , realIDEncryption Binary("+
-						ContextServiceConfig.REAL_ID_ENCRYPTION_SIZE+") NOT NULL , "
-					      		+ " subspaceId INTEGER NOT NULL , "
-					      		+ " INDEX USING HASH(nodeGUID) , INDEX USING HASH(realIDEncryption) , "
-					      		+ " INDEX USING HASH(subspaceId) )";
+				Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
 				
-				
-				Connection myConn  = null;
-				Statement  stmt    = null;
-				
-				try
+				while( attrIter.hasNext() )
 				{
-					myConn = dataSource.getConnection();
-					stmt   = myConn.createStatement();
+					String newTableCommand = "";
 					
+					// FIXME: not sure whether to add the uniquness check, adding uniqueness
+					// check to db just adds more checks for inserts and increases update time.
+					// that property should be true in most cases but we don't need to assert that all time.
+					
+					// adding a subspace Id field, so that this table can be shared by multiple subspaces
+					// and on deletion a subsapce Id can be specified to delete only that rows.
+					String attrName = attrIter.next();
+					String tableName = attrName+"EncryptionInfoStorage";
+					newTableCommand = "create table "+tableName+" ( "
+						      + " nodeGUID Binary(20) NOT NULL , realIDEncryption Binary("+
+							ContextServiceConfig.REAL_ID_ENCRYPTION_SIZE+") NOT NULL , "
+						      		+ " subspaceId INTEGER NOT NULL , "
+						      		+ " INDEX USING HASH(nodeGUID) , INDEX USING HASH(realIDEncryption) , "
+						      		+ " INDEX USING HASH(subspaceId) )";
 					stmt.executeUpdate(newTableCommand);
 				}
-				catch( SQLException mysqlEx )
-				{
-					mysqlEx.printStackTrace();
-				} finally
-				{
-					try
-					{
-						if( stmt != null )
-							stmt.close();
-						if( myConn != null )
-							myConn.close();
-					} catch( SQLException sqex )
-					{
-						sqex.printStackTrace();
-					}
-				}
+			}
+		
+			// creating table for storing privacy information at privacy subspace
+//			String tableName = "privacyInfoStoragePrimarySubsapce";
+//			String newTableCommand = "create table "+tableName+" ( "
+//				      + " nodeGUID Binary(20) NOT NULL , attrName VARCHAR("
+//					+ContextServiceConfig.MAXIMUM_ATTRNAME_LENGTH+") NOT NULL , "
+//							+ " realIDEncryptionList TEXT NOT NULL , "
+//				      		+ " INDEX USING HASH(nodeGUID) , "
+//				      		+ " INDEX USING HASH(attrName) )";
+//			
+//			stmt.executeUpdate(newTableCommand);
+		}
+		catch( Exception mysqlEx )
+		{
+			mysqlEx.printStackTrace();
+		} finally
+		{
+			try
+			{
+				if( stmt != null )
+					stmt.close();
+				if( myConn != null )
+					myConn.close();
+			} catch( SQLException sqex )
+			{
+				sqex.printStackTrace();
 			}
 		}
 	}
@@ -390,5 +399,10 @@ public class PrivacyInformationStorage<NodeIDType>
 			System.out.println("TIME_DEBUG: deleteAnonymizedIDFromPrivacyInfoStorage time "
 									+(end-start) );
 		}
+	}
+	
+	public void storePrivacyInfoInPrimarySubspace()
+	{
+		
 	}
 }

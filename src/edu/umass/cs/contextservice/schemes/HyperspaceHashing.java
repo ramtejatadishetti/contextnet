@@ -119,7 +119,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				pendingQueryRequests );
 		
 		
-		if(ContextServiceConfig.TRIGGER_ENABLED)
+		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
 			triggerProcessing = new TriggerProcessing<NodeIDType>(this.getMyID(), 
 				subspaceConfigurator.getSubspaceInfoMap(), hyperspaceDB, messenger);
