@@ -140,7 +140,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				      + " nodeGUID Binary(20) PRIMARY KEY";
 			
 			newTableCommand = getDataStorageString(newTableCommand);
-			//newTableCommand	= getPrivacyStorageString(newTableCommand);
+			newTableCommand	= getPrivacyStorageString(newTableCommand);
 			newTableCommand = newTableCommand +" )";
 			stmt.executeUpdate(newTableCommand);
 			
