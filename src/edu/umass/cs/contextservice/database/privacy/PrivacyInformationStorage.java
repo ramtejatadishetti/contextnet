@@ -7,8 +7,6 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -34,7 +32,7 @@ public class PrivacyInformationStorage<NodeIDType>
 {
 	private final HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;
 	private final DataSource<NodeIDType> dataSource;
-	private ExecutorService eservice;
+	//private ExecutorService eservice;
 	
 	public PrivacyInformationStorage(
 			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap , 
@@ -42,7 +40,7 @@ public class PrivacyInformationStorage<NodeIDType>
 	{
 		this.subspaceInfoMap = subspaceInfoMap;
 		this.dataSource = dataSource;
-		this.eservice = Executors.newCachedThreadPool();
+		//this.eservice = Executors.newCachedThreadPool();
 	}
 	
 	@Override
