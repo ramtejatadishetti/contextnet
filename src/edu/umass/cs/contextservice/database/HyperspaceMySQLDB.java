@@ -448,21 +448,16 @@ public class HyperspaceMySQLDB<NodeIDType>
 	    		atrToValueRep, subspaceId, oldValJSON, 
 	    		this.privacyInformationStroage);
     		
-    		this.eservice.execute(privacyThread);
-    		//Thread t = new Thread(privacyThread);
-    		//t.start();
+    		privacyThread.run();
+    		//this.eservice.execute(privacyThread);
     		
     		this.guidAttributesStorage.storeGUIDInSecondarySubspace
 				(tableName, nodeGUID, atrToValueRep, updateOrInsert, oldValJSON);
     		
     		// wait for privacy update to finish
-    		privacyThread.waitForFinish();
-//    		try {
-//				t.join();
-//			} catch (InterruptedException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
+    		//privacyThread.waitForFinish();
+    		
+
     		long end = System.currentTimeMillis();
     		
     		if(ContextServiceConfig.DEBUG_MODE)
