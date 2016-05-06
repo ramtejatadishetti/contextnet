@@ -74,7 +74,7 @@ public class PrivacyUpdateCallBack implements Runnable
 				lock.notify();
 			}
 		}
-		catch(Exception | Error ex)
+		catch( Exception | Error ex )
 		{
 			ex.printStackTrace();
 		}
@@ -96,5 +96,4 @@ public class PrivacyUpdateCallBack implements Runnable
 			}
 		}
 	}
-	
 }

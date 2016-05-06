@@ -85,9 +85,9 @@ public class PrivacyUpdateInAttrTableThread<NodeIDType> implements Runnable
 			stmt = myConn.createStatement();
 			boolean ifExists = checkIfAlreadyExists(ID, subspaceId, tableName, stmt);
 			
-			// just checking if this acl info for this ID anf this attribute 
+			// just checking if this acl info for this ID and this attribute 
 			// already exists, if it is already there then no need to insert.
-			// on acl update, whole ID changes, sol older ID acl info just gets 
+			// on acl update, whole ID changes, so older ID acl info just gets 
 			// deleted, it is never updated. There are only inserts and deletes of 
 			// acl info, no updates.
 			if( ifExists )

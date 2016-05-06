@@ -454,6 +454,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			boolean firstTimeInsert = false;
 			
 			long start = System.currentTimeMillis();
+			// FIXME: fetch only those attributes which are specified in the updated attrs.
 			JSONObject oldValueJSON 	= this.hyperspaceDB.getGUIDStoredInPrimarySubspace(GUID);
 			long end = System.currentTimeMillis();
 			
