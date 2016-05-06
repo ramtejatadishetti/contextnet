@@ -479,8 +479,8 @@ public class PrivacyInformationStorage<NodeIDType>
 					{
 						insertTableSQL = insertTableSQL + " , ";
 					}
-					insertTableSQL = insertTableSQL +"( X'"+IDString+"' , X'"+hexStringRep
-							+"' , "+subspaceId +" ) ";
+					insertTableSQL = insertTableSQL +"( X'"+IDString+"' , '"+attrName
+							+"' , X'"+hexStringRep+"' , "+subspaceId +" ) ";
 					
 				} catch(JSONException jsoExcp)
 				{
