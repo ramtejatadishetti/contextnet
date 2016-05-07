@@ -446,6 +446,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		{
 			myConn = this.dataSource.getConnection();
 			stmt = myConn.createStatement();
+			long start = System.currentTimeMillis();
 			ResultSet rs = stmt.executeQuery(selectQuery);
 			
 			while( rs.next() )
@@ -469,6 +470,11 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				}
 			}
 			rs.close();	
+			long end = System.currentTimeMillis();
+			if(ContextServiceConfig.DEBUG_MODE)
+			{
+				System.out.println("TIME_DEBUG: getGUIDStoredInPrimarySubspace "+(end-start));
+			}
 		} catch (SQLException e)
 		{
 			e.printStackTrace();
