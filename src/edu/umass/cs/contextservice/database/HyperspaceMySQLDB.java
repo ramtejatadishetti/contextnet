@@ -8,6 +8,8 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -50,14 +52,14 @@ public class HyperspaceMySQLDB<NodeIDType>
 	private  TriggerInformationStorageInterface<NodeIDType> triggerInformationStorage;
 	
 	private  PrivacyInformationStorageInterface privacyInformationStroage;
-	//private ExecutorService eservice;
+	private ExecutorService eservice;
 	
 	
 	public HyperspaceMySQLDB(NodeIDType myNodeID, 
 			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap )
 			throws Exception
 	{
-		//this.eservice = Executors.newCachedThreadPool();
+		this.eservice = Executors.newCachedThreadPool();
 		this.mysqlDataSource = new DataSource<NodeIDType>(myNodeID);
 		
 		guidAttributesStorage = new GUIDAttributeStorage<NodeIDType>
@@ -446,14 +448,14 @@ public class HyperspaceMySQLDB<NodeIDType>
 	    		atrToValueRep, subspaceId, oldValJSON, 
 	    		this.privacyInformationStroage);
     		
-    		privacyThread.run();
-    		//this.eservice.execute(privacyThread);
+    		//privacyThread.run();
+    		this.eservice.execute(privacyThread);
     		
     		this.guidAttributesStorage.storeGUIDInSecondarySubspace
 				(tableName, nodeGUID, atrToValueRep, updateOrInsert, oldValJSON);
     		
     		// wait for privacy update to finish
-    		//privacyThread.waitForFinish();
+    		privacyThread.waitForFinish();
     		
 
     		long end = System.currentTimeMillis();
@@ -491,17 +493,17 @@ public class HyperspaceMySQLDB<NodeIDType>
 //																		(nodeGUID, subspaceId);
 			
 			PrivacyUpdateCallBack privacyThread 
-			= new PrivacyUpdateCallBack(nodeGUID, subspaceId, 
+				= new PrivacyUpdateCallBack(nodeGUID, subspaceId, 
 		    		this.privacyInformationStroage);
 			
-			privacyThread.run();
-			//this.eservice.execute(privacyThread);
+			//privacyThread.run();
+			this.eservice.execute(privacyThread);
 			
 			
     		this.guidAttributesStorage.deleteGUIDFromSubspaceRegion(tableName, nodeGUID);
     		
     		// wait for privacy update to finish
-    		//privacyThread.waitForFinish();
+    		privacyThread.waitForFinish();
     		
     		
     		long end = System.currentTimeMillis();
