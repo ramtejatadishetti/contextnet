@@ -34,7 +34,7 @@ public interface CSPrivacyTransformInterface
 	
 	/**
 	 * Returns a list of search queries.
-	 * All attributes in a search query, in the list, belongs to 
+	 * All attributes in a search quer, in the list, belongs to 
 	 * one subspace. Each search query returns anonymized IDs, those are then 
 	 * conjuncted by the querier.
 	 * @param userSearchQuery

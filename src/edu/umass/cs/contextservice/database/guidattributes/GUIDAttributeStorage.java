@@ -65,7 +65,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		try
 		{
 			myConn = dataSource.getConnection();
-			stmt   =  myConn.createStatement();
+			stmt   = myConn.createStatement();
 			Iterator<Integer> subspaceIter = this.subspaceInfoMap.keySet().iterator();
 			
 			while( subspaceIter.hasNext() )
@@ -140,7 +140,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				      + " nodeGUID Binary(20) PRIMARY KEY";
 			
 			newTableCommand = getDataStorageString(newTableCommand);
-			newTableCommand	= getPrivacyStorageString(newTableCommand);
+			//newTableCommand	= getPrivacyStorageString(newTableCommand);
 			
 			// row format dynamic because we want TEXT columns to be stored completely off the row, 
 			// only pointer should be stored in the row, otherwise default is storing 700 bytes for each TEXT in row.
@@ -1350,15 +1350,16 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
                 if ( myConn != null )
                     myConn.close();
             }
-            catch(SQLException e)
+            catch( SQLException e )
             {
             	e.printStackTrace();
             }
         }
 	}
 	
-	private void performStoreGUIDInPrimarySubspaceInsert( String tableName, String nodeGUID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep )
+	private void performStoreGUIDInPrimarySubspaceInsert( 
+			String tableName, String nodeGUID, 
+			HashMap<String, AttrValueRepresentationJSON> atrToValueRep )
 	{
 		ContextServiceLogger.getLogger().fine("performStoreGUIDInPrimarySubspaceInsert "
 				+tableName+" nodeGUID "+nodeGUID );
@@ -1371,10 +1372,6 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
         
         try
         {
-        	// insert happens for all attributes,
-        	// updated attributes are taken from atrToValueRep and
-        	// other attributes are taken from oldValJSON
-        	//Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
         	Iterator<String> attrIter = atrToValueRep.keySet().iterator();
         	
         	boolean first = true;
@@ -1393,31 +1390,12 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	            {
 	                insertQuery = insertQuery +", "+currAttrName;
 	            }
-				
-				JSONArray realIDMappingArray = null;
-                if( ContextServiceConfig.PRIVACY_ENABLED )
-                {
-                	AttrValueRepresentationJSON attrValRep 
-                						= atrToValueRep.get(currAttrName);
-                	
-                	realIDMappingArray = attrValRep.getRealIDMappingInfo();
-                	
-                	if( realIDMappingArray != null )
-                	{
-                		String currColName 		= "ACL"+currAttrName;
-                		//String jsonArrayString  = realIDMappingArray.toString();
-                		insertQuery = insertQuery +" , "+currColName;
-                		//updateSqlQuery = updateSqlQuery +" , "+ currColName +" = '"+jsonArrayString+"'";
-                	}
-                }
     		}
     		
     		insertQuery = insertQuery + ", nodeGUID) " + "VALUES"+ "(";
     		
-    		
     		first = true;
     		attrIter = atrToValueRep.keySet().iterator();
-        	// just a way to iterate over attributes.
     			
 			while( attrIter.hasNext() )
 			{
@@ -1438,7 +1416,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 			    currAttrValue = AttributeTypes.convertStringToDataTypeForMySQL
 						(currAttrValue, dataType)+"";
 			    
-				if(first)
+				if( first )
 	            {
 					insertQuery = insertQuery + currAttrValue;
 	                first = false;
@@ -1447,17 +1425,6 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	            {
 	            	insertQuery = insertQuery +" , "+currAttrValue;
 	            }
-				
-				JSONArray realIDMappingArray = null;
-                if( ContextServiceConfig.PRIVACY_ENABLED )
-                {        	
-                	realIDMappingArray = attrValRep.getRealIDMappingInfo();
-                	
-                	if( realIDMappingArray != null )
-                	{
-                		insertQuery = insertQuery +" , '"+realIDMappingArray.toString()+"'";
-                	}
-                }
 			}
     		
     		insertQuery = insertQuery +" , X'"+nodeGUID+"' )";

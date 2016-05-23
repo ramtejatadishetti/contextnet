@@ -1,9 +1,16 @@
 package edu.umass.cs.contextservice.schemes;
 
+import java.util.HashMap;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegion;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegionReply;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUser;
 import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionMessage;
+import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
 
 /**
@@ -24,6 +31,13 @@ public interface GUIDAttrValueProcessingInterface<NodeIDType>
 					queryMesgToSubspaceRegionReply);
 	
 	public void processValueUpdateToSubspaceRegionMessage( 
-			ValueUpdateToSubspaceRegionMessage<NodeIDType> valueUpdateToSubspaceRegionMessage );
-
+			ValueUpdateToSubspaceRegionMessage<NodeIDType> 
+								valueUpdateToSubspaceRegionMessage, int replicaNum );
+	
+	public void guidValueProcessingOnUpdate(
+			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo , 
+			JSONObject oldValueJSON , int subspaceId , int  replicaNum ,
+			HashMap<String, AttrValueRepresentationJSON> attrValMap ,
+			String GUID , long requestID , JSONObject attrValuePairs ,
+			boolean firstTimeInsert) throws JSONException;
 }

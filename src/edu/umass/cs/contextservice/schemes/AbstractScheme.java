@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
@@ -38,19 +40,14 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 	protected final ProtocolExecutor<NodeIDType, ContextServicePacket.PacketType, String> protocolExecutor;
 	protected final ContextServiceProtocolTask<NodeIDType> protocolTask;
 	
-	//protected final AbstractContextServiceDB<NodeIDType> contextserviceDB;
-	
 	protected final Object numMesgLock	;
 	
-	//private final List<AttributeMetadataInformation<NodeIDType>> attrMetaList;
-	//private final List<AttributeValueInformation<NodeIDType>> attrValueList;
-	protected final Set<NodeIDType> allNodeIDs;
+	protected final Vector<NodeIDType> allNodeIDs;
 	
 	// stores the pending queries
 	protected ConcurrentHashMap<Long, QueryInfo<NodeIDType>> pendingQueryRequests		= null;
 	
 	protected ConcurrentHashMap<Long, UpdateInfo<NodeIDType>> pendingUpdateRequests		= null;
-	
 	
 	
 	protected long updateIdCounter														= 0;
@@ -70,7 +67,17 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 	{
 		this.numMesgLock = new Object();
 		
-		this.allNodeIDs = nc.getNodeIDs();
+		this.allNodeIDs = new Vector<NodeIDType>();
+		
+		Set<NodeIDType>	nodeIDSet = nc.getNodeIDs();
+		
+		Iterator<NodeIDType> nodeIDIter = nodeIDSet.iterator();
+		
+		while( nodeIDIter.hasNext() )
+		{
+			NodeIDType currNodeID = nodeIDIter.next();
+			allNodeIDs.add(currNodeID);
+		}
 		
 		pendingQueryRequests  = new ConcurrentHashMap<Long, QueryInfo<NodeIDType>>();
 		
@@ -86,7 +93,6 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 	}
 	
 	// public methods
-	
 	public Set<ContextServicePacket.PacketType> getPacketTypes()
 	{
 		return this.protocolTask.getEventTypes();
@@ -101,7 +107,7 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 	 * returns all nodeIDs
 	 * @return
 	 */
-	public Set<NodeIDType> getAllNodeIDs()
+	public Vector<NodeIDType> getAllNodeIDs()
 	{
 		return this.allNodeIDs;
 	}
@@ -222,8 +228,8 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 	}
 	
 	// public abstract methods
-	public abstract NodeIDType getResponsibleNodeId(String AttrName);
-	
+	public abstract NodeIDType getConsistentHashingNodeID( String stringToHash, 
+												Vector<NodeIDType> listOfNodesToConsistentlyHash);
 	
 	
 	public abstract GenericMessagingTask<NodeIDType,?>[] handleQueryMsgFromUser(
@@ -271,6 +277,14 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
 	
 	public abstract GenericMessagingTask<NodeIDType,?>[] handleClientConfigRequest(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+	
+	public abstract GenericMessagingTask<NodeIDType,?>[] handleACLUpdateToSubspaceRegionMessage(
+			ProtocolEvent<ContextServicePacket.PacketType, String> event,
+			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+	
+	public abstract GenericMessagingTask<NodeIDType,?>[] handleACLUpdateToSubspaceRegionReplyMessage(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
 			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
 	

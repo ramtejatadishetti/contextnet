@@ -5,11 +5,9 @@ import java.util.Iterator;
 import java.util.Vector;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.UpdateTriggerReply;
@@ -17,51 +15,56 @@ import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 
 public class UpdateInfo<NodeIDType>
 {
+	// for value update reply from subspace
+	public static final int VALUE_UPDATE_REPLY									= 1;
+	// for privacy update reply from subspace
+	public static final int PRIVACY_UPDATE_REPLY								= 2;
+	
+	
 	private final ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS;
 	
 	private final long updateRequestId;
-	
-	int numReplyRecvd;
 	
 	private boolean updateReqCompl;
 	
 	// string key is of the form subspaceId-replicaNum, value integer is 
 	// num of replies
-	private HashMap<String, Integer> hyperspaceHashingReplies 									= null;
+	private HashMap<String, Integer> valueUpdateRepliesMap 						= null;
 	// counter over number of subspaces
-	private int numRepliesCounter 																= 0;
+	private int valueUpdateRepliesCounter 										= 0;
 	
-	private final Object regionalRepliesLock 													= new Object();
 	
-	//private int valueTriggerReplyCounter														= 0;
+	// string key is of the form subspaceId-replicaNum, value integer is 
+	// num of replies
+	//private HashMap<String, Integer> privacyRepliesMap 						= null;
+	// counter over number of subspaces
+	// FIXME: privacy update in anonymized ID later can be optimized 
+	// so that the anonymized ID is only updated in subspaces whose attributes
+	// have a non-zero intersection with attribute set of the anonymized ID.
+	// But for now it is updated in every subspace.
+	private int privacyRepliesCounter 											= 0;
 	
-	private final Object triggerRepliesLock 													= new Object();
 	
-//	// indexed by groupGUID
-//	private HashMap<String, JSONObject> toBeRemovedGroupsMap									= null;
-//	private HashMap<String, JSONObject> toBeAddedGroupsMap										= null;
-	// String attrName, with number of replies to expect from replicated subspaces
-	//private HashMap<String, Integer> triggerReplyCounter 										= null;
-	//private int numberOfTriggerRepliesToExpect												= 0;
-	// key is attrName
-	private HashMap<String, UpdateTriggerInfo<NodeIDType>>	attrKeyTriggerInfo					= null;
+	private final Object subspaceRepliesLock 									= new Object();
 	
-	private int numAttrsTriggerCompl															= 0;
-
+	
+	private final Object triggerRepliesLock 									= new Object();
+	
+	
+	private HashMap<String, UpdateTriggerInfo<NodeIDType>>	attrKeyTriggerInfo	= null;
+	
+	private int numAttrsTriggerCompl											= 0;
 	
 	
 	public UpdateInfo( ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS, long updateRequestId, 
 			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap )
 	{
 		this.valUpdMsgFromGNS = valUpdMsgFromGNS;
-		this.updateRequestId = updateRequestId;
-		numReplyRecvd = 0;
-		//contextStartTime = System.currentTimeMillis();
-		//updateStartTime = valUpdMsgFromGNS.getUpdateStartTime();
+		this.updateRequestId  = updateRequestId;
 		
 		updateReqCompl = false;
 		
-		hyperspaceHashingReplies = new HashMap<String, Integer>();
+		valueUpdateRepliesMap = new HashMap<String, Integer>();
 		
 		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
@@ -106,16 +109,6 @@ public class UpdateInfo<NodeIDType>
 		return updateRequestId;
 	}
 	
-	public synchronized void incrementNumReplyRecvd()
-	{
-		this.numReplyRecvd++;
-	}
-	
-	public int getNumReplyRecvd()
-	{
-		return this.numReplyRecvd;
-	}
-	
 	public ValueUpdateFromGNS<NodeIDType> getValueUpdateFromGNS()
 	{
 		return this.valUpdMsgFromGNS;
@@ -133,31 +126,70 @@ public class UpdateInfo<NodeIDType>
 	
 	private void initializeSubspaceEntry(int subspaceId, int replicaNum)
 	{
-		hyperspaceHashingReplies.put(subspaceId+"-"+replicaNum, 0);
+		valueUpdateRepliesMap.put(subspaceId+"-"+replicaNum, 0);
 	}
 	
-	public boolean setUpdateReply( int subspaceId, int replicaNum, int numRep )
+	public boolean setUpdateReply( int subspaceId, int replicaNum, int numRep, 
+			int updateType)
 	{
-		synchronized(this.regionalRepliesLock)
+		if( updateType == VALUE_UPDATE_REPLY )
 		{
-			String mapKey = subspaceId+"-"+replicaNum;
-			int repliesRecvdSoFar = this.hyperspaceHashingReplies.get(mapKey);
-			repliesRecvdSoFar++;
-			this.hyperspaceHashingReplies.put(mapKey, repliesRecvdSoFar);
-			if(repliesRecvdSoFar == numRep)
+			synchronized( this.subspaceRepliesLock )
 			{
-				this.numRepliesCounter++;
-			}
-			
-			if( numRepliesCounter == this.hyperspaceHashingReplies.size() )
-			{
-				return true;
-			}
-			else
-			{
-				return false;
+				String mapKey = subspaceId+"-"+replicaNum;
+				int repliesRecvdSoFar = this.valueUpdateRepliesMap.get(mapKey);
+				repliesRecvdSoFar++;
+				this.valueUpdateRepliesMap.put(mapKey, repliesRecvdSoFar);
+				
+				if( repliesRecvdSoFar == numRep )
+				{
+					this.valueUpdateRepliesCounter++;
+				}
+				
+				if( valueUpdateRepliesCounter == this.valueUpdateRepliesMap.size() )
+				{
+					// if privacy replies are recvd from all subspaces
+					if( !ContextServiceConfig.PRIVACY_ENABLED ||
+							privacyRepliesCounter == this.valueUpdateRepliesMap.size() )
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				else
+				{
+					return false;
+				}
 			}
 		}
+		else if( updateType == PRIVACY_UPDATE_REPLY )
+		{
+			synchronized( this.subspaceRepliesLock )
+			{
+				privacyRepliesCounter++;			
+				if( valueUpdateRepliesCounter == this.valueUpdateRepliesMap.size() )
+				{
+					// if privacy replies are recvd from all subspaces
+					if( privacyRepliesCounter == this.valueUpdateRepliesMap.size() )
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				else
+				{
+					return false;
+				}
+			}
+		}
+		assert(false);
+		return false;
 	}
 	
 	public boolean setUpdateTriggerReply(UpdateTriggerReply<NodeIDType> updateTriggerReply)
@@ -177,8 +209,7 @@ public class UpdateInfo<NodeIDType>
 				if(numAttrsTriggerCompl == this.attrKeyTriggerInfo.size() )
 				{
 					ContextServiceLogger.getLogger().fine("overall trigger compl numAttrsTriggerCompl "
-				+numAttrsTriggerCompl +" for compl "+ this.attrKeyTriggerInfo.size() );
-					
+							+numAttrsTriggerCompl +" for compl "+ this.attrKeyTriggerInfo.size() );
 					
 					return true;
 				}
@@ -205,16 +236,34 @@ public class UpdateInfo<NodeIDType>
 	
 	public boolean checkAllUpdateReplyRecvd()
 	{
-		synchronized(this.regionalRepliesLock)
-		{	
-			if( numRepliesCounter == this.hyperspaceHashingReplies.size() )
+		synchronized(this.subspaceRepliesLock)
+		{
+			if( valueUpdateRepliesCounter == this.valueUpdateRepliesMap.size() )
 			{
-				return true;
+				// if privacy replies are recvd from all subspaces
+				if( !ContextServiceConfig.PRIVACY_ENABLED ||
+						privacyRepliesCounter == this.valueUpdateRepliesMap.size() )
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
 			}
 			else
 			{
 				return false;
 			}
+			
+//			if( numRepliesCounter == this.hyperspaceHashingReplies.size() )
+//			{
+//				return true;
+//			}
+//			else
+//			{
+//				return false;
+//			}
 		}
 	}
 	
@@ -227,4 +276,13 @@ public class UpdateInfo<NodeIDType>
 	{
 		return this.attrKeyTriggerInfo.get(attrName).getAddedTriggersForAttr();
 	}
+	
+//	public synchronized void incrementNumReplyRecvd()
+//	{
+//		this.numReplyRecvd++;
+//	}
+//	public int getNumReplyRecvd()
+//	{
+//		return this.numReplyRecvd;
+//	}
 }

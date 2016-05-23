@@ -11,7 +11,6 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.nio.JSONPacket;
-import edu.umass.cs.nio.MessageNIOTransport;
 import edu.umass.cs.nio.interfaces.IntegerPacketType;
 import edu.umass.cs.protocoltask.ProtocolEvent;
 import edu.umass.cs.protocoltask.ProtocolTask;
@@ -32,7 +31,6 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 	// like this, sender cannot send it in the packet.
 	//private final static String SENDERADDRESS = MessageNIOTransport.SNDR_IP_FIELD;
 	//private final static String SENDERPORT 	 = MessageNIOTransport.SNDR_PORT_FIELD;
-	
 	//public final static String SENDERADDRESS = JSONNIOTransport.DEFAULT_IP_FIELD;
 	//public final static String SENDERPORT = JSONNIOTransport.DEFAULT_PORT_FIELD;
 	
@@ -44,7 +42,7 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 	/********************************* End of ContextServicePacket ***********************/
 	public enum PacketType implements IntegerPacketType
 	{
-			// query mesg
+		// query mesg
 		QUERY_MSG_FROM_USER(1),
 		VALUE_UPDATE_MSG_FROM_GNS(2),     		// value update trigger from GNS
 		QUERY_MSG_FROM_USER_REPLY(3),     		// reply to the query mesg from user, reply goes back to the original querier
@@ -62,7 +60,9 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		UPDATE_TRIGGER_MESSAGE(15),
 		UPDATE_TRIGGER_REPLY_MESSAGE(16),
 		CONFIG_REQUEST(17),
-		CONFIG_REPLY(18);
+		CONFIG_REPLY(18),
+		ACLUPDATE_TO_SUBSPACE_REGION_MESSAGE(19),
+		ACLUPDATE_TO_SUBSPACE_REGION_REPLY_MESSAGE(20);
 		
 		private final int number;
 		
@@ -70,7 +70,7 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		public int getInt() {return number;}
 		
 		public static final IntegerPacketTypeMap<PacketType> intToType = 
-				new IntegerPacketTypeMap<PacketType>(PacketType.values());
+				new IntegerPacketTypeMap<PacketType>( PacketType.values() );
 		
 		//public static ContextServicePacket.PacketType[] getPacketTypes()
 		public static List<ContextServicePacket.PacketType> getPacketTypes()
@@ -85,7 +85,6 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 			ContextServiceLogger.getLogger().info("size "+packetTypeList.size() + 
 					" packetTypeList "+packetTypeList);
 			
-			//return (PacketType[]) packetTypeList.toArray();
 			return packetTypeList;
 		}
 	}
@@ -94,7 +93,6 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 	/**************************** Start of ContextServicePacketType class map **************/
 	private static final HashMap<ContextServicePacket.PacketType, Class<?>> typeMap = 
 			new HashMap<ContextServicePacket.PacketType, Class<?>>();
-	
 	static
 	{
 		/* This map prevents the need for laborious switch/case sequences as it automatically
@@ -103,7 +101,7 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		 * cost of the former seems to be the bottleneck as it adds ~25us per conversion,
 		 * but it seems not problematic for now. 
 		 */
-	
+		
 		typeMap.put(ContextServicePacket.PacketType.QUERY_MSG_FROM_USER, QueryMsgFromUser.class);
 		typeMap.put(ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS, ValueUpdateFromGNS.class);
 		typeMap.put(ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY, QueryMsgFromUserReply.class);
@@ -127,7 +125,11 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 				ClientConfigRequest.class);
 		typeMap.put(ContextServicePacket.PacketType.CONFIG_REPLY,
 				ClientConfigReply.class);
-
+		typeMap.put( ContextServicePacket.PacketType.ACLUPDATE_TO_SUBSPACE_REGION_MESSAGE,
+				ACLUpdateToSubspaceRegionMessage.class );
+		typeMap.put(ContextServicePacket.PacketType.ACLUPDATE_TO_SUBSPACE_REGION_REPLY_MESSAGE,
+				ACLUpdateToSubspaceRegionReplyMessage.class);
+		
 		
 		for( ContextServicePacket.PacketType type : ContextServicePacket.PacketType.intToType.values() )
 		{

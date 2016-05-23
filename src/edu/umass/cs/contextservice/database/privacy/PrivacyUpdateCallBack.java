@@ -2,8 +2,6 @@ package edu.umass.cs.contextservice.database.privacy;
 
 import java.util.HashMap;
 
-import org.json.JSONObject;
-
 import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
 
 /**
@@ -21,22 +19,21 @@ public class PrivacyUpdateCallBack implements Runnable
 	private final String ID;
 	private final HashMap<String, AttrValueRepresentationJSON> atrToValueRep;
 	private final int subspaceId;
-	private final JSONObject oldValJSON;
-	private final PrivacyInformationStorageInterface privacyInformationStorage;
+	//private final JSONObject oldValJSON;
+	//private final PrivacyInformationStorageInterface privacyInformationStorage;
 	private boolean finished = false;
 	
 	private final Object lock = new Object();
 	
 	public PrivacyUpdateCallBack( String ID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int subspaceId, 
-    		JSONObject oldValJSON, PrivacyInformationStorageInterface privacyInformationStorage )
+    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int subspaceId )
 	{
 		this.operation = PERFORM_INSERT;
 		this.ID = ID;
 		this.atrToValueRep = atrToValueRep;
 		this.subspaceId = subspaceId;
-		this.oldValJSON = oldValJSON;
-		this.privacyInformationStorage = privacyInformationStorage;
+		//this.oldValJSON = oldValJSON;
+		//this.privacyInformationStorage = privacyInformationStorage;
 		finished = false;
 	}
 	
@@ -47,8 +44,8 @@ public class PrivacyUpdateCallBack implements Runnable
 		this.ID = ID;
 		this.subspaceId = subspaceId;
 		atrToValueRep  = null;
-		oldValJSON = null;
-		this.privacyInformationStorage = privacyInformationStorage;
+		//oldValJSON = null;
+		//this.privacyInformationStorage = privacyInformationStorage;
 		finished = false;
 	}
 	
@@ -56,17 +53,17 @@ public class PrivacyUpdateCallBack implements Runnable
 	@Override
 	public void run()
 	{
-		try
+		/*try
 		{
 			if( operation == PERFORM_INSERT )
 			{
 				privacyInformationStorage.bulkInsertPrivacyInformationBlocking
-				(ID, atrToValueRep, subspaceId, oldValJSON);
+					(ID, atrToValueRep, subspaceId);
 			}
 			else if( operation == PERFORM_DELETION )
 			{
 				privacyInformationStorage.deleteAnonymizedIDFromPrivacyInfoStorageBlocking
-				(ID, subspaceId);
+					(ID, subspaceId);
 			}
 			synchronized(lock)
 			{
@@ -77,7 +74,7 @@ public class PrivacyUpdateCallBack implements Runnable
 		catch( Exception | Error ex )
 		{
 			ex.printStackTrace();
-		}
+		}*/
 	}
 	
 	public void waitForFinish()

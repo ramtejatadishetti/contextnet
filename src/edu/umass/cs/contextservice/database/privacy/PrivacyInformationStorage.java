@@ -108,7 +108,6 @@ public class PrivacyInformationStorage<NodeIDType>
 //					stmt.executeUpdate(newTableCommand);
 //				}
 //			}
-		
 			// creating table for storing privacy information at privacy subspace
 //			String tableName = "privacyInfoStoragePrimarySubsapce";
 //			String newTableCommand = "create table "+tableName+" ( "
@@ -250,8 +249,7 @@ public class PrivacyInformationStorage<NodeIDType>
 	}
 	
 	public void bulkInsertPrivacyInformationBlocking( String ID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep , int insertsubspaceId,
-    		JSONObject oldValJSON )
+    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep , int insertsubspaceId )
 	{
 		ContextServiceLogger.getLogger().fine
 								("STARTED bulkInsertPrivacyInformation called ");
@@ -274,6 +272,9 @@ public class PrivacyInformationStorage<NodeIDType>
 			
 			boolean first = true;
 			
+			//FIXME: remove this out loop after the changed scheme is done and test
+			// and giving performance gains.
+			// Now we don't need to insert all attributes just the updated attributes 
 			while( subapceIdIter.hasNext() )
 			{
 				int currsubspaceId = subapceIdIter.next();
@@ -295,6 +296,9 @@ public class PrivacyInformationStorage<NodeIDType>
 					// on acl update, whole ID changes, so older ID acl info just gets 
 					// deleted, it is never updated. There are only inserts and deletes of 
 					// acl info, no updates.
+					
+					//FIXME: right now it cannot support updates,
+					// will be fixed when we start supporting ACL changes.
 					boolean ifExists = checkIfAlreadyExists
 							(ID, insertsubspaceId, tableName, stmt);
 					
@@ -316,24 +320,24 @@ public class PrivacyInformationStorage<NodeIDType>
 						// this is convention in table creation too.
 						// check the primarGUIDStroage table in HyperspaceMySQLDB,
 						// this is the column name and keys in oldValJSON is table column names.
-						String aclEntryKey = "ACL"+currAttrName;
-						
-						if( oldValJSON.has(aclEntryKey) )
-						{
-							try
-							{
-								String jsonArString = oldValJSON.getString(aclEntryKey);
-								if(jsonArString.length() > 0)
-								{
-									// catching here so other attrs not get affected.
-									realIDMappingArray = new JSONArray(jsonArString);
-								}
-							}
-							catch(JSONException jsonEx)
-							{
-								jsonEx.printStackTrace();
-							}
-						}
+//						String aclEntryKey = "ACL"+currAttrName;
+//						
+//						if( oldValJSON.has(aclEntryKey) )
+//						{
+//							try
+//							{
+//								String jsonArString = oldValJSON.getString(aclEntryKey);
+//								if(jsonArString.length() > 0)
+//								{
+//									// catching here so other attrs not get affected.
+//									realIDMappingArray = new JSONArray(jsonArString);
+//								}
+//							}
+//							catch(JSONException jsonEx)
+//							{
+//								jsonEx.printStackTrace();
+//							}
+//						}
 					}
 					
 					if(realIDMappingArray != null)
@@ -358,9 +362,8 @@ public class PrivacyInformationStorage<NodeIDType>
 				}
 			}
 			
-			
 			// at least one item to insert
-			if(!first)
+			if( !first )
 			{
 				long start = System.currentTimeMillis();
 				int numInserted = stmt.executeUpdate(insertQuery);

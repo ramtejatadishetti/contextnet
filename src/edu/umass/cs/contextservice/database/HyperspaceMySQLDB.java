@@ -8,8 +8,6 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -21,7 +19,6 @@ import edu.umass.cs.contextservice.database.guidattributes.GUIDAttributeStorage;
 import edu.umass.cs.contextservice.database.guidattributes.GUIDAttributeStorageInterface;
 import edu.umass.cs.contextservice.database.privacy.PrivacyInformationStorage;
 import edu.umass.cs.contextservice.database.privacy.PrivacyInformationStorageInterface;
-import edu.umass.cs.contextservice.database.privacy.PrivacyUpdateCallBack;
 import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorage;
 import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorageInterface;
@@ -42,24 +39,24 @@ public class HyperspaceMySQLDB<NodeIDType>
 	public static final int MAX_QUERY_LENGTH						= 1000;
 	
 	//public static final String userQuery = "userQuery";
-	public static final String groupGUID = "groupGUID";
-	public static final String userIP = "userIP";
-	public static final String userPort = "userPort";
+	public static final String groupGUID 							= "groupGUID";
+	public static final String userIP 								= "userIP";
+	public static final String userPort 							= "userPort";
 	
 	private final DataSource<NodeIDType> mysqlDataSource;
 	
 	private final GUIDAttributeStorageInterface<NodeIDType> guidAttributesStorage;
 	private  TriggerInformationStorageInterface<NodeIDType> triggerInformationStorage;
 	
-	private  PrivacyInformationStorageInterface privacyInformationStroage;
-	private ExecutorService eservice;
+	private  PrivacyInformationStorageInterface privacyInformationStorage;
+	//private ExecutorService eservice;
 	
 	
-	public HyperspaceMySQLDB(NodeIDType myNodeID, 
+	public HyperspaceMySQLDB( NodeIDType myNodeID, 
 			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap )
 			throws Exception
 	{
-		this.eservice = Executors.newCachedThreadPool();
+		//this.eservice = Executors.newCachedThreadPool();
 		this.mysqlDataSource = new DataSource<NodeIDType>(myNodeID);
 		
 		guidAttributesStorage = new GUIDAttributeStorage<NodeIDType>
@@ -78,7 +75,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		
 		if( ContextServiceConfig.PRIVACY_ENABLED )
 		{
-			privacyInformationStroage = new PrivacyInformationStorage<NodeIDType>
+			privacyInformationStorage = new PrivacyInformationStorage<NodeIDType>
 										(subspaceInfoMap, mysqlDataSource);
 		}
 		createTables();
@@ -91,9 +88,9 @@ public class HyperspaceMySQLDB<NodeIDType>
 	 */
 	private void createTables()
 	{	
-		// slightly ineffcient way of creating tables
+		// slightly inefficient way of creating tables
 		// as it loops through subspaces three times
-		// instead of one, but it only happens in the begginning
+		// instead of one, but it only happens in the beginning
 		// so not a bottleneck.
 		guidAttributesStorage.createTables();
 		
@@ -106,7 +103,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 		
 		if( ContextServiceConfig.PRIVACY_ENABLED )
 		{
-			privacyInformationStroage.createTables();
+			privacyInformationStorage.createTables();
 		}
 	}
 	
@@ -136,10 +133,9 @@ public class HyperspaceMySQLDB<NodeIDType>
 	{
 		HashMap<Integer, OverlappingInfoClass> answerlist = 
 				triggerInformationStorage.getOverlappingPartitionsInTriggers
-				(subspaceId, replicaNum, attrName, matchingQueryComponent);
+				( subspaceId, replicaNum, attrName, matchingQueryComponent );
 		return answerlist;
 	}
-	
 	
 	/**
 	 * This function is implemented here as it involves joining guidAttrValueStorage
@@ -176,7 +172,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 					(subspaceId, query);
 			
 			String joinQuery = 
-					privacyInformationStroage.getMySQLQueryForFetchingRealIDMappingForQuery(query, subspaceId);
+					privacyInformationStorage.getMySQLQueryForFetchingRealIDMappingForQuery(query, subspaceId);
 			
 			// just ordering by nodeGUID so that we can aggregate without creating an additional map
 			// not sure what overhead it adds, as it adds sorting overhead.
@@ -298,6 +294,20 @@ public class HyperspaceMySQLDB<NodeIDType>
 		}
 	}
 	
+	public void storePrivacyInformationOnUpdate( String nodeGUID , 
+			HashMap<String, AttrValueRepresentationJSON> atrToValueRep , int subspaceId)
+	{
+		// FIXME: PrivacyUpdateCallBack will be removed and the code inside it 
+		// will be pasted here.
+//		PrivacyUpdateCallBack privacyThread 
+//			= new PrivacyUpdateCallBack( nodeGUID, 
+//				atrToValueRep, subspaceId, oldValJSON, 
+//				privacyInformationStorage );
+		privacyInformationStorage.bulkInsertPrivacyInformationBlocking
+											(nodeGUID, atrToValueRep, subspaceId);
+		//privacyThread.run();
+	}
+	
 	/**
 	 * Inserts a subspace region denoted by subspace vector, 
 	 * integer denotes partition num in partition info 
@@ -308,14 +318,14 @@ public class HyperspaceMySQLDB<NodeIDType>
 			List<Integer> subspaceVector, NodeIDType respNodeId)
 	{
 		this.guidAttributesStorage.insertIntoSubspacePartitionInfo
-		(subspaceId, replicaNum, subspaceVector, respNodeId);
+						(subspaceId, replicaNum, subspaceVector, respNodeId);
 	}
 	
 	public void bulkInsertIntoSubspacePartitionInfo( int subspaceId, int replicaNum,
 			List<List<Integer>> subspaceVectorList, List<NodeIDType> respNodeIdList )
 	{
 		this.guidAttributesStorage.bulkInsertIntoSubspacePartitionInfo
-		(subspaceId, replicaNum, subspaceVectorList, respNodeIdList);
+				(subspaceId, replicaNum, subspaceVectorList, respNodeIdList);
 	}
 	
 	/**
@@ -328,7 +338,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 			int partitionNum, NodeIDType respNodeId)
 	{
 		this.triggerInformationStorage.insertIntoTriggerPartitionInfo
-			(subspaceId, replicaNum, attrName, partitionNum, respNodeId);
+				(subspaceId, replicaNum, attrName, partitionNum, respNodeId);
 	}
 	
 	public JSONObject getGUIDStoredInPrimarySubspace( String guid )
@@ -346,7 +356,7 @@ public class HyperspaceMySQLDB<NodeIDType>
 			String attrName, String userQuery, String groupGUID, String userIP, int userPort, long expiryTimeFromNow )
 	{
 		this.triggerInformationStorage.insertIntoSubspaceTriggerDataInfo
-		(subspaceId, replicaNum, attrName, userQuery, groupGUID, userIP, userPort, expiryTimeFromNow);
+			(subspaceId, replicaNum, attrName, userQuery, groupGUID, userIP, userPort, expiryTimeFromNow);
 	}
 	
 	/**
@@ -376,21 +386,20 @@ public class HyperspaceMySQLDB<NodeIDType>
 										(subspaceId, replicaNum, attrName);
 	}
 	
-	
 	public void storeGUIDInPrimarySubspace( String tableName, String nodeGUID, 
     		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert, 
-    		JSONObject oldValJSON ) 
-    				throws JSONException
+    		JSONObject oldValJSON ) throws JSONException
 	{
 		long start = System.currentTimeMillis();
 		this.guidAttributesStorage.storeGUIDInPrimarySubspace
 			(tableName, nodeGUID, atrToValueRep, updateOrInsert, oldValJSON);
+		
 		long end = System.currentTimeMillis();
 		
-		if(ContextServiceConfig.DEBUG_MODE)
+		if( ContextServiceConfig.DEBUG_MODE )
 		{
 			System.out.println
-			( "storeGUIDInPrimarySubspace "+(end-start) );
+				( "storeGUIDInPrimarySubspace "+(end-start) );
 		}
 	}
 	
@@ -405,11 +414,11 @@ public class HyperspaceMySQLDB<NodeIDType>
      * @return
      * @throws JSONException
      */
-    public void storeGUIDInSecondarySubspace( String tableName, String nodeGUID, 
+    public void storeGUIDInSecondarySubspace(String tableName, String nodeGUID, 
     		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert 
     		, int subspaceId , JSONObject oldValJSON) throws JSONException
     {
-    	if( !ContextServiceConfig.PRIVACY_ENABLED )
+    	//if( !ContextServiceConfig.PRIVACY_ENABLED )
     	{
     		// no need to add realIDEntryption Info in primary subspaces.
     		long start = System.currentTimeMillis();
@@ -417,13 +426,13 @@ public class HyperspaceMySQLDB<NodeIDType>
 						(tableName, nodeGUID, atrToValueRep, updateOrInsert, oldValJSON);
     		long end = System.currentTimeMillis();
     		
-    		if(ContextServiceConfig.DEBUG_MODE)
+    		if( ContextServiceConfig.DEBUG_MODE )
     		{
     			System.out.println
-    			( "storeGUIDInSubspace without privacy storage "+(end-start) );
+    				( "storeGUIDInSubspace without privacy storage "+(end-start) );
     		}
     	}
-    	else
+    	/*else
     	{
     		//FIXME: need to think about updating privacy info, which is change in ACLs
     		// I think there are no updates in privacy info.
@@ -431,48 +440,44 @@ public class HyperspaceMySQLDB<NodeIDType>
     		
     		if(ContextServiceConfig.DEBUG_MODE)
     		{
-    			System.out.println("STARTED storeGUIDInSecondarySubspace with privacy storage "+nodeGUID
-    													);
+    			System.out.println("STARTED storeGUIDInSecondarySubspace with privacy storage "
+    								+nodeGUID);
     		}
     		// do both in parallel.
-    		
     		long start = System.currentTimeMillis();
 //    		PrivacyUpdateCallBack callBack = privacyInformationStroage.bulkInsertPrivacyInformationNonBlocking
 //    		(nodeGUID, atrToValueRep, subspaceId, oldValJSON);
-
 //    		this.privacyInformationStroage.bulkInsertPrivacyInformationBlocking
 //    		(nodeGUID, atrToValueRep, subspaceId, oldValJSON);
     		
     		PrivacyUpdateCallBack privacyThread 
-			= new PrivacyUpdateCallBack(nodeGUID, 
-	    		atrToValueRep, subspaceId, oldValJSON, 
-	    		this.privacyInformationStroage);
+				= new PrivacyUpdateCallBack( nodeGUID, 
+						atrToValueRep, subspaceId, oldValJSON, 
+						this.privacyInformationStroage );
     		
     		//privacyThread.run();
     		this.eservice.execute(privacyThread);
-    		
     		this.guidAttributesStorage.storeGUIDInSecondarySubspace
 				(tableName, nodeGUID, atrToValueRep, updateOrInsert, oldValJSON);
     		
     		// wait for privacy update to finish
     		privacyThread.waitForFinish();
     		
-
     		long end = System.currentTimeMillis();
     		
-    		if(ContextServiceConfig.DEBUG_MODE)
+    		if( ContextServiceConfig.DEBUG_MODE )
     		{
-    			System.out.println("FINISHED storeGUIDInSecondarySubspace with privacy storage "+nodeGUID+" "
-    																	+(end-start));
+    			System.out.println("FINISHED storeGUIDInSecondarySubspace "
+    					+ " with privacy storage "+nodeGUID+" "+(end-start) );
     		}
-    	}
+    	}*/
     }
 	
 	public void deleteGUIDFromSubspaceRegion(String tableName, String nodeGUID, 
 			int subspaceId)
 	{
-		if( !ContextServiceConfig.PRIVACY_ENABLED )
-		{
+		//if( !ContextServiceConfig.PRIVACY_ENABLED )
+		//{
 			long start = System.currentTimeMillis();
 			this.guidAttributesStorage.deleteGUIDFromSubspaceRegion(tableName, nodeGUID);
 			long end = System.currentTimeMillis();
@@ -482,41 +487,40 @@ public class HyperspaceMySQLDB<NodeIDType>
     			System.out.println("deleteGUIDFromSubspaceRegion without "
     					+ "privacy storage "+(end-start));
     		}
-		}
-		else
-		{
-			long start = System.currentTimeMillis();
-			// do both in parallel.
-    		
-//			PrivacyUpdateCallBack callback 
-//			= privacyInformationStroage.deleteAnonymizedIDFromPrivacyInfoStorageNOnBlocking
-//																		(nodeGUID, subspaceId);
-			
-			PrivacyUpdateCallBack privacyThread 
-				= new PrivacyUpdateCallBack(nodeGUID, subspaceId, 
-		    		this.privacyInformationStroage);
-			
-			//privacyThread.run();
-			this.eservice.execute(privacyThread);
-			
-			
-    		this.guidAttributesStorage.deleteGUIDFromSubspaceRegion(tableName, nodeGUID);
-    		
-    		// wait for privacy update to finish
-    		privacyThread.waitForFinish();
-    		
-    		
-    		long end = System.currentTimeMillis();
-    		
-    		if(ContextServiceConfig.DEBUG_MODE)
-    		{
-    			System.out.println("deleteGUIDFromSubspaceRegion with privacy storage "+(end-start));
-    		}
-		}
+		//}
+//		else
+//		{
+//			long start = System.currentTimeMillis();
+//			// do both in parallel.
+////			PrivacyUpdateCallBack callback 
+////				= privacyInformationStroage.deleteAnonymizedIDFromPrivacyInfoStorageNOnBlocking
+////																		(nodeGUID, subspaceId);
+//			
+//			PrivacyUpdateCallBack privacyThread 
+//				= new PrivacyUpdateCallBack( nodeGUID, subspaceId, 
+//		    		this.privacyInformationStroage );
+//			
+//			//privacyThread.run();
+//			this.eservice.execute(privacyThread);
+//			
+//			
+//    		this.guidAttributesStorage.deleteGUIDFromSubspaceRegion(tableName, nodeGUID);
+//    		
+//    		// wait for privacy update to finish
+//    		privacyThread.waitForFinish();
+//    		
+//    		long end = System.currentTimeMillis();
+//    		
+//    		if( ContextServiceConfig.DEBUG_MODE )
+//    		{
+//    			System.out.println("deleteGUIDFromSubspaceRegion with privacy storage "
+//    									+(end-start));
+//    		}
+//		}
 	}
 	
-	public boolean getSearchQueryRecordFromPrimaryTriggerSubspace(String groupGUID, 
-			String userIP, int userPort) throws UnknownHostException
+	public boolean getSearchQueryRecordFromPrimaryTriggerSubspace( String groupGUID, 
+			String userIP, int userPort ) throws UnknownHostException
 	{
 		return this.getSearchQueryRecordFromPrimaryTriggerSubspace
 				(groupGUID, userIP, userPort);
