@@ -31,6 +31,7 @@ import edu.umass.cs.nio.interfaces.NodeConfig;
  */
 public class FourNodeCSSetup extends ContextServiceNode<Integer>
 {
+	// geoJSON function tests needs to be added to context service tests
 	public static final int HYPERSPACE_HASHING							= 1;
 	
 	private static CSNodeConfig<Integer> csNodeConfig					= null;

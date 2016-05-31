@@ -77,7 +77,7 @@ public class ContextServiceTests
 		assertEquals(replyArray.length(), 0);
 	}
 	
-	/*@Test
+	@Test
 	public void test_2_Input100GUIDs() throws JSONException 
 	{
 		Random rand = new Random();
@@ -100,11 +100,15 @@ public class ContextServiceTests
 		
 		assertEquals(100, numRep);
 		assertEquals(100, replyArray.length());
-	}*/
+	}
 	
 	@Test
 	public void test_3_privacyTest() throws JSONException, NoSuchAlgorithmException 
 	{
+		// if privacy not enabled then just return.
+		if(!ContextServiceConfig.PRIVACY_ENABLED)
+			return;
+		
 		GuidEntry userGUID = getAGUIDEntry("userGuid");
 		
 		Vector<GuidEntry> aclMemberGuids = new Vector<GuidEntry>();

@@ -37,6 +37,7 @@ import edu.umass.cs.nio.interfaces.PacketDemultiplexer;
 
 public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 {
+	// TODO: string attr test needs to be added to context service tests
 	public static final int HYPERSPACE_HASHING							= 1;
 	
 	private static CSNodeConfig<Integer> csNodeConfig					= null;
@@ -303,8 +304,8 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 				
 				ValueUpdateFromGNS<Integer> valUpdFromGNS = 
 					new ValueUpdateFromGNS<Integer>
-				(myID, currID, myGUID, attrValuePair, currID, sourceIP, sourcePort, 
-						System.currentTimeMillis());
+				(myID, currID, myGUID, attrValuePair,  currID, sourceIP, sourcePort, 
+						System.currentTimeMillis(), null);
 				
 				niot.sendToAddress(getRandomNodeSock(), valUpdFromGNS.toJSONObject());
 			} catch (JSONException e)
