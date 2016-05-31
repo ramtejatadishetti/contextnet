@@ -99,7 +99,7 @@
 			<!--<exclude name="edu/umass/cs/msocket/watchdog/**" />-->
 		</fileset>
 	  
-		<zipgroupfileset dir="${lib.dir}/" includes="GNSClient.jar, gigapaxos-1.0.jar"/>
+		<zipgroupfileset dir="${lib.dir}/" includes="GNSClient.jar, gigapaxos-1.0.jar, guava-19.0.jar"/>
 	  <manifest>
 	    <attribute name="Built-By" value="Aditya Yadav" />
 	    <!-- Information about the program itself -->
