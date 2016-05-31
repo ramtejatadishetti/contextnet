@@ -5,6 +5,7 @@ import java.util.List;
 
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
+import edu.umass.cs.gnsclient.client.GuidEntry;
 
 /**
  * Doesn't do anything. Returns each guid in the ACL as its anonymized ID.
@@ -14,7 +15,8 @@ import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 public class NoopAnonymizedIDCreator implements AnonymizedIDCreationInterface
 {
 	@Override
-	public List<AnonymizedIDEntry> computeAnonymizedIDs(HashMap<String, List<ACLEntry>> aclList) 
+	public List<AnonymizedIDEntry> computeAnonymizedIDs(GuidEntry myGuidEntry, 
+				HashMap<String, List<ACLEntry>> aclList) 
 	{
 		return null;
 	}

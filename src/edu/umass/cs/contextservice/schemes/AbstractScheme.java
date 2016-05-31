@@ -287,6 +287,4 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 	public abstract GenericMessagingTask<NodeIDType,?>[] handleACLUpdateToSubspaceRegionReplyMessage(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
 			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
-	
-	public abstract void checkQueryCompletion(QueryInfo<NodeIDType> qinfo);
 }

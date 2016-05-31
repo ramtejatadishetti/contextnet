@@ -12,27 +12,27 @@ import org.json.JSONObject;
  */
 public class SearchReplyGUIDRepresentationJSON 
 {
-	private enum Keys {ID, REAL_ID_MAPPING_JSONARAAY};
+	private enum Keys {ID, ANONYMIZEDID_TO_GUID_MAPPING};
 	
 	//TODO: sometime we want to change it to byte[] and save 
 	// half space.
 	private final String idString;
 	// this can be empty or set to null if not used in no privacy case
-	private JSONArray realIDMappingInfo;
+	private JSONArray anonymizedIDToGUIDMapping;
 	
 	// no privacy constructor
 	public SearchReplyGUIDRepresentationJSON(String GUID)
 	{
 		this.idString = GUID;
-		this.realIDMappingInfo = null;
+		this.anonymizedIDToGUIDMapping = null;
 	}
 	
 	// privacy constructor
 	public SearchReplyGUIDRepresentationJSON(String idString, 
-			JSONArray realIDMappingInfo)
+			JSONArray anonymizedIDToGUIDMapping)
 	{
 		this.idString = idString;
-		this.realIDMappingInfo = realIDMappingInfo;
+		this.anonymizedIDToGUIDMapping = anonymizedIDToGUIDMapping;
 	}
 	
 	public String getID()
@@ -40,30 +40,32 @@ public class SearchReplyGUIDRepresentationJSON
 		return this.idString;
 	}
 	
-	public JSONArray getRealIDMappingInfo()
+	public JSONArray getAnonymizedIDToGuidMapping()
 	{
-		return this.realIDMappingInfo;
+		return this.anonymizedIDToGUIDMapping;
 	}
 	
 	public JSONObject toJSONObject() throws JSONException
 	{
 		JSONObject jsonObject = new JSONObject();
 		jsonObject.put(Keys.ID.toString(), idString);
-		if(realIDMappingInfo != null)
+		if(anonymizedIDToGUIDMapping != null)
 		{
-			jsonObject.put(Keys.REAL_ID_MAPPING_JSONARAAY.toString(), realIDMappingInfo);
+			jsonObject.put(Keys.ANONYMIZEDID_TO_GUID_MAPPING.toString(), 
+					anonymizedIDToGUIDMapping);
 		}
 		return jsonObject;
 	}
 	
-	public static SearchReplyGUIDRepresentationJSON fromJSONObject(JSONObject jsonObject) throws JSONException
+	public static SearchReplyGUIDRepresentationJSON fromJSONObject(JSONObject jsonObject) 
+																		throws JSONException
 	{
 		String idString = jsonObject.getString(Keys.ID.toString());
 		JSONArray realIDMappingInfo = null;
-		if( jsonObject.has(Keys.REAL_ID_MAPPING_JSONARAAY.toString()) )
+		if( jsonObject.has(Keys.ANONYMIZEDID_TO_GUID_MAPPING.toString()) )
 		{
 			realIDMappingInfo = jsonObject.getJSONArray
-					(Keys.REAL_ID_MAPPING_JSONARAAY.toString());
+					(Keys.ANONYMIZEDID_TO_GUID_MAPPING.toString());
 		}
 		return new SearchReplyGUIDRepresentationJSON(idString, realIDMappingInfo);
 	}

@@ -24,16 +24,13 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.anonymizedID.AnonymizedIDCreationInterface;
-import edu.umass.cs.contextservice.client.anonymizedID.GUIDBasedAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.anonymizedID.HyperspaceBasedAnonymizedIDCreator;
-import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSPrivacyTransformInterface;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSSearchReplyTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSUpdateTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.HyperspaceBasedCSTransform;
 import edu.umass.cs.contextservice.client.csprivacytransform.ParallelUpdateStateStorage;
-import edu.umass.cs.contextservice.client.csprivacytransform.SubspaceBasedCSTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.EncryptionBasedGNSPrivacyTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSPrivacyTransformInterface;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSTransformedMessage;
@@ -51,8 +48,6 @@ import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
 import edu.umass.cs.contextservice.messages.RefreshTrigger;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
-import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
-import edu.umass.cs.contextservice.messages.dataformat.ParsingMethods;
 import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.gnsclient.client.GNSClient;
@@ -71,7 +66,8 @@ import edu.umass.cs.gnscommon.exceptions.client.GnsClientException;
  * @param <NodeIDType>
  */
 public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClient<NodeIDType> 
-			implements ContextClientInterfaceWithPrivacy, ContextServiceClientInterfaceWithoutPrivacy
+			implements ContextClientInterfaceWithPrivacy, 
+			ContextServiceClientInterfaceWithoutPrivacy
 {
 	public static final int SUBSPACE_BASED_CS_TRANSFORM				= 1;
 	public static final int HYPERSPACE_BASED_CS_TRANSFORM			= 2;
@@ -170,11 +166,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			{
 				return;
 			}
-			
 			sendUpdateToCS(GUID, 
-					convertAttrValueToSystemFormat(csAttrValuePairs), 
-					versionNum, blocking );
-		} 
+					csAttrValuePairs, null, versionNum, blocking );
+		}
 		catch (Exception | Error e)
 		{
 			e.printStackTrace();
@@ -205,7 +199,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				{
 					//resultGUIDMap.put(jsoArr1.getString(j), true);
 					JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
-					SearchReplyGUIDRepresentationJSON searchRepObj = SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
+					SearchReplyGUIDRepresentationJSON searchRepObj 
+							= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
 					replyArray.put(searchRepObj.getID());
 				}
 			} catch ( JSONException e )
@@ -324,8 +319,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				return;
 			}
 			
-			HashMap<String, AttrValueRepresentationJSON> attrValueMap =
-					convertAttrValueToSystemFormat(csAttrValuePairs);
+//			HashMap<String, AttrValueRepresentationJSON> attrValueMap =
+//					convertAttrValueToSystemFormat(csAttrValuePairs);
 			
 			// TODO: Different CSUpdateTransformedMessage messages can be computed
 			// in parallel.
@@ -334,7 +329,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			
 			List<CSUpdateTransformedMessage> transformedMesgList 
 				= this.csPrivacyTransform.transformUpdateForCSPrivacy
-				(myGUIDInfo.getGuid(), attrValueMap, aclmap, anonymizedIDList);
+				(myGUIDInfo.getGuid(), attrValuePairs, aclmap, anonymizedIDList);
 			
 			long end1 = System.currentTimeMillis();
 			
@@ -384,6 +379,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 	}
 	
+	
 	@Override
 	public int sendSearchQuerySecure( String searchQuery, JSONArray replyArray, 
 			long expiryTime, GuidEntry myGUIDInfo )
@@ -410,7 +406,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				{
 					//resultGUIDMap.put(jsoArr1.getString(j), true);
 					JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
-					SearchReplyGUIDRepresentationJSON searchRepObj = SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
+					SearchReplyGUIDRepresentationJSON searchRepObj 
+							= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
 
 					CSSearchReplyTransformedMessage csSearchRepTransform 
 										= new CSSearchReplyTransformedMessage(searchRepObj);
@@ -433,7 +430,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
 				+searchRepTransformList.size()+" final reply size "+replyArray.length());
 		
-		return searchAnswer.resultSize;
+		return replyArray.length();
 	}
 	
 	@Override
@@ -455,10 +452,10 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	 * assumption is that ACL always fits in memory.
 	 */
 	@Override
-	public List<AnonymizedIDEntry> computeAnonymizedIDs(
-			HashMap<String, List<ACLEntry>> aclMap) 
+	public List<AnonymizedIDEntry> computeAnonymizedIDs( GuidEntry myGuidEntry,
+			HashMap<String, List<ACLEntry>> aclMap )
 	{
-		return this.anonymizedIDCreation.computeAnonymizedIDs(aclMap);
+		return this.anonymizedIDCreation.computeAnonymizedIDs(myGuidEntry, aclMap);
 	}
 	
 	/**
@@ -467,13 +464,11 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	 * It assumes all attributes in csAttrValMap are CS attributes.
 	 */
 	public void sendUpdateToCS( String GUID, 
-			HashMap<String, AttrValueRepresentationJSON> csAttrValMap, 
+			JSONObject csAttrValPair, JSONArray anonymizedIDToGuidMappingArray, 
 			long versionNum, boolean blocking )
 	{
 		try
 		{
-			JSONObject jsonObject = ParsingMethods.getJSONObject(csAttrValMap);
-			
 			long currId;
 			
 			synchronized( this.updateIdLock )
@@ -481,12 +476,17 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				currId = this.updateReqId++;
 			}
 			
-			long reqeustID = currId;
+			long requestID = currId;
 			
-			ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = 
-				new ValueUpdateFromGNS<NodeIDType>(null, versionNum, GUID, 
-						jsonObject, reqeustID, sourceIP, sourcePort, 
-							System.currentTimeMillis() );
+//			ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = 
+//				new ValueUpdateFromGNS<NodeIDType>(null, versionNum, GUID, 
+//						jsonObject, reqeustID, sourceIP, sourcePort, 
+//							System.currentTimeMillis() );
+			
+			ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = new
+					ValueUpdateFromGNS<NodeIDType>( null, versionNum, GUID, 
+							csAttrValPair, requestID, sourceIP, sourcePort, 
+							System.currentTimeMillis(), anonymizedIDToGuidMappingArray );
 			
 			UpdateStorage<NodeIDType> updateQ = new UpdateStorage<NodeIDType>();
 			updateQ.requestID = currId;
@@ -500,8 +500,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			InetSocketAddress sockAddr = this.csNodeAddresses.get(rand.nextInt(csNodeAddresses.size()));
 			
 			ContextServiceLogger.getLogger().fine("ContextClient sending update requestID "+currId+" to "+sockAddr+" json "+
-					valUpdFromGNS);		
-			//niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
+					valUpdFromGNS);
 			niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
 			
 			if( blocking )
@@ -560,31 +559,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			e.printStackTrace();
 		}
 		return true;
-	}
-	
-	
-	/**
-	 * COnverts attr value JSON given in the api calls to
-	 * attr AttrValueRepresentationJSON map
-	 * @return
-	 * @throws JSONException 
-	 */
-	private HashMap<String, AttrValueRepresentationJSON> convertAttrValueToSystemFormat
-								(JSONObject attrValuePairs) throws JSONException
-	{
-		HashMap<String, AttrValueRepresentationJSON> map 
-							= new HashMap<String, AttrValueRepresentationJSON>();
-		
-		Iterator<String> jsonIter = attrValuePairs.keys();
-		while(jsonIter.hasNext())
-		{
-			String attrName = jsonIter.next();
-			String value = attrValuePairs.getString(attrName);
-			AttrValueRepresentationJSON valRep = new AttrValueRepresentationJSON(value);
-			
-			map.put(attrName, valRep);
-		}
-		return map;
 	}
 	
 	private void sendUpdateToGNS(GuidEntry writingGuid, 
@@ -879,11 +853,11 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		// for anonymized ID
 		if( this.transformType == SUBSPACE_BASED_CS_TRANSFORM )
 		{
-			anonymizedIDCreation 
-				= new SubspaceBasedAnonymizedIDCreator(subspaceAttrMap);
-			
-			// for cs transform
-			csPrivacyTransform = new SubspaceBasedCSTransform(executorService);
+//			anonymizedIDCreation 
+//				= new SubspaceBasedAnonymizedIDCreator(subspaceAttrMap);
+//			
+//			// for cs transform
+//			csPrivacyTransform = new SubspaceBasedCSTransform(executorService);
 		}
 		else if( this.transformType == HYPERSPACE_BASED_CS_TRANSFORM )
 		{
@@ -894,7 +868,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 		else if( this.transformType == GUID_BASED_CS_TRANSFORM )
 		{
-			anonymizedIDCreation = new GUIDBasedAnonymizedIDCreator();
+//			anonymizedIDCreation = new GUIDBasedAnonymizedIDCreator();
 		}
 		
 		// for gnsTransform
@@ -931,7 +905,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		{
 			String IDString = Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
 			
-			sendUpdateToCS( IDString, csTransformedMessage.getAttrValMap() , 
+			sendUpdateToCS( IDString, csTransformedMessage.getAttrValJSON(), 
+					csTransformedMessage.getAnonymizedIDToGuidMapping(), 
 					versionNum, blocking );
 			
 			long endTime = System.currentTimeMillis();
@@ -1061,7 +1036,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		ContextServiceClient<Integer> csClient = new ContextServiceClient<Integer>("127.0.0.1", 8000, 
 				ContextServiceClient.SUBSPACE_BASED_CS_TRANSFORM);
 		
-		List<AnonymizedIDEntry> anonymizedIdList = csClient.computeAnonymizedIDs(aclMap);
+		List<AnonymizedIDEntry> anonymizedIdList = csClient.computeAnonymizedIDs
+					(myGUID, aclMap);
 		JSONObject attrValPair = new JSONObject();
 		attrValPair.put("attr1", 10+"");
 		
@@ -1093,4 +1069,28 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 //		JSONObject getObj = csClient.sendGetRequestSecure(guid0, queryingGuid);
 //		System.out.println("recvd Obj "+getObj);
 	}
+	
+	/**
+	 * COnverts attr value JSON given in the api calls to
+	 * attr AttrValueRepresentationJSON map
+	 * @return
+	 * @throws JSONException 
+	 */
+	/*private HashMap<String, AttrValueRepresentationJSON> convertAttrValueToSystemFormat
+								(JSONObject attrValuePairs) throws JSONException
+	{
+		HashMap<String, AttrValueRepresentationJSON> map 
+							= new HashMap<String, AttrValueRepresentationJSON>();
+		
+		Iterator<String> jsonIter = attrValuePairs.keys();
+		while(jsonIter.hasNext())
+		{
+			String attrName = jsonIter.next();
+			String value = attrValuePairs.getString(attrName);
+			AttrValueRepresentationJSON valRep = new AttrValueRepresentationJSON(value);
+			
+			map.put(attrName, valRep);
+		}
+		return map;
+	}*/
 }

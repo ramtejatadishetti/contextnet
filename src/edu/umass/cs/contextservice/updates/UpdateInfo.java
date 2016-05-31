@@ -16,9 +16,9 @@ import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 public class UpdateInfo<NodeIDType>
 {
 	// for value update reply from subspace
-	public static final int VALUE_UPDATE_REPLY									= 1;
+	//public static final int VALUE_UPDATE_REPLY									= 1;
 	// for privacy update reply from subspace
-	public static final int PRIVACY_UPDATE_REPLY								= 2;
+	//public static final int PRIVACY_UPDATE_REPLY								= 2;
 	
 	
 	private final ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS;
@@ -42,7 +42,7 @@ public class UpdateInfo<NodeIDType>
 	// so that the anonymized ID is only updated in subspaces whose attributes
 	// have a non-zero intersection with attribute set of the anonymized ID.
 	// But for now it is updated in every subspace.
-	private int privacyRepliesCounter 											= 0;
+	//private int privacyRepliesCounter 											= 0;
 	
 	
 	private final Object subspaceRepliesLock 									= new Object();
@@ -129,10 +129,9 @@ public class UpdateInfo<NodeIDType>
 		valueUpdateRepliesMap.put(subspaceId+"-"+replicaNum, 0);
 	}
 	
-	public boolean setUpdateReply( int subspaceId, int replicaNum, int numRep, 
-			int updateType)
+	public boolean setUpdateReply( int subspaceId, int replicaNum, int numRep)
 	{
-		if( updateType == VALUE_UPDATE_REPLY )
+		//if( updateType == VALUE_UPDATE_REPLY )
 		{
 			synchronized( this.subspaceRepliesLock )
 			{
@@ -148,16 +147,17 @@ public class UpdateInfo<NodeIDType>
 				
 				if( valueUpdateRepliesCounter == this.valueUpdateRepliesMap.size() )
 				{
+					return true;
 					// if privacy replies are recvd from all subspaces
-					if( !ContextServiceConfig.PRIVACY_ENABLED ||
-							privacyRepliesCounter == this.valueUpdateRepliesMap.size() )
-					{
-						return true;
-					}
-					else
-					{
-						return false;
-					}
+//					if( !ContextServiceConfig.PRIVACY_ENABLED ||
+//							privacyRepliesCounter == this.valueUpdateRepliesMap.size() )
+//					{
+//						return true;
+//					}
+//					else
+//					{
+//						return false;
+//					}
 				}
 				else
 				{
@@ -165,31 +165,31 @@ public class UpdateInfo<NodeIDType>
 				}
 			}
 		}
-		else if( updateType == PRIVACY_UPDATE_REPLY )
-		{
-			synchronized( this.subspaceRepliesLock )
-			{
-				privacyRepliesCounter++;			
-				if( valueUpdateRepliesCounter == this.valueUpdateRepliesMap.size() )
-				{
-					// if privacy replies are recvd from all subspaces
-					if( privacyRepliesCounter == this.valueUpdateRepliesMap.size() )
-					{
-						return true;
-					}
-					else
-					{
-						return false;
-					}
-				}
-				else
-				{
-					return false;
-				}
-			}
-		}
-		assert(false);
-		return false;
+//		else if( updateType == PRIVACY_UPDATE_REPLY )
+//		{
+//			synchronized( this.subspaceRepliesLock )
+//			{
+//				privacyRepliesCounter++;			
+//				if( valueUpdateRepliesCounter == this.valueUpdateRepliesMap.size() )
+//				{
+//					// if privacy replies are recvd from all subspaces
+//					if( privacyRepliesCounter == this.valueUpdateRepliesMap.size() )
+//					{
+//						return true;
+//					}
+//					else
+//					{
+//						return false;
+//					}
+//				}
+//				else
+//				{
+//					return false;
+//				}
+//			}
+//		}
+//		assert(false);
+//		return false;
 	}
 	
 	public boolean setUpdateTriggerReply(UpdateTriggerReply<NodeIDType> updateTriggerReply)
@@ -240,16 +240,17 @@ public class UpdateInfo<NodeIDType>
 		{
 			if( valueUpdateRepliesCounter == this.valueUpdateRepliesMap.size() )
 			{
+				return true;
 				// if privacy replies are recvd from all subspaces
-				if( !ContextServiceConfig.PRIVACY_ENABLED ||
-						privacyRepliesCounter == this.valueUpdateRepliesMap.size() )
-				{
-					return true;
-				}
-				else
-				{
-					return false;
-				}
+//				if( !ContextServiceConfig.PRIVACY_ENABLED ||
+//						privacyRepliesCounter == this.valueUpdateRepliesMap.size() )
+//				{
+//					return true;
+//				}
+//				else
+//				{
+//					return false;
+//				}
 			}
 			else
 			{

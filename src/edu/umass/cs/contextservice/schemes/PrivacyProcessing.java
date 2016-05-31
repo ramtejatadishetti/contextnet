@@ -1,16 +1,12 @@
 package edu.umass.cs.contextservice.schemes;
 
 import java.io.IOException;
-import java.util.HashMap;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
 import edu.umass.cs.contextservice.messages.ACLUpdateToSubspaceRegionMessage;
-import edu.umass.cs.contextservice.messages.ACLUpdateToSubspaceRegionReplyMessage;
-import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
-import edu.umass.cs.contextservice.messages.dataformat.ParsingMethods;
 import edu.umass.cs.nio.JSONMessenger;
 
 /**
@@ -66,40 +62,40 @@ public class PrivacyProcessing<NodeIDType> implements PrivacyProcessingInterface
 			ACLUpdateToSubspaceRegionMessage<NodeIDType> aclUpdateToSubspaceRegionMessage, 
 			int replicaNum )
 	{
-		try 
-		{
-			long requestID  = aclUpdateToSubspaceRegionMessage.getRequestID();
-			long versionNum = aclUpdateToSubspaceRegionMessage.getVersionNum();
-			String anonymizedID = aclUpdateToSubspaceRegionMessage.getGUID();
-			JSONObject updValJSON = aclUpdateToSubspaceRegionMessage.getUpdateAttrValuePairs();
-			int subspaceId 	= aclUpdateToSubspaceRegionMessage.getSubspaceNum(); 
-			
-			HashMap<String, AttrValueRepresentationJSON> atrToValueRep 
-									= ParsingMethods.getAttrValueMap(updValJSON);
-			
-			this.hyperspaceDB.storePrivacyInformationOnUpdate(anonymizedID , 
-					atrToValueRep , subspaceId);
-			
-			// update done, now send back the reply
-			ACLUpdateToSubspaceRegionReplyMessage<NodeIDType> aclUpdReplyMesg 
-				= new ACLUpdateToSubspaceRegionReplyMessage<NodeIDType>( myID, versionNum, 
-					requestID, subspaceId, replicaNum );
-			
-			try
-			{
-				this.messenger.sendToID( aclUpdateToSubspaceRegionMessage.getSender(), 
-						aclUpdReplyMesg.toJSONObject() );
-			} catch (IOException e)
-			{
-				e.printStackTrace();
-			} catch (JSONException e)
-			{
-				e.printStackTrace();
-			}
-		}
-		catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
+//		try 
+//		{
+//			long requestID  = aclUpdateToSubspaceRegionMessage.getRequestID();
+//			long versionNum = aclUpdateToSubspaceRegionMessage.getVersionNum();
+//			String anonymizedID = aclUpdateToSubspaceRegionMessage.getGUID();
+//			JSONObject updValJSON = aclUpdateToSubspaceRegionMessage.getUpdateAttrValuePairs();
+//			int subspaceId 	= aclUpdateToSubspaceRegionMessage.getSubspaceNum(); 
+//			
+//			HashMap<String, AttrValueRepresentationJSON> atrToValueRep 
+//									= ParsingMethods.getAttrValueMap(updValJSON);
+//			
+//			this.hyperspaceDB.storePrivacyInformationOnUpdate(anonymizedID , 
+//					atrToValueRep , subspaceId);
+//			
+//			// update done, now send back the reply
+//			ACLUpdateToSubspaceRegionReplyMessage<NodeIDType> aclUpdReplyMesg 
+//				= new ACLUpdateToSubspaceRegionReplyMessage<NodeIDType>( myID, versionNum, 
+//					requestID, subspaceId, replicaNum );
+//			
+//			try
+//			{
+//				this.messenger.sendToID( aclUpdateToSubspaceRegionMessage.getSender(), 
+//						aclUpdReplyMesg.toJSONObject() );
+//			} catch (IOException e)
+//			{
+//				e.printStackTrace();
+//			} catch (JSONException e)
+//			{
+//				e.printStackTrace();
+//			}
+//		}
+//		catch (JSONException e)
+//		{
+//			e.printStackTrace();
+//		}
 	}
 }

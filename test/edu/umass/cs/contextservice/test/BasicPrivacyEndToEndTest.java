@@ -19,7 +19,6 @@ import edu.umass.cs.gnsclient.client.GuidEntry;
 import edu.umass.cs.gnsclient.client.util.GuidUtils;
 
 /**
- * 
  * Start FourNodeCSSetup before starting BasicPrivacyEndToEndTest
  * @author adipc
  */

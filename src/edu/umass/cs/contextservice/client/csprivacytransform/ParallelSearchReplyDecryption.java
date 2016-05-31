@@ -74,7 +74,6 @@ public class ParallelSearchReplyDecryption
 				}
 			}
 		}
-		
 	}
 	
 	public int getTotalDecryptionsOverall()
@@ -146,19 +145,31 @@ public class ParallelSearchReplyDecryption
 		{
 			byte[] privateKey = myGUIDInfo.getPrivateKey().getEncoded();
 			byte[] plainText = null;
-			JSONArray realIDMappingInfo = seachReply.getRealIDMappingInfo();
-			if(realIDMappingInfo != null)
+			JSONArray anonymizedIDToGuidMapping 
+								= seachReply.getAnonymizedIDToGuidMapping();
+			
+			if( anonymizedIDToGuidMapping != null )
 			{
 				ContextServiceLogger.getLogger().fine("realIDMappingInfo JSONArray "
-						+ realIDMappingInfo.length() );
+						+ anonymizedIDToGuidMapping.length() );
+				String myGuidString = myGUIDInfo.getGuid();
 				
-				for( int i=0; i<realIDMappingInfo.length(); i++ )
-				{	
+				int indexToCheck = Utils.consistentHashAString(myGuidString, 
+												anonymizedIDToGuidMapping.length());
+				int numChecked = 0;
+				
+				while(numChecked < anonymizedIDToGuidMapping.length())
+				{
 					try
 					{
-						byte[] encryptedElement = (byte[]) (Utils.hexStringToByteArray(
-								realIDMappingInfo.getString(i)));
+						System.out.println("indexToCheck "+indexToCheck
+								+" anonymizedIDToGuidMapping "
+								+anonymizedIDToGuidMapping.length());
+						
+						byte[] encryptedElement =  Utils.hexStringToByteArray(
+								anonymizedIDToGuidMapping.getString(indexToCheck));
 						totalDecryptionsThread++;
+						
 						plainText = Utils.doPrivateKeyDecryption(privateKey, encryptedElement);
 						
 						// non exception, just break;
@@ -175,6 +186,9 @@ public class ParallelSearchReplyDecryption
 					{
 						e.printStackTrace();
 					}
+					numChecked++;
+					indexToCheck++;
+					indexToCheck = indexToCheck%anonymizedIDToGuidMapping.length();
 				}
 			}
 			
@@ -183,7 +197,6 @@ public class ParallelSearchReplyDecryption
 				ContextServiceLogger.getLogger().fine("Anonymized ID "+seachReply.getID()
 										+ "realID "+Utils.bytArrayToHex(plainText) );
 			}
-			
 			return plainText;
 		}
 	}

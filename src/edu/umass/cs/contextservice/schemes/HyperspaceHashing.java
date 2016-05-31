@@ -30,13 +30,9 @@ import edu.umass.cs.contextservice.gns.GNSCalls;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
-import edu.umass.cs.contextservice.messages.ACLUpdateToSubspaceRegionMessage;
-import edu.umass.cs.contextservice.messages.ACLUpdateToSubspaceRegionReplyMessage;
 import edu.umass.cs.contextservice.messages.ClientConfigReply;
 import edu.umass.cs.contextservice.messages.ClientConfigRequest;
 import edu.umass.cs.contextservice.messages.ContextServicePacket.PacketType;
-import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
-import edu.umass.cs.contextservice.messages.dataformat.ParsingMethods;
 import edu.umass.cs.contextservice.messages.GetMessage;
 import edu.umass.cs.contextservice.messages.GetReplyMessage;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegion;
@@ -74,7 +70,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	private final GUIDAttrValueProcessingInterface<NodeIDType> guidAttrValProcessing;
 	private TriggerProcessingInterface<NodeIDType> triggerProcessing;
 	
-	private PrivacyProcessing<NodeIDType> privacyProcesing;
+	//private PrivacyProcessing<NodeIDType> privacyProcesing;
 	
 	public static final Logger log 														= ContextServiceLogger.getLogger();
 	
@@ -119,11 +115,11 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				hyperspaceDB, messenger , nodeES ,
 				pendingQueryRequests );
 		
-		if( ContextServiceConfig.PRIVACY_ENABLED )
-		{
-			privacyProcesing = new PrivacyProcessing<NodeIDType>( this.getMyID() , 
-					hyperspaceDB ,  messenger );
-		}
+//		if( ContextServiceConfig.PRIVACY_ENABLED )
+//		{
+//			privacyProcesing = new PrivacyProcessing<NodeIDType>( this.getMyID() , 
+//					hyperspaceDB ,  messenger );
+//		}
 		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
@@ -404,41 +400,38 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		try
 		{
 			// attributes which are not set should be set to default value
-			// for subspace hashing
-			//if( oldValueJSON.length() != AttributeTypes.attributeMap.size() )
+			// for attribute-space hashing
+			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap = 
+					this.subspaceConfigurator.getSubspaceInfoMap();					
+			
+			Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
+			while(subapceIdIter.hasNext())
 			{
-				HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap = 
-						this.subspaceConfigurator.getSubspaceInfoMap();					
+				int subspaceId = subapceIdIter.next();
+				// at least one replica and all replica have same default value for each attribute.
+				SubspaceInfo<NodeIDType> currSubspaceInfo 
+											= subspaceInfoMap.get(subspaceId).get(0);
+				HashMap<String, AttributePartitionInfo> attrSubspaceMap 
+											= currSubspaceInfo.getAttributesOfSubspace();
 				
-				Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
-				while(subapceIdIter.hasNext())
+				Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
+				while(attrIter.hasNext())
 				{
-					int subspaceId = subapceIdIter.next();
-					// at least one replica and all replica have same default value for each attribute.
-					SubspaceInfo<NodeIDType> currSubspaceInfo 
-												= subspaceInfoMap.get(subspaceId).get(0);
-					HashMap<String, AttributePartitionInfo> attrSubspaceMap 
-												= currSubspaceInfo.getAttributesOfSubspace();
-					
-					Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
-					while(attrIter.hasNext())
+					String attrName = attrIter.next();
+					AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
+					if( !oldValueJSON.has(attrName) )
 					{
-						String attrName = attrIter.next();
-						AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
-						if( !oldValueJSON.has(attrName) )
+						try
 						{
-							try
-							{
-								oldValueJSON.put(attrName, attrPartInfo.getDefaultValue());
-							} catch (JSONException e)
-							{
-								e.printStackTrace();
-							}
+							oldValueJSON.put(attrName, attrPartInfo.getDefaultValue());
+						} catch (JSONException e)
+						{
+							e.printStackTrace();
 						}
 					}
 				}
 			}
-		} 
+		}
 		catch(Error | Exception ex)
 		{
 			ex.printStackTrace();
@@ -452,7 +445,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	private void processUpdateSerially(UpdateInfo<NodeIDType> updateReq)
 	{
 		assert(updateReq != null);
-		
 		try
 		{
 			ContextServiceLogger.getLogger().fine
@@ -469,19 +461,25 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						 = updateReq.getValueUpdateFromGNS().getAttrValuePairs();
 		long requestID 	 = updateReq.getRequestId();
 		
+		// this could be null, in no privacy case, and also in privacy case
+		// , as anonymizedIDtoGuidMapping is not set in every message just in the beginning 
+		// or on acl changes.
+		JSONArray anonymizedIDToGuidMapping 
+						= updateReq.getValueUpdateFromGNS().getAnonymizedIDToGuidMapping();
+		
+		
 		// get the old value and process the update in primary subspace and other subspaces.
 		String tableName = "primarySubspaceDataStorage";
 		
 		try
-		{
-			HashMap<String, AttrValueRepresentationJSON> attrValMap 
-						 = ParsingMethods.getAttrValueMap(attrValuePairs);
-			
+		{	
 			boolean firstTimeInsert = false;
 			
 			long start 	 = System.currentTimeMillis();
 			// FIXME: fetch only those attributes which are specified in the updated attrs.
-			JSONObject oldValueJSON 	= this.hyperspaceDB.getGUIDStoredInPrimarySubspace(GUID);
+			JSONObject oldValueJSON 	
+						 = this.hyperspaceDB.getGUIDStoredInPrimarySubspace(GUID);
+			
 			long end 	 = System.currentTimeMillis();
 			
 			if(ContextServiceConfig.DEBUG_MODE)
@@ -501,21 +499,46 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				firstTimeInsert = false;
 				updateOrInsert = HyperspaceMySQLDB.UPDATE_REC;
 			}
-		
+			
 			// default values are set for all attributes for hyperspace indexing.
 			setDefaultAttrValuesInJSON(oldValueJSON);
 			
 			// ACL info doesn't need to be stored in primary subspace.
 			// so just passing an empty JSONObject()
 			// update for primary subspace
-			this.hyperspaceDB.storeGUIDInPrimarySubspace
-						(tableName, GUID, attrValMap, updateOrInsert, 
-								oldValueJSON);
+			boolean privacyInfoToBeUpdated = false;
 			
+			if( ContextServiceConfig.PRIVACY_ENABLED )
+			{
+				boolean alreadyStored = checkIfAnonymizedIDToGuidInfoAlreadyStored(oldValueJSON);
+				
+				if( !alreadyStored )
+				{
+					privacyInfoToBeUpdated = true;
+				}
+			}
+			
+			// privacy info needs to be updated in primary subspace.
+			// for secondary subspace, the privacy info is sent in 
+			// the message if the anonymized ID storage changes from one 
+			// node to another.
+			if(privacyInfoToBeUpdated)
+			{
+				this.hyperspaceDB.storeGUIDInPrimarySubspace
+						( tableName, GUID, attrValuePairs, updateOrInsert, 
+								oldValueJSON, anonymizedIDToGuidMapping);
+			}
+			else
+			{
+				// sending null means anonymizedIDToGuidMapping will not be inserted again.
+				this.hyperspaceDB.storeGUIDInPrimarySubspace
+				( tableName, GUID, attrValuePairs, updateOrInsert, 
+						oldValueJSON, null);
+			}
 			// process update at secondary subspaces.
 			updateGUIDInSecondarySubspaces( oldValueJSON , 
-					firstTimeInsert , attrValMap , 
-					GUID , attrValuePairs , requestID );
+					firstTimeInsert , attrValuePairs , GUID , 
+					requestID, anonymizedIDToGuidMapping );
 		}
 		catch ( JSONException e )
 		{
@@ -523,9 +546,41 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
+	private boolean checkIfAnonymizedIDToGuidInfoAlreadyStored(JSONObject oldValJSON) 
+					throws JSONException
+	{
+		boolean alreadyStored = false;
+		if( oldValJSON.has(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName) )
+		{
+			String jsonArrayString = oldValJSON.getString
+									(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName);
+			
+			if(jsonArrayString != null)
+			{
+				// We don't need to compare the actual value,
+				// because this information change causes whole
+				// anonymized ID to change, so anonymizedIDToGUIDMapping
+				// either inserted or deleted, but never updated for 
+				// an anonymized ID.
+				if(jsonArrayString.length() > 0)
+				{
+					alreadyStored = true;
+					return alreadyStored;
+				}
+			}
+			return alreadyStored;
+		}
+		else
+		{
+			return alreadyStored;
+		}
+	}
+	
 	private void updateGUIDInSecondarySubspaces( JSONObject oldValueJSON , 
-			boolean firstTimeInsert , HashMap<String, AttrValueRepresentationJSON> attrValMap , 
-			String GUID , JSONObject attrValuePairs , long requestID ) throws JSONException
+			boolean firstTimeInsert , JSONObject updatedAttrValJSON , 
+			String GUID , long requestID, 
+			JSONArray anonymizedIDToGuidMapping )
+					throws JSONException
 	{
 		// process update at other subspaces.
 		HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap
@@ -539,7 +594,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			Vector<SubspaceInfo<NodeIDType>> replicasVect 
 									= subspaceInfoMap.get(subspaceId);
 			
-			for( int i=0;i<replicasVect.size();i++ )
+			for( int i=0; i<replicasVect.size(); i++ )
 			{
 				SubspaceInfo<NodeIDType> currSubInfo 
 							= replicasVect.get(i);
@@ -548,11 +603,12 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				HashMap<String, AttributePartitionInfo> attrsSubspaceInfo 
 													= currSubInfo.getAttributesOfSubspace();
 				
-				Vector<NodeIDType> subspaceNodes = currSubInfo.getNodesOfSubspace();
+				//Vector<NodeIDType> subspaceNodes = currSubInfo.getNodesOfSubspace();
 				
 				this.guidAttrValProcessing.guidValueProcessingOnUpdate
 					( attrsSubspaceInfo, oldValueJSON, subspaceId, replicaNum, 
-							attrValMap, GUID, requestID, attrValuePairs, firstTimeInsert );
+							updatedAttrValJSON, GUID, requestID, firstTimeInsert, 
+							anonymizedIDToGuidMapping );
 				
 				
 				// getting group GUIDs that are affected
@@ -567,19 +623,19 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				{
 					//FIXME: need to check if we need oldJSON here.
 					this.triggerProcessing.triggerProcessingOnUpdate
-						( attrValuePairs, attrsSubspaceInfo, 
+						( updatedAttrValJSON, attrsSubspaceInfo, 
 							subspaceId, replicaNum, oldValueJSON, requestID );
 				}
 				
-				if( ContextServiceConfig.PRIVACY_ENABLED )
-				{
-					NodeIDType hashedNodeIdInSubspace 
-						= this.getConsistentHashingNodeID(GUID, subspaceNodes);
-					
-					privacyProcesing.privacyProcessingOnUpdate
-						(hashedNodeIdInSubspace, GUID, subspaceId, requestID,
-							attrValuePairs);	
-				}
+//				if( ContextServiceConfig.PRIVACY_ENABLED )
+//				{
+//					NodeIDType hashedNodeIdInSubspace 
+//						= this.getConsistentHashingNodeID(GUID, subspaceNodes);
+//					
+//					privacyProcesing.privacyProcessingOnUpdate
+//						(hashedNodeIdInSubspace, GUID, subspaceId, requestID,
+//							attrValuePairs);
+//				}
 			}
 		}
 	}
@@ -683,8 +739,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					+ valueUpdateToSubspaceRegionReplyMessage );
 			assert(false);
 		}
-		boolean completion = updInfo.setUpdateReply(subspaceId, replicaNum, numReply, 
-							UpdateInfo.VALUE_UPDATE_REPLY);
+		boolean completion = updInfo.setUpdateReply(subspaceId, replicaNum, numReply);
 		
 		if( completion )
 		{
@@ -838,77 +893,77 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
-	private void processACLUpdateToSubspaceRegionReplyMessage(
-			ACLUpdateToSubspaceRegionReplyMessage<NodeIDType> 
-						aclUpdateToSubspaceRegionReplyMessage )
-	{
-		long requestID  = aclUpdateToSubspaceRegionReplyMessage.getRequestID();
-		int subspaceId  = aclUpdateToSubspaceRegionReplyMessage.getSubspaceNum();
-		//int numReply 	= valueUpdateToSubspaceRegionReplyMessage.getNumReply();
-		int replicaNum  = aclUpdateToSubspaceRegionReplyMessage.getReplicaNum();
-		
-		UpdateInfo<NodeIDType> updInfo 
-						= pendingUpdateRequests.get(requestID);
-		
-		if( updInfo == null )
-		{
-			ContextServiceLogger.getLogger().severe( "updInfo null, update already removed from "
-					+ " the pending queue before recv all replies requestID "+requestID
-					+ "  valueUpdateToSubspaceRegionReplyMessage "
-					+ aclUpdateToSubspaceRegionReplyMessage );
-			assert(false);
-		}
-		boolean completion = updInfo.setUpdateReply(subspaceId, replicaNum, -1, 
-							UpdateInfo.PRIVACY_UPDATE_REPLY);
-		
-		if( completion )
-		{
-			ValueUpdateFromGNSReply<NodeIDType> valueUpdateFromGNSReply 
-				= new ValueUpdateFromGNSReply<NodeIDType>(this.getMyID(), 
-					updInfo.getValueUpdateFromGNS().getVersionNum(), 
-					updInfo.getValueUpdateFromGNS().getUserRequestID());
-			
-			ContextServiceLogger.getLogger().fine("reply IP Port "
-					+ updInfo.getValueUpdateFromGNS().getSourceIP()
-					+ ":"+updInfo.getValueUpdateFromGNS().getSourcePort()
-					+ " ValueUpdateFromGNSReply for requestId "+requestID
-					+ " "+valueUpdateFromGNSReply
-					+ " ValueUpdateToSubspaceRegionReplyMessage "
-					+ aclUpdateToSubspaceRegionReplyMessage);
-			try
-			{
-				this.messenger.sendToAddress( new InetSocketAddress(
-						updInfo.getValueUpdateFromGNS().getSourceIP()
-						, updInfo.getValueUpdateFromGNS().getSourcePort() ), 
-						valueUpdateFromGNSReply.toJSONObject() );
-			} catch (IOException e)
-			{
-				e.printStackTrace();
-			} catch (JSONException e)
-			{
-				e.printStackTrace();
-			}
-			
-			UpdateInfo<NodeIDType> removedUpdate = null;
-			if( ContextServiceConfig.TRIGGER_ENABLED )
-			{
-				boolean triggerCompl = updInfo.checkAllTriggerRepRecvd();
-				
-				if( triggerCompl )
-					removedUpdate = pendingUpdateRequests.remove(requestID);
-			}
-			else
-			{
-				removedUpdate = pendingUpdateRequests.remove(requestID);
-			}
-			
-			// starts the queues serialized updates for that guid
-			if( removedUpdate != null )
-			{
-				startANewUpdate(removedUpdate, requestID);
-			}
-		}
-	}
+//	private void processACLUpdateToSubspaceRegionReplyMessage(
+//			ACLUpdateToSubspaceRegionReplyMessage<NodeIDType> 
+//						aclUpdateToSubspaceRegionReplyMessage )
+//	{
+//		long requestID  = aclUpdateToSubspaceRegionReplyMessage.getRequestID();
+//		int subspaceId  = aclUpdateToSubspaceRegionReplyMessage.getSubspaceNum();
+//		//int numReply 	= valueUpdateToSubspaceRegionReplyMessage.getNumReply();
+//		int replicaNum  = aclUpdateToSubspaceRegionReplyMessage.getReplicaNum();
+//		
+//		UpdateInfo<NodeIDType> updInfo 
+//						= pendingUpdateRequests.get(requestID);
+//		
+//		if( updInfo == null )
+//		{
+//			ContextServiceLogger.getLogger().severe( "updInfo null, update already removed from "
+//					+ " the pending queue before recv all replies requestID "+requestID
+//					+ "  valueUpdateToSubspaceRegionReplyMessage "
+//					+ aclUpdateToSubspaceRegionReplyMessage );
+//			assert(false);
+//		}
+//		boolean completion = updInfo.setUpdateReply(subspaceId, replicaNum, -1, 
+//							UpdateInfo.PRIVACY_UPDATE_REPLY);
+//		
+//		if( completion )
+//		{
+//			ValueUpdateFromGNSReply<NodeIDType> valueUpdateFromGNSReply 
+//				= new ValueUpdateFromGNSReply<NodeIDType>(this.getMyID(), 
+//					updInfo.getValueUpdateFromGNS().getVersionNum(), 
+//					updInfo.getValueUpdateFromGNS().getUserRequestID());
+//			
+//			ContextServiceLogger.getLogger().fine("reply IP Port "
+//					+ updInfo.getValueUpdateFromGNS().getSourceIP()
+//					+ ":"+updInfo.getValueUpdateFromGNS().getSourcePort()
+//					+ " ValueUpdateFromGNSReply for requestId "+requestID
+//					+ " "+valueUpdateFromGNSReply
+//					+ " ValueUpdateToSubspaceRegionReplyMessage "
+//					+ aclUpdateToSubspaceRegionReplyMessage);
+//			try
+//			{
+//				this.messenger.sendToAddress( new InetSocketAddress(
+//						updInfo.getValueUpdateFromGNS().getSourceIP()
+//						, updInfo.getValueUpdateFromGNS().getSourcePort() ), 
+//						valueUpdateFromGNSReply.toJSONObject() );
+//			} catch (IOException e)
+//			{
+//				e.printStackTrace();
+//			} catch (JSONException e)
+//			{
+//				e.printStackTrace();
+//			}
+//			
+//			UpdateInfo<NodeIDType> removedUpdate = null;
+//			if( ContextServiceConfig.TRIGGER_ENABLED )
+//			{
+//				boolean triggerCompl = updInfo.checkAllTriggerRepRecvd();
+//				
+//				if( triggerCompl )
+//					removedUpdate = pendingUpdateRequests.remove(requestID);
+//			}
+//			else
+//			{
+//				removedUpdate = pendingUpdateRequests.remove(requestID);
+//			}
+//			
+//			// starts the queues serialized updates for that guid
+//			if( removedUpdate != null )
+//			{
+//				startANewUpdate(removedUpdate, requestID);
+//			}
+//		}
+//	}
 	
 	/**
 	 * returns the replica num for a subspace
@@ -1027,8 +1082,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 								( valueUpdateToSubspaceRegionMessage, replicaNum );
 						break;
 					}
-					
 					case GET_MESSAGE:
+					
 					{
 						@SuppressWarnings("unchecked")
 						GetMessage<NodeIDType> getMessage 
@@ -1102,37 +1157,37 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						break;
 					}
 					
-					case ACLUPDATE_TO_SUBSPACE_REGION_MESSAGE:
-					{
-						@SuppressWarnings("unchecked")
-						ACLUpdateToSubspaceRegionMessage<NodeIDType> 
-							aclUpdateToSubspaceRegionMessage = 
-							(ACLUpdateToSubspaceRegionMessage<NodeIDType>)event;
-						
-						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " 
-								+ event.getType() + ": " 
-								+ aclUpdateToSubspaceRegionMessage);
-						
-						int subspaceId = aclUpdateToSubspaceRegionMessage.getSubspaceNum();
-						
-						privacyProcesing.processACLUpdateToSubspaceRegionMessage
-									(aclUpdateToSubspaceRegionMessage, subspaceId);
-						break;
-					}
-					case ACLUPDATE_TO_SUBSPACE_REGION_REPLY_MESSAGE:
-					{
-						ACLUpdateToSubspaceRegionReplyMessage<NodeIDType> 
-								aclUpdateToSubspaceRegionReplyMessage = 
-									(ACLUpdateToSubspaceRegionReplyMessage<NodeIDType>) event;
-						
-						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " 
-								+ event.getType() + ": " 
-								+ aclUpdateToSubspaceRegionReplyMessage);
-						
-						processACLUpdateToSubspaceRegionReplyMessage
-										(aclUpdateToSubspaceRegionReplyMessage);
-						break;
-					}
+//					case ACLUPDATE_TO_SUBSPACE_REGION_MESSAGE:
+//					{
+//						@SuppressWarnings("unchecked")
+//						ACLUpdateToSubspaceRegionMessage<NodeIDType> 
+//							aclUpdateToSubspaceRegionMessage = 
+//							(ACLUpdateToSubspaceRegionMessage<NodeIDType>)event;
+//						
+//						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " 
+//								+ event.getType() + ": " 
+//								+ aclUpdateToSubspaceRegionMessage);
+//						
+//						int subspaceId = aclUpdateToSubspaceRegionMessage.getSubspaceNum();
+//						
+//						privacyProcesing.processACLUpdateToSubspaceRegionMessage
+//									(aclUpdateToSubspaceRegionMessage, subspaceId);
+//						break;
+//					}
+//					case ACLUPDATE_TO_SUBSPACE_REGION_REPLY_MESSAGE:
+//					{
+//						ACLUpdateToSubspaceRegionReplyMessage<NodeIDType> 
+//								aclUpdateToSubspaceRegionReplyMessage = 
+//									(ACLUpdateToSubspaceRegionReplyMessage<NodeIDType>) event;
+//						
+//						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " 
+//								+ event.getType() + ": " 
+//								+ aclUpdateToSubspaceRegionReplyMessage);
+//						
+//						processACLUpdateToSubspaceRegionReplyMessage
+//										(aclUpdateToSubspaceRegionReplyMessage);
+//						break;
+//					}
 					default:
 					{
 						assert(false);
@@ -1145,11 +1200,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				ex.printStackTrace();
 			}
 		}
-	}
-	
-	@Override
-	public void checkQueryCompletion(QueryInfo<NodeIDType> qinfo) 
-	{
 	}
 	
 	

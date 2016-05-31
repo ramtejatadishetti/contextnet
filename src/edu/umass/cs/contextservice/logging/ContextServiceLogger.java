@@ -13,9 +13,9 @@ public class ContextServiceLogger
 		LOGGER = Logger.getLogger(
 				ContextServiceLogger.class.getName());
 		ConsoleHandler ch = new ConsoleHandler();
-        ch.setLevel(Level.FINE);
+        ch.setLevel(Level.OFF);
         LOGGER.addHandler(ch);
-        LOGGER.setLevel(Level.FINE);
+        LOGGER.setLevel(Level.OFF);
 	}
 	
 	public static Logger getLogger()

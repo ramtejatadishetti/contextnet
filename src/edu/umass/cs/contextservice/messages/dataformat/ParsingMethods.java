@@ -21,35 +21,35 @@ public class ParsingMethods
 	 * @return
 	 * @throws JSONException 
 	 */
-	public static HashMap<String, AttrValueRepresentationJSON> 
-		getAttrValueMap(JSONObject attrValuePair) throws JSONException
-	{
-		HashMap<String, AttrValueRepresentationJSON> attrValueMap 
-						= new HashMap<String, AttrValueRepresentationJSON>();
-		Iterator<String> attrIter = attrValuePair.keys();
-		while( attrIter.hasNext() )
-		{
-			String attrName = attrIter.next();
-			AttrValueRepresentationJSON attrValRep 
-				=  AttrValueRepresentationJSON.fromJSONObject
-				( attrValuePair.getJSONObject(attrName) );
-			
-			attrValueMap.put(attrName, attrValRep);
-		}
-		return attrValueMap;
-	}
-	
-	public static JSONObject getJSONObject(
-			HashMap<String, AttrValueRepresentationJSON> attrValMap) throws JSONException
-	{
-		JSONObject jsonObject = new JSONObject();
-		Iterator<String> attrIter = attrValMap.keySet().iterator();
-		
-		while( attrIter.hasNext() )
-		{
-			String attrName = attrIter.next();
-			jsonObject.put(attrName, attrValMap.get(attrName).toJSONObject());
-		}
-		return jsonObject;
-	}
+//	public static HashMap<String, AttrValueRepresentationJSON> 
+//		getAttrValueMap(JSONObject attrValuePair) throws JSONException
+//	{
+//		HashMap<String, AttrValueRepresentationJSON> attrValueMap 
+//						= new HashMap<String, AttrValueRepresentationJSON>();
+//		Iterator<String> attrIter = attrValuePair.keys();
+//		while( attrIter.hasNext() )
+//		{
+//			String attrName = attrIter.next();
+//			AttrValueRepresentationJSON attrValRep 
+//				=  AttrValueRepresentationJSON.fromJSONObject
+//				( attrValuePair.getJSONObject(attrName) );
+//			
+//			attrValueMap.put(attrName, attrValRep);
+//		}
+//		return attrValueMap;
+//	}
+//	
+//	public static JSONObject getJSONObject(
+//			HashMap<String, AttrValueRepresentationJSON> attrValMap) throws JSONException
+//	{
+//		JSONObject jsonObject = new JSONObject();
+//		Iterator<String> attrIter = attrValMap.keySet().iterator();
+//		
+//		while( attrIter.hasNext() )
+//		{
+//			String attrName = attrIter.next();
+//			jsonObject.put(attrName, attrValMap.get(attrName).toJSONObject());
+//		}
+//		return jsonObject;
+//	}
 }

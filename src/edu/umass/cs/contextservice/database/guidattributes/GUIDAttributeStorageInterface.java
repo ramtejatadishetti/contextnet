@@ -9,7 +9,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
-import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 
 /**
@@ -35,12 +34,14 @@ public interface GUIDAttributeStorageInterface<NodeIDType>
 			List<List<Integer>> subspaceVectorList, List<NodeIDType> respNodeIdList );	
 	
 	public void storeGUIDInPrimarySubspace(String tableName, String nodeGUID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, 
-    		int updateOrInsert, JSONObject oldValJSON ) throws JSONException;
+    		JSONObject updatedAttrValJSON, 
+    		int updateOrInsert, JSONObject oldValJSON, JSONArray anonymizedIDToGuidMapping ) 
+    				throws JSONException;
 	
-	public void storeGUIDInSecondarySubspace(String tableName, String nodeGUID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, 
-    		int updateOrInsert, JSONObject oldValJSON ) throws JSONException;
+	public void storeGUIDInSecondarySubspace( String tableName, String nodeGUID, 
+    		JSONObject updatedAttrValMap, int updateOrInsert, 
+    		JSONObject oldValJSON, JSONArray anonymizedIDToGuidMapping ) 
+    					throws JSONException;
 	
 	public void deleteGUIDFromSubspaceRegion(String tableName, String nodeGUID);
 	

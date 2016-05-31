@@ -4,7 +4,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 
-public class ValueUpdateToSubspaceRegionReplyMessage<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class ValueUpdateToSubspaceRegionReplyMessage<NodeIDType> 
+										extends BasicContextServicePacket<NodeIDType>
 {
 	private enum Keys {VERSION_NUM, NUM_REPLY, REQUEST_ID, SUBSPACE_NUM, REPLICA_NUM};
 	
@@ -14,8 +15,8 @@ public class ValueUpdateToSubspaceRegionReplyMessage<NodeIDType> extends BasicCo
 	private final int subspaceNum;
 	private final int replicaNum;
 	
-	public ValueUpdateToSubspaceRegionReplyMessage( NodeIDType initiator, long versionNum, int numRep, 
-			long requestID, int subspaceNum, int replicaNum )
+	public ValueUpdateToSubspaceRegionReplyMessage( NodeIDType initiator, long versionNum, 
+			int numRep, long requestID, int subspaceNum, int replicaNum )
 	{
 		super(initiator, ContextServicePacket.PacketType.VALUEUPDATE_TO_SUBSPACE_REGION_REPLY_MESSAGE);
 		this.versionNum  = versionNum;

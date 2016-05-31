@@ -31,8 +31,8 @@ import edu.umass.cs.contextservice.messages.QueryMsgFromUser;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
 import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionMessage;
 import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionReplyMessage;
-import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
-import edu.umass.cs.contextservice.messages.dataformat.ParsingMethods;
+//import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
+//import edu.umass.cs.contextservice.messages.dataformat.ParsingMethods;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
 import edu.umass.cs.nio.JSONMessenger;
@@ -411,7 +411,6 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 				= new QueryMsgFromUserReply<NodeIDType>(myID, 
 						queryInfo.getQuery(), queryInfo.getGroupGUID(), concatResult, 
 						queryInfo.getUserReqID(), totalNumReplies);
-
 			try
 			{
 				this.messenger.sendToAddress(new InetSocketAddress(queryInfo.getUserIP(), 
@@ -434,9 +433,10 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 	public void guidValueProcessingOnUpdate( 
 			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo , 
 					JSONObject oldValueJSON , int subspaceId , int  replicaNum ,
-					HashMap<String, AttrValueRepresentationJSON> attrValMap ,
-					String GUID , long requestID , JSONObject attrValuePairs ,
-					boolean firstTimeInsert ) throws JSONException
+					JSONObject updatedAttrValJSON ,
+					String GUID , long requestID , boolean firstTimeInsert, 
+					JSONArray anonymizedIDToGuidMapping 
+					) throws JSONException
 	{
 		NodeIDType oldRespNodeId = null, newRespNodeId = null;
 		
@@ -481,9 +481,9 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			String attrName = subspaceAttrIter1.next();
 
 			String value;
-			if( attrValMap.containsKey(attrName) )
+			if( updatedAttrValJSON.has(attrName) )
 			{
-				value = attrValMap.get(attrName).getActualAttrValue();
+				value = updatedAttrValJSON.getString(attrName);
 			}
 			else
 			{
@@ -509,7 +509,8 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		}
 
 		ContextServiceLogger.getLogger().fine
-							("oldNodeId "+oldRespNodeId+" newRespNodeId "+newRespNodeId);
+							("oldNodeId "+oldRespNodeId
+							+" newRespNodeId "+newRespNodeId);
 
 		// send messages to the subspace region nodes
 		if( oldRespNodeId == newRespNodeId )
@@ -522,7 +523,6 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			// before recv replies from all subspaces.
 			//updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
 
-
 			ValueUpdateToSubspaceRegionMessage<NodeIDType>  
 							valueUpdateToSubspaceRegionMessage = null;
 
@@ -531,9 +531,10 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 				// need to send oldValueJSON as it is performed as insert
 				valueUpdateToSubspaceRegionMessage 
 						= new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, 
-										-1, GUID, attrValuePairs, 
+										-1, GUID, updatedAttrValJSON, 
 										ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
-										subspaceId, requestID, oldValueJSON, firstTimeInsert );
+										subspaceId, requestID, oldValueJSON, firstTimeInsert, 
+										anonymizedIDToGuidMapping );
 			}
 			else
 			{
@@ -541,11 +542,11 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 				// so we save space by not sending oldJSON.
 				valueUpdateToSubspaceRegionMessage 
 					= new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, 
-							-1, GUID, attrValuePairs, 
+							-1, GUID, updatedAttrValJSON, 
 							ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
-							subspaceId, requestID, new JSONObject(), firstTimeInsert );
+							subspaceId, requestID, new JSONObject(), firstTimeInsert, null );
 			}
-
+			
 			try
 			{
 				this.messenger.sendToID
@@ -570,7 +571,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 						= new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, -1, 
 									GUID, new JSONObject(), 
 										ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY, 
-									subspaceId, requestID, new JSONObject(), firstTimeInsert );
+									subspaceId, requestID, new JSONObject(), firstTimeInsert, null );
 			
 			try
 			{
@@ -590,9 +591,10 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			ValueUpdateToSubspaceRegionMessage<NodeIDType>  
 				newValueUpdateToSubspaceRegionMessage = 
 						new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, -1, 
-								GUID, attrValuePairs,
+								GUID, updatedAttrValJSON,
 								ValueUpdateToSubspaceRegionMessage.ADD_ENTRY, 
-								subspaceId, requestID, oldValueJSON, firstTimeInsert );
+								subspaceId, requestID, oldValueJSON, firstTimeInsert, 
+								anonymizedIDToGuidMapping );
 			
 			try
 			{
@@ -608,7 +610,6 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		}
 	}
 	
-	
 	public void processValueUpdateToSubspaceRegionMessage( 
 			ValueUpdateToSubspaceRegionMessage<NodeIDType> valueUpdateToSubspaceRegionMessage, 
 			int replicaNum )
@@ -621,12 +622,14 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		// format of this json is different than updateValPairs, this json is created after 
 		// reading attribute value pairs and ACL<attrName> info from primary subspace
 		JSONObject oldValJSON 	= valueUpdateToSubspaceRegionMessage.getOldAttrValuePairs();
+		JSONArray anonymizedIDToGuidMapping 
+						= valueUpdateToSubspaceRegionMessage.getAnonymizedIDToGuidMapping();
 		
 		String tableName 		= "subspaceId"+subspaceId+"DataStorage";
 		try 
 		{
-			HashMap<String, AttrValueRepresentationJSON> attrValMap =
-					ParsingMethods.getAttrValueMap(updateValPairs);
+//			HashMap<String, AttrValueRepresentationJSON> attrValMap =
+//					ParsingMethods.getAttrValueMap(updateValPairs);
 			
 			int numRep = 1;
 			switch(operType)
@@ -638,8 +641,8 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 					{
 						
 						this.hyperspaceDB.storeGUIDInSecondarySubspace
-						(tableName, GUID, attrValMap, HyperspaceMySQLDB.INSERT_REC, 
-								subspaceId, oldValJSON);
+						(tableName, GUID, updateValPairs, HyperspaceMySQLDB.INSERT_REC, 
+								subspaceId, oldValJSON, anonymizedIDToGuidMapping);
 					}
 					break;
 				}
@@ -658,27 +661,32 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 					numRep = 1;
 					//if(!ContextServiceConfig.DISABLE_SECONDARY_SUBSPACES_UPDATES)
 					{
-						if(firstTimeInsert)
+						if( firstTimeInsert )
 						{
 							this.hyperspaceDB.storeGUIDInSecondarySubspace
-							(tableName, GUID, attrValMap, HyperspaceMySQLDB.INSERT_REC, 
-									subspaceId, oldValJSON);
+								(tableName, GUID, updateValPairs, HyperspaceMySQLDB.INSERT_REC, 
+									subspaceId, oldValJSON, anonymizedIDToGuidMapping);
 						}
 						else
 						{
-							this.hyperspaceDB.storeGUIDInSecondarySubspace(tableName, GUID, attrValMap, 
-									HyperspaceMySQLDB.UPDATE_REC, subspaceId, oldValJSON);
+							// if it is an update and it is not first time insert,
+							// then anonymizedIDToGuidMapping == null, as it should 
+							// already be stored on this node.
+							assert(anonymizedIDToGuidMapping == null); 
+							this.hyperspaceDB.storeGUIDInSecondarySubspace(tableName, GUID, 
+									updateValPairs, HyperspaceMySQLDB.UPDATE_REC, 
+									subspaceId, oldValJSON, anonymizedIDToGuidMapping);
 						}
 					}
 					break;
 				}
 			}
 			
-
 			//ContextServiceLogger.getLogger().fine("Sending valueUpdateToSubspaceRegionReplyMessage to "
 			//				+valueUpdateToSubspaceRegionMessage.getSender()+" from "+this.getMyID());
 			
-			ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>  valueUpdateToSubspaceRegionReplyMessage 
+			ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>  
+				valueUpdateToSubspaceRegionReplyMessage 
 				= new ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>(myID, 
 						valueUpdateToSubspaceRegionMessage.getVersionNum(), numRep, 
 						valueUpdateToSubspaceRegionMessage.getRequestID(), subspaceId, replicaNum);

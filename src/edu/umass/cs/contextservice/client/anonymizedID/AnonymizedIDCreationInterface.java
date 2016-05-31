@@ -5,11 +5,11 @@ import java.util.List;
 
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
+import edu.umass.cs.gnsclient.client.GuidEntry;
 
 /**
  * This interface defines the methods needed to generate 
  * anonymized IDs.
- * 
  * Multiple approaches of generating anonymized IDs 
  * implement this interface.
  * @author adipc
@@ -18,5 +18,6 @@ import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 public interface AnonymizedIDCreationInterface
 {
 	public List<AnonymizedIDEntry> 
-					computeAnonymizedIDs(HashMap<String, List<ACLEntry>> aclList);
+			computeAnonymizedIDs( GuidEntry myGuidEntry , 
+						HashMap<String, List<ACLEntry>> aclList );
 }

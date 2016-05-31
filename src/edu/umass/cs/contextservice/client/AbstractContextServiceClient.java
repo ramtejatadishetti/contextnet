@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
@@ -26,7 +25,8 @@ import edu.umass.cs.nio.JSONMessenger;
 import edu.umass.cs.nio.JSONNIOTransport;
 import edu.umass.cs.nio.interfaces.PacketDemultiplexer;
 
-public abstract class AbstractContextServiceClient<NodeIDType> implements PacketDemultiplexer<JSONObject>
+public abstract class AbstractContextServiceClient<NodeIDType> 
+								implements PacketDemultiplexer<JSONObject>
 {
 	protected final JSONNIOTransport<NodeIDType> niot;
 	protected final JSONMessenger<NodeIDType> messenger;

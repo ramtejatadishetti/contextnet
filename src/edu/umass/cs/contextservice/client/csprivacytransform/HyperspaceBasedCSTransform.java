@@ -1,33 +1,25 @@
 package edu.umass.cs.contextservice.client.csprivacytransform;
 
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
-import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.gnsclient.client.GuidEntry;
 import edu.umass.cs.gnsclient.client.util.GuidUtils;
@@ -42,65 +34,37 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 	}
 	
 	@Override
-	public List<CSUpdateTransformedMessage> transformUpdateForCSPrivacy(String targetGuid, 
-			HashMap<String, AttrValueRepresentationJSON> attrValueMap , 
-			HashMap<String, List<ACLEntry>> aclMap, 
-			List<AnonymizedIDEntry> anonymizedIDList)
+	public List<CSUpdateTransformedMessage> transformUpdateForCSPrivacy( String targetGuid, 
+			JSONObject csAttrValPairs , HashMap<String, List<ACLEntry>> aclMap, 
+			List<AnonymizedIDEntry> anonymizedIDList )
 	{
 		try
 		{
 			 List<CSUpdateTransformedMessage> transformedMesgList 
 			 						= new LinkedList<CSUpdateTransformedMessage>();
 			
-			// a map is computed that contains anonymized IDs whose Gul, guid set, intersects with
-			// the ACL of the attributes. The map is from the anonymized IDs to the set of attributes
-			// that needs to be updated for that anonymized ID, this set is subset of attrs 
-			// in attrValueMap.
-			
-			HashMap<String, List<AttributeUpdateInfo>> anonymizedIDToAttributesMap 
-				= computeAnonymizedIDToAttributesMap(attrValueMap, aclMap, anonymizedIDList);
-			
+			 HashMap<String, AnonymizedIDUpdateInfo> anonymizedIdToBeUpdateMap =
+				computeAnonymizedIDsToBeUpdated( csAttrValPairs 
+						, anonymizedIDList );
+			 
 			// now all the anonymized IDs and the attributes that needs to be updated
 			// are calculated, 
 			// just need to send out updates
-			//HashMap<byte[], List<AttributeUpdateInfo>> anonymizedIDToAttributesMap 
-			// = new HashMap<byte[], List<AttributeUpdateInfo>>();
-			Iterator<String> anonymizedIter = anonymizedIDToAttributesMap.keySet().iterator();
+			Iterator<String> anonymizedIter = anonymizedIdToBeUpdateMap.keySet().iterator();
 			
 			while( anonymizedIter.hasNext() )
 			{
 				String anonymizedIDString 	= anonymizedIter.next();
 				byte[] anonymizedIDBytes    = Utils.hexStringToByteArray(anonymizedIDString);
-				List<AttributeUpdateInfo> updateAttrList 
-										= anonymizedIDToAttributesMap.get(anonymizedIDString);
-				
-				HashMap<String, AttrValueRepresentationJSON> currAttrValueMap = 
-						getTransformedAnonymizedIDUpdateAttrValueMap(anonymizedIDBytes, Utils.hexStringToByteArray(targetGuid), 
-						updateAttrList, attrValueMap, transformedMesgList);
+				AnonymizedIDUpdateInfo updateInfo 
+											= anonymizedIdToBeUpdateMap.get(anonymizedIDString);
 				
 				CSUpdateTransformedMessage transforMessage = new CSUpdateTransformedMessage
-						(anonymizedIDBytes, currAttrValueMap);
+						(anonymizedIDBytes, updateInfo.attrValPair, 
+									updateInfo.anonymizedIDEntry.getAnonymizedIDToGUIDMapping());
 				
 				transformedMesgList.add(transforMessage);
 			}
-			
-			if( ContextServiceConfig.DEBUG_MODE )
-			{
-				int totalEncryptions = 
-						calculateTotalEncryptionsOnAnUpdate( anonymizedIDToAttributesMap );
-				System.out.println("targetGuid "+targetGuid+" number attrs updated "+attrValueMap.size()
-				+ " number of anonymized IDs updated "+anonymizedIDToAttributesMap.size()+
-				" total encryptions "+totalEncryptions);
-			}
-			
-			// just returning 1 anonymized ID for testing update secure latency
-			List<CSUpdateTransformedMessage> testMesgList 	
-				= new LinkedList<CSUpdateTransformedMessage>();
-			if( transformedMesgList.size() > 0 )
-			{
-				testMesgList.add(transformedMesgList.get(0));
-			}
-			//return testMesgList;
 			return transformedMesgList;	
 		}
 		catch(Exception | Error ex)
@@ -123,7 +87,9 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 		
 		if(ContextServiceConfig.DEBUG_MODE)
 		{
-			System.out.println("Total decryptions "+parallelSearchDecryption.getTotalDecryptionsOverall());
+			System.out.println
+				("Total decryptions "+parallelSearchDecryption.getTotalDecryptionsOverall()
+				+" replyArray size "+replyArray.length());
 		}
 		
 //		for(int i=0; i<csTransformedList.size();i++)
@@ -157,15 +123,14 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 	 * @return
 	 * @throws JSONException 
 	 */
-	private HashMap<String, List<AttributeUpdateInfo>> 
-		computeAnonymizedIDToAttributesMap( HashMap<String, AttrValueRepresentationJSON> attrValueMap
-				, HashMap<String, List<ACLEntry>> aclMap 
+	private HashMap<String, AnonymizedIDUpdateInfo> 
+		computeAnonymizedIDsToBeUpdated( JSONObject attrValuePairs 
 				, List<AnonymizedIDEntry> anonymizedIDList ) throws JSONException
 	{
-		HashMap<String, List<AttributeUpdateInfo>> anonymizedIDToAttributesMap 
-			= new HashMap<String, List<AttributeUpdateInfo>>();
+		HashMap<String, AnonymizedIDUpdateInfo> anonymizedIDsToBeUpdated 
+			= new HashMap<String, AnonymizedIDUpdateInfo>();
 		
-		Iterator<String> attrIter = attrValueMap.keySet().iterator();
+		Iterator<String> attrIter = attrValuePairs.keys();
 
 		while( attrIter.hasNext() )
 		{
@@ -173,84 +138,37 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 
 			for( int i=0;i<anonymizedIDList.size();i++ )
 			{
-				AnonymizedIDEntry anonymizedID 
+				AnonymizedIDEntry anonymizedIDEntry 
 					= anonymizedIDList.get(i);
 				
 				boolean containsAttr = checkIfAttributeSetContainsGivenAttribute
-											(anonymizedID.getAttributeSet(), updAttr);
+											(anonymizedIDEntry.getAttributeSet(), updAttr);
 				
 				// only anonymized IDs that contain the updated attribute are updated.
 				// otherwise there is a privacy leak.
 				if( containsAttr )
 				{
-					//byte[] elements
-					List<ACLEntry> intersectioACLEntries 
-						= computeTheInsectionOfACLAndAnonymizedIDGuidSet(aclMap.get(updAttr),
-							anonymizedID.getGUIDSet() );
+					String anonymizedIDString = Utils.bytArrayToHex(anonymizedIDEntry.getID());
+					AnonymizedIDUpdateInfo anonymizedIDUpdInfo 
+						= anonymizedIDsToBeUpdated.get(anonymizedIDString);
 	
-					if( intersectioACLEntries.size() > 0 )
+					if( anonymizedIDUpdInfo == null )
 					{
-						String anonymizedIDString = Utils.bytArrayToHex(anonymizedID.getID());
-						List<AttributeUpdateInfo> attrUpdateList 
-							= anonymizedIDToAttributesMap.get(anonymizedIDString);
-	
-						if( attrUpdateList == null )
-						{
-							attrUpdateList = new LinkedList<AttributeUpdateInfo>();
-							AttributeUpdateInfo attrUpdObj 
-								= new AttributeUpdateInfo(updAttr, intersectioACLEntries);
-							attrUpdateList.add(attrUpdObj);
-							anonymizedIDToAttributesMap.put(anonymizedIDString, attrUpdateList);		
-						}
-						else
-						{
-							AttributeUpdateInfo attrUpdObj = new AttributeUpdateInfo(updAttr, 
-									intersectioACLEntries);
-							attrUpdateList.add(attrUpdObj);
-						}
+						anonymizedIDUpdInfo
+							= new AnonymizedIDUpdateInfo(anonymizedIDEntry);
+						anonymizedIDUpdInfo.attrValPair.put(updAttr, 
+											attrValuePairs.getString(updAttr));
+						anonymizedIDsToBeUpdated.put(anonymizedIDString, anonymizedIDUpdInfo);		
+					}
+					else
+					{
+						anonymizedIDUpdInfo.attrValPair.put(updAttr, 
+								attrValuePairs.getString(updAttr));
 					}
 				}	
 			}
 		}
-		return anonymizedIDToAttributesMap;
-	}
-	
-	/**
-	 * computes the interection of ACL of an attribute with the guid set of an 
-	 * anonymized ID. 
-	 * Returns List<ACLEntry> that intersect, these are used in encrypting realdIDs
-	 * @param aclEntriesForAttr
-	 * @param guidSetOfAnonymizedID
-	 * @return
-	 * @throws JSONException
-	 */
-	private List<ACLEntry> computeTheInsectionOfACLAndAnonymizedIDGuidSet
-		(List<ACLEntry> aclEntriesForAttr, JSONArray guidSetOfAnonymizedID) throws JSONException
-	{
-		
-		List<ACLEntry> intersectionACLEntries = new LinkedList<ACLEntry>();
-		
-		HashMap<String, Boolean> guidMapForAnonymizedID = new HashMap<String, Boolean>();
-		
-		for( int i=0; i < guidSetOfAnonymizedID.length(); i++)
-		{
-			byte[] guid = (byte[]) guidSetOfAnonymizedID.get(i);
-			guidMapForAnonymizedID.put(Utils.bytArrayToHex(guid), true);
-		}
-		
-		for(int i=0; i<aclEntriesForAttr.size(); i++)
-		{
-			ACLEntry currACLEntry = aclEntriesForAttr.get(i);
-			//byte[] publicKeyByteArray = (byte[]) aclEntriesForAttr.get(i).getPublicKeyACLMember();
-			byte[] guid = currACLEntry.getACLMemberGUID();
-			
-			// intersection
-			if( guidMapForAnonymizedID.containsKey( Utils.bytArrayToHex(guid) ) )
-			{
-				intersectionACLEntries.add(currACLEntry);
-			}
-		}
-		return intersectionACLEntries;
+		return anonymizedIDsToBeUpdated;
 	}
 	
 	/**
@@ -283,172 +201,16 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 		return found;
 	}
 	
-	/**
-	 * This function computes the attrValue pair map for a anonymizedID.
-	 * It computes all the attributs that needs to be updateed for the 
-	 * anonymized ID and also computes the realIDMapping Info for each attibute.
-	 * 
-	 * @param anonymizedID
-	 * @param realGUID
-	 * @param updateAttrList
-	 * @param attrValueMap
-	 * @param transformMessageList
-	 * @return
-	 */
-	private HashMap<String, AttrValueRepresentationJSON> 
-					getTransformedAnonymizedIDUpdateAttrValueMap(
-			byte[] anonymizedID, byte[] realGUID, 
-			List<AttributeUpdateInfo> updateAttrList, 
-			HashMap<String, AttrValueRepresentationJSON> attrValueMap, 
-			List<CSUpdateTransformedMessage> transformMessageList)
-	{
-		// key is attrName
-		HashMap<String, AttrValueRepresentationJSON> anonymizedIDSpecificUpdateAttrs
-								= new HashMap<String, AttrValueRepresentationJSON>();
-		try
-		{
-			for( int i=0; i<updateAttrList.size(); i++ )
-			{
-				AttributeUpdateInfo attrUpdInfo = updateAttrList.get(i);
-				String currAttrName = attrUpdInfo.getAttrName();
-				
-				AttrValueRepresentationJSON attrValRep = attrValueMap.get(currAttrName);
-				String value = attrValRep.getActualAttrValue();
-				
-				//just adding a random value for testing.
-//				Random rand = new Random(System.currentTimeMillis());
-//				double randVal = rand.nextDouble()*1400+10;
-//				value = randVal+"";			
-				
-				// create a new AttrValueRepresentationJSON, 
-				// because multiple anonymized IDs might not update same attribute value pair
-				// so using the input AttrValueRepresentationJSON will casuse contention and serious bug
-				AttrValueRepresentationJSON currValRep =
-						addRealIDMappingInfo( realGUID, value, attrUpdInfo);
-				
-				anonymizedIDSpecificUpdateAttrs.put(currAttrName, currValRep);		
-			}
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-		catch(Exception | Error ex)
-		{
-			ex.printStackTrace();
-		}
-		return anonymizedIDSpecificUpdateAttrs;
-	}
 	
-	
-	/**
-	 * This function add attr:value pair in JSONObject, 
-	 * This function also encrypts anonymized ID by encrypting with 
-	 * ACL members public key.
-	 * This may change, if in future we change it to a multi recipient secret 
-	 * sharing.
-	 * @param csAttrValuePairsSec
-	 * @param attrUpdInfo
-	 * @param value
-	 * @throws JSONException 
-	 */
-	private AttrValueRepresentationJSON addRealIDMappingInfo(byte[] realGUID, 
-			String value, 
-			AttributeUpdateInfo attrUpdInfo) throws JSONException
+	private class AnonymizedIDUpdateInfo
 	{
-		JSONArray realIDMappingInfo = new JSONArray();
-		List<ACLEntry> intersectingACLEntries = attrUpdInfo.getIntersectingACLEntries();
+		public AnonymizedIDEntry anonymizedIDEntry;
+		public JSONObject attrValPair;
 		
-		for( int i=0; i<intersectingACLEntries.size(); i++ )
+		public AnonymizedIDUpdateInfo(AnonymizedIDEntry anonymizedIDEntry)
 		{
-			// catching here so that one bad key doesn't let everything else to fail.
-			try 
-			{
-				ACLEntry currACL = intersectingACLEntries.get(i);
-				byte[] publicKey = currACL.getPublicKeyACLMember();
-				byte[] encryptedRealID = 
-						 Utils.doPublicKeyEncryption(publicKey, realGUID);
-				
-				realIDMappingInfo.put(Utils.bytArrayToHex(encryptedRealID));
-				
-			} catch (NoSuchAlgorithmException e) 
-			{
-				e.printStackTrace();
-			} catch (InvalidKeySpecException e) 
-			{
-				e.printStackTrace();
-			} catch (InvalidKeyException e) {
-				e.printStackTrace();
-			} catch (NoSuchPaddingException e) {
-				e.printStackTrace();
-			} catch (IllegalBlockSizeException e) {
-				e.printStackTrace();
-			} catch (BadPaddingException e) {
-				e.printStackTrace();
-			}
-		}
-		
-		AttrValueRepresentationJSON currAttrValRep 
-							= new AttrValueRepresentationJSON(value, realIDMappingInfo);
-		return currAttrValRep;
-	}
-	
-	/**
-	 * This function calculates total encryptions on 
-	 * an update, just for debugging purposes.
-	 * @return
-	 */
-	private int calculateTotalEncryptionsOnAnUpdate
-			( HashMap<String, List<AttributeUpdateInfo>> anonymizedIDToAttributesMap )
-	{
-		int totalEncryptions = 0;
-		Iterator<String> anonymizedIDIter 
-						= anonymizedIDToAttributesMap.keySet().iterator();
-		
-		while( anonymizedIDIter.hasNext() )
-		{
-			String anonymizedID = anonymizedIDIter.next();
-			
-			List<AttributeUpdateInfo> attrUpdateInfoList 
-										= anonymizedIDToAttributesMap.get(anonymizedID);
-			
-			for(int i=0; i < attrUpdateInfoList.size(); i++)
-			{
-				AttributeUpdateInfo attrUpdInfo = attrUpdateInfoList.get(i);
-				totalEncryptions = totalEncryptions + attrUpdInfo.getIntersectingACLEntries().size();
-			}
-		}	
-		return totalEncryptions;
-	}
-	
-	/**
-	 * This class stores attribute info on an update 
-	 * for each anonymized ID.
-	 * 
-	 * @author adipc
-	 */
-	private class AttributeUpdateInfo
-	{
-		private final String attrName;
-		
-		// this is the list of ACLEntries that are common in this 
-		// attribute's ACL and the corresponding anonymized IDs guid set, Gul.
-		// this array is used to encrypt the real ID of the user. 
-		private final List<ACLEntry> intersectingACLEntries;
-		
-		public AttributeUpdateInfo(String attrName, List<ACLEntry> intersectingACLEntries)
-		{
-			this.attrName = attrName;
-			this.intersectingACLEntries = intersectingACLEntries;
-		}
-		
-		public String getAttrName()
-		{
-			return this.attrName;
-		}
-		
-		public List<ACLEntry> getIntersectingACLEntries()
-		{
-			return this.intersectingACLEntries;
+			this.anonymizedIDEntry = anonymizedIDEntry;
+			attrValPair = new JSONObject();
 		}
 	}
 	
@@ -558,7 +320,8 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 		aclMap.put("attr6", acl5);
 		
 		
-		List<AnonymizedIDEntry> anonymizedIdList = anonymizedIDCreator.computeAnonymizedIDs(aclMap);
+		List<AnonymizedIDEntry> anonymizedIdList 
+						= anonymizedIDCreator.computeAnonymizedIDs(null, aclMap);
 		System.out.println("Number of anonymizedIds "+anonymizedIdList.size());
 		
 		System.out.println("\n\n\n##################################\n\n\n");
@@ -572,58 +335,58 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 		
 		System.out.println("\n Updating attr1 \n");
 		
-		HashMap<String, AttrValueRepresentationJSON> attrValueMap 
-					= new HashMap<String, AttrValueRepresentationJSON>();
+//		HashMap<String, AttrValueRepresentationJSON> attrValueMap 
+//					= new HashMap<String, AttrValueRepresentationJSON>();
 		
-		AttrValueRepresentationJSON valRep = new AttrValueRepresentationJSON(10+"");
+//		AttrValueRepresentationJSON valRep = new AttrValueRepresentationJSON(10+"");
 		
-		attrValueMap.put("attr1", valRep);
+//		attrValueMap.put("attr1", valRep);
 		
-		SubspaceBasedCSTransform csTransform = new SubspaceBasedCSTransform(Executors.newFixedThreadPool(1));
-		List<CSUpdateTransformedMessage> transformedUpdateList = 
-		csTransform.transformUpdateForCSPrivacy(guid0, attrValueMap, aclMap, anonymizedIdList);
-		
-		System.out.println("transformedList size "+transformedUpdateList.size());
-		for(int i=0; i<transformedUpdateList.size(); i++)
-		{
-			CSUpdateTransformedMessage csTransMessage = transformedUpdateList.get(i);
-			System.out.println(csTransMessage.toString());
-		}
-		
-		// checking the untransform now.
-		List<CSSearchReplyTransformedMessage> csTransformedSearchRepList
-			= new LinkedList<CSSearchReplyTransformedMessage>();
-		
-		for(int i=0;i<transformedUpdateList.size();i++)
-		{
-			CSUpdateTransformedMessage csUpdateMessage = transformedUpdateList.get(i);
-			String IDString = Utils.bytArrayToHex(csUpdateMessage.getAnonymizedID());
-			// since we just updated attr1
-			JSONArray realIDMapping = csUpdateMessage.getAttrValMap().get("attr1").getRealIDMappingInfo();
-			
-			SearchReplyGUIDRepresentationJSON searchRepJSON 
-							= new SearchReplyGUIDRepresentationJSON(IDString, realIDMapping);
-			CSSearchReplyTransformedMessage csSearchTransMesg 
-												= new CSSearchReplyTransformedMessage(searchRepJSON);
-			
-			csTransformedSearchRepList.add(csSearchTransMesg);
-		}
-		
-		JSONArray replyArray = new JSONArray();
-		GuidEntry queryingGuid = guidsVector.get(1);
-		csTransform.unTransformSearchReply(queryingGuid, csTransformedSearchRepList
-				, replyArray);
-		
-		System.out.println("Query GUID "+ queryingGuid.getGuid()+
-				" Real GUID "+guid0+" reply Arr "+replyArray);
-		
-		
-		replyArray = new JSONArray();
-		queryingGuid = guidsVector.get(4);
-		csTransform.unTransformSearchReply(queryingGuid, csTransformedSearchRepList
-				, replyArray);
-		
-		System.out.println("Query GUID "+ queryingGuid.getGuid()+
-				" Real GUID "+guid0+" reply Arr "+replyArray);
+//		SubspaceBasedCSTransform csTransform = new SubspaceBasedCSTransform(Executors.newFixedThreadPool(1));
+//		List<CSUpdateTransformedMessage> transformedUpdateList = 
+//		csTransform.transformUpdateForCSPrivacy(guid0, attrValueMap, aclMap, anonymizedIdList);
+//		
+//		System.out.println("transformedList size "+transformedUpdateList.size());
+//		for(int i=0; i<transformedUpdateList.size(); i++)
+//		{
+//			CSUpdateTransformedMessage csTransMessage = transformedUpdateList.get(i);
+//			System.out.println(csTransMessage.toString());
+//		}
+//		
+//		// checking the untransform now.
+//		List<CSSearchReplyTransformedMessage> csTransformedSearchRepList
+//			= new LinkedList<CSSearchReplyTransformedMessage>();
+//		
+//		for(int i=0;i<transformedUpdateList.size();i++)
+//		{
+//			CSUpdateTransformedMessage csUpdateMessage = transformedUpdateList.get(i);
+//			String IDString = Utils.bytArrayToHex(csUpdateMessage.getAnonymizedID());
+//			// since we just updated attr1
+//			JSONArray realIDMapping = csUpdateMessage.getAttrValMap().get("attr1").getRealIDMappingInfo();
+//			
+//			SearchReplyGUIDRepresentationJSON searchRepJSON 
+//							= new SearchReplyGUIDRepresentationJSON(IDString, realIDMapping);
+//			CSSearchReplyTransformedMessage csSearchTransMesg 
+//												= new CSSearchReplyTransformedMessage(searchRepJSON);
+//			
+//			csTransformedSearchRepList.add(csSearchTransMesg);
+//		}
+//		
+//		JSONArray replyArray = new JSONArray();
+//		GuidEntry queryingGuid = guidsVector.get(1);
+//		csTransform.unTransformSearchReply(queryingGuid, csTransformedSearchRepList
+//				, replyArray);
+//		
+//		System.out.println("Query GUID "+ queryingGuid.getGuid()+
+//				" Real GUID "+guid0+" reply Arr "+replyArray);
+//		
+//		
+//		replyArray = new JSONArray();
+//		queryingGuid = guidsVector.get(4);
+//		csTransform.unTransformSearchReply(queryingGuid, csTransformedSearchRepList
+//				, replyArray);
+//		
+//		System.out.println("Query GUID "+ queryingGuid.getGuid()+
+//				" Real GUID "+guid0+" reply Arr "+replyArray);
 	}
 }

@@ -25,7 +25,6 @@ import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
-import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
 import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryComponent;
@@ -54,7 +53,6 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		this.subspaceInfoMap = subspaceInfoMap;
 		this.dataSource = dataSource;
 	}
-	
 	
 	@Override
 	public void createTables() 
@@ -96,7 +94,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 					while( attrIter.hasNext() )
 					{
 						String attrName = attrIter.next();
-						String attrDataType = subspaceAttributes.get(attrName).getAttrMetaInfo().getDataType();
+						String attrDataType  = subspaceAttributes.get(attrName).getAttrMetaInfo().getDataType();
 						String mySQLDataType = AttributeTypes.mySQLDataType.get(attrDataType);
 						// lower range of this attribute in this subspace
 						String lowerAttrName = "lower"+attrName;
@@ -130,7 +128,15 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 					
 					newTableCommand = getDataStorageString(newTableCommand);
 					
-					newTableCommand = newTableCommand +" )";
+					if(ContextServiceConfig.PRIVACY_ENABLED)
+					{
+						newTableCommand = getPrivacyStorageString(newTableCommand);
+					}
+					
+					// row format dynamic because we want TEXT columns to be stored completely off the row, 
+					// only pointer should be stored in the row, otherwise default is storing 700 bytes for 
+					// each TEXT in row.
+					newTableCommand = newTableCommand +" ) ROW_FORMAT=DYNAMIC";
 					stmt.executeUpdate(newTableCommand);
 				}
 			}
@@ -140,13 +146,18 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				      + " nodeGUID Binary(20) PRIMARY KEY";
 			
 			newTableCommand = getDataStorageString(newTableCommand);
+			
+			if( ContextServiceConfig.PRIVACY_ENABLED )
+			{
+				newTableCommand = getPrivacyStorageString(newTableCommand);
+			}
+			
 			//newTableCommand	= getPrivacyStorageString(newTableCommand);
 			
 			// row format dynamic because we want TEXT columns to be stored completely off the row, 
 			// only pointer should be stored in the row, otherwise default is storing 700 bytes for each TEXT in row.
 			newTableCommand = newTableCommand +" ) ROW_FORMAT=DYNAMIC ";
 			stmt.executeUpdate(newTableCommand);
-			
 		} catch( SQLException mysqlEx )
 		{
 			mysqlEx.printStackTrace();
@@ -159,7 +170,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 					stmt.close();
 				if( myConn != null )
 					myConn.close();
-			} 
+			}
 			catch( SQLException sqex )
 			{
 				sqex.printStackTrace();
@@ -197,7 +208,17 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		}
 		else
 		{
-			mysqlQuery = "SELECT nodeGUID from "+tableName+" WHERE ( ";	
+			// if privacy is enabled then we also fetch 
+			// anonymizedIDToGuidMapping set.
+			if(ContextServiceConfig.PRIVACY_ENABLED)
+			{
+				mysqlQuery = "SELECT nodeGUID , "+HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName
+						+" from "+tableName+" WHERE ( ";
+			}
+			else
+			{
+				mysqlQuery = "SELECT nodeGUID from "+tableName+" WHERE ( ";
+			}
 		}
 		
 		
@@ -308,13 +329,15 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		try
 		{
 			myConn = this.dataSource.getConnection();
-			// for row by row fetching, oterwise default is fetching whole result
-			// set in memory. http://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html
+			// for row by row fetching, otherwise default is fetching whole result
+			// set in memory. 
+			// http://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html
 			stmt   = myConn.createStatement(java.sql.ResultSet.TYPE_FORWARD_ONLY, 
 					java.sql.ResultSet.CONCUR_READ_ONLY);
 			stmt.setFetchSize(ContextServiceConfig.MYSQL_CURSOR_FETCH_SIZE);
 			
-			ContextServiceLogger.getLogger().fine("processSearchQueryInSubspaceRegion: "+mysqlQuery);
+			ContextServiceLogger.getLogger().fine("processSearchQueryInSubspaceRegion: "
+								+mysqlQuery);
 			
 			ResultSet rs = stmt.executeQuery(mysqlQuery);
 			while( rs.next() )
@@ -356,20 +379,50 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				}
 				else
 				{
-					//String nodeGUID = rs.getString("nodeGUID");
+					// String nodeGUID = rs.getString("nodeGUID");
 					byte[] nodeGUIDBytes = rs.getBytes("nodeGUID");
+					
 					// it is actually a JSONArray in hexformat byte array representation.
 					// reverse conversion is byte array to String and then string to JSONArray.
-					//byte[] realIDEncryptedArray = rs.getBytes(ACLattr);
-					//ValueTableInfo valobj = new ValueTableInfo(value, nodeGUID);
-					//answerList.add(valobj);
+					// byte[] realIDEncryptedArray = rs.getBytes(ACLattr);
+					// ValueTableInfo valobj = new ValueTableInfo(value, nodeGUID);
+					// answerList.add(valobj);
 					if(ContextServiceConfig.sendFullReplies)
 					{
 						String nodeGUID = Utils.bytArrayToHex(nodeGUIDBytes);
 						
-						SearchReplyGUIDRepresentationJSON searchReplyRep 
-						= new SearchReplyGUIDRepresentationJSON(nodeGUID);
-						resultArray.put(searchReplyRep.toJSONObject());
+						String anonymizedIDToGUIDMapping = null;
+						JSONArray anonymizedIDToGuidArray = null;
+						if( ContextServiceConfig.PRIVACY_ENABLED )
+						{
+							anonymizedIDToGUIDMapping 
+								= rs.getString(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName);
+							
+							if(anonymizedIDToGUIDMapping != null)
+							{
+								if(anonymizedIDToGUIDMapping.length() > 0)
+								{
+									anonymizedIDToGuidArray 
+										= new JSONArray(anonymizedIDToGUIDMapping);
+								}
+							}
+						}
+						
+						if(anonymizedIDToGuidArray != null)
+						{
+							SearchReplyGUIDRepresentationJSON searchReplyRep 
+								= new SearchReplyGUIDRepresentationJSON(nodeGUID, 
+										anonymizedIDToGuidArray);
+						
+							resultArray.put(searchReplyRep.toJSONObject());
+						}
+						else
+						{
+							SearchReplyGUIDRepresentationJSON searchReplyRep 
+								= new SearchReplyGUIDRepresentationJSON(nodeGUID);
+					
+							resultArray.put(searchReplyRep.toJSONObject());
+						}
 						
 						//TODO: this conversion may be removed and byte[] sent
 						//FIXME: fix this string encoding.
@@ -432,8 +485,8 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	public JSONObject getGUIDStoredInPrimarySubspace( String guid )
 	{
 		long t0 = System.currentTimeMillis();
-		Connection myConn 	= null;
-		Statement stmt 		= null;
+		Connection myConn 		= null;
+		Statement stmt 			= null;
 		
 		String selectQuery 		= "SELECT * ";
 		String tableName 		= "primarySubspaceDataStorage";
@@ -473,7 +526,8 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 			long end = System.currentTimeMillis();
 			if(ContextServiceConfig.DEBUG_MODE)
 			{
-				System.out.println("TIME_DEBUG: getGUIDStoredInPrimarySubspace "+(end-start));
+				System.out.println("TIME_DEBUG: getGUIDStoredInPrimarySubspace "
+										+(end-start));
 			}
 		} catch (SQLException e)
 		{
@@ -758,21 +812,20 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
      * @throws JSONException
      */
     public void storeGUIDInPrimarySubspace(String tableName, String nodeGUID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert, 
-    		JSONObject oldValJSON ) throws JSONException
+    		JSONObject updatedAttrValJSON, int updateOrInsert, 
+    		JSONObject oldValJSON , JSONArray anonymizedIDToGuidMapping ) throws JSONException
     {
     	if( updateOrInsert == HyperspaceMySQLDB.INSERT_REC )
     	{
     		this.performStoreGUIDInPrimarySubspaceInsert
-    			(tableName, nodeGUID, atrToValueRep);
+    			(tableName, nodeGUID, updatedAttrValJSON, anonymizedIDToGuidMapping);
     	}
     	else if( updateOrInsert == HyperspaceMySQLDB.UPDATE_REC )
     	{
     		this.performStoreGUIDInPrimarySubspaceUpdate
-    				(tableName, nodeGUID, atrToValueRep, oldValJSON);
+    				(tableName, nodeGUID, updatedAttrValJSON, anonymizedIDToGuidMapping);
     	}
     }
-    
 	
 	/**
      * Stores GUID in a subspace. The decision to store a guid on this node
@@ -783,9 +836,9 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
      * @return
      * @throws JSONException
      */
-    public void storeGUIDInSecondarySubspace(String tableName, String nodeGUID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert
-    		, JSONObject oldValJSON ) throws JSONException
+    public void storeGUIDInSecondarySubspace( String tableName, String nodeGUID, 
+    		JSONObject updatedAttrValJSON, int updateOrInsert
+    		, JSONObject oldValJSON, JSONArray anonymizedIDToGuidMapping ) throws JSONException
     {
     	long start = System.currentTimeMillis();
     	if(ContextServiceConfig.DEBUG_MODE)
@@ -795,18 +848,19 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     	if( updateOrInsert == HyperspaceMySQLDB.INSERT_REC )
     	{
     		this.performStoreGUIDInSecondarySubspaceInsert
-    			(tableName, nodeGUID, atrToValueRep, oldValJSON);
+    			(tableName, nodeGUID, updatedAttrValJSON, oldValJSON, anonymizedIDToGuidMapping);
     	}
     	else if( updateOrInsert == HyperspaceMySQLDB.UPDATE_REC )
     	{
     		this.performStoreGUIDInSecondarySubspaceUpdate
-    				(tableName, nodeGUID, atrToValueRep);
+    				(tableName, nodeGUID, updatedAttrValJSON, anonymizedIDToGuidMapping);
     	}
     	if(ContextServiceConfig.DEBUG_MODE)
     	{
     		long end = System.currentTimeMillis();
     		ContextServiceLogger.getLogger().fine
-    		("FINISHED storeGUIDInSecondarySubspace "+nodeGUID+" time "+(end-start));
+    		("FINISHED storeGUIDInSecondarySubspace "+nodeGUID
+    				+" time "+(end-start));
     	}
     }
     
@@ -825,9 +879,9 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 			stmt.executeUpdate(deleteCommand);
 			long end = System.currentTimeMillis();
 			
-			if(ContextServiceConfig.DEBUG_MODE)
+			if( ContextServiceConfig.DEBUG_MODE )
         	{
-        		System.out.println("TIME_DEBUG: deleteGUIDFromSubspaceRegion "+(end-start));
+				System.out.println("TIME_DEBUG: deleteGUIDFromSubspaceRegion "+(end-start));
         	}
 			
 		} catch(SQLException sqex)
@@ -851,7 +905,6 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				sqex.printStackTrace();
 			}
 		}
-		
 		if(ContextServiceConfig.DELAY_PROFILER_ON)
 		{
 			DelayProfiler.updateDelay("deleteGUIDFromSubspaceRegion", t0);
@@ -1001,34 +1054,35 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	
 	/**
 	 * only need to update attributes in atToValRep,
-	 *  as other attribtues are already there.
+	 *  as other attributes are already there.
 	 * @param tableName
 	 * @param nodeGUID
 	 * @param atrToValueRep
 	 */
 	private void performStoreGUIDInSecondarySubspaceUpdate(String tableName, String nodeGUID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep)
+    		JSONObject udpatedAttrValJSON, JSONArray anonymizedIDToGuidMapping)
 	{
-		ContextServiceLogger.getLogger().fine("STARTED performStoreGUIDInSecondarySubspaceUpdate "+tableName
-				+" nodeGUID "+nodeGUID);
+		ContextServiceLogger.getLogger().fine("STARTED "
+				+ " performStoreGUIDInSecondarySubspaceUpdate "+tableName
+				+ " nodeGUID "+nodeGUID);
     	
-        Connection myConn      = null;
-        Statement stmt         = null;
+        Connection myConn      		= null;
+        Statement stmt         		= null;
         
         String updateSqlQuery     	= "UPDATE "+tableName
                 + " SET ";
         
         try
         {
-        	Iterator<String> attrNameIter = atrToValueRep.keySet().iterator();
-        	int i=0;
+        	Iterator<String> attrNameIter = udpatedAttrValJSON.keys();
+        	int i = 0;
 	        while( attrNameIter.hasNext() )
 	        {
 	            String attrName = attrNameIter.next();  
-	            AttrValueRepresentationJSON attrValRep 
-	            		= atrToValueRep.get(attrName);
+	            //AttrValueRepresentationJSON attrValRep 
+	            //		= atrToValueRep.get(attrName);
 	            
-	            String newVal   = attrValRep.getActualAttrValue();
+	            String newVal   = udpatedAttrValJSON.getString(attrName);
 	            
 	            AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
 				assert(attrMetaInfo != null);
@@ -1041,18 +1095,23 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	           
 	            if(i == 0)
 	            {
-	                //selectQuery = selectQuery + attrName;
 	                updateSqlQuery = updateSqlQuery + attrName +" = "+newVal;
 	            }
 	            else
 	            {
-	                //selectQuery = selectQuery + ", "+attrName+" ";
 	                updateSqlQuery = updateSqlQuery +" , "+ attrName +" = "+newVal;
 	            }
 	            i++;
 	        }
 	        
-	        //selectQuery = selectQuery + " FROM "+tableName+" WHERE nodeGUID = '"+nodeGUID+"'";
+	        if( anonymizedIDToGuidMapping != null )
+            {
+            	String currColName 		= HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName;
+				
+				String jsonArrayString  = anonymizedIDToGuidMapping.toString();
+        		updateSqlQuery = updateSqlQuery +" , "+ currColName +" = '"+jsonArrayString+"'";
+            }
+	        
 	        updateSqlQuery = updateSqlQuery + " WHERE nodeGUID = X'"+nodeGUID+"'";
             
             myConn = this.dataSource.getConnection();
@@ -1078,7 +1137,6 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
         		// should not happen, rowCount should always be 1
         		assert(false);
         	}
-            
         } catch ( Exception  | Error ex )
         {
             ex.printStackTrace();
@@ -1099,20 +1157,18 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
         }
 	}
 	
-	private void performStoreGUIDInSecondarySubspaceInsert(String tableName, String nodeGUID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, 
-    		JSONObject oldValJSON)
+	private void performStoreGUIDInSecondarySubspaceInsert( String tableName, String nodeGUID, 
+    		JSONObject updatedAttrValJSON, JSONObject oldValJSON, 
+    		JSONArray anonymizedIDToGuidMapping )
 	{
 		ContextServiceLogger.getLogger().fine("STARTED performStoreGUIDInSubspaceInsert "
 				+tableName+" nodeGUID "+nodeGUID);
     	
-        Connection myConn      = null;
-        Statement stmt         = null;
-       
-        // delayed insert performs better than just insert
+        Connection myConn      	   = null;
+        Statement stmt         	   = null;
+        
         String insertQuery         = "INSERT INTO "+tableName+ " (";
         
-        //JSONObject oldValueJSON = new JSONObject();
         try
         {
         	// insert happens for all attributes,
@@ -1147,8 +1203,17 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     	            }
     			}
     		}
-    		insertQuery = insertQuery + ", nodeGUID) " + "VALUES"+ "(";
     		
+    		if( anonymizedIDToGuidMapping != null )
+    		{
+    			insertQuery = insertQuery + " , nodeGUID , "
+    						+ HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName
+    						+ " ) " + "VALUES"+ "( ";
+    		}
+    		else
+    		{
+    			insertQuery = insertQuery + ", nodeGUID) " + "VALUES"+ "(";
+    		}
     		
     		first = true;
     		subapceIdIter = subspaceInfoMap.keySet().iterator();
@@ -1168,12 +1233,12 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     			{
     				String currAttrName = attrIter.next();
     				String currAttrValue = "";
-    				if( atrToValueRep.containsKey(currAttrName) )
+    				if( updatedAttrValJSON.has(currAttrName) )
     				{
-    					AttrValueRepresentationJSON attrValRep 
-											= atrToValueRep.get(currAttrName);
+//    					AttrValueRepresentationJSON attrValRep 
+//											= atrToValueRep.get(currAttrName);
     
-    					currAttrValue = attrValRep.getActualAttrValue();
+    					currAttrValue = updatedAttrValJSON.getString(currAttrName);
     				}
     				else
     				{
@@ -1199,7 +1264,17 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     	            }
     			}
     		}
-    		insertQuery = insertQuery +" , X'"+nodeGUID+"' )";
+    		
+    		if( anonymizedIDToGuidMapping != null )
+    		{
+    			insertQuery = insertQuery +" , X'"+nodeGUID+"' , '"
+    								+anonymizedIDToGuidMapping.toString()+"' )";    			
+    		}
+    		else
+    		{
+    			insertQuery = insertQuery +" , X'"+nodeGUID+"' )";
+    		}
+    		
     		
     		myConn = this.dataSource.getConnection();
             stmt = myConn.createStatement();  
@@ -1211,13 +1286,15 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     		
     		if(ContextServiceConfig.DEBUG_MODE)
         	{
-        		System.out.println("TIME_DEBUG: performStoreGUIDInSecondarySubspaceInsert insert  "+tableName
+        		System.out.println("TIME_DEBUG: performStoreGUIDInSecondarySubspaceInsert insert  "
+        				+tableName
         				+" nodeGUID "+nodeGUID+" "+(end-start));
         	}
     		
-    		ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING INSERT rowCount "+rowCount+" insertQuery "+insertQuery);
-        	
-        } catch ( Exception  | Error ex )
+    		ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING INSERT rowCount "
+    					+rowCount+" insertQuery "+insertQuery);
+        }
+        catch ( Exception | Error ex )
         {
             ex.printStackTrace();
         } finally
@@ -1245,7 +1322,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	 * @param atrToValueRep
 	 */
 	private void performStoreGUIDInPrimarySubspaceUpdate( String tableName, String nodeGUID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, JSONObject oldValJSON )
+    		JSONObject updatedAttrValJSON,  JSONArray anonymizedIDToGuidMapping )
 	{
 		ContextServiceLogger.getLogger().fine("performStoreGUIDInPrimarySubspaceUpdate "+tableName
 				+" nodeGUID "+nodeGUID);
@@ -1257,16 +1334,14 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
         
         try
         {
-        	Iterator<String> attrNameIter = atrToValueRep.keySet().iterator();
+        	Iterator<String> attrNameIter = updatedAttrValJSON.keys();
         	int i = 0;
 	        
         	while( attrNameIter.hasNext() )
 	        {
-	            String attrName = attrNameIter.next();  
-	            AttrValueRepresentationJSON attrValRep 
-	            		= atrToValueRep.get(attrName);
+	            String attrName = attrNameIter.next();
 	            
-	            String newVal   = attrValRep.getActualAttrValue();
+	            String newVal   = updatedAttrValJSON.getString(attrName);
 	            
 	            AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
 				assert(attrMetaInfo != null);
@@ -1277,42 +1352,24 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
                 
 	            if( i == 0 )
 	            {
-	                //selectQuery = selectQuery + attrName;
 	                updateSqlQuery = updateSqlQuery + attrName +" = "+newVal;
 	            }
 	            else
 	            {
-	                //selectQuery = selectQuery + ", "+attrName+" ";
 	                updateSqlQuery = updateSqlQuery +" , "+ attrName +" = "+newVal;
-	            }
-	            
-	            //oldValueJSON.put(attrName, AttributeTypes.NOT_SET);
-				// store the ACL info when privacy is enabled
-	            String currColName 		= "ACL"+attrName;
-	            
-	            // if oldValJSON has the ACLAttName column then it means
-	            // that it has the ACL info stored and we don't need to update.
-	            // as ACL info is never updated. It is either deleted or inserted.
-	            // because change in ACL will require re-computation of anonymized ID itself. 
-	            if(!oldValJSON.has(currColName))
-	            {
-					JSONArray realIDMappingArray = null;
-	                if( ContextServiceConfig.PRIVACY_ENABLED )
-	                {
-	                	realIDMappingArray = attrValRep.getRealIDMappingInfo();
-	                	
-	                	if( realIDMappingArray != null )
-	                	{
-	                		String jsonArrayString  = realIDMappingArray.toString();
-	                		updateSqlQuery = updateSqlQuery +" , "+ currColName +" = '"+jsonArrayString+"'";
-	                	}
-	                }
 	            }
                 
 	            i++;
 	        }
-	        
-	        //selectQuery = selectQuery + " FROM "+tableName+" WHERE nodeGUID = '"+nodeGUID+"'";
+        	
+            if( anonymizedIDToGuidMapping != null )
+            {
+            	String currColName 		= HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName;
+				
+				String jsonArrayString  = anonymizedIDToGuidMapping.toString();
+        		updateSqlQuery = updateSqlQuery +" , "+ currColName +" = '"+jsonArrayString+"'";
+            }
+            
 	        updateSqlQuery = updateSqlQuery + " WHERE nodeGUID = X'"+nodeGUID+"'";
             
             myConn = this.dataSource.getConnection();
@@ -1359,7 +1416,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	
 	private void performStoreGUIDInPrimarySubspaceInsert( 
 			String tableName, String nodeGUID, 
-			HashMap<String, AttrValueRepresentationJSON> atrToValueRep )
+			JSONObject updatedAttrValJSON , JSONArray anonymizedIDToGuidMapping )
 	{
 		ContextServiceLogger.getLogger().fine("performStoreGUIDInPrimarySubspaceInsert "
 				+tableName+" nodeGUID "+nodeGUID );
@@ -1372,10 +1429,9 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
         
         try
         {
-        	Iterator<String> attrIter = atrToValueRep.keySet().iterator();
+        	Iterator<String> attrIter = updatedAttrValJSON.keys();
         	
         	boolean first = true;
-        	
         	// just a way to iterate over attributes.
     		while( attrIter.hasNext() )
     		{
@@ -1392,21 +1448,26 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	            }
     		}
     		
-    		insertQuery = insertQuery + ", nodeGUID) " + "VALUES"+ "(";
+    		if( anonymizedIDToGuidMapping != null )
+    		{
+    			insertQuery = insertQuery + " , nodeGUID , "
+    						+ HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName
+    						+ " ) " + "VALUES"+ "( ";
+    		}
+    		else
+    		{
+    			insertQuery = insertQuery + ", nodeGUID) " + "VALUES"+ "(";
+    		}
     		
     		first = true;
-    		attrIter = atrToValueRep.keySet().iterator();
-    			
+    		attrIter = updatedAttrValJSON.keys();
+    		
 			while( attrIter.hasNext() )
 			{
 				String currAttrName = attrIter.next();
 				String currAttrValue = "";
-				
-				AttrValueRepresentationJSON attrValRep 
-									= atrToValueRep.get(currAttrName);
 
-				currAttrValue = attrValRep.getActualAttrValue();
-				
+				currAttrValue = updatedAttrValJSON.getString(currAttrName);
 				
 				AttributeMetaInfo attrMetaInfo 
 							= AttributeTypes.attributeMap.get(currAttrName);
@@ -1427,7 +1488,15 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	            }
 			}
     		
-    		insertQuery = insertQuery +" , X'"+nodeGUID+"' )";
+			if( anonymizedIDToGuidMapping != null )
+			{
+				insertQuery = insertQuery +" , X'"+nodeGUID+"' , '"
+								+anonymizedIDToGuidMapping.toString()+"' )";
+			}
+			else
+			{
+				insertQuery = insertQuery +" , X'"+nodeGUID+"' )";
+			}
     		
     		myConn = this.dataSource.getConnection();
             stmt = myConn.createStatement();  
@@ -1523,11 +1592,77 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		return newTableCommand;
 	}
 	
-	
 	private String getPrivacyStorageString( String newTableCommand )
 	{
-		Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
+		newTableCommand 
+			= newTableCommand + " , "+HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName
+				+" TEXT";
 		
+		return newTableCommand;
+		/*Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
+		while( subapceIdIter.hasNext() )
+		{
+			int subspaceId = subapceIdIter.next();
+			// at least one replica and all replica have same default value for each attribute.
+			SubspaceInfo<NodeIDType> currSubspaceInfo = subspaceInfoMap.get(subspaceId).get(0);
+			HashMap<String, AttributePartitionInfo> attrSubspaceMap 
+													= currSubspaceInfo.getAttributesOfSubspace();
+			
+			Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
+			while( attrIter.hasNext() )
+			{
+				String attrName = attrIter.next();
+				//AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
+				//AttributeMetaInfo attrMetaInfo = attrPartInfo.getAttrMetaInfo();
+				//String dataType = attrMetaInfo.getDataType();
+				//String defaultVal = attrPartInfo.getDefaultValue();
+				//String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
+				
+				
+//				newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType
+//						+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL
+//				(defaultVal, dataType)
+//						+" , INDEX USING BTREE("+attrName+")";
+				
+				if( ContextServiceConfig.PRIVACY_ENABLED )
+				{
+					// ACL<attrName> is ACL info for each attribute needed in privacy scheme.
+					// using TEXT datatype and will check how much performance of getGUIDFromPrimarySubspace 
+					// is affected.
+					// not sure if TEXT is right datatype. ALso not sure if this is most optimized way to do 
+					// this this column stores JSONArray are String.
+					newTableCommand = newTableCommand + " , ACL"+attrName+" TEXT";
+				}
+			}
+		}*/
+	}
+	
+	/**
+	 * check if query has functions.
+	 * If there are then sometimes 
+	 * we need to do extra processing
+	 * like for geoJSON, which initially 
+	 * is processed by bounding rectangle
+	 * @return
+	 */
+	private boolean ifQueryHasFunctions(Vector<QueryComponent> qcomponents)
+	{
+		boolean isFun = false;
+		for(int i=0;i<qcomponents.size();i++)
+		{
+			QueryComponent qc = qcomponents.get(i);
+			if(qc.getComponentType() == QueryComponent.FUNCTION_PREDICATE)
+			{
+				isFun = true;
+				break;
+			}
+		}
+		return isFun;
+	}
+	
+	/*private String getPrivacyStorageString( String newTableCommand )
+	{
+		Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
 		while( subapceIdIter.hasNext() )
 		{
 			int subspaceId = subapceIdIter.next();
@@ -1565,33 +1700,9 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 			}
 		}
 		return newTableCommand;
-	}
+	}*/
 	
-	/**
-	 * check if query has functions.
-	 * If there are then sometimes 
-	 * we need to do extra processing
-	 * like for geoJSON, which initially 
-	 * is processed by bounding rectangle
-	 * @return
-	 */
-	private boolean ifQueryHasFunctions(Vector<QueryComponent> qcomponents)
-	{
-		boolean isFun = false;
-		for(int i=0;i<qcomponents.size();i++)
-		{
-			QueryComponent qc = qcomponents.get(i);
-			if(qc.getComponentType() == QueryComponent.FUNCTION_PREDICATE)
-			{
-				isFun = true;
-				break;
-			}
-		}
-		return isFun;
-	}
-	
-	
-	// old storeGUIDInSubpace will be removed after overhaul of storeGUIDInSubspace fun
+	// Old storeGUIDInSubpace will be removed after overhaul of storeGUIDInSubspace fun
 	/**
      * Stores GUID in a subspace. The decision to store a guid on this node
      * in this subspace is not made in this function.

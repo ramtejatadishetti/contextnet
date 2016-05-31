@@ -1,6 +1,5 @@
 package edu.umass.cs.contextservice;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 import edu.umass.cs.contextservice.common.ContextServiceDemultiplexer;
@@ -70,8 +69,7 @@ public abstract class ContextServiceNode<NodeIDType>
 		synchronized( startMonitor )
 		{
 			startMonitor.notify();
-		}
-		
+		}	
 	}
 	
 	/**
@@ -101,6 +99,5 @@ public abstract class ContextServiceNode<NodeIDType>
 				}
 			}
 		}
-	}
-	
+	}	
 }

@@ -40,7 +40,8 @@ public interface ContextClientInterfaceWithPrivacy
 	 * @param ACLArray the calling user's ACL
 	 * @return
 	 */
-	public List<AnonymizedIDEntry> computeAnonymizedIDs(HashMap<String, List<ACLEntry>> aclMap);
+	public List<AnonymizedIDEntry> computeAnonymizedIDs(
+			GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap);
 	
 	//FIXME: semantics needs to be decided, after secure update/insert is implemented
 	public int sendSearchQuerySecure(String searchQuery, JSONArray replyArray, 

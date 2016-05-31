@@ -35,7 +35,7 @@ public class GUIDBasedAnonymizedIDCreator
 	
 	@Override
 	public List<AnonymizedIDEntry> computeAnonymizedIDs
-	( HashMap<String, List<ACLEntry>> aclMap )
+	(GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap )
 	{
 		HashMap<String, JSONArray> guidToAttrSetMap = 
 				getGuidToAttributeSetMap(aclMap);
@@ -65,7 +65,7 @@ public class GUIDBasedAnonymizedIDCreator
 			
 			
 			AnonymizedIDEntry anonymizedIDEntry 
-						= new AnonymizedIDEntry(anonymizedID , attrSet, guidSet);
+						= new AnonymizedIDEntry(anonymizedID , attrSet, guidSet, null);
 			
 			anonymizedIDList.add(anonymizedIDEntry);
 		}
@@ -222,7 +222,8 @@ public class GUIDBasedAnonymizedIDCreator
 		aclMap.put("attr6", acl5);
 		
 		
-		List<AnonymizedIDEntry> anonymizedIds = anonymizedIDCreator.computeAnonymizedIDs(aclMap);
+		List<AnonymizedIDEntry> anonymizedIds 
+			= anonymizedIDCreator.computeAnonymizedIDs(null, aclMap);
 		System.out.println("Number of anonymizedIds "+anonymizedIds.size());
 		
 		System.out.println("\n\n\n##################################\n\n\n");

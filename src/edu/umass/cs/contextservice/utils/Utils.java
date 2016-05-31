@@ -32,6 +32,8 @@ import javax.crypto.spec.SecretKeySpec;
 import org.json.JSONArray;
 import org.json.JSONException;
 
+import com.google.common.hash.Hashing;
+
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 
@@ -480,7 +482,14 @@ public class Utils
 		System.out.println("doSymmetricDecryption time "+(end-start));
 		
 		return c.doFinal(encryptedByteArray);
-	}	
+	}
+	
+	public static int consistentHashAString( String stringToHash , 
+			int numItems )
+	{
+		int mapIndex = Hashing.consistentHash(stringToHash.hashCode(), numItems);
+		return mapIndex;
+	}
 	
 	public static void main( String[] args )
 	{

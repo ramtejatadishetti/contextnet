@@ -1,9 +1,8 @@
 package edu.umass.cs.contextservice.client.csprivacytransform;
 
-import java.util.HashMap;
-import java.util.Iterator;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
-import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
 import edu.umass.cs.contextservice.utils.Utils;
 
 /**
@@ -11,19 +10,20 @@ import edu.umass.cs.contextservice.utils.Utils;
  * the mapping information to real GUID for each attribute 
  * associated to this anonymized ID.
  * @author adipc
- *
  */
 public class CSUpdateTransformedMessage 
 {
 	private final byte[] anonymizedID; 
+	private final JSONObject csAttrValPairs;
+
+	private final JSONArray anonymizedIDToGuidMapping;
 	
-	HashMap<String, AttrValueRepresentationJSON> attrValMap;
-	
-	public CSUpdateTransformedMessage(byte[] anonymizedID, 
-			HashMap<String, AttrValueRepresentationJSON> attrValMap)
+	public CSUpdateTransformedMessage( byte[] anonymizedID, 
+			JSONObject csAttrValPairs, JSONArray anonymizedIDToGuidMapping )
 	{
 		this.anonymizedID = anonymizedID;
-		this.attrValMap = attrValMap;
+		this.csAttrValPairs = csAttrValPairs;
+		this.anonymizedIDToGuidMapping = anonymizedIDToGuidMapping;
 	}
 	
 	public byte[] getAnonymizedID()
@@ -31,20 +31,24 @@ public class CSUpdateTransformedMessage
 		return this.anonymizedID;
 	}
 	
-	public HashMap<String, AttrValueRepresentationJSON> getAttrValMap()
+	public JSONObject getAttrValJSON()
 	{
-		return this.attrValMap;
+		return this.csAttrValPairs;
+	}
+	
+	public JSONArray getAnonymizedIDToGuidMapping()
+	{
+		return anonymizedIDToGuidMapping;
 	}
 	
 	public String toString()
 	{
-		String str="anonymized ID "+Utils.bytArrayToHex(anonymizedID);
-		Iterator<String> attrIter = attrValMap.keySet().iterator();
-		while( attrIter.hasNext() )
+		String str="anonymized ID "+Utils.bytArrayToHex(anonymizedID)+" csAttrValPairs "
+					+csAttrValPairs;
+		
+		if( anonymizedIDToGuidMapping != null )
 		{
-			String attrName = attrIter.next();
-			AttrValueRepresentationJSON attrVal = attrValMap.get(attrName);
-			str=str+" attrName "+attrName+" val rep "+attrVal.toString();
+			str = str+ "anonymizedIDToGuidMapping "+anonymizedIDToGuidMapping.toString();
 		}
 		return str;
 	}

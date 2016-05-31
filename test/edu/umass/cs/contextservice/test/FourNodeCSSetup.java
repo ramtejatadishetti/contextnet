@@ -19,7 +19,6 @@ import org.json.JSONObject;
 import edu.umass.cs.contextservice.ContextServiceNode;
 import edu.umass.cs.contextservice.client.ContextServiceClient;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
-import edu.umass.cs.contextservice.config.CSConfigFileLoader;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.geodesy.GlobalCoordinate;
 import edu.umass.cs.contextservice.queryparsing.GeoJSON;
@@ -47,11 +46,10 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 	public static void main(String[] args) throws NumberFormatException, UnknownHostException, IOException
 	{
 		ContextServiceConfig.configFileDirectory 
-			= "/home/adipc/Documents/MobilityFirstGitHub/ContextNet/contextnet/conf/singleNodeConf/contextServiceConf";
-		ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERSPACE_HASHING;		
+			= "/home/adipc/Documents/MobilityFirstGitHub/ContextNet/contextnet/conf/testConf/contextServiceConf";	
 		
-		CSConfigFileLoader configFileLoader = new CSConfigFileLoader(
-				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.csConfigFileName);
+//		CSConfigFileLoader configFileLoader = new CSConfigFileLoader(
+//				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.csConfigFileName);
 		
 		readNodeInfo();
 		
@@ -91,7 +89,7 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 	
 	
 	private static void readNodeInfo() throws NumberFormatException, UnknownHostException, IOException
-	{	
+	{
 		csNodeConfig = new CSNodeConfig<Integer>();
 		
 		BufferedReader reader = new BufferedReader(new FileReader(
@@ -125,8 +123,8 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 			try
 			{
 				nodes[myIndex] = new FourNodeCSSetup(nodeID, csNodeConfig);
-			} 
-			catch (Exception e) 
+			}
+			catch (Exception e)
 			{
 				e.printStackTrace();
 			}
@@ -227,7 +225,7 @@ public class FourNodeCSSetup extends ContextServiceNode<Integer>
 		 * This function sends update
 		 */
 		public void sendUpdate(long currID, int guidNum)
-		{	
+		{
 			String memberAlias = CLIENT_GUID_PREFIX;
 			String realAlias = memberAlias+guidNum;
 			String myGUID = getGUID(realAlias);

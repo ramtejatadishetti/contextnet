@@ -1,5 +1,6 @@
 package edu.umass.cs.contextservice.messages;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -14,7 +15,7 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 	
 	private enum Keys { VERSION_NUM, GUID, UPDATE_ATTR_VAL_PAIRS, 
 		OPER_TYPE, SUBSPACENUM, REQUEST_ID, OLD_ATTR_VAL_PAIRS, 
-		FIRST_TIME_INSERT };
+		FIRST_TIME_INSERT , ANONYMIZEDID_TO_GUID_MAPPING };
 	
 	private final long versionNum;
 	//GUID of the update
@@ -40,12 +41,15 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 	// even when both old and new val fall on one node.
 	private final boolean firstTimeInsert;
 	
+	private final JSONArray anonymizedIDToGuidMapping;	
 	
 	public ValueUpdateToSubspaceRegionMessage( NodeIDType initiator, long versionNum, String GUID, 
 			JSONObject updateAttrValuePairs, int operType, int subspaceNum, long requestID, 
-			JSONObject oldAttrValuePairs, boolean firstTimeInsert )
+			JSONObject oldAttrValuePairs, boolean firstTimeInsert , 
+			JSONArray anonymizedIDToGuidMapping )
 	{
-		super(initiator, ContextServicePacket.PacketType.VALUEUPDATE_TO_SUBSPACE_REGION_MESSAGE);
+		super( initiator, 
+				ContextServicePacket.PacketType.VALUEUPDATE_TO_SUBSPACE_REGION_MESSAGE );
 		this.versionNum = versionNum;
 		this.GUID = GUID;
 		this.updateAttrValuePairs = updateAttrValuePairs;
@@ -54,6 +58,7 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		this.requestID = requestID;
 		this.oldAttrValuePairs = oldAttrValuePairs;
 		this.firstTimeInsert = firstTimeInsert;
+		this.anonymizedIDToGuidMapping = anonymizedIDToGuidMapping;
 	}
 	
 	public ValueUpdateToSubspaceRegionMessage(JSONObject json) throws JSONException
@@ -67,6 +72,16 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		this.requestID = json.getLong( Keys.REQUEST_ID.toString() );
 		this.oldAttrValuePairs = json.getJSONObject(Keys.OLD_ATTR_VAL_PAIRS.toString());
 		this.firstTimeInsert = json.getBoolean(Keys.FIRST_TIME_INSERT.toString());
+		
+		if( json.has(Keys.ANONYMIZEDID_TO_GUID_MAPPING.toString()) )
+		{
+			this.anonymizedIDToGuidMapping 
+						= json.getJSONArray(Keys.ANONYMIZEDID_TO_GUID_MAPPING.toString());
+		}
+		else
+		{
+			this.anonymizedIDToGuidMapping = null;
+		}
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException 
@@ -80,6 +95,10 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		json.put(Keys.REQUEST_ID.toString(), this.requestID);
 		json.put(Keys.OLD_ATTR_VAL_PAIRS.toString(), this.oldAttrValuePairs);
 		json.put(Keys.FIRST_TIME_INSERT.toString(), this.firstTimeInsert);
+		if( this.anonymizedIDToGuidMapping != null )
+		{
+			json.put(Keys.ANONYMIZEDID_TO_GUID_MAPPING.toString(), this.anonymizedIDToGuidMapping);
+		}
 		return json;
 	}
 	
@@ -121,6 +140,11 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 	public boolean getFirstTimeInsert()
 	{
 		return this.firstTimeInsert;
+	}
+	
+	public JSONArray getAnonymizedIDToGuidMapping()
+	{
+		return this.anonymizedIDToGuidMapping;
 	}
 	
 	public static void main(String[] args)

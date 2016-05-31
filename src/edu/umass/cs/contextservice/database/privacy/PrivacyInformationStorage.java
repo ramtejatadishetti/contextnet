@@ -17,7 +17,6 @@ import edu.umass.cs.contextservice.database.DataSource;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
-import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
 
@@ -43,99 +42,99 @@ public class PrivacyInformationStorage<NodeIDType>
 		//this.eservice = Executors.newCachedThreadPool();
 	}
 	
-	@Override
-	public void createTables()
-	{
-		Connection myConn  = null;
-		Statement  stmt    = null;
-		
-		try
-		{
-			myConn = dataSource.getConnection();
-			stmt   = myConn.createStatement();
-			
-			String tableName = "encryptionInfoStorage";
-			String newTableCommand = "create table "+tableName+" ( "
-				      + " nodeGUID Binary(20) NOT NULL , attrName VARCHAR("
-				      + ContextServiceConfig.MAXIMUM_ATTRNAME_LENGTH+") NOT NULL , "
-				      + " realIDEncryption Binary("+
-					ContextServiceConfig.REAL_ID_ENCRYPTION_SIZE+") NOT NULL , "
-				      		+ " subspaceId INTEGER NOT NULL , "
-				      		+ " INDEX USING HASH(nodeGUID) , "
-				      		+ " INDEX USING HASH(attrName) , "
-				      		+ " INDEX USING HASH(realIDEncryption) , "
-				      		+ " INDEX USING HASH(subspaceId) )";
-			stmt.executeUpdate(newTableCommand);
-			
-			
-			// On an update  of an attribute, each anonymized ID comes with a list of RealIDMappingInfo, this list consists 
-			// for realID encrypted with a subset of ACL members of the updated attribute. Precisely, it is the 
-			// intersection of the guid set of the anonymizedID and the ACL of the attribute. 
-			// Each element of that list is stored as a separately in the corresponding attribute table.
-//			Iterator<Integer> subapceIdIter 
-//											= subspaceInfoMap.keySet().iterator();
+//	@Override
+//	public void createTables()
+//	{
+//		Connection myConn  = null;
+//		Statement  stmt    = null;
+//		
+//		try
+//		{
+//			myConn = dataSource.getConnection();
+//			stmt   = myConn.createStatement();
 //			
-//			while( subapceIdIter.hasNext() )
-//			{
-//				int subspaceId = subapceIdIter.next();
-//				// at least one replica and all replica have same default value for each attribute.
-//				SubspaceInfo<NodeIDType> currSubspaceInfo 
-//											= subspaceInfoMap.get(subspaceId).get(0);
-//				
-//				HashMap<String, AttributePartitionInfo> attrSubspaceMap 
-//											= currSubspaceInfo.getAttributesOfSubspace();
-//				
-//				Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
-//				
-//				while( attrIter.hasNext() )
-//				{
-//					String newTableCommand = "";
-//					
-//					// FIXME: not sure whether to add the uniquness check, adding uniqueness
-//					// check to db just adds more checks for inserts and increases update time.
-//					// that property should be true in most cases but we don't need to assert that all time.
-//					
-//					// adding a subspace Id field, so that this table can be shared by multiple subspaces
-//					// and on deletion a subsapce Id can be specified to delete only that rows.
-//					String attrName = attrIter.next();
-//					String tableName = attrName+"EncryptionInfoStorage";
-//					newTableCommand = "create table "+tableName+" ( "
-//						      + " nodeGUID Binary(20) NOT NULL , realIDEncryption Binary("+
-//							ContextServiceConfig.REAL_ID_ENCRYPTION_SIZE+") NOT NULL , "
-//						      		+ " subspaceId INTEGER NOT NULL , "
-//						      		+ " INDEX USING HASH(nodeGUID) , INDEX USING HASH(realIDEncryption) , "
-//						      		+ " INDEX USING HASH(subspaceId) )";
-//					stmt.executeUpdate(newTableCommand);
-//				}
-//			}
-			// creating table for storing privacy information at privacy subspace
-//			String tableName = "privacyInfoStoragePrimarySubsapce";
+//			String tableName = "encryptionInfoStorage";
 //			String newTableCommand = "create table "+tableName+" ( "
 //				      + " nodeGUID Binary(20) NOT NULL , attrName VARCHAR("
-//					+ContextServiceConfig.MAXIMUM_ATTRNAME_LENGTH+") NOT NULL , "
-//							+ " realIDEncryptionList TEXT NOT NULL , "
+//				      + ContextServiceConfig.MAXIMUM_ATTRNAME_LENGTH+") NOT NULL , "
+//				      + " realIDEncryption Binary("+
+//					ContextServiceConfig.REAL_ID_ENCRYPTION_SIZE+") NOT NULL , "
+//				      		+ " subspaceId INTEGER NOT NULL , "
 //				      		+ " INDEX USING HASH(nodeGUID) , "
-//				      		+ " INDEX USING HASH(attrName) )";
-//			
+//				      		+ " INDEX USING HASH(attrName) , "
+//				      		+ " INDEX USING HASH(realIDEncryption) , "
+//				      		+ " INDEX USING HASH(subspaceId) )";
 //			stmt.executeUpdate(newTableCommand);
-		}
-		catch( Exception mysqlEx )
-		{
-			mysqlEx.printStackTrace();
-		} finally
-		{
-			try
-			{
-				if( stmt != null )
-					stmt.close();
-				if( myConn != null )
-					myConn.close();
-			} catch( SQLException sqex )
-			{
-				sqex.printStackTrace();
-			}
-		}
-	}
+//			
+//			
+//			// On an update  of an attribute, each anonymized ID comes with a list of RealIDMappingInfo, this list consists 
+//			// for realID encrypted with a subset of ACL members of the updated attribute. Precisely, it is the 
+//			// intersection of the guid set of the anonymizedID and the ACL of the attribute. 
+//			// Each element of that list is stored as a separately in the corresponding attribute table.
+////			Iterator<Integer> subapceIdIter 
+////											= subspaceInfoMap.keySet().iterator();
+////			
+////			while( subapceIdIter.hasNext() )
+////			{
+////				int subspaceId = subapceIdIter.next();
+////				// at least one replica and all replica have same default value for each attribute.
+////				SubspaceInfo<NodeIDType> currSubspaceInfo 
+////											= subspaceInfoMap.get(subspaceId).get(0);
+////				
+////				HashMap<String, AttributePartitionInfo> attrSubspaceMap 
+////											= currSubspaceInfo.getAttributesOfSubspace();
+////				
+////				Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
+////				
+////				while( attrIter.hasNext() )
+////				{
+////					String newTableCommand = "";
+////					
+////					// FIXME: not sure whether to add the uniquness check, adding uniqueness
+////					// check to db just adds more checks for inserts and increases update time.
+////					// that property should be true in most cases but we don't need to assert that all time.
+////					
+////					// adding a subspace Id field, so that this table can be shared by multiple subspaces
+////					// and on deletion a subsapce Id can be specified to delete only that rows.
+////					String attrName = attrIter.next();
+////					String tableName = attrName+"EncryptionInfoStorage";
+////					newTableCommand = "create table "+tableName+" ( "
+////						      + " nodeGUID Binary(20) NOT NULL , realIDEncryption Binary("+
+////							ContextServiceConfig.REAL_ID_ENCRYPTION_SIZE+") NOT NULL , "
+////						      		+ " subspaceId INTEGER NOT NULL , "
+////						      		+ " INDEX USING HASH(nodeGUID) , INDEX USING HASH(realIDEncryption) , "
+////						      		+ " INDEX USING HASH(subspaceId) )";
+////					stmt.executeUpdate(newTableCommand);
+////				}
+////			}
+//			// creating table for storing privacy information at privacy subspace
+////			String tableName = "privacyInfoStoragePrimarySubsapce";
+////			String newTableCommand = "create table "+tableName+" ( "
+////				      + " nodeGUID Binary(20) NOT NULL , attrName VARCHAR("
+////					+ContextServiceConfig.MAXIMUM_ATTRNAME_LENGTH+") NOT NULL , "
+////							+ " realIDEncryptionList TEXT NOT NULL , "
+////				      		+ " INDEX USING HASH(nodeGUID) , "
+////				      		+ " INDEX USING HASH(attrName) )";
+////			
+////			stmt.executeUpdate(newTableCommand);
+//		}
+//		catch( Exception mysqlEx )
+//		{
+//			mysqlEx.printStackTrace();
+//		} finally
+//		{
+//			try
+//			{
+//				if( stmt != null )
+//					stmt.close();
+//				if( myConn != null )
+//					myConn.close();
+//			} catch( SQLException sqex )
+//			{
+//				sqex.printStackTrace();
+//			}
+//		}
+//	}
 	
 	/**
 	 * sample join query in privacy case
@@ -248,160 +247,160 @@ public class PrivacyInformationStorage<NodeIDType>
 		}
 	}
 	
-	public void bulkInsertPrivacyInformationBlocking( String ID, 
-    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep , int insertsubspaceId )
-	{
-		ContextServiceLogger.getLogger().fine
-								("STARTED bulkInsertPrivacyInformation called ");
-		
-		// just a way to get attributes.
-		Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
-		
-		String tableName = "encryptionInfoStorage";
-		
-		String insertQuery = "INSERT INTO "+tableName+" (nodeGUID , attrName , "
-				+ "realIDEncryption , subspaceId) VALUES ";
-		
-		Connection myConn = null;
-		Statement stmt	  = null;
-		
-		try
-		{
-			myConn = dataSource.getConnection();
-			stmt = myConn.createStatement();
-			
-			boolean first = true;
-			
-			//FIXME: remove this out loop after the changed scheme is done and test
-			// and giving performance gains.
-			// Now we don't need to insert all attributes just the updated attributes 
-			while( subapceIdIter.hasNext() )
-			{
-				int currsubspaceId = subapceIdIter.next();
-				// at least one replica and all replica have same default value for each attribute.
-				SubspaceInfo<NodeIDType> currSubspaceInfo 
-											= subspaceInfoMap.get(currsubspaceId).get(0);
-				
-				HashMap<String, AttributePartitionInfo> attrSubspaceMap 
-											= currSubspaceInfo.getAttributesOfSubspace();
-				
-				Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
-				
-				while( attrIter.hasNext() )
-				{
-					String currAttrName = attrIter.next();
-					
-					// just checking if this acl info for this ID and this attribute 
-					// already exists, if it is already there then no need to insert.
-					// on acl update, whole ID changes, so older ID acl info just gets 
-					// deleted, it is never updated. There are only inserts and deletes of 
-					// acl info, no updates.
-					
-					//FIXME: right now it cannot support updates,
-					// will be fixed when we start supporting ACL changes.
-					boolean ifExists = checkIfAlreadyExists
-							(ID, insertsubspaceId, tableName, stmt);
-					
-					if(ifExists)
-						continue;
-					
-					JSONArray realIDMappingArray = null;
-					
-					if( atrToValueRep.containsKey(currAttrName) )
-					{
-						AttrValueRepresentationJSON attrValRep = atrToValueRep.get( currAttrName );
-					
-						// array of hex String representation of encryption
-						realIDMappingArray = attrValRep.getRealIDMappingInfo();
-					}
-					else
-					{
-						// check oldVal JSON
-						// this is convention in table creation too.
-						// check the primarGUIDStroage table in HyperspaceMySQLDB,
-						// this is the column name and keys in oldValJSON is table column names.
-//						String aclEntryKey = "ACL"+currAttrName;
+//	public void bulkInsertPrivacyInformationBlocking( String ID, 
+//    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep , int insertsubspaceId )
+//	{
+//		ContextServiceLogger.getLogger().fine
+//								("STARTED bulkInsertPrivacyInformation called ");
+//		
+//		// just a way to get attributes.
+//		Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
+//		
+//		String tableName = "encryptionInfoStorage";
+//		
+//		String insertQuery = "INSERT INTO "+tableName+" (nodeGUID , attrName , "
+//				+ "realIDEncryption , subspaceId) VALUES ";
+//		
+//		Connection myConn = null;
+//		Statement stmt	  = null;
+//		
+//		try
+//		{
+//			myConn = dataSource.getConnection();
+//			stmt = myConn.createStatement();
+//			
+//			boolean first = true;
+//			
+//			//FIXME: remove this out loop after the changed scheme is done and test
+//			// and giving performance gains.
+//			// Now we don't need to insert all attributes just the updated attributes 
+//			while( subapceIdIter.hasNext() )
+//			{
+//				int currsubspaceId = subapceIdIter.next();
+//				// at least one replica and all replica have same default value for each attribute.
+//				SubspaceInfo<NodeIDType> currSubspaceInfo 
+//											= subspaceInfoMap.get(currsubspaceId).get(0);
+//				
+//				HashMap<String, AttributePartitionInfo> attrSubspaceMap 
+//											= currSubspaceInfo.getAttributesOfSubspace();
+//				
+//				Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
+//				
+//				while( attrIter.hasNext() )
+//				{
+//					String currAttrName = attrIter.next();
+//					
+//					// just checking if this acl info for this ID and this attribute 
+//					// already exists, if it is already there then no need to insert.
+//					// on acl update, whole ID changes, so older ID acl info just gets 
+//					// deleted, it is never updated. There are only inserts and deletes of 
+//					// acl info, no updates.
+//					
+//					//FIXME: right now it cannot support updates,
+//					// will be fixed when we start supporting ACL changes.
+//					boolean ifExists = checkIfAlreadyExists
+//							(ID, insertsubspaceId, tableName, stmt);
+//					
+//					if(ifExists)
+//						continue;
+//					
+//					JSONArray realIDMappingArray = null;
+//					
+//					if( atrToValueRep.containsKey(currAttrName) )
+//					{
+//						AttrValueRepresentationJSON attrValRep = atrToValueRep.get( currAttrName );
+//					
+//						// array of hex String representation of encryption
+//						realIDMappingArray = attrValRep.getRealIDMappingInfo();
+//					}
+//					else
+//					{
+//						// check oldVal JSON
+//						// this is convention in table creation too.
+//						// check the primarGUIDStroage table in HyperspaceMySQLDB,
+//						// this is the column name and keys in oldValJSON is table column names.
+////						String aclEntryKey = "ACL"+currAttrName;
+////						
+////						if( oldValJSON.has(aclEntryKey) )
+////						{
+////							try
+////							{
+////								String jsonArString = oldValJSON.getString(aclEntryKey);
+////								if(jsonArString.length() > 0)
+////								{
+////									// catching here so other attrs not get affected.
+////									realIDMappingArray = new JSONArray(jsonArString);
+////								}
+////							}
+////							catch(JSONException jsonEx)
+////							{
+////								jsonEx.printStackTrace();
+////							}
+////						}
+//					}
+//					
+//					if(realIDMappingArray != null)
+//					{
+//						String valueStrings = 
+//							getARealIDMapingArrayInsertString( ID, currAttrName, 
+//							realIDMappingArray, insertsubspaceId );
 //						
-//						if( oldValJSON.has(aclEntryKey) )
+//						if(valueStrings.length() > 0)
 //						{
-//							try
+//							if(first)
 //							{
-//								String jsonArString = oldValJSON.getString(aclEntryKey);
-//								if(jsonArString.length() > 0)
-//								{
-//									// catching here so other attrs not get affected.
-//									realIDMappingArray = new JSONArray(jsonArString);
-//								}
+//								insertQuery = insertQuery +valueStrings; 
+//								first = false;
 //							}
-//							catch(JSONException jsonEx)
+//							else
 //							{
-//								jsonEx.printStackTrace();
+//								insertQuery = insertQuery +" , "+valueStrings;
 //							}
 //						}
-					}
-					
-					if(realIDMappingArray != null)
-					{
-						String valueStrings = 
-							getARealIDMapingArrayInsertString( ID, currAttrName, 
-							realIDMappingArray, insertsubspaceId );
-						
-						if(valueStrings.length() > 0)
-						{
-							if(first)
-							{
-								insertQuery = insertQuery +valueStrings; 
-								first = false;
-							}
-							else
-							{
-								insertQuery = insertQuery +" , "+valueStrings;
-							}
-						}
-					}
-				}
-			}
-			
-			// at least one item to insert
-			if( !first )
-			{
-				long start = System.currentTimeMillis();
-				int numInserted = stmt.executeUpdate(insertQuery);
-				long end = System.currentTimeMillis();
-				
-				if( ContextServiceConfig.DEBUG_MODE )
-				{
-					System.out.println("TIME_DEBUG: bulkInsertPrivacyInformation time "
-																				+(end-start) +
-																				" numInserted "+numInserted);
-				}
-			}
-			
-			ContextServiceLogger.getLogger().fine("bulkInsertIntoSubspacePartitionInfo "
-					+ "completed");
-		}
-		catch(SQLException sqlex)
-		{
-			sqlex.printStackTrace();
-		}
-		finally
-		{
-			try
-			{
-				if( myConn != null )
-				{
-					myConn.close();
-				}
-				if( stmt != null )
-				{
-					stmt.close();
-				}
-			} catch( SQLException sqex )
-			{
-				sqex.printStackTrace();
-			}
-		}
-	}
+//					}
+//				}
+//			}
+//			
+//			// at least one item to insert
+//			if( !first )
+//			{
+//				long start = System.currentTimeMillis();
+//				int numInserted = stmt.executeUpdate(insertQuery);
+//				long end = System.currentTimeMillis();
+//				
+//				if( ContextServiceConfig.DEBUG_MODE )
+//				{
+//					System.out.println("TIME_DEBUG: bulkInsertPrivacyInformation time "
+//																				+(end-start) +
+//																				" numInserted "+numInserted);
+//				}
+//			}
+//			
+//			ContextServiceLogger.getLogger().fine("bulkInsertIntoSubspacePartitionInfo "
+//					+ "completed");
+//		}
+//		catch(SQLException sqlex)
+//		{
+//			sqlex.printStackTrace();
+//		}
+//		finally
+//		{
+//			try
+//			{
+//				if( myConn != null )
+//				{
+//					myConn.close();
+//				}
+//				if( stmt != null )
+//				{
+//					stmt.close();
+//				}
+//			} catch( SQLException sqex )
+//			{
+//				sqex.printStackTrace();
+//			}
+//		}
+//	}
 	
 	public void deleteAnonymizedIDFromPrivacyInfoStorageBlocking( String nodeGUID, 
 			int deleteSubspaceId )

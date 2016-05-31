@@ -4,9 +4,9 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
-import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
 import edu.umass.cs.gnsclient.client.GuidEntry;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 
@@ -27,10 +27,10 @@ public interface CSPrivacyTransformInterface
 	 * @param versionNum
 	 * @return
 	 */
-	public List<CSUpdateTransformedMessage> transformUpdateForCSPrivacy(String targetGuid, 
-			HashMap<String, AttrValueRepresentationJSON> attrValueMap , 
-			HashMap<String, List<ACLEntry>> aclMap, 
-			List<AnonymizedIDEntry> anonymizedIDList);
+	public List<CSUpdateTransformedMessage> transformUpdateForCSPrivacy
+				( String targetGuid, JSONObject attrValuePairs , 
+						HashMap<String, List<ACLEntry>> aclMap, 
+						List<AnonymizedIDEntry> anonymizedIDList );
 	
 	/**
 	 * Returns a list of search queries.

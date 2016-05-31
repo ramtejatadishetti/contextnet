@@ -46,7 +46,7 @@ public class SubspaceBasedAnonymizedIDCreator
 	
 	@Override
 	public List<AnonymizedIDEntry> computeAnonymizedIDs
-							( HashMap<String, List<ACLEntry>> aclMap ) 
+							( GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap ) 
 	{
 		//TODO: check List<ACLEntry> doesn't contain repeated guids, that causes more anonymized Ids to be generated
 		// and 2^H max num of anonymized IDs for a subspace also gets violated.
@@ -111,7 +111,7 @@ public class SubspaceBasedAnonymizedIDCreator
 					anonymizedIDRand.nextBytes(anonymizedID);
 					
 					AnonymizedIDEntry anonymizedIDObj 
-						= new AnonymizedIDEntry(anonymizedID, attrSet, guidSet);
+						= new AnonymizedIDEntry(anonymizedID, attrSet, guidSet, null);
 					
 					
 					anonymizedIDList.add(anonymizedIDObj);
@@ -632,7 +632,7 @@ public class SubspaceBasedAnonymizedIDCreator
 		aclMap.put("attr6", acl5);
 		
 		
-		List<AnonymizedIDEntry> anonymizedIds = anonymizedIDCreator.computeAnonymizedIDs(aclMap);
+		List<AnonymizedIDEntry> anonymizedIds = anonymizedIDCreator.computeAnonymizedIDs(null, aclMap);
 		System.out.println("Number of anonymizedIds "+anonymizedIds.size());
 		
 		System.out.println("\n\n\n##################################\n\n\n");
