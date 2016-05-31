@@ -50,11 +50,9 @@ import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
 import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.gnsclient.client.GNSClient;
+import edu.umass.cs.gnsclient.client.GNSClientCommands;
 import edu.umass.cs.gnsclient.client.GuidEntry;
-import edu.umass.cs.gnsclient.client.UniversalTcpClientExtended;
-import edu.umass.cs.gnsclient.client.util.GuidUtils;
-import edu.umass.cs.gnscommon.exceptions.client.GnsClientException;
+import edu.umass.cs.gnscommon.exceptions.client.ClientException;
 
 /**
  * ContextService client.
@@ -80,7 +78,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	
 	private final Object refreshTriggerClientWaitLock 				= new Object();
 	
-	private final UniversalTcpClientExtended gnsClient;
+	private final GNSClientCommands gnsClient;
 	
 	// for anonymized ID
 	private AnonymizedIDCreationInterface anonymizedIDCreation;
@@ -137,10 +135,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 		this.transformType = transformType;
 		
-		InetSocketAddress gnsAddress 
-					= new InetSocketAddress(gnsHostName, gnsPort);
-		
-		gnsClient = new GNSClient(null, gnsAddress, true);
+		gnsClient = new GNSClientCommands();
 		
 		initializeClient();
 	}
@@ -566,9 +561,13 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	{
 		if(gnsClient != null)
 		{
-			try {
+			try 
+			{
 				gnsClient.update(writingGuid, attrValuePair);
-			} catch (IOException | GnsClientException e) 
+			} catch (IOException e) 
+			{
+				e.printStackTrace();
+			} catch (ClientException e) 
 			{
 				e.printStackTrace();
 			}
@@ -954,14 +953,13 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		byte[] publicKeyByteArray0 = publicKey0.getEncoded();
 		byte[] privateKeyByteArray0 = privateKey0.getEncoded();
 		
-		String guid0 = GuidUtils.createGuidFromPublicKey(publicKeyByteArray0);
+		String guid0 = Utils.convertPublicKeyToGUIDString(publicKeyByteArray0);
 		GuidEntry myGUID = new GuidEntry("Guid0", guid0, publicKey0, privateKey0);
 		
 //		PublicKey publicKey0 = masterGuid.getPublicKey();
 //		PrivateKey privateKey0 = masterGuid.getPrivateKey();
 //		byte[] publicKeyByteArray0 = publicKey0.getEncoded();
 //		byte[] privateKeyByteArray0 = privateKey0.getEncoded();
-//		
 //		String guid0 = GuidUtils.createGuidFromPublicKey(publicKeyByteArray0);
 //		GuidEntry myGUID = masterGuid;
 		
@@ -981,7 +979,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			byte[] publicKeyByteArray = publicKey.getEncoded();
 			byte[] privateKeyByteArray = privateKey.getEncoded();
 			
-			String guid = GuidUtils.createGuidFromPublicKey(publicKeyByteArray);
+			String guid = Utils.convertPublicKeyToGUIDString(publicKeyByteArray);
 			
 			GuidEntry currGUID = new GuidEntry("Guid"+i, guid, 
 					publicKey, privateKey);

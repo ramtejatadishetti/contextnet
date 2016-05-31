@@ -3,10 +3,9 @@ package edu.umass.cs.contextservice.test;
 import java.net.InetSocketAddress;
 import java.util.Properties;
 
-import edu.umass.cs.gnsclient.client.GNSClient;
+import edu.umass.cs.gnsclient.client.GNSClientCommands;
 import edu.umass.cs.gnsclient.client.GNSClientConfig;
 import edu.umass.cs.gnsclient.client.GuidEntry;
-import edu.umass.cs.gnsclient.client.UniversalTcpClientExtended;
 import edu.umass.cs.gnsclient.client.util.GuidUtils;
 
 public class GNSClientTesting 
@@ -28,7 +27,7 @@ public class GNSClientTesting
 		
 		InetSocketAddress address 
 			= new InetSocketAddress("127.0.0.1", GNSClientConfig.LNS_PORT);
-		UniversalTcpClientExtended gnsClient = new GNSClient(null, address, true);
+		GNSClientCommands gnsClient = new GNSClientCommands();
 		
 		GuidEntry masterGuid = GuidUtils.lookupOrCreateAccountGuid(gnsClient,
                 "gnsumass@gmail.com", "password", true);

@@ -22,7 +22,6 @@ import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.gnsclient.client.GuidEntry;
-import edu.umass.cs.gnsclient.client.util.GuidUtils;
 
 public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 {
@@ -229,7 +228,7 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 		PrivateKey privateKey0 = kp0.getPrivate();
 		byte[] publicKeyByteArray0 = publicKey0.getEncoded();
 		byte[] privateKeyByteArray0 = privateKey0.getEncoded();
-		String guid0 = GuidUtils.createGuidFromPublicKey(publicKeyByteArray0);
+		String guid0 = Utils.convertPublicKeyToGUIDString(publicKeyByteArray0);
 		
 		Vector<GuidEntry> guidsVector = new Vector<GuidEntry>();
 		GuidEntry myGUID = new GuidEntry("Guid0", guid0, publicKey0, privateKey0);
@@ -246,7 +245,7 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 			byte[] publicKeyByteArray = publicKey.getEncoded();
 			byte[] privateKeyByteArray = privateKey.getEncoded();
 			
-			String guid = GuidUtils.createGuidFromPublicKey(publicKeyByteArray);
+			String guid = Utils.convertPublicKeyToGUIDString(publicKeyByteArray);
 			
 			GuidEntry currGUID = new GuidEntry("Guid"+i, guid, 
 					publicKey, privateKey);

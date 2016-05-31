@@ -28,8 +28,8 @@ import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.nodeApp.StartContextServiceNode;
+import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.gnsclient.client.GuidEntry;
-import edu.umass.cs.gnsclient.client.util.GuidUtils;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ContextServiceTests 
@@ -212,7 +212,7 @@ public class ContextServiceTests
 			// querier is allowed to read
 			if(i<5)
 			{
-				assertTrue(replyArray.get(0).equals(userGUID.getGuid()));
+				assertTrue(userGUID.getGuid().compareToIgnoreCase(replyArray.getString(0)) == 0  );
 				assertEquals(1, numRep);
 				assertEquals(1, replyArray.length());
 			}
@@ -260,7 +260,7 @@ public class ContextServiceTests
 				(selectQuery, replyArray, expiryTime, userGUID);
 		
 		// nobody except frm user allowed to read
-		assertTrue(replyArray.get(0).equals(userGUID.getGuid()));
+		assertTrue(userGUID.getGuid().compareToIgnoreCase(replyArray.getString(0)) == 0  );
 		assertEquals(1, numRep);
 		assertEquals(1, replyArray.length());
 	}
@@ -348,7 +348,7 @@ public class ContextServiceTests
 		PrivateKey privateKey = kp.getPrivate();
 		byte[] publicKeyByteArray = publicKey.getEncoded();
 		
-		String guid = GuidUtils.createGuidFromPublicKey(publicKeyByteArray);
+		String guid = Utils.convertPublicKeyToGUIDString(publicKeyByteArray);
 		GuidEntry guidEntry = new GuidEntry(guidAlias, guid, publicKey, privateKey);
 		
 		return guidEntry;
