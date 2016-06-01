@@ -543,6 +543,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				System.out.println("primary subspace update complete "+(now-updateStartTime));
 			}
 			// process update at secondary subspaces.
+			//FIXME: anonymizedIDToGuidMapping can be null if not present in the message.
+			// set it by reading from primarysubspace storage.
 			updateGUIDInSecondarySubspaces( oldValueJSON , 
 					firstTimeInsert , attrValuePairs , GUID , 
 					requestID, anonymizedIDToGuidMapping, updateStartTime );
