@@ -435,7 +435,8 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 					JSONObject oldValueJSON , int subspaceId , int  replicaNum ,
 					JSONObject updatedAttrValJSON ,
 					String GUID , long requestID , boolean firstTimeInsert, 
-					JSONArray anonymizedIDToGuidMapping 
+					JSONArray anonymizedIDToGuidMapping,
+					long updateStartTime
 					) throws JSONException
 	{
 		NodeIDType oldRespNodeId = null, newRespNodeId = null;
@@ -534,7 +535,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 										-1, GUID, updatedAttrValJSON, 
 										ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
 										subspaceId, requestID, oldValueJSON, firstTimeInsert, 
-										anonymizedIDToGuidMapping );
+										anonymizedIDToGuidMapping, updateStartTime );
 			}
 			else
 			{
@@ -544,7 +545,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 					= new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, 
 							-1, GUID, updatedAttrValJSON, 
 							ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
-							subspaceId, requestID, new JSONObject(), firstTimeInsert, null );
+							subspaceId, requestID, new JSONObject(), firstTimeInsert, null, updateStartTime );
 			}
 			
 			try
@@ -571,7 +572,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 						= new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, -1, 
 									GUID, new JSONObject(), 
 										ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY, 
-									subspaceId, requestID, new JSONObject(), firstTimeInsert, null );
+									subspaceId, requestID, new JSONObject(), firstTimeInsert, null, updateStartTime );
 			
 			try
 			{
@@ -594,7 +595,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 								GUID, updatedAttrValJSON,
 								ValueUpdateToSubspaceRegionMessage.ADD_ENTRY, 
 								subspaceId, requestID, oldValueJSON, firstTimeInsert, 
-								anonymizedIDToGuidMapping );
+								anonymizedIDToGuidMapping, updateStartTime );
 			
 			try
 			{
@@ -625,12 +626,11 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		JSONArray anonymizedIDToGuidMapping 
 						= valueUpdateToSubspaceRegionMessage.getAnonymizedIDToGuidMapping();
 		
+		long udpateStartTime = valueUpdateToSubspaceRegionMessage.getUpdateStartTime();
+		
 		String tableName 		= "subspaceId"+subspaceId+"DataStorage";
 		try 
-		{
-//			HashMap<String, AttrValueRepresentationJSON> attrValMap =
-//					ParsingMethods.getAttrValueMap(updateValPairs);
-			
+		{	
 			int numRep = 1;
 			switch(operType)
 			{
@@ -682,8 +682,12 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 				}
 			}
 			
-			//ContextServiceLogger.getLogger().fine("Sending valueUpdateToSubspaceRegionReplyMessage to "
-			//				+valueUpdateToSubspaceRegionMessage.getSender()+" from "+this.getMyID());
+			if(ContextServiceConfig.DEBUG_MODE)
+			{
+				long now = System.currentTimeMillis();
+				System.out.println("processValueUpdateToSubspaceRegionMessage completes "
+						+(now-udpateStartTime));
+			}
 			
 			ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>  
 				valueUpdateToSubspaceRegionReplyMessage 

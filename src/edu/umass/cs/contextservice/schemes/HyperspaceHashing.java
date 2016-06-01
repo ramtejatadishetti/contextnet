@@ -456,10 +456,11 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			jso.printStackTrace();
 		}
 		
-		String GUID 	 = updateReq.getValueUpdateFromGNS().getGUID();
+		String GUID 	 		= updateReq.getValueUpdateFromGNS().getGUID();
 		JSONObject attrValuePairs 
-						 = updateReq.getValueUpdateFromGNS().getAttrValuePairs();
-		long requestID 	 = updateReq.getRequestId();
+						 		= updateReq.getValueUpdateFromGNS().getAttrValuePairs();
+		long requestID 	 		= updateReq.getRequestId();
+		long updateStartTime	= updateReq.getValueUpdateFromGNS().getUpdateStartTime();
 		
 		// this could be null, in no privacy case, and also in privacy case
 		// , as anonymizedIDtoGuidMapping is not set in every message just in the beginning 
@@ -484,7 +485,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			
 			if(ContextServiceConfig.DEBUG_MODE)
 			{
-				System.out.println("getGUIDStoredInPrimarySubspace time "+(end-start));
+				System.out.println("getGUIDStoredInPrimarySubspace time "+(end-start)
+							+" since upd start"+(end-updateStartTime));
 			}
 			
 			int updateOrInsert 			= -1;
@@ -535,10 +537,15 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				( tableName, GUID, attrValuePairs, updateOrInsert, 
 						oldValueJSON, null);
 			}
+			if(ContextServiceConfig.DEBUG_MODE)
+			{
+				long now = System.currentTimeMillis();
+				System.out.println("primary subspace update complete "+(now-updateStartTime));
+			}
 			// process update at secondary subspaces.
 			updateGUIDInSecondarySubspaces( oldValueJSON , 
 					firstTimeInsert , attrValuePairs , GUID , 
-					requestID, anonymizedIDToGuidMapping );
+					requestID, anonymizedIDToGuidMapping, updateStartTime );
 		}
 		catch ( JSONException e )
 		{
@@ -579,7 +586,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	private void updateGUIDInSecondarySubspaces( JSONObject oldValueJSON , 
 			boolean firstTimeInsert , JSONObject updatedAttrValJSON , 
 			String GUID , long requestID, 
-			JSONArray anonymizedIDToGuidMapping )
+			JSONArray anonymizedIDToGuidMapping, long updateStartTime )
 					throws JSONException
 	{
 		// process update at other subspaces.
@@ -608,7 +615,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				this.guidAttrValProcessing.guidValueProcessingOnUpdate
 					( attrsSubspaceInfo, oldValueJSON, subspaceId, replicaNum, 
 							updatedAttrValJSON, GUID, requestID, firstTimeInsert, 
-							anonymizedIDToGuidMapping );
+							anonymizedIDToGuidMapping, updateStartTime );
 				
 				
 				// getting group GUIDs that are affected

@@ -346,7 +346,7 @@ public class HyperspaceBasedAnonymizedIDCreator
 					// save it for second round of assignment
 					notAssignedGuids.add(guidString);
 				}
-			} 
+			}
 			catch (Exception e) 
 			{
 				e.printStackTrace();

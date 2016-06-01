@@ -39,5 +39,5 @@ public interface GUIDAttrValueProcessingInterface<NodeIDType>
 			JSONObject oldValueJSON , int subspaceId , int  replicaNum ,
 			JSONObject updatedAttrValJSON , String GUID , long requestID , 
 			boolean firstTimeInsert, 
-			JSONArray anonymizedIDToGuidMapping ) throws JSONException;
+			JSONArray anonymizedIDToGuidMapping, long updateStartTime ) throws JSONException;
 }
