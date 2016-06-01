@@ -1,7 +1,6 @@
 package edu.umass.cs.contextservice.database.guidattributes;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -664,7 +663,8 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	}
 	
 	/**
-	 * bulk insert is needed when number of partitions are very large
+	 * bulk insert is needed when number of partitions are very large.
+	 * Not using prepstmt, multiple inserts in single insert is faster
 	 * @param subspaceId
 	 * @param replicaNum
 	 * @param subspaceVectorList
@@ -676,11 +676,12 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		assert(subspaceVectorList.size() == respNodeIdList.size());
 		
 		ContextServiceLogger.getLogger().fine("bulkInsertIntoSubspacePartitionInfo called subspaceId "
-				+subspaceId + " replicaNum "+replicaNum+" "+subspaceVectorList.size()+" "+respNodeIdList.size() );
+				+subspaceId + " replicaNum "+replicaNum+" "+subspaceVectorList.size()+" "
+				+respNodeIdList.size() );
 		
 		long t0 							= System.currentTimeMillis();
 		Connection myConn   				= null;
-		PreparedStatement prepStmt      	= null;
+		Statement stmt      				= null;
 		
 		String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"PartitionInfo";
 		
@@ -714,63 +715,59 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 			
 			insertTableSQL = insertTableSQL + ", "+lowerAtt+" , "+upperAtt;
 		}
+		insertTableSQL = insertTableSQL + " ) VALUES ";
 		
-		insertTableSQL = insertTableSQL + " ) VALUES ( "+"?" + 
-				" , "+"?";
 		
-		attrIter = attrSubspaceInfo.keySet().iterator();
-		while(attrIter.hasNext())
+		for( int i=0; i<subspaceVectorList.size(); i++ )
 		{
-			// just  that the loop moves on
-			attrIter.next();
-			// for lower and upper value of each attribute of this subspace
-			insertTableSQL = insertTableSQL + " , "+"?"+" , "+ 
-					"?";
+			List<Integer> subspaceVector = subspaceVectorList.get(i);
+			NodeIDType respNodeId = respNodeIdList.get(i);
+			
+			if(i == 0)
+			{
+				insertTableSQL = insertTableSQL +" ( "+subspaceVector.hashCode()+" , "+
+					Integer.parseInt(respNodeId.toString());
+			}
+			else
+			{
+				insertTableSQL = insertTableSQL +" , ( "+subspaceVector.hashCode()+" , "+
+						Integer.parseInt(respNodeId.toString());
+			}
+			
+			attrIter = attrSubspaceInfo.keySet().iterator();
+			int counter =0;
+			while(attrIter.hasNext())
+			{
+				String attrName = attrIter.next();
+				AttributePartitionInfo attrPartInfo = attrSubspaceInfo.get(attrName);
+				int partitionNum = subspaceVector.get(counter);
+				DomainPartitionInfo domainPartInfo = attrPartInfo.getSubspaceDomainPartitionInfo().get(partitionNum);
+				// if it is a String then single quotes needs to be added
+				
+				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
+				String dataType = attrMetaInfo.getDataType();
+				
+				
+				String lowerBound  = AttributeTypes.convertStringToDataTypeForMySQL
+								(domainPartInfo.lowerbound, dataType)+"";
+				String upperBound  = AttributeTypes.convertStringToDataTypeForMySQL
+								(domainPartInfo.upperbound, dataType)+"";
+				
+				insertTableSQL = insertTableSQL + " , "+lowerBound+" , "+ 
+						upperBound;
+				counter++;
+			}
+			insertTableSQL = insertTableSQL +" ) ";
 		}
-		insertTableSQL = insertTableSQL + " ) ";
+		
 		
 		//ContextServiceLogger.getLogger().fine("insertTableSQL "+insertTableSQL);
 		try
 		{
 			myConn = this.dataSource.getConnection();
-			
-			prepStmt = myConn.prepareStatement(insertTableSQL);
-			for( int i=0; i<subspaceVectorList.size(); i++ )
-			{
-				List<Integer> subspaceVector = subspaceVectorList.get(i);
-				NodeIDType respNodeId = respNodeIdList.get(i);
-				prepStmt.setInt(1, subspaceVector.hashCode());
-				prepStmt.setInt(2, Integer.parseInt(respNodeId.toString()));
-				
-				attrIter = attrSubspaceInfo.keySet().iterator();
-				int counter =0;
-				int parameterIndex = 2;
-				while(attrIter.hasNext())
-				{
-					String attrName = attrIter.next();
-					AttributePartitionInfo attrPartInfo = attrSubspaceInfo.get(attrName);
-					int partitionNum = subspaceVector.get(counter);
-					DomainPartitionInfo domainPartInfo = attrPartInfo.getSubspaceDomainPartitionInfo().get(partitionNum);
-					// if it is a String then single quotes needs to be added
-					
-					AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-					String dataType = attrMetaInfo.getDataType();
-					
-					AttributeTypes.insertStringToDataTypeForMySQLPrepStmt
-					(domainPartInfo.lowerbound, dataType, prepStmt, ++parameterIndex);
-					
-					AttributeTypes.insertStringToDataTypeForMySQLPrepStmt
-					(domainPartInfo.upperbound, dataType, prepStmt, ++parameterIndex);
-					
-//					insertTableSQL = insertTableSQL + " , "+"?"+" , "+ 
-//							"?";
-					counter++;
-				}
-				prepStmt.addBatch();
-			}
-			// stmt = myConn.createStatement();
+			stmt = myConn.createStatement();
 			// execute insert SQL statement
-			prepStmt.executeBatch();
+			stmt.executeUpdate(insertTableSQL);
 		} catch(SQLException sqlex)
 		{
 			sqlex.printStackTrace();
@@ -783,9 +780,9 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				{
 					myConn.close();
 				}
-				if( prepStmt != null )
+				if( stmt != null )
 				{
-					prepStmt.close();
+					stmt.close();
 				}
 			} catch(SQLException sqex)
 			{
