@@ -190,7 +190,14 @@ public class DataSource<NodeIDType>
 
     public Connection getConnection() throws SQLException 
     {
-        return this.cpds.getConnection();
+    	long start = System.currentTimeMillis();
+    	Connection conn = this.cpds.getConnection();
+    	if(ContextServiceConfig.DEBUG_MODE)
+    	{
+    		System.out.println("TIME_DEBUG getConnection "
+    							+(System.currentTimeMillis()-start));	
+    	}
+        return conn;
     }
     
     @SuppressWarnings("unchecked")

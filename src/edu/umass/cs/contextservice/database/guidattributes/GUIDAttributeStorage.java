@@ -1266,11 +1266,11 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     		{
     			long start = System.currentTimeMillis();
     			String jsonToString =anonymizedIDToGuidMapping.toString();
-    			if( ContextServiceConfig.DEBUG_MODE )
-    			{
-    				System.out.println("TIME_DEBUG: jsonToString time "
-    									+(System.currentTimeMillis()-start));
-    			}
+//    			if( ContextServiceConfig.DEBUG_MODE )
+//    			{
+//    				System.out.println("TIME_DEBUG: jsonToString time "
+//    									+(System.currentTimeMillis()-start));
+//    			}
     			insertQuery = insertQuery +" , X'"+nodeGUID+"' , '"
     								+jsonToString+"' )";    			
     		}
