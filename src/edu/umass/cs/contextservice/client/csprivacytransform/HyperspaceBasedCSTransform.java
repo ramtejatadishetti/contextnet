@@ -59,9 +59,13 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 				AnonymizedIDUpdateInfo updateInfo 
 											= anonymizedIdToBeUpdateMap.get(anonymizedIDString);
 				
+//				CSUpdateTransformedMessage transforMessage = new CSUpdateTransformedMessage
+//						(anonymizedIDBytes, updateInfo.attrValPair, 
+//									updateInfo.anonymizedIDEntry.getAnonymizedIDToGUIDMapping());
+				
+				// just for testing not sending anonymizedIDToGUdi mapping
 				CSUpdateTransformedMessage transforMessage = new CSUpdateTransformedMessage
-						(anonymizedIDBytes, updateInfo.attrValPair, 
-									updateInfo.anonymizedIDEntry.getAnonymizedIDToGUIDMapping());
+				(anonymizedIDBytes, updateInfo.attrValPair, null);
 				
 				transformedMesgList.add(transforMessage);
 			}

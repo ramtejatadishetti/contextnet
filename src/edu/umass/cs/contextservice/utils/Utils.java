@@ -4,6 +4,8 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -401,7 +403,7 @@ public class Utils
 	}
 	
 	//FIXME: test time taken by each method here
-	public static void main( String[] args ) throws JSONException
+	public static void main( String[] args ) throws JSONException, NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
 	{
 		// json and byte[] hex conv check
 		int numGuids = 10000;
@@ -432,7 +434,67 @@ public class Utils
 		resultJSON = new JSONArray(jsonString);
 		System.out.println("JSON fromString time taken "
 				+(System.currentTimeMillis() - start));
-	}	  
+		
+		KeyPairGenerator kpg = KeyPairGenerator.getInstance( "RSA" );
+		KeyPair kp0 = kpg.generateKeyPair();
+		PublicKey publicKey0 = kp0.getPublic();
+		PrivateKey privateKey0 = kp0.getPrivate();
+		byte[] publicKeyBytes = publicKey0.getEncoded();
+		
+		byte[] guidBytes = new byte[20];
+		rand.nextBytes(guidBytes);
+		
+		long s1 = System.currentTimeMillis();
+		byte[] encrypted1 = Utils.doPublicKeyEncryption(publicKeyBytes, guidBytes);
+		long e1 = System.currentTimeMillis();
+		
+		
+		s1 = System.currentTimeMillis();
+		encrypted1 = Utils.doPublicKeyEncryption(publicKeyBytes, guidBytes);
+		e1 = System.currentTimeMillis();
+		
+		System.out.println("Encryption time "+(e1-s1));
+		
+		guidBytes = new byte[20];
+		rand.nextBytes(guidBytes);
+		
+		s1 = System.currentTimeMillis();
+		byte[] encrypted2 = Utils.doPublicKeyEncryption(publicKeyBytes, guidBytes);
+		e1 = System.currentTimeMillis();
+		System.out.println("Encryption time "+(e1-s1));
+		
+		s1 = System.currentTimeMillis();
+		String encString1 = Utils.bytArrayToHex(encrypted1);
+		e1 = System.currentTimeMillis();
+		System.out.println("Encryption to string time "+(e1-s1));
+		
+		s1 = System.currentTimeMillis();
+		String encString2 = Utils.bytArrayToHex(encrypted2);
+		e1 = System.currentTimeMillis();
+		
+		System.out.println("Encryption to string time "+(e1-s1));
+		
+		JSONArray encArray = new JSONArray();
+		s1 = System.currentTimeMillis();
+		encArray.put(encString1);
+		encArray.put(encString2);
+		e1 = System.currentTimeMillis();
+		
+		System.out.println("JSONArray insert time "+(e1-s1));
+		
+		s1 = System.currentTimeMillis();
+		String jsonArrString = encArray.toString();
+		e1 = System.currentTimeMillis();
+		
+		System.out.println("JSONArray to string time "+(e1-s1));
+		
+		
+		s1 = System.currentTimeMillis();
+		encArray = new JSONArray(jsonArrString);
+		e1 = System.currentTimeMillis();
+		
+		System.out.println("JSONArray from string time "+(e1-s1));
+	}
 	  /**
 	   * takes list of elements as input and returns the
 	   * conjunction over list of elements.
