@@ -56,6 +56,7 @@ import edu.umass.cs.protocoltask.ProtocolTask;
 
 public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 {
+	private  HyperspaceMySQLDB<NodeIDType> hyperspaceDB 								= null;
 	//TODO: make the trigger handling part in separate interfaces and classes.
 	// also the privacy stuff. 
 	// this files is getting very big.
@@ -69,8 +70,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	
 	private final GUIDAttrValueProcessingInterface<NodeIDType> guidAttrValProcessing;
 	private TriggerProcessingInterface<NodeIDType> triggerProcessing;
-	
-	//private PrivacyProcessing<NodeIDType> privacyProcesing;
 	
 	public static final Logger log 														= ContextServiceLogger.getLogger();
 	

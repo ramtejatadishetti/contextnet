@@ -1024,7 +1024,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		    	int hashCode		 = rs.getInt("hashCode");
 		    	OverlappingInfoClass overlapObj = new OverlappingInfoClass();
 		    	
-		    	overlapObj.hashCode = hashCode;
+		    	//overlapObj.hashCode = hashCode;
 		    	overlapObj.respNodeId = respNodeID;
 		    	overlapObj.replyArray = null;
 		    	

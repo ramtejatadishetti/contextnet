@@ -320,10 +320,9 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 		    {
 		    	//Retrieve by column name
 		    	int respNodeID  	 = rs.getInt("respNodeID");
-		    	int hashCode		 = rs.getInt("hashCode");
+		    	//int hashCode		 = rs.getInt("hashCode");
 		    	OverlappingInfoClass overlapObj = new OverlappingInfoClass();
 		    	
-		    	overlapObj.hashCode = hashCode;
 		    	overlapObj.respNodeId = respNodeID;
 		    	overlapObj.replyArray = null;
 		    	

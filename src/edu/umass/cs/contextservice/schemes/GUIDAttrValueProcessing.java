@@ -211,7 +211,6 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 	public QueryInfo<NodeIDType> processQueryMsgFromUser
 		(QueryMsgFromUser<NodeIDType> queryMsgFromUser)
 	{
-
 		String query;
 		long userReqID;
 		String userIP;
@@ -314,7 +313,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 	    	
 	    	QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion = 
 					new QueryMesgToSubspaceRegion<NodeIDType>
-	    (myID, currReq.getRequestId(), query, grpGUID, maxMatchingSubspaceId, userIP, userPort, overlapInfo.hashCode);
+	    (myID, currReq.getRequestId(), query, grpGUID, maxMatchingSubspaceId, userIP, userPort);
 	    	
 			try
 			{
@@ -331,7 +330,6 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 	    }
 	    return currReq;
 	}
-	
 	
 	public void processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion<NodeIDType> 
 													queryMesgToSubspaceRegion)

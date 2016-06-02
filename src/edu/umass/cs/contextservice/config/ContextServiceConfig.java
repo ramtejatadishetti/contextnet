@@ -125,7 +125,7 @@ public class ContextServiceConfig
 	public static final int MAXIMUM_NUM_ATTRS_IN_SUBSPACE			= 10;
 	
 	
-	public static boolean PRIVACY_ENABLED							= true;
+	public static boolean PRIVACY_ENABLED							= false;
 	
 	public static final String AssymmetricEncAlgorithm				= "RSA";
 	public static final String SymmetricEncAlgorithm				= "DES";

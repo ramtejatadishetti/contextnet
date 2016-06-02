@@ -89,17 +89,20 @@ public class UpdateInfo<NodeIDType>
 		}
 		
 		// initialize updates
-		Iterator<Integer> keyIter = subspaceInfoMap.keySet().iterator();
-		
-		while( keyIter.hasNext() )
+		if(subspaceInfoMap != null)
 		{
-			int subspaceId = keyIter.next();
-			Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
+			Iterator<Integer> keyIter = subspaceInfoMap.keySet().iterator();
 			
-			for( int i=0; i<replicaVector.size(); i++ )
+			while( keyIter.hasNext() )
 			{
-				SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(i);
-				this.initializeSubspaceEntry(subspaceId, currSubspaceReplica.getReplicaNum());
+				int subspaceId = keyIter.next();
+				Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
+				
+				for( int i=0; i<replicaVector.size(); i++ )
+				{
+					SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(i);
+					this.initializeSubspaceEntry(subspaceId, currSubspaceReplica.getReplicaNum());
+				}
 			}
 		}
 	}

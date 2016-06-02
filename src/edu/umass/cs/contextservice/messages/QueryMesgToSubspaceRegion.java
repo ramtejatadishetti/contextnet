@@ -5,7 +5,7 @@ import org.json.JSONObject;
 
 public class QueryMesgToSubspaceRegion<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 {
-	private enum Keys {QUERY, REQUESTID, GROUP_GUID, SUBSPACENUM, USER_IP, USER_PORT, HASH_CODE};
+	private enum Keys {QUERY, REQUESTID, GROUP_GUID, SUBSPACENUM, USER_IP, USER_PORT};
 	
 	//private final NodeIDType sourceNodeId;
 	private final long requestID;
@@ -23,14 +23,12 @@ public class QueryMesgToSubspaceRegion<NodeIDType> extends BasicContextServicePa
 	
 	private final int userPort;
 	
-	private final int hashCode;
-	
 	/*
 	 * sourceID will be the ID of the node that 
 	 * recvd query from the user.
 	 */
-	public QueryMesgToSubspaceRegion(NodeIDType initiator, long requestId, String query, String groupGUID, int subspaceNum
-			, String userIP, int userPort, int hashCode)
+	public QueryMesgToSubspaceRegion(NodeIDType initiator, long requestId, String query, 
+			String groupGUID, int subspaceNum, String userIP, int userPort)
 	{
 		super(initiator, ContextServicePacket.PacketType.QUERY_MESG_TO_SUBSPACE_REGION);
 		//this.predicate = predicate;
@@ -42,7 +40,6 @@ public class QueryMesgToSubspaceRegion<NodeIDType> extends BasicContextServicePa
 		
 		this.userIP = userIP;
 		this.userPort = userPort;
-		this.hashCode = hashCode;
 	}
 	
 	public QueryMesgToSubspaceRegion(JSONObject json) throws JSONException
@@ -56,7 +53,6 @@ public class QueryMesgToSubspaceRegion<NodeIDType> extends BasicContextServicePa
 		this.subspaceNum = json.getInt(Keys.SUBSPACENUM.toString());
 		this.userIP = json.getString(Keys.USER_IP.toString());
 		this.userPort = json.getInt(Keys.USER_PORT.toString());
-		this.hashCode = json.getInt(Keys.HASH_CODE.toString());
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException
@@ -70,7 +66,6 @@ public class QueryMesgToSubspaceRegion<NodeIDType> extends BasicContextServicePa
 		json.put(Keys.SUBSPACENUM.toString(), this.subspaceNum);
 		json.put(Keys.USER_IP.toString(), userIP);
 		json.put(Keys.USER_PORT.toString(), userPort);
-		json.put(Keys.HASH_CODE.toString(), hashCode);
 		return json;
 	}
 	
@@ -103,12 +98,6 @@ public class QueryMesgToSubspaceRegion<NodeIDType> extends BasicContextServicePa
 	{
 		return this.userPort;
 	}
-	
-	public int getHashCode()
-	{
-		return this.hashCode;
-	}
-	
 	
 	public static void main(String[] args)
 	{

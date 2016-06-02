@@ -8,6 +8,7 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ContextServicePacket.PacketType;
 import edu.umass.cs.contextservice.schemes.AbstractScheme;
 import edu.umass.cs.contextservice.schemes.HyperspaceHashing;
+import edu.umass.cs.contextservice.schemes.QueryAllScheme;
 import edu.umass.cs.nio.AbstractJSONPacketDemultiplexer;
 import edu.umass.cs.nio.JSONMessenger;
 import edu.umass.cs.nio.JSONNIOTransport;
@@ -43,10 +44,12 @@ public abstract class ContextServiceNode<NodeIDType>
 			case HYPERSPACE_HASHING:
 			{
 				ContextServiceLogger.getLogger().fine("HYPERSPACE_HASHING started");
-				this.contextservice = new HyperspaceHashing<NodeIDType>(nc, messenger);
+				//this.contextservice = new HyperspaceHashing<NodeIDType>(nc, messenger);
+				this.contextservice = new QueryAllScheme<NodeIDType>(nc, messenger);
 				ContextServiceLogger.getLogger().fine("HYPERSPACE_HASHING completed");
 				break;
 			}
+			
 			default:
 			{
 				ContextServiceLogger.getLogger().fine("null started");

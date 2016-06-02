@@ -6,6 +6,5 @@ import org.json.JSONObject;
 public class OverlappingInfoClass 
 {
 	public int respNodeId;
-	public int hashCode;
 	public JSONArray replyArray;
 }

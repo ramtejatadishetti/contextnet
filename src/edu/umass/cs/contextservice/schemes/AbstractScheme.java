@@ -54,7 +54,7 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 	
 	protected final Object pendingUpdateLock											= new Object();
 	
-	protected  HyperspaceMySQLDB<NodeIDType> hyperspaceDB 								= null;
+	
 	// lock for synchronizing number of msg update
 	protected long numMessagesInSystem													= 0;
 	
