@@ -1169,6 +1169,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     		JSONObject updatedAttrValJSON, JSONObject oldValJSON, 
     		JSONArray anonymizedIDToGuidMapping )
 	{
+		long s1 = System.currentTimeMillis();
 		ContextServiceLogger.getLogger().fine("STARTED performStoreGUIDInSubspaceInsert "
 				+tableName+" nodeGUID "+nodeGUID);
     	
@@ -1330,6 +1331,12 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
             	e.printStackTrace();
             }
         }
+        long e1 = System.currentTimeMillis();
+        if(ContextServiceConfig.DEBUG_MODE)
+    	{
+    		System.out.println("TIME_DEBUG: Total performStoreGUIDInSecondarySubspaceInsert insert  "
+    				+ (e1-s1));
+    	}
 	}
 	
 	/**

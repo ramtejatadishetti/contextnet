@@ -520,6 +520,15 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				}
 			}
 			
+			// removing duplicate copies 
+			if(anonymizedIDToGuidMapping != null)
+			{
+				if(oldValueJSON.has(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName))
+				{
+					oldValueJSON.remove(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName);
+				}
+			}
+			
 			// privacy info needs to be updated in primary subspace.
 			// for secondary subspace, the privacy info is sent in 
 			// the message if the anonymized ID storage changes from one 
