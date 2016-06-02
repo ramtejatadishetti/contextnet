@@ -1225,6 +1225,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     		
     		first = true;
     		subapceIdIter = subspaceInfoMap.keySet().iterator();
+    		long start1 = System.currentTimeMillis();
         	// just a way to iterate over attributes.
     		while( subapceIdIter.hasNext() )
     		{
@@ -1272,6 +1273,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     	            }
     			}
     		}
+    		long end1 = System.currentTimeMillis();
     		
     		if( anonymizedIDToGuidMapping != null )
     		{
@@ -1289,6 +1291,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     		{
     			insertQuery = insertQuery +" , X'"+nodeGUID+"' )";
     		}
+    		long end2 = System.currentTimeMillis();
     		
     		
     		myConn = this.dataSource.getConnection();
@@ -1303,7 +1306,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
         	{
         		System.out.println("TIME_DEBUG: performStoreGUIDInSecondarySubspaceInsert insert  "
         				+tableName
-        				+" nodeGUID "+nodeGUID+" "+(end-start));
+        				+" nodeGUID "+nodeGUID+" "+(end-start)+" "+(end1-start1)+" "+(end2-end1));
         	}
     		
     		ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING INSERT rowCount "
