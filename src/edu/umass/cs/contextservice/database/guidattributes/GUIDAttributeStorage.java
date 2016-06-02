@@ -846,19 +846,30 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     	{
     		this.performStoreGUIDInSecondarySubspaceInsert
     			(tableName, nodeGUID, updatedAttrValJSON, oldValJSON, anonymizedIDToGuidMapping);
+    		
+    		if(ContextServiceConfig.DEBUG_MODE)
+        	{
+        		long end = System.currentTimeMillis();
+        		ContextServiceLogger.getLogger().fine
+        		("FINISHED storeGUIDInSecondarySubspace Insert "+nodeGUID
+        				+" time "+(end-start));
+        	}
+    		
     	}
     	else if( updateOrInsert == HyperspaceMySQLDB.UPDATE_REC )
     	{
     		this.performStoreGUIDInSecondarySubspaceUpdate
     				(tableName, nodeGUID, updatedAttrValJSON, anonymizedIDToGuidMapping);
+    		
+    		if(ContextServiceConfig.DEBUG_MODE)
+        	{
+        		long end = System.currentTimeMillis();
+        		ContextServiceLogger.getLogger().fine
+        		("FINISHED storeGUIDInSecondarySubspace Update "+nodeGUID
+        				+" time "+(end-start));
+        	}
     	}
-    	if(ContextServiceConfig.DEBUG_MODE)
-    	{
-    		long end = System.currentTimeMillis();
-    		ContextServiceLogger.getLogger().fine
-    		("FINISHED storeGUIDInSecondarySubspace "+nodeGUID
-    				+" time "+(end-start));
-    	}
+    	
     }
     
     public void deleteGUIDFromSubspaceRegion(String tableName, String nodeGUID)
