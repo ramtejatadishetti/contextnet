@@ -1335,7 +1335,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
         if(ContextServiceConfig.DEBUG_MODE)
     	{
     		System.out.println("TIME_DEBUG: Total performStoreGUIDInSecondarySubspaceInsert insert  "
-    				+ (e1-s1));
+    				+ (e1-s1)+"updatedAttrValJSON "+updatedAttrValJSON.length());
     	}
 	}
 	
