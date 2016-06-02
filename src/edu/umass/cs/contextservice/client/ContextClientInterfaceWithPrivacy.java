@@ -3,6 +3,7 @@ package edu.umass.cs.contextservice.client;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.commons.codec.DecoderException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -29,19 +30,21 @@ public interface ContextClientInterfaceWithPrivacy
 	 * @param attrValuePairs attr value pairs for update
 	 * @param versionNum 
 	 * @param blocking true then the update will block until CS confirms completion.
+	 * @throws DecoderException 
 	 */
 	public void sendUpdateSecure(String GUID, GuidEntry myGUIDInfo, 
 			JSONObject attrValuePairs, long versionNum, boolean blocking,
-			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList );
+			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList ) throws DecoderException;
 	
 	/**
 	 * computes anonymized Ids for a user
 	 * @param myGUIDInfo the calling user's guid info
 	 * @param ACLArray the calling user's ACL
 	 * @return
+	 * @throws DecoderException 
 	 */
 	public List<AnonymizedIDEntry> computeAnonymizedIDs(
-			GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap);
+			GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap) throws DecoderException;
 	
 	//FIXME: semantics needs to be decided, after secure update/insert is implemented
 	public int sendSearchQuerySecure(String searchQuery, JSONArray replyArray, 

@@ -2,6 +2,8 @@ package edu.umass.cs.contextservice.client.common;
 
 import java.security.PublicKey;
 
+import org.apache.commons.codec.DecoderException;
+
 import edu.umass.cs.contextservice.utils.Utils;
 
 /**
@@ -20,7 +22,7 @@ public class ACLEntry
 		this.publicKeyACLMember = publicKeyACLMember;
 	}
 	
-	public ACLEntry(String guidString, PublicKey publicKey)
+	public ACLEntry(String guidString, PublicKey publicKey) throws DecoderException
 	{
 		this.guidACLMember = Utils.hexStringToByteArray(guidString);
 		this.publicKeyACLMember = publicKey.getEncoded();

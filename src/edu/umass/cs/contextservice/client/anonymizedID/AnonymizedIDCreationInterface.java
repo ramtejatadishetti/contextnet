@@ -3,6 +3,8 @@ package edu.umass.cs.contextservice.client.anonymizedID;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.commons.codec.DecoderException;
+
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.gnsclient.client.GuidEntry;
@@ -19,5 +21,5 @@ public interface AnonymizedIDCreationInterface
 {
 	public List<AnonymizedIDEntry> 
 			computeAnonymizedIDs( GuidEntry myGuidEntry , 
-						HashMap<String, List<ACLEntry>> aclList );
+						HashMap<String, List<ACLEntry>> aclList ) throws DecoderException;
 }

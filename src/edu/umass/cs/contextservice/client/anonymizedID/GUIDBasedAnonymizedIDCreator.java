@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 
+import org.apache.commons.codec.DecoderException;
 import org.json.JSONArray;
 
 import edu.umass.cs.contextservice.client.ContextClientInterfaceWithPrivacy;
@@ -34,7 +35,7 @@ public class GUIDBasedAnonymizedIDCreator
 	
 	@Override
 	public List<AnonymizedIDEntry> computeAnonymizedIDs
-	(GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap )
+	(GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap ) throws DecoderException
 	{
 		HashMap<String, JSONArray> guidToAttrSetMap = 
 				getGuidToAttributeSetMap(aclMap);
@@ -116,7 +117,7 @@ public class GUIDBasedAnonymizedIDCreator
 	
 	
 	// testing the class.
-	public static void main(String[] args) throws NoSuchAlgorithmException
+	public static void main(String[] args) throws NoSuchAlgorithmException, DecoderException
 	{
 		// testing based on the example in the draft.
 		// more testing of each method in secure interface.

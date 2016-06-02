@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 
+import org.apache.commons.codec.DecoderException;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -214,7 +215,7 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 	}
 	
 	// test this Class implementation
-	public static void main(String[] args) throws NoSuchAlgorithmException
+	public static void main(String[] args) throws NoSuchAlgorithmException, DecoderException
 	{
 		// testing based on the example in the draft.
 		// more testing of each method in secure interface.

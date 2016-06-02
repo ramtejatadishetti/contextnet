@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutorService;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
+import org.apache.commons.codec.DecoderException;
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -102,33 +103,37 @@ public class ParallelSearchReplyDecryption
 		@Override
 		public void run()
 		{
-			byte[] plainTextBytes = 
-					decryptRealIDFromSearchRep( myGUIDInfo, seachReply );
-			
-			if( plainTextBytes != null )
-			{
-				synchronized(lock)
+			try {
+				byte[] plainTextBytes = decryptRealIDFromSearchRep( myGUIDInfo, seachReply );
+				
+				if( plainTextBytes != null )
 				{
-					numFinished++;
-					totalDecryptionsOverall = totalDecryptionsOverall + totalDecryptionsThread;
-					replyArray.put( Utils.bytArrayToHex(plainTextBytes) );
-					if( numFinished == csTransformedList.size() )
+					synchronized(lock)
 					{
-						lock.notify();
+						numFinished++;
+						totalDecryptionsOverall = totalDecryptionsOverall + totalDecryptionsThread;
+						replyArray.put( Utils.bytArrayToHex(plainTextBytes) );
+						if( numFinished == csTransformedList.size() )
+						{
+							lock.notify();
+						}
 					}
 				}
-			}
-			else
-			{
-				synchronized(lock)
+				else
 				{
-					numFinished++;
-					totalDecryptionsOverall = totalDecryptionsOverall + totalDecryptionsThread;
-					if( numFinished == csTransformedList.size() )
+					synchronized(lock)
 					{
-						lock.notify();
+						numFinished++;
+						totalDecryptionsOverall = totalDecryptionsOverall + totalDecryptionsThread;
+						if( numFinished == csTransformedList.size() )
+						{
+							lock.notify();
+						}
 					}
 				}
+			} catch (DecoderException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 		
@@ -138,10 +143,11 @@ public class ParallelSearchReplyDecryption
 		 * @param myGUIDInfo
 		 * @param encryptedRealJsonArray
 		 * @return
+		 * @throws DecoderException 
 		 * @throws JSONException 
 		 */
 		private byte[] decryptRealIDFromSearchRep( GuidEntry myGUIDInfo, 
-				SearchReplyGUIDRepresentationJSON seachReply ) 
+				SearchReplyGUIDRepresentationJSON seachReply ) throws DecoderException 
 		{
 			byte[] privateKey = myGUIDInfo.getPrivateKey().getEncoded();
 			byte[] plainText = null;

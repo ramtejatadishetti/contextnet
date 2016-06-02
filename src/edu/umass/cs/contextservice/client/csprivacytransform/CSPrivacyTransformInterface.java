@@ -3,6 +3,7 @@ package edu.umass.cs.contextservice.client.csprivacytransform;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.commons.codec.DecoderException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -26,11 +27,12 @@ public interface CSPrivacyTransformInterface
 	 * @param anonymizedIDList
 	 * @param versionNum
 	 * @return
+	 * @throws DecoderException 
 	 */
 	public List<CSUpdateTransformedMessage> transformUpdateForCSPrivacy
 				( String targetGuid, JSONObject attrValuePairs , 
 						HashMap<String, List<ACLEntry>> aclMap, 
-						List<AnonymizedIDEntry> anonymizedIDList );
+						List<AnonymizedIDEntry> anonymizedIDList ) throws DecoderException;
 	
 	/**
 	 * Returns a list of search queries.

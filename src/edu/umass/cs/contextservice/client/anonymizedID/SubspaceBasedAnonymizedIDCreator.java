@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 
+import org.apache.commons.codec.DecoderException;
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -45,7 +46,7 @@ public class SubspaceBasedAnonymizedIDCreator
 	
 	@Override
 	public List<AnonymizedIDEntry> computeAnonymizedIDs
-							( GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap ) 
+							( GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap ) throws DecoderException 
 	{
 		//TODO: check List<ACLEntry> doesn't contain repeated guids, that causes more anonymized Ids to be generated
 		// and 2^H max num of anonymized IDs for a subspace also gets violated.
@@ -188,9 +189,10 @@ public class SubspaceBasedAnonymizedIDCreator
 	 * 
 	 * This is the Bul:Gul map in the draft.
 	 * @return
+	 * @throws DecoderException 
 	 */
 	private HashMap<String, JSONArray> computeAttributesToGuidsMap(
-			HashMap<String, List<String>> guidToAttributesMap)
+			HashMap<String, List<String>> guidToAttributesMap) throws DecoderException
 	{
 		HashMap<String, JSONArray> attributesToGuidsMap 
 									= new HashMap<String, JSONArray>();
@@ -526,7 +528,7 @@ public class SubspaceBasedAnonymizedIDCreator
 	}
 	
 	// testing the class.
-	public static void main(String[] args) throws NoSuchAlgorithmException
+	public static void main(String[] args) throws NoSuchAlgorithmException, DecoderException
 	{
 		// testing based on the example in the draft.
 		// more testing of each method in secure interface.

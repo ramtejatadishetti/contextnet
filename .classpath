@@ -11,5 +11,6 @@
 	<classpathentry kind="lib" path="libs/com.jcraft.jsch-all-1.0.6.release.jar"/>
 	<classpathentry kind="lib" path="libs/guava-19.0.jar"/>
 	<classpathentry kind="lib" path="libs/GNSClient.jar"/>
+	<classpathentry kind="lib" path="libs/commons-codec-1.10.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

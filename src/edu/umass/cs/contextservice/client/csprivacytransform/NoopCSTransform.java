@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.commons.codec.DecoderException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -17,7 +18,7 @@ public class NoopCSTransform implements CSPrivacyTransformInterface
 	@Override
 	public List<CSUpdateTransformedMessage> transformUpdateForCSPrivacy(String targetGuid,
 			JSONObject  attrValuePairs, HashMap<String, List<ACLEntry>> aclMap,
-			List<AnonymizedIDEntry> anonymizedIDList) 
+			List<AnonymizedIDEntry> anonymizedIDList) throws DecoderException 
 	{
 		CSUpdateTransformedMessage csTransformedMessage 
 			= new CSUpdateTransformedMessage(Utils.hexStringToByteArray(targetGuid), 
