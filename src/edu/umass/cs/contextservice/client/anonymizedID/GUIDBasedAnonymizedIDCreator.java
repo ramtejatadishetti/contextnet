@@ -14,10 +14,12 @@ import java.util.Vector;
 
 import org.apache.commons.codec.DecoderException;
 import org.json.JSONArray;
+import org.json.JSONException;
 
 import edu.umass.cs.contextservice.client.ContextClientInterfaceWithPrivacy;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
+import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.gnsclient.client.GuidEntry;
 
@@ -35,24 +37,35 @@ public class GUIDBasedAnonymizedIDCreator
 	
 	@Override
 	public List<AnonymizedIDEntry> computeAnonymizedIDs
-	(GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap ) throws DecoderException
+		(GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap ) throws DecoderException, JSONException
 	{
-		HashMap<String, JSONArray> guidToAttrSetMap = 
-				getGuidToAttributeSetMap(aclMap);
+		HashMap<String, HashMap<String, Boolean>> guidToAttributesMap 
+										= computeGuidToAttributesMap(aclMap);
 		
 		List<AnonymizedIDEntry> anonymizedIDList 
 									= new LinkedList<AnonymizedIDEntry>();
 		
+		HashMap<String, ACLEntry> unionGuidsMap = 
+				getUnionOfDistinctGuidsInACLMap(aclMap);
 		
-		Iterator<String> guidIter = guidToAttrSetMap.keySet().iterator();
+		Iterator<String> guidIter = guidToAttributesMap.keySet().iterator();
 		
 		while( guidIter.hasNext() )
 		{
 			String guidString = guidIter.next();
 			byte[] guidBytes = Utils.hexStringToByteArray(guidString);
 			
-			JSONArray attrSet = guidToAttrSetMap.get(guidString);
+			HashMap<String, Boolean> attrMap = guidToAttributesMap.get(guidString);
 			
+			
+			JSONArray attrSet = new JSONArray();
+			
+			Iterator<String> attrMapIter = attrMap.keySet().iterator();
+			
+			while(attrMapIter.hasNext())
+			{
+				attrSet.put(attrMapIter.next());
+			}
 			
 			byte[] anonymizedID 
 						= new byte[ContextClientInterfaceWithPrivacy.SIZE_OF_ANONYMIZED_ID];
@@ -63,9 +76,11 @@ public class GUIDBasedAnonymizedIDCreator
 			JSONArray guidSet = new JSONArray();
 			guidSet.put(guidBytes);
 			
+			JSONArray anonymizedIDToGuidMapping = 
+					computeAnonymizedIDToGUIDMapping(myGuidEntry, guidSet, unionGuidsMap);
 			
 			AnonymizedIDEntry anonymizedIDEntry 
-						= new AnonymizedIDEntry(anonymizedID , attrSet, guidSet, null);
+						= new AnonymizedIDEntry(anonymizedID , attrSet, guidSet, anonymizedIDToGuidMapping);
 			
 			anonymizedIDList.add(anonymizedIDEntry);
 		}
@@ -78,46 +93,180 @@ public class GUIDBasedAnonymizedIDCreator
 	 * @param aclList
 	 * @return
 	 */
-	private HashMap<String, JSONArray> getGuidToAttributeSetMap
-								(HashMap<String, List<ACLEntry>> aclMap)
+	private HashMap<String, HashMap<String, Boolean>> 
+	computeGuidToAttributesMap(
+			HashMap<String, List<ACLEntry>> aclMap) throws JSONException
 	{
-		HashMap<String, JSONArray> guidToAttributeSetMap 
-							= new HashMap<String, JSONArray>();
+		// String is GUIDString
+		// solving the non unique Guids in an attribute's ACL by taking 
+		// a map of attributes here.
+		HashMap<String, HashMap<String, Boolean>> guidToAttributesMap 
+						= new HashMap<String, HashMap<String, Boolean>>();
+		
+		Iterator<String> attrNameIter = aclMap.keySet().iterator();
+		//for( int i=0; i<attrArray.length(); i++ )
+		while(attrNameIter.hasNext())
+		{
+			String currAttr = attrNameIter.next();
+			
+			ContextServiceLogger.getLogger().fine(" currAttr "+currAttr);
+			
+			List<ACLEntry> attrACL = aclMap.get(currAttr);
+			//List<byte[]> publicKeyACLMembers = attrACL.getPublicKeyACLMembers();
+			
+			for( int j=0; j<attrACL.size(); j++ )
+			{
+				//byte[] publicKeyByteArray = (byte[]) attrACL.get(j).getPublicKeyACLMember();
+				byte[] guidByteArray = attrACL.get(j).getACLMemberGUID();
+				String guidString = Utils.bytArrayToHex(guidByteArray);
+						
+				ContextServiceLogger.getLogger().fine
+				(" currAttr "+currAttr+" guid "+guidString);
+				
+				HashMap<String, Boolean> attrMapBgm 
+									= guidToAttributesMap.get(guidString);
+				
+				if( attrMapBgm == null )
+				{
+					attrMapBgm = new HashMap<String, Boolean>();
+					attrMapBgm.put(currAttr, true);
+					guidToAttributesMap.put(guidString, attrMapBgm);
+				}
+				else
+				{
+					attrMapBgm.put(currAttr, true);
+				}
+			}
+		}
+		ContextServiceLogger.getLogger().fine( "Size of guidToAttributesMap "
+				+guidToAttributesMap.size() );
+		return guidToAttributesMap;
+	}
+	
+	private HashMap<String, ACLEntry> getUnionOfDistinctGuidsInACLMap
+	(HashMap<String , List<ACLEntry>> aclMap)
+	{
+		HashMap<String, ACLEntry> unionACLMap 
+		= new HashMap<String, ACLEntry>();
 		
 		Iterator<String> attrIter = aclMap.keySet().iterator();
 		
 		while( attrIter.hasNext() )
 		{
-			String currAttrName = attrIter.next();
+			String attrName = attrIter.next();
+			List<ACLEntry>  aclList = aclMap.get(attrName);
 			
-			List<ACLEntry> currACLList 
-								= aclMap.get(currAttrName);
-			
-			for( int i = 0; i < currACLList.size(); i++ )
+			for(int i=0; i<aclList.size(); i++)
 			{
-				ACLEntry aclEntry = currACLList.get(i);
-				String guidString = Utils.bytArrayToHex(aclEntry.getACLMemberGUID());
+				ACLEntry currACL = aclList.get(i);
+				String currGUID  = Utils.bytArrayToHex(currACL.getACLMemberGUID());
+				unionACLMap.put(currGUID, currACL);
+			}
+			//= aclMap.get(key);
+		}
+		return unionACLMap;
+	}
+	
+	/**
+	 * this function computes the anonymized ID to GuidMapping.
+	 * It also stores the encryption info for each guid in guid set 
+	 * accorind to its hash value.
+	 * @return
+	 * @throws DecoderException 
+	 */
+	private JSONArray computeAnonymizedIDToGUIDMapping(GuidEntry guidEntry, 
+			JSONArray guidSet, HashMap<String, ACLEntry> unionGuidsMap) throws DecoderException
+	{
+		JSONArray anonymizedIDToGuidMapping = new JSONArray();
+		byte[] userGuidBytes = Utils.hexStringToByteArray(guidEntry.getGuid());
+		List<String> notAssignedGuids = new LinkedList<String>();
+		
+		for(int i=0; i<guidSet.length(); i++)
+		{
+			try 
+			{
+				byte[] guidBytes = (byte[]) guidSet.get(i);
+				String guidString = Utils.bytArrayToHex(guidBytes);
+				int index = Utils.consistentHashAString(guidString, guidSet.length());
 				
-				JSONArray attrSet = guidToAttributeSetMap.get(guidString);
-				
-				if( attrSet == null )
+				// place free insert now
+				if(anonymizedIDToGuidMapping.isNull(index))
 				{
-					attrSet = new JSONArray();
-					attrSet.put(currAttrName);
-					guidToAttributeSetMap.put(guidString, attrSet);
+					ACLEntry currACLEntry = unionGuidsMap.get(guidString);
+					byte[] encryptedInfo = Utils.doPublicKeyEncryption(currACLEntry.getPublicKeyACLMember(), userGuidBytes);
+					// store it in JSON
+					anonymizedIDToGuidMapping.put(index, Utils.bytArrayToHex(encryptedInfo));
 				}
 				else
 				{
-					attrSet.put(currAttrName);
+					// save it for second round of assignment
+					notAssignedGuids.add(guidString);
 				}
 			}
+			catch (Exception e) 
+			{
+				e.printStackTrace();
+			}
 		}
-		return guidToAttributeSetMap;
+		System.out.println("Number of guids in ACL not stored in correct localtion "
+								+notAssignedGuids+" total length "+guidSet.length());
+		
+		// assign remaining ones
+		// are assigned any location free after their hashed location.
+		for(int i=0 ;i<notAssignedGuids.size(); i++)
+		{
+			try
+			{
+				String guidString = notAssignedGuids.get(i);
+				int index = Utils.consistentHashAString(guidString, guidSet.length());
+				int newIndex = getNextFreeIndex(index, anonymizedIDToGuidMapping, 
+						guidSet.length());
+				
+				assert(anonymizedIDToGuidMapping.isNull(newIndex));
+				
+				ACLEntry currACLEntry = unionGuidsMap.get(guidString);
+				byte[] encryptedInfo = Utils.doPublicKeyEncryption
+						(currACLEntry.getPublicKeyACLMember(), 
+						userGuidBytes);
+				// store it in JSON
+				anonymizedIDToGuidMapping.put(newIndex, Utils.bytArrayToHex(encryptedInfo));
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+			}
+		}
+			
+		for(int i=0; i<anonymizedIDToGuidMapping.length(); i++)
+		{
+			assert(!anonymizedIDToGuidMapping.isNull(i));
+		}
+		assert(anonymizedIDToGuidMapping.length() == guidSet.length());
+		return anonymizedIDToGuidMapping;
+	}
+	
+	private int getNextFreeIndex(int startIndex, JSONArray anonymizedIDToGuidMapping, 
+			int guidSetLength)
+	{	
+		int currIndex = startIndex%guidSetLength;
+		while(true)
+		{
+			if(!anonymizedIDToGuidMapping.isNull(currIndex))
+			{
+				currIndex++;
+				currIndex = currIndex%guidSetLength;
+				continue;
+			}
+			else
+			{
+				return currIndex;
+			}
+		}
 	}
 	
 	
 	// testing the class.
-	public static void main(String[] args) throws NoSuchAlgorithmException, DecoderException
+	public static void main(String[] args) throws NoSuchAlgorithmException, DecoderException, JSONException
 	{
 		// testing based on the example in the draft.
 		// more testing of each method in secure interface.
@@ -223,7 +372,7 @@ public class GUIDBasedAnonymizedIDCreator
 		
 		
 		List<AnonymizedIDEntry> anonymizedIds 
-			= anonymizedIDCreator.computeAnonymizedIDs(null, aclMap);
+			= anonymizedIDCreator.computeAnonymizedIDs(myGUID, aclMap);
 		System.out.println("Number of anonymizedIds "+anonymizedIds.size());
 		
 		System.out.println("\n\n\n##################################\n\n\n");

@@ -25,6 +25,7 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.anonymizedID.AnonymizedIDCreationInterface;
+import edu.umass.cs.contextservice.client.anonymizedID.GUIDBasedAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.anonymizedID.HyperspaceBasedAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSPrivacyTransformInterface;
@@ -447,10 +448,11 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	/**
 	 * assumption is that ACL always fits in memory.
 	 * @throws DecoderException 
+	 * @throws JSONException 
 	 */
 	@Override
 	public List<AnonymizedIDEntry> computeAnonymizedIDs( GuidEntry myGuidEntry,
-			HashMap<String, List<ACLEntry>> aclMap ) throws DecoderException
+			HashMap<String, List<ACLEntry>> aclMap ) throws DecoderException, JSONException
 	{
 		return this.anonymizedIDCreation.computeAnonymizedIDs(myGuidEntry, aclMap);
 	}
@@ -869,7 +871,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 		else if( this.transformType == GUID_BASED_CS_TRANSFORM )
 		{
-//			anonymizedIDCreation = new GUIDBasedAnonymizedIDCreator();
+			anonymizedIDCreation = new GUIDBasedAnonymizedIDCreator();
+			// for cs transform
+			csPrivacyTransform = new HyperspaceBasedCSTransform(executorService);
 		}
 		
 		// for gnsTransform

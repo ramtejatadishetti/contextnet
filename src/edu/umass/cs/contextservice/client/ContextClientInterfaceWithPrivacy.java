@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.apache.commons.codec.DecoderException;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.client.common.ACLEntry;
@@ -42,9 +43,10 @@ public interface ContextClientInterfaceWithPrivacy
 	 * @param ACLArray the calling user's ACL
 	 * @return
 	 * @throws DecoderException 
+	 * @throws JSONException 
 	 */
 	public List<AnonymizedIDEntry> computeAnonymizedIDs(
-			GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap) throws DecoderException;
+			GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap) throws DecoderException, JSONException;
 	
 	//FIXME: semantics needs to be decided, after secure update/insert is implemented
 	public int sendSearchQuerySecure(String searchQuery, JSONArray replyArray, 
