@@ -168,9 +168,9 @@ public class ParallelSearchReplyDecryption
 				{
 					try
 					{
-						System.out.println("indexToCheck "+indexToCheck
-								+" anonymizedIDToGuidMapping "
-								+anonymizedIDToGuidMapping.length());
+//						System.out.println("indexToCheck "+indexToCheck
+//								+" anonymizedIDToGuidMapping "
+//								+anonymizedIDToGuidMapping.length());
 						
 						byte[] encryptedElement =  Utils.hexStringToByteArray(
 								anonymizedIDToGuidMapping.getString(indexToCheck));

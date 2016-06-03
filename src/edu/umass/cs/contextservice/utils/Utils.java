@@ -382,6 +382,7 @@ public class Utils
 	public static int consistentHashAString( String stringToHash , 
 			int numItems )
 	{
+		stringToHash = stringToHash.toLowerCase();
 		int mapIndex = Hashing.consistentHash(stringToHash.hashCode(), numItems);
 		return mapIndex;
 	}
