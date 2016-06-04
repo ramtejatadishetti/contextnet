@@ -14,7 +14,7 @@ import sys
 #print(result.x)
 rho                             = 1.0
 #Yc                             = 1.0
-N                               = 36.0
+N                               = 24.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
 # specially if result size increases then estimation error might increase.
 CsByC                           = 0.005319149
