@@ -398,9 +398,18 @@ public class Utils
 		return new String(hexBytes);
 	}
 	
-	public static byte[] hexStringToByteArray(String s) throws DecoderException 
+	public static byte[] hexStringToByteArray(String s) 
 	{
-		return Hex.decodeHex(s.toCharArray());
+		byte[] byteArray = null;		
+		try
+		{
+			byteArray =	Hex.decodeHex(s.toCharArray());
+		} 
+		catch (DecoderException e) 
+		{
+			e.printStackTrace();
+		}
+		return byteArray;
 	}
 	
 	//FIXME: test time taken by each method here

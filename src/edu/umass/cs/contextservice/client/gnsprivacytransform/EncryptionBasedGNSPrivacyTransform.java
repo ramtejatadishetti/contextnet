@@ -13,7 +13,6 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 
-import org.apache.commons.codec.DecoderException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -125,7 +124,9 @@ public class EncryptionBasedGNSPrivacyTransform implements GNSPrivacyTransformIn
 	}
 	
 	
-	private String getPlainValueString(EncryptedValueJSON encryptValJSON, GuidEntry myGuidEntry) throws JSONException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, DecoderException
+	private String getPlainValueString(EncryptedValueJSON encryptValJSON, 
+			GuidEntry myGuidEntry) 
+		throws JSONException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
 	{
 		String encryptedVal = encryptValJSON.getEncytpedValue();
 		JSONObject decryptValueInfo = encryptValJSON.getDecryptValueInfo();

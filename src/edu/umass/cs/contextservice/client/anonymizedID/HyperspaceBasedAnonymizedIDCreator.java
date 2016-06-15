@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 
-import org.apache.commons.codec.DecoderException;
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -39,7 +38,7 @@ public class HyperspaceBasedAnonymizedIDCreator
 	
 	@Override
 	public List<AnonymizedIDEntry> computeAnonymizedIDs
-				( GuidEntry myGuidEntry, HashMap<String , List<ACLEntry>> aclMap ) throws DecoderException
+				( GuidEntry myGuidEntry, HashMap<String , List<ACLEntry>> aclMap )
 	{
 		// maximum anonymized IDs that this method can give 
 		// is the number of distinct GUIDs in the ACLs
@@ -194,10 +193,9 @@ public class HyperspaceBasedAnonymizedIDCreator
 	 * Set of guids is the JSONArray, where each element is byte[]
 	 * This is the Bul:Gul map in the draft.
 	 * @return
-	 * @throws DecoderException 
 	 */
 	private HashMap<String, JSONArray> computeAttributesToGuidsMap( 
-			HashMap<String, HashMap<String, Boolean>> guidToAttributesMap ) throws DecoderException
+			HashMap<String, HashMap<String, Boolean>> guidToAttributesMap )
 	{
 		HashMap<String, JSONArray> attributesToGuidsMap 
 									= new HashMap<String, JSONArray>();
@@ -317,12 +315,11 @@ public class HyperspaceBasedAnonymizedIDCreator
 	/**
 	 * this function computes the anonymized ID to GuidMapping.
 	 * It also stores the encryption info for each guid in guid set 
-	 * accorind to its hash value.
+	 * according to its hash value.
 	 * @return
-	 * @throws DecoderException 
 	 */
 	private JSONArray computeAnonymizedIDToGUIDMapping(GuidEntry guidEntry, 
-			JSONArray guidSet, HashMap<String, ACLEntry> unionGuidsMap) throws DecoderException
+			JSONArray guidSet, HashMap<String, ACLEntry> unionGuidsMap)
 	{
 		JSONArray anonymizedIDToGuidMapping = new JSONArray();
 		byte[] userGuidBytes = Utils.hexStringToByteArray(guidEntry.getGuid());
@@ -413,7 +410,7 @@ public class HyperspaceBasedAnonymizedIDCreator
 	}
 	
 	// testing the class.
-	public static void main(String[] args) throws NoSuchAlgorithmException, DecoderException
+	public static void main(String[] args) throws NoSuchAlgorithmException
 	{
 		// testing based on the example in the draft.
 		// more testing of each method in secure interface.

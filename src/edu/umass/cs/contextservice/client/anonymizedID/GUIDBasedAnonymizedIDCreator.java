@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 
-import org.apache.commons.codec.DecoderException;
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -37,7 +36,7 @@ public class GUIDBasedAnonymizedIDCreator
 	
 	@Override
 	public List<AnonymizedIDEntry> computeAnonymizedIDs
-		(GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap ) throws DecoderException, JSONException
+		(GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap ) throws JSONException
 	{
 		HashMap<String, HashMap<String, Boolean>> guidToAttributesMap 
 										= computeGuidToAttributesMap(aclMap);
@@ -172,10 +171,9 @@ public class GUIDBasedAnonymizedIDCreator
 	 * It also stores the encryption info for each guid in guid set 
 	 * accorind to its hash value.
 	 * @return
-	 * @throws DecoderException 
 	 */
-	private JSONArray computeAnonymizedIDToGUIDMapping(GuidEntry guidEntry, 
-			JSONArray guidSet, HashMap<String, ACLEntry> unionGuidsMap) throws DecoderException
+	private JSONArray computeAnonymizedIDToGUIDMapping( GuidEntry guidEntry, 
+			JSONArray guidSet, HashMap<String, ACLEntry> unionGuidsMap )
 	{
 		JSONArray anonymizedIDToGuidMapping = new JSONArray();
 		byte[] userGuidBytes = Utils.hexStringToByteArray(guidEntry.getGuid());
@@ -266,7 +264,7 @@ public class GUIDBasedAnonymizedIDCreator
 	
 	
 	// testing the class.
-	public static void main(String[] args) throws NoSuchAlgorithmException, DecoderException, JSONException
+	public static void main(String[] args) throws NoSuchAlgorithmException, JSONException
 	{
 		// testing based on the example in the draft.
 		// more testing of each method in secure interface.

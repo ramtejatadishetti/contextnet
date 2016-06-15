@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 
-import org.apache.commons.codec.DecoderException;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -104,7 +103,8 @@ public class ContextServiceTests
 	}
 	
 	@Test
-	public void test_3_privacyTest() throws JSONException, NoSuchAlgorithmException, DecoderException 
+	public void test_3_privacyTest() 
+			throws JSONException, NoSuchAlgorithmException 
 	{
 		// if privacy not enabled then just return.
 		if(!ContextServiceConfig.PRIVACY_ENABLED)

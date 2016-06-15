@@ -17,8 +17,8 @@ rho                             = 1.0
 N                               = 24.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
 # specially if result size increases then estimation error might increase.
-#CsByC                           = 0.005319149
-CsByC                           = 0.006713526
+CsByC                           = 0.005319149
+#CsByC                           = 0.009713526
 CuByC                           = 0.00071537
 CiByC                           = 0.003127837
 #CiByC                          = 0.00071537

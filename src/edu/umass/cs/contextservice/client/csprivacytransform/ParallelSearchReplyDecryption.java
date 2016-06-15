@@ -9,7 +9,6 @@ import java.util.concurrent.ExecutorService;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
-import org.apache.commons.codec.DecoderException;
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -56,20 +55,27 @@ public class ParallelSearchReplyDecryption
 		for(int i=0; i<csTransformedList.size();i++)
 		{
 			CSSearchReplyTransformedMessage csSearchRepMessage 
-							= csTransformedList.get(i);
+											= csTransformedList.get(i);
 			
-			execService.execute( new SearchReplyDecryptionThread
-					( myGuid, csSearchRepMessage.getSearchGUIDObj() ) );
+			SearchReplyDecryptionThread searchRepThread = new SearchReplyDecryptionThread
+					( myGuid, csSearchRepMessage.getSearchGUIDObj() );
+			
+			// just doing it sequentially, then we can check how much time it takes. 
+			// as we know the decryption time , and number of decryptions.
+			// times should match here.
+			searchRepThread.run();
+//			execService.execute( new SearchReplyDecryptionThread
+//					( myGuid, csSearchRepMessage.getSearchGUIDObj() ) );
 		}
 		
 		synchronized( lock )
 		{
 			while( numFinished != csTransformedList.size() )
 			{
-				try 
+				try
 				{
 					lock.wait();
-				} catch (InterruptedException e) 
+				} catch (InterruptedException e)
 				{
 					e.printStackTrace();
 				}
@@ -103,37 +109,32 @@ public class ParallelSearchReplyDecryption
 		@Override
 		public void run()
 		{
-			try {
-				byte[] plainTextBytes = decryptRealIDFromSearchRep( myGUIDInfo, seachReply );
-				
-				if( plainTextBytes != null )
+			byte[] plainTextBytes = decryptRealIDFromSearchRep( myGUIDInfo, seachReply );
+			
+			if( plainTextBytes != null )
+			{
+				synchronized(lock)
 				{
-					synchronized(lock)
+					numFinished++;
+					totalDecryptionsOverall = totalDecryptionsOverall + totalDecryptionsThread;
+					replyArray.put( Utils.bytArrayToHex(plainTextBytes) );
+					if( numFinished == csTransformedList.size() )
 					{
-						numFinished++;
-						totalDecryptionsOverall = totalDecryptionsOverall + totalDecryptionsThread;
-						replyArray.put( Utils.bytArrayToHex(plainTextBytes) );
-						if( numFinished == csTransformedList.size() )
-						{
-							lock.notify();
-						}
+						lock.notify();
 					}
 				}
-				else
+			}
+			else
+			{
+				synchronized(lock)
 				{
-					synchronized(lock)
+					numFinished++;
+					totalDecryptionsOverall = totalDecryptionsOverall + totalDecryptionsThread;
+					if( numFinished == csTransformedList.size() )
 					{
-						numFinished++;
-						totalDecryptionsOverall = totalDecryptionsOverall + totalDecryptionsThread;
-						if( numFinished == csTransformedList.size() )
-						{
-							lock.notify();
-						}
+						lock.notify();
 					}
 				}
-			} catch (DecoderException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
 		}
 		
@@ -143,11 +144,10 @@ public class ParallelSearchReplyDecryption
 		 * @param myGUIDInfo
 		 * @param encryptedRealJsonArray
 		 * @return
-		 * @throws DecoderException 
 		 * @throws JSONException 
 		 */
 		private byte[] decryptRealIDFromSearchRep( GuidEntry myGUIDInfo, 
-				SearchReplyGUIDRepresentationJSON seachReply ) throws DecoderException 
+				SearchReplyGUIDRepresentationJSON seachReply ) 
 		{
 			byte[] privateKey = myGUIDInfo.getPrivateKey().getEncoded();
 			byte[] plainText = null;

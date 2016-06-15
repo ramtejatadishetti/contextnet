@@ -14,10 +14,10 @@ import sys
 #print(result.x)
 rho                             = 1.0
 #Yc                             = 1.0
-N                               = 36.0
+N                               = 24.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
 # specially if result size increases then estimation error might increase.
-CsByC                           = 0.005319149
+CsByC                           = 0.006319149
 CuByC                           = 0.00071537
 CiByC                           = 0.003127837
 #CiByC                          = 0.00071537
@@ -32,9 +32,10 @@ CminByC                         = 0.000313117
 QueryResidenceTime              = 30.0
 disableOptimizer                = False
 inputH                          = 2.0
-inputConfigType                 = 2
-numGuids                        = 200000.0
+inputConfigType                 = 1
+numGuids                        = 10000.0
 CstByC                          = 0.000001289
+#CstByC                          = 0.000006289
 
 BASIC_SUBSPACE_CONFIG           = 1
 REPLICATED_SUBSPACE_CONFIG      = 2
@@ -118,14 +119,26 @@ def calculateOverlapingNodesForTrigger(numNodesForSubspace, currH):
         print "calculateOverlapingNodesForTrigger for numNodesForSubspace "+str(numNodesForSubspace)+" currH "+str(currH)+" expectedNumOverlapNodes "+str(expectedNumNodes) 
         return expectedNumNodes
 
+
+def calculateOverlapingNodesForSearchWithRatio(numNodesForSubspace, currH, yByDRatio):  
+        expectedNumNodes = \
+                ( math.ceil(yByDRatio * math.pow(numNodesForSubspace, (1.0/currH)) ) )
+        print "Overlap for a predicate numNodesForSubspace "+str(numNodesForSubspace)+" currH "+str(currH)+" expectedNumOverlapNodes "+str(expectedNumNodes) 
+        return expectedNumNodes
+    
 def calculateExpectedNumNodesASearchGoesTo(numNodesForSubspace, currH, currM):  
         expectedNumNodes = 0.0
         # calculating expected value of the first term
-        for ybdi in YByDArray:
-            expectedNumNodes = expectedNumNodes + \
-                ( math.ceil(ybdi * math.pow(numNodesForSubspace, (1.0/currH)) ) )
-        prob = 1.0/(1.0*len(YByDArray))
-        expectedNumNodes = expectedNumNodes * prob
+        #for ybdi in YByDArray:
+        #    expectedNumNodes = expectedNumNodes + \
+        #        ( math.ceil(ybdi * math.pow(numNodesForSubspace, (1.0/currH)) ) )
+        #prob = 1.0/(1.0*len(YByDArray))
+        #expectedNumNodes = expectedNumNodes * prob
+        
+        #expectedNumNodes = calculateOverlapingNodesForSearch(numNodesForSubspace, currH)
+        expectedNumNodes = \
+                calculateOverlapingNodesForSearchWithRatio(numNodesForSubspace, currH, 0.3)
+        
         expectedNumNodes = math.pow(expectedNumNodes, currM)
         mByH = (currM * 1.0)/(currH * 1.0)
         
@@ -289,8 +302,8 @@ def solveThroughputLinearEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtByC,
     numNodesSubspace  = getNumNodesForASubspace(B, H, N, configType)
     numNodesSearch    = calculateExpectedNumNodesASearchGoesTo(numNodesSubspace, H, currX)
     numNodesUpdate    = calcluateExpectedNumNodesAnUpdateGoesTo(numNodesSubspace, H)
-    YByDAvg           = YbyDAverg(Aavg)
-    resultSize        = numGuids * YByDAvg
+    #YByDAvg           = YbyDAverg(Aavg)
+    resultSize        = numGuids * math.pow(0.3, Aavg)
     
     
     currP = math.pow( numNodesSubspace, 1.0/H )

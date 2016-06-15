@@ -18,7 +18,6 @@ import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.commons.codec.DecoderException;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -295,7 +294,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	@Override
 	public void sendUpdateSecure( String GUID, GuidEntry myGUIDInfo, 
 			JSONObject attrValuePairs, long versionNum, boolean blocking,
-			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList ) throws DecoderException
+			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList )
 	{
 		try
 		{
@@ -447,12 +446,11 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	
 	/**
 	 * assumption is that ACL always fits in memory.
-	 * @throws DecoderException 
 	 * @throws JSONException 
 	 */
 	@Override
 	public List<AnonymizedIDEntry> computeAnonymizedIDs( GuidEntry myGuidEntry,
-			HashMap<String, List<ACLEntry>> aclMap ) throws DecoderException, JSONException
+			HashMap<String, List<ACLEntry>> aclMap ) throws JSONException
 	{
 		return this.anonymizedIDCreation.computeAnonymizedIDs(myGuidEntry, aclMap);
 	}

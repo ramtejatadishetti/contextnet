@@ -19,7 +19,6 @@ import edu.umass.cs.contextservice.common.ContextServiceDemultiplexer;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ContextServicePacket;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.gnsclient.client.GuidEntry;
 import edu.umass.cs.nio.AbstractJSONPacketDemultiplexer;
 import edu.umass.cs.nio.JSONMessenger;
 import edu.umass.cs.nio.JSONNIOTransport;
