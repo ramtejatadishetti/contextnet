@@ -80,6 +80,9 @@ public class ContextServiceTests
 	@Test
 	public void test_2_Input100GUIDs() throws JSONException 
 	{
+		// these tests require full search replies to be sent.
+		assert( ContextServiceConfig.sendFullReplies );
+		
 		Random rand = new Random();
 		for(int i=0; i<100; i++)
 		{
@@ -106,6 +109,9 @@ public class ContextServiceTests
 	public void test_3_privacyTest() 
 			throws JSONException, NoSuchAlgorithmException 
 	{
+		// these tests require full search replies to be sent.
+		assert( ContextServiceConfig.sendFullReplies );
+				
 		// if privacy not enabled then just return.
 		if(!ContextServiceConfig.PRIVACY_ENABLED)
 			return;
@@ -157,8 +163,7 @@ public class ContextServiceTests
 				}
 			}
 			
-			// adding self
-			
+			// adding self	
 			ACLEntry aclEntry 
 				= new ACLEntry(userGUID.getGuid(), 
 						userGUID.getPublicKey());
@@ -213,15 +218,32 @@ public class ContextServiceTests
 			// querier is allowed to read
 			if(i<5)
 			{
-				assertTrue(userGUID.getGuid().compareToIgnoreCase(replyArray.getString(0)) == 0  );
-				assertEquals(1, numRep);
-				assertEquals(1, replyArray.length());
+				if (ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED)
+				{
+					assertTrue(userGUID.getGuid().compareToIgnoreCase(replyArray.getString(0)) == 0  );
+					assertEquals(1, numRep);
+					assertEquals(1, replyArray.length());
+				}
+				else
+				{
+					// as multiple anonymized IDs may be returned.
+					assert(numRep > 0);
+					assert(replyArray.length() > 0);
+				}
 			}
 			else
 			{
 				//assertTrue(replyArray.get(0).equals(userGUID.getGuid()));
-				assertEquals(0, numRep);
-				assertEquals(0, replyArray.length());
+				if ( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+				{
+					assertEquals(0, numRep);
+					assertEquals(0, replyArray.length());
+				}
+				else
+				{
+					assert(numRep > 0);
+					assert(replyArray.length() > 0);
+				}
 			}
 		}
 		
@@ -243,8 +265,18 @@ public class ContextServiceTests
 			
 			// nobody except frm user allowed to read
 			//assertTrue(replyArray.get(0).equals(userGUID.getGuid()));
-			assertEquals(0, numRep);
-			assertEquals(0, replyArray.length());
+			if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+			{
+				assertEquals(0, numRep);
+				assertEquals(0, replyArray.length());
+			}
+			else
+			{
+				// satisfying anonymzied IDs will be returned.
+				// so they should be greater than zero.
+				assert(numRep > 0);
+				assert(replyArray.length() > 0);
+			}
 		}
 		
 		// check with user
@@ -260,10 +292,19 @@ public class ContextServiceTests
 		int numRep = csClient.sendSearchQuerySecure
 				(selectQuery, replyArray, expiryTime, userGUID);
 		
-		// nobody except frm user allowed to read
-		assertTrue(userGUID.getGuid().compareToIgnoreCase(replyArray.getString(0)) == 0  );
-		assertEquals(1, numRep);
-		assertEquals(1, replyArray.length());
+		if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+		{
+			// nobody except from user allowed to read
+			assertTrue
+			( userGUID.getGuid().compareToIgnoreCase(replyArray.getString(0)) == 0  );
+			assertEquals(1, numRep);
+			assertEquals(1, replyArray.length());
+		}
+		else
+		{
+			assert( numRep > 0 );
+			assert( replyArray.length() > 0 );
+		}
 	}
 	
 	@AfterClass

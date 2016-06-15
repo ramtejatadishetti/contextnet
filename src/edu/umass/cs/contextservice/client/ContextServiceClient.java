@@ -38,6 +38,7 @@ import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSTransformedMess
 import edu.umass.cs.contextservice.client.storage.GetStorage;
 import edu.umass.cs.contextservice.client.storage.SearchQueryStorage;
 import edu.umass.cs.contextservice.client.storage.UpdateStorage;
+import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ClientConfigReply;
 import edu.umass.cs.contextservice.messages.ClientConfigRequest;
@@ -375,7 +376,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 	}
 	
-	
 	@Override
 	public int sendSearchQuerySecure( String searchQuery, JSONArray replyArray, 
 			long expiryTime, GuidEntry myGUIDInfo )
@@ -387,27 +387,35 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			return -1;
 		}
 		
-		long start = System.currentTimeMillis();
+		long start 		= System.currentTimeMillis();
 		SearchReplyAnswer searchAnswer 
 						= sendSearchQueryToCS(searchQuery, expiryTime);
 		
-		List<CSSearchReplyTransformedMessage> searchRepTransformList = 
-				new LinkedList<CSSearchReplyTransformedMessage>();
+		List<CSSearchReplyTransformedMessage> searchRepTransformList 
+						= new LinkedList<CSSearchReplyTransformedMessage>();
+		
 		for(int i=0; i<searchAnswer.resultArray.length(); i++)
 		{
 			try
 			{
 				JSONArray jsoArr1 = searchAnswer.resultArray.getJSONArray(i);
-				for(int j=0; j<jsoArr1.length(); j++)
+				for( int j=0; j<jsoArr1.length(); j++ )
 				{
-					//resultGUIDMap.put(jsoArr1.getString(j), true);
 					JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
-					SearchReplyGUIDRepresentationJSON searchRepObj 
-							= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
 
-					CSSearchReplyTransformedMessage csSearchRepTransform 
+					if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+					{
+						SearchReplyGUIDRepresentationJSON searchRepObj 
+						= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
+						CSSearchReplyTransformedMessage csSearchRepTransform 
 										= new CSSearchReplyTransformedMessage(searchRepObj);
-					searchRepTransformList.add(csSearchRepTransform);
+						searchRepTransformList.add(csSearchRepTransform);
+					}
+					else
+					{
+						// just adding the whole JSON here for the user to decrypt later on.
+						replyArray.put(searchRepJSON);
+					}
 				}
 			} catch ( JSONException e )
 			{
@@ -417,14 +425,17 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 		long end1 = System.currentTimeMillis();
 		
-		this.csPrivacyTransform.unTransformSearchReply(myGUIDInfo,
-				searchRepTransformList, replyArray);
+		if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+		{
+			this.csPrivacyTransform.unTransformSearchReply( myGUIDInfo,
+				searchRepTransformList, replyArray );
+		}
 		
 		long end2 = System.currentTimeMillis();
 		
-		System.out.println("sendSearchQuerySecure search reply from CS time "+ 
-		(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
-				+searchRepTransformList.size()+" final reply size "+replyArray.length());
+		System.out.println("SendSearchQuerySecure search reply from CS time "+ 
+					(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
+					+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
 		
 		return replyArray.length();
 	}

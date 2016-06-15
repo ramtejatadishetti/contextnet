@@ -77,7 +77,7 @@ public class ContextServiceConfig
 	//control if full guids are sent in the search query
 	// reply, if false only sends the number of guids, not
 	// the actual guids
-	public static final boolean sendFullReplies						= false;
+	public static final boolean sendFullReplies						= true;
 	
 	//if false, replies for any update messages will not be sent
 	// just for measuring update throughout and time in experiments
@@ -125,13 +125,19 @@ public class ContextServiceConfig
 	public static final int MAXIMUM_NUM_ATTRS_IN_SUBSPACE			= 10;
 	
 	
-	public static boolean PRIVACY_ENABLED							= false;
+	public static boolean PRIVACY_ENABLED							= true;
+	
+	
+	// if this is set to true then the context service client will do decryptions 
+	// on receiving the search reply.
+	public static boolean DECRYPTIONS_ON_SEARCH_REPLY_ENABLED		= false;
 	
 	public static final String AssymmetricEncAlgorithm				= "RSA";
 	public static final String SymmetricEncAlgorithm				= "DES";
 	
 	// if true some debugging information will be computed and printed.
 	public static final boolean DEBUG_MODE							= true;
+	
 	
 	
 	//  model paramters
@@ -172,7 +178,7 @@ public class ContextServiceConfig
 	public static final int REAL_ID_ENCRYPTION_SIZE					= 128;
 	
 	
-	 // maximum length of an attribute name, used in varchar mysql table
+	// maximum length of an attribute name, used in varchar mysql table
 	public static final int MAXIMUM_ATTRNAME_LENGTH					= 100;
 	
 	// just for debugging different components separately.
