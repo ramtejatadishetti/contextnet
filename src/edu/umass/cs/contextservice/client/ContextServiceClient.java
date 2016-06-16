@@ -429,15 +429,24 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		{
 			this.csPrivacyTransform.unTransformSearchReply( myGUIDInfo,
 				searchRepTransformList, replyArray );
+			long end2 = System.currentTimeMillis();
+			
+			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
+						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
+						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
+			
+			return replyArray.length();
 		}
-		
-		long end2 = System.currentTimeMillis();
-		
-		System.out.println("SendSearchQuerySecure search reply from CS time "+ 
-					(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
-					+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
-		
-		return replyArray.length();
+		else
+		{
+			long end2 = System.currentTimeMillis();
+			
+			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
+						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
+						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
+			
+			return searchAnswer.resultSize;
+		}
 	}
 	
 	@Override

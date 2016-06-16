@@ -77,7 +77,7 @@ public class ContextServiceConfig
 	//control if full guids are sent in the search query
 	// reply, if false only sends the number of guids, not
 	// the actual guids
-	public static final boolean sendFullReplies						= false;
+	public static final boolean sendFullReplies						= true;
 	
 	//if false, replies for any update messages will not be sent
 	// just for measuring update throughout and time in experiments
@@ -134,6 +134,7 @@ public class ContextServiceConfig
 	
 	public static final String AssymmetricEncAlgorithm				= "RSA";
 	public static final String SymmetricEncAlgorithm				= "DES";
+	public static final String STRING_ENCODING						= "UTF-8";
 	
 	// if true some debugging information will be computed and printed.
 	public static final boolean DEBUG_MODE							= true;
