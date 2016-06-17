@@ -73,7 +73,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	public static final int HYPERSPACE_BASED_CS_TRANSFORM			= 2;
 	public static final int GUID_BASED_CS_TRANSFORM					= 3;
 	
-	public static final int NUM_THREADS 							= 200;
+	//public static final int NUM_THREADS 							= 200;
 	
 	private Queue<JSONObject> refreshTriggerQueue;
 	//private final Object refreshQueueLock 						= new Object();
@@ -108,7 +108,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		super( csHostName, csPortNum );
 		this.transformType = transformType;
 		gnsClient = null;
-		executorService = Executors.newFixedThreadPool(NUM_THREADS);
+		executorService = Executors.newCachedThreadPool();
 		initializeClient();
 	}
 	
