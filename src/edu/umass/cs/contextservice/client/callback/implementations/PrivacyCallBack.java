@@ -1,0 +1,58 @@
+package edu.umass.cs.contextservice.client.callback.implementations;
+
+import java.util.concurrent.ConcurrentHashMap;
+
+import edu.umass.cs.contextservice.client.callback.interfaces.CallBackInterface;
+import edu.umass.cs.contextservice.client.callback.interfaces.SearchReplyInterface;
+import edu.umass.cs.contextservice.client.callback.interfaces.UpdateReplyInterface;
+
+public class PrivacyCallBack implements CallBackInterface
+{
+	// key is the privacy req requesID,  value is the 
+	// anonymized ID update tracker.
+	
+	private ConcurrentHashMap<Long, PrivacyUpdateReplyTracker> requestIDMap;
+	
+	public PrivacyCallBack()
+	{
+		requestIDMap = new ConcurrentHashMap<Long, PrivacyUpdateReplyTracker>();
+	}
+	
+	@Override
+	public void searchCompletion(SearchReplyInterface searchRep) 
+	{
+		// Deons't need to be implemented in privacy.
+		// as one user search only results in one search to context service.
+		// So the user call back is used.
+	}
+
+	@Override
+	public void updateCompletion(UpdateReplyInterface updateRep) 
+	{
+		// Needs to be implemented in privacy. As one user update 
+		// results in multiple updates to context service, because multiple 
+		// anonymized IDs are updated. So context service client uses its 
+		// internal Privacy call back to keep tract of completion
+		// on a privacy update. On completion the client uses 
+		// user call back to signal privacy update completion 
+		// to the user/application.
+		PrivacyUpdateReplyTracker tracker = 
+					requestIDMap.get(updateRep.getCallerReqId());
+		assert(tracker != null);
+		boolean compl = tracker.incrementReplies();
+		
+		if(compl)
+		{
+			requestIDMap.remove(updateRep.getCallerReqId());
+		}
+	}
+	
+	/**
+	 * @param contextServiceReqID
+	 */
+	public void addUpdateReply( long privacyReqID,
+			PrivacyUpdateReplyTracker replyTracker )
+	{
+		requestIDMap.put(privacyReqID, replyTracker);
+	}
+}

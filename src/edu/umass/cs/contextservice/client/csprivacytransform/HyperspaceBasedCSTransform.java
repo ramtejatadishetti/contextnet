@@ -11,6 +11,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -27,9 +28,9 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 {
 	private final ExecutorService exectutorService;
 	
-	public HyperspaceBasedCSTransform(ExecutorService exectutorService)
+	public HyperspaceBasedCSTransform()
 	{
-		this.exectutorService = exectutorService;
+		this.exectutorService = Executors.newFixedThreadPool(200);
 	}
 	
 	@Override

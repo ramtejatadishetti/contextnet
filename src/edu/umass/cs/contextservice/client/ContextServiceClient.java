@@ -15,8 +15,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.Vector;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -26,12 +24,23 @@ import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.anonymizedID.AnonymizedIDCreationInterface;
 import edu.umass.cs.contextservice.client.anonymizedID.GUIDBasedAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.anonymizedID.HyperspaceBasedAnonymizedIDCreator;
+import edu.umass.cs.contextservice.client.callback.implementations.BlockingCallBack;
+import edu.umass.cs.contextservice.client.callback.implementations.BlockingSearchReply;
+import edu.umass.cs.contextservice.client.callback.implementations.BlockingUpdateReply;
+import edu.umass.cs.contextservice.client.callback.implementations.PrivacyCallBack;
+import edu.umass.cs.contextservice.client.callback.implementations.PrivacyUpdateReply;
+import edu.umass.cs.contextservice.client.callback.implementations.PrivacyUpdateReplyTracker;
+import edu.umass.cs.contextservice.client.callback.implementations.SampleCallBack;
+import edu.umass.cs.contextservice.client.callback.implementations.SampleSearchReply;
+import edu.umass.cs.contextservice.client.callback.implementations.SampleUpdateReply;
+import edu.umass.cs.contextservice.client.callback.interfaces.CallBackInterface;
+import edu.umass.cs.contextservice.client.callback.interfaces.SearchReplyInterface;
+import edu.umass.cs.contextservice.client.callback.interfaces.UpdateReplyInterface;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSPrivacyTransformInterface;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSSearchReplyTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSUpdateTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.HyperspaceBasedCSTransform;
-import edu.umass.cs.contextservice.client.csprivacytransform.ParallelUpdateStateStorage;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.EncryptionBasedGNSPrivacyTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSPrivacyTransformInterface;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSTransformedMessage;
@@ -66,17 +75,14 @@ import edu.umass.cs.gnscommon.exceptions.client.ClientException;
  * @param <NodeIDType>
  */
 public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClient<NodeIDType> 
-			implements ContextClientInterfaceWithPrivacy, 
-			ContextServiceClientInterfaceWithoutPrivacy
+						implements ContextClientInterfaceWithPrivacy, ContextServiceClientInterfaceWithoutPrivacy
 {
 	public static final int SUBSPACE_BASED_CS_TRANSFORM				= 1;
 	public static final int HYPERSPACE_BASED_CS_TRANSFORM			= 2;
 	public static final int GUID_BASED_CS_TRANSFORM					= 3;
 	
-	//public static final int NUM_THREADS 							= 200;
 	
 	private Queue<JSONObject> refreshTriggerQueue;
-	//private final Object refreshQueueLock 						= new Object();
 	
 	private final Object refreshTriggerClientWaitLock 				= new Object();
 	
@@ -91,7 +97,13 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	// for cs transform
 	private CSPrivacyTransformInterface csPrivacyTransform;
 	
-	private ExecutorService executorService;
+	private PrivacyCallBack privacyCallBack;
+	
+	private BlockingCallBack blockingCallBack;
+	
+	private long blockingReqID 										= 0;
+	private final Object blockingReqIDLock 							= new Object();
+	
 	
 	// indicates the transform type.
 	private final int transformType;
@@ -102,13 +114,15 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	 * @throws IOException
 	 * @throws NoSuchAlgorithmException 
 	 */
-	public ContextServiceClient(String csHostName, int csPortNum, int transformType) 
+	public ContextServiceClient(String csHostName, int csPortNum, int transformType)
 			throws IOException, NoSuchAlgorithmException
 	{
 		super( csHostName, csPortNum );
 		this.transformType = transformType;
 		gnsClient = null;
-		executorService = Executors.newCachedThreadPool();
+		privacyCallBack = new PrivacyCallBack();
+		blockingCallBack = new BlockingCallBack();
+		//executorService = Executors.newCachedThreadPool();
 		initializeClient();
 	}
 	
@@ -133,7 +147,10 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		props.setProperty("javax.net.ssl.trustStorePassword", "qwerty");
 		props.setProperty("javax.net.ssl.trustStore", "conf/gnsClientConf/trustStore/node100.jks");
 		props.setProperty("javax.net.ssl.keyStorePassword", "qwerty");
-		props.setProperty("javax.net.ssl.keyStore", "conf/gnsClientConf/keyStore/node100.jks");	
+		props.setProperty("javax.net.ssl.keyStore", "conf/gnsClientConf/keyStore/node100.jks");
+		
+		privacyCallBack = new PrivacyCallBack();
+		blockingCallBack = new BlockingCallBack();
 		
 		this.transformType = transformType;
 		
@@ -142,12 +159,45 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		initializeClient();
 	}
 	
-	public void sendUpdate( String GUID, GuidEntry myGuidEntry, JSONObject gnsAttrValuePairs, 
-			long versionNum, boolean blocking )
+//	public void sendUpdate( String GUID, GuidEntry myGuidEntry, JSONObject gnsAttrValuePairs, 
+//			long versionNum)
+//	{
+//		//Note: gnsAttrValuePairs, key is attrName, value is attrValue
+//		ContextServiceLogger.getLogger().fine("ContextClient sendUpdate enter "+GUID+" json "+
+//				gnsAttrValuePairs);
+//		try
+//		{
+//			if(gnsClient != null)
+//			{
+//				sendUpdateToGNS(myGuidEntry, gnsAttrValuePairs);
+//			}
+//			
+//			JSONObject csAttrValuePairs 
+//						= filterCSAttributes(gnsAttrValuePairs);
+//			
+//			// no context service attribute matching.
+//			if( csAttrValuePairs.length() <= 0 )
+//			{
+//				return;
+//			}
+//			sendUpdateToCS(GUID, 
+//					csAttrValuePairs, null, versionNum, blocking );
+//		}
+//		catch (Exception | Error e)
+//		{
+//			e.printStackTrace();
+//		}
+//		// no waiting in update
+//	}
+	
+	public void sendUpdateWithCallBack
+		( String GUID, GuidEntry myGuidEntry, JSONObject gnsAttrValuePairs, 
+		long versionNum, UpdateReplyInterface updReplyObj, CallBackInterface callback )
 	{
 		//Note: gnsAttrValuePairs, key is attrName, value is attrValue
-		ContextServiceLogger.getLogger().fine("ContextClient sendUpdate enter "+GUID+" json "+
-				gnsAttrValuePairs);
+		ContextServiceLogger.getLogger().fine("ContextClient sendUpdate enter "+GUID
+				+" json "+gnsAttrValuePairs);
+		
 		try
 		{	
 			if(gnsClient != null)
@@ -164,53 +214,30 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				return;
 			}
 			sendUpdateToCS(GUID, 
-					csAttrValuePairs, null, versionNum, blocking );
+					csAttrValuePairs, null, versionNum, updReplyObj, callback );
 		}
-		catch (Exception | Error e)
+		catch ( Exception | Error e )
 		{
 			e.printStackTrace();
 		}
 		// no waiting in update	
 	}
 	
-	public int sendSearchQuery(String searchQuery, JSONArray replyArray, long expiryTime)
+	public void sendSearchQueryWithCallBack(String searchQuery, 
+			long expiryTime, SearchReplyInterface searchRep, CallBackInterface callback)
 	{
-		if( replyArray == null )
-		{
-			ContextServiceLogger.getLogger().warning("null passsed "
-					+ "as replyArray in sendSearchQuery");
-			return -1;
-		}
-		
-		SearchReplyAnswer searchAnswer = sendSearchQueryToCS(searchQuery, expiryTime);
-		
-		// no untransformation needed in no privacy case.
-		// context service returns an array of JSONArrays.
-		// Each JSONArray contains the SearchReplyGUIDRepresentationJSON JSONObjects 
-		for(int i=0; i<searchAnswer.resultArray.length(); i++)
-		{
-			try
-			{
-				JSONArray jsoArr1 = searchAnswer.resultArray.getJSONArray(i);
-				for(int j=0; j<jsoArr1.length(); j++)
-				{
-					//resultGUIDMap.put(jsoArr1.getString(j), true);
-					JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
-					SearchReplyGUIDRepresentationJSON searchRepObj 
-							= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
-					replyArray.put(searchRepObj.getID());
-				}
-			} catch ( JSONException e )
-			{
-				e.printStackTrace();
-			}
-		}
-		return searchAnswer.resultSize;
+//		if( searchRep.getSearchReplyArray() == null )
+//		{
+//			ContextServiceLogger.getLogger().warning("null passed "
+//					+ "as replyArray in sendSearchQuery");
+//			return -1;
+//		}
+		sendSearchQueryToCS(searchQuery, expiryTime, 
+				searchRep, callback);
 	}
 	
-	@Override
-	public JSONObject sendGetRequest(String GUID) 
-	{			
+	public JSONObject sendGetRequest(String GUID)
+	{
 		long currId;
 		synchronized(this.getIdLock)
 		{
@@ -223,7 +250,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		GetStorage<NodeIDType> getQ = new GetStorage<NodeIDType>();
 		getQ.requestID = currId;
 		getQ.getMessage = getmesgU;
-		getQ.getReplyMessage = null; 
+		getQ.getReplyMessage = null;
 		
 		this.pendingGet.put(currId, getQ);
 		InetSocketAddress sockAddr = this.csNodeAddresses.get(rand.nextInt(csNodeAddresses.size()));
@@ -258,10 +285,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		return result;
 	}
 	
-	
-	@Override
 	/**
-	 * blocking call to return the current triggers.
+	 * Blocking call to return the current triggers.
 	 * This call is also thread safe, only one thread will be notified though.
 	 */
 	public void getQueryUpdateTriggers(JSONArray triggerArray)
@@ -292,10 +317,10 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 	}
 	
-	@Override
-	public void sendUpdateSecure( String GUID, GuidEntry myGUIDInfo, 
-			JSONObject attrValuePairs, long versionNum, boolean blocking,
-			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList )
+	public void sendUpdateSecureWithCallback( String GUID, GuidEntry myGUIDInfo, 
+			JSONObject attrValuePairs, long versionNum, 
+			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList,
+			UpdateReplyInterface updReplyObj, CallBackInterface callback )
 	{
 		try
 		{
@@ -316,11 +341,283 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				return;
 			}
 			
-//			HashMap<String, AttrValueRepresentationJSON> attrValueMap =
-//					convertAttrValueToSystemFormat(csAttrValuePairs);
+			long start1 = System.currentTimeMillis();
 			
-			// TODO: Different CSUpdateTransformedMessage messages can be computed
-			// in parallel.
+			List<CSUpdateTransformedMessage> transformedMesgList 
+				= this.csPrivacyTransform.transformUpdateForCSPrivacy
+				(myGUIDInfo.getGuid(), attrValuePairs, aclmap, anonymizedIDList);
+			
+			long end1 = System.currentTimeMillis();
+			
+			assert(transformedMesgList.size() > 0);
+			
+			long currId;
+			
+			synchronized( this.privacyUpdateIdLock )
+			{
+				currId = this.privacyReqId++;
+			}
+			
+			UpdateReplyInterface privacyUpdRep = new PrivacyUpdateReply(currId);
+			PrivacyUpdateReplyTracker privacyUpdRepTracker 
+				= new PrivacyUpdateReplyTracker(updReplyObj, 
+						callback, transformedMesgList.size());
+			
+			privacyCallBack.addUpdateReply(currId, privacyUpdRepTracker);
+			
+			// now all the anonymized IDs and the attributes that needs to be updated
+			// are calculated, 
+			// just need to send out updates
+			
+			//List<Long> finishTimeList = new LinkedList<Long>();
+			
+//			ParallelUpdateStateStorage updateState 
+//								= new ParallelUpdateStateStorage(transformedMesgList, 
+//										finishTimeList);
+			
+			for( int i=0; i<transformedMesgList.size(); i++ )
+			{
+				CSUpdateTransformedMessage csTransformedMessage 
+									= transformedMesgList.get(i);
+			
+//				UpdateOperationThread updateThread = new UpdateOperationThread(GUID, 
+//						csTransformedMessage, versionNum, blocking, 
+//						updateState );
+//				this.executorService.execute(updateThread);
+				
+				String IDString 
+					= Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
+				
+				sendUpdateToCS( IDString, csTransformedMessage.getAttrValJSON(), 
+						csTransformedMessage.getAnonymizedIDToGuidMapping(), 
+						versionNum, privacyUpdRep, privacyCallBack );
+			}
+			
+			long end2 = System.currentTimeMillis();
+			
+			if( transformedMesgList.size() > 0 )
+			{
+				System.out.println
+				("sendUpdateSecure complete GUID "+GUID+" transform time "+(end1-start1)
+					+" total time "+(end2-start1)+
+					" length "+attrValuePairs.length()+" transformedMesgList size "
+					+transformedMesgList.size());
+			}
+		}
+		catch( JSONException jsoEx )
+		{
+			jsoEx.printStackTrace();
+		}
+	}
+	
+	public void sendSearchQuerySecureWithCallBack
+		( String searchQuery, 
+			long expiryTime, GuidEntry myGUIDInfo, 
+			SearchReplyInterface searchRep, CallBackInterface callback )
+	{
+//		if( replyArray == null )
+//		{
+//			ContextServiceLogger.getLogger().warning("null passsed "
+//					+ "as replyArray in sendSearchQuery");
+//			return -1;
+//		}
+		
+		//long start 		= System.currentTimeMillis();
+		sendSearchQueryToCS(searchQuery, expiryTime, searchRep, callback);
+		
+//		List<CSSearchReplyTransformedMessage> searchRepTransformList 
+//						= new LinkedList<CSSearchReplyTransformedMessage>();
+//		
+//		for(int i=0; i<searchAnswer.resultArray.length(); i++)
+//		{
+//			try
+//			{
+//				JSONArray jsoArr1 = searchAnswer.resultArray.getJSONArray(i);
+//				for( int j=0; j<jsoArr1.length(); j++ )
+//				{
+//					JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
+//
+//					if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+//					{
+//						SearchReplyGUIDRepresentationJSON searchRepObj 
+//						= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
+//						CSSearchReplyTransformedMessage csSearchRepTransform 
+//										= new CSSearchReplyTransformedMessage(searchRepObj);
+//						searchRepTransformList.add(csSearchRepTransform);
+//					}
+//					else
+//					{
+//						// just adding the whole JSON here for the user to decrypt later on.
+//						replyArray.put(searchRepJSON);
+//					}
+//				}
+//			} catch ( JSONException e )
+//			{
+//				e.printStackTrace();
+//			}
+//		}
+//		
+//		long end1 = System.currentTimeMillis();
+//		
+//		if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+//		{
+//			this.csPrivacyTransform.unTransformSearchReply( myGUIDInfo,
+//				searchRepTransformList, replyArray );
+//			long end2 = System.currentTimeMillis();
+//			
+//			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
+//						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
+//						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
+//			
+//			return replyArray.length();
+//		}
+//		else
+//		{
+//			long end2 = System.currentTimeMillis();
+//			
+//			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
+//						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
+//						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
+//			
+//			return searchAnswer.resultSize;
+//		}
+	}
+	
+	
+	public JSONObject sendGetRequestSecure(String GUID, GuidEntry myGUIDInfo) throws Exception
+	{
+		// fetch it form GNS
+		if(gnsClient != null)
+		{
+			JSONObject encryptedJSON = gnsClient.read(GUID, myGUIDInfo);
+			GNSTransformedMessage gnsTransformedMesg 
+							= new GNSTransformedMessage(encryptedJSON);
+			
+			return this.gnsPrivacyTransform.unTransformGetReply(gnsTransformedMesg, myGUIDInfo);
+		}
+		return null;
+	}
+	
+	/**
+	 * assumption is that ACL always fits in memory.
+	 * @throws JSONException 
+	 */
+	public List<AnonymizedIDEntry> computeAnonymizedIDs( GuidEntry myGuidEntry,
+			HashMap<String, List<ACLEntry>> aclMap ) throws JSONException
+	{
+		return this.anonymizedIDCreation.computeAnonymizedIDs(myGuidEntry, aclMap);
+	}
+	
+	@Override
+	public void sendUpdate(String GUID, GuidEntry myGuidEntry, 
+			JSONObject attrValuePairs, long versionNum) 
+	{
+		//Note: gnsAttrValuePairs, key is attrName, value is attrValue
+		ContextServiceLogger.getLogger().fine( "ContextClient sendUpdate enter "+GUID
+				+" json "+attrValuePairs );
+		
+		try
+		{
+			if( gnsClient != null )
+			{
+				sendUpdateToGNS(myGuidEntry, attrValuePairs);
+			}
+			
+			JSONObject csAttrValuePairs 
+						= filterCSAttributes(attrValuePairs);
+			
+			// no context service attribute matching.
+			if( csAttrValuePairs.length() <= 0 )
+			{
+				return;
+			}
+			
+			long currReqId;
+			
+			synchronized( this.blockingReqIDLock )
+			{
+				currReqId = this.blockingReqID++;
+			}
+			
+			BlockingUpdateReply blockingUpd = new BlockingUpdateReply(currReqId);
+			sendUpdateToCS(GUID, 
+					csAttrValuePairs, null, versionNum, blockingUpd, blockingCallBack );
+			
+			blockingUpd.waitForCompletion();
+		}
+		catch ( Exception | Error e )
+		{
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public int sendSearchQuery(String searchQuery, JSONArray replyArray, long expiryTime) 
+	{	
+		if( replyArray == null )
+		{
+			ContextServiceLogger.getLogger().warning("null passsed "
+					+ "as replyArray in sendSearchQuery");
+			return -1;
+		}
+		
+		long currBlockingId;
+		synchronized( this.blockingReqIDLock )
+		{
+			currBlockingId = this.blockingReqID++;
+		}
+		
+		BlockingSearchReply blockingSearch = new BlockingSearchReply(currBlockingId);	
+		
+		sendSearchQueryToCS(searchQuery, expiryTime, 
+				blockingSearch, this.blockingCallBack);
+		
+		blockingSearch.waitForCompletion();
+		
+		assert(blockingSearch.getSearchReplyArray() != null);
+		for(int i=0; i<blockingSearch.getSearchReplyArray().length(); i++)
+		{
+			try
+			{
+				JSONArray jsoArr1 = blockingSearch.getSearchReplyArray().getJSONArray(i);
+				for(int j=0; j<jsoArr1.length(); j++)
+				{
+					JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
+					SearchReplyGUIDRepresentationJSON searchRepObj 
+							= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
+					replyArray.put(searchRepObj.getID());
+				}
+			} catch ( JSONException e )
+			{
+				e.printStackTrace();
+			}
+		}
+		return blockingSearch.getReplySize();		
+	}
+
+	@Override
+	public void sendUpdateSecure(String GUID, GuidEntry myGUIDInfo, 
+			JSONObject attrValuePairs, long versionNum,
+			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList) 
+	{
+		try
+		{
+			if(gnsClient != null)
+			{
+				GNSTransformedMessage gnsTransformMesg = 
+						this.gnsPrivacyTransform.transformUpdateForGNSPrivacy
+						(attrValuePairs, aclmap);
+				
+				sendUpdateToGNS( myGUIDInfo, 
+						gnsTransformMesg.getEncryptedAttrValuePair() );
+			}
+			
+			JSONObject csAttrValuePairs = filterCSAttributes(attrValuePairs);
+			// no context service attribute matching.
+			if( csAttrValuePairs.length() <= 0 )
+			{
+				return;
+			}
 			
 			long start1 = System.currentTimeMillis();
 			
@@ -330,55 +627,82 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			
 			long end1 = System.currentTimeMillis();
 			
+			assert(transformedMesgList.size() > 0);
+			
+			long currId;
+			
+			synchronized( this.privacyUpdateIdLock )
+			{
+				currId = this.privacyReqId++;
+			}
+			
+			long currblockReqId;
+			
+			synchronized( this.blockingReqIDLock )
+			{
+				currblockReqId = this.blockingReqID++;
+			}
+			
+			BlockingUpdateReply blockingUpd = new BlockingUpdateReply(currblockReqId);
+			
+			
+			UpdateReplyInterface privacyUpdRep = new PrivacyUpdateReply(currId);
+			PrivacyUpdateReplyTracker privacyUpdRepTracker 
+				= new PrivacyUpdateReplyTracker(blockingUpd, 
+						this.blockingCallBack, transformedMesgList.size());
+			
+			privacyCallBack.addUpdateReply(currId, privacyUpdRepTracker);
+			
 			// now all the anonymized IDs and the attributes that needs to be updated
 			// are calculated, 
 			// just need to send out updates
 			
-			List<Long> finishTimeList = new LinkedList<Long>();
+			//List<Long> finishTimeList = new LinkedList<Long>();
 			
-			ParallelUpdateStateStorage updateState 
-								= new ParallelUpdateStateStorage(transformedMesgList, 
-										finishTimeList);
+//			ParallelUpdateStateStorage updateState 
+//								= new ParallelUpdateStateStorage(transformedMesgList, 
+//										finishTimeList);
 			
 			for( int i=0; i<transformedMesgList.size(); i++ )
 			{
-				CSUpdateTransformedMessage csTransformedMessage = transformedMesgList.get(i);
+				CSUpdateTransformedMessage csTransformedMessage 
+									= transformedMesgList.get(i);
 			
-				UpdateOperationThread updateThread = new UpdateOperationThread(GUID, 
-						csTransformedMessage, versionNum, blocking, 
-						updateState );
-				this.executorService.execute(updateThread);
+//				UpdateOperationThread updateThread = new UpdateOperationThread(GUID, 
+//						csTransformedMessage, versionNum, blocking, 
+//						updateState );
+//				this.executorService.execute(updateThread);
 				
-				//String IDString = Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
+				String IDString 
+					= Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
 				
-				//sendUpdateToCS( IDString, csTransformedMessage.getAttrValMap() , 
-				//		versionNum, blocking );
+				sendUpdateToCS( IDString, csTransformedMessage.getAttrValJSON(), 
+						csTransformedMessage.getAnonymizedIDToGuidMapping(), 
+						versionNum, privacyUpdRep, privacyCallBack );
 			}
-			updateState.waitForCompletion();
 			
 			long end2 = System.currentTimeMillis();
 			
-			finishTimeList.sort(null);
-			
-			if(transformedMesgList.size() > 0)
+			if( transformedMesgList.size() > 0 )
 			{
 				System.out.println
 				("sendUpdateSecure complete GUID "+GUID+" transform time "+(end1-start1)
 					+" total time "+(end2-start1)+
 					" length "+attrValuePairs.length()+" transformedMesgList size "
-					+transformedMesgList.size() +" first anonymized ID finish time "
-					+finishTimeList.get(0) );
+					+transformedMesgList.size() );
 			}
+			
+			blockingUpd.waitForCompletion();
 		}
 		catch( JSONException jsoEx )
 		{
 			jsoEx.printStackTrace();
 		}
 	}
-	
+
 	@Override
-	public int sendSearchQuerySecure( String searchQuery, JSONArray replyArray, 
-			long expiryTime, GuidEntry myGUIDInfo )
+	public int sendSearchQuerySecure(String searchQuery, JSONArray replyArray, 
+				long expiryTime, GuidEntry myGUIDInfo)
 	{
 		if( replyArray == null )
 		{
@@ -387,18 +711,27 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			return -1;
 		}
 		
+		long currBlockingId;
+		synchronized( this.blockingReqIDLock )
+		{
+			currBlockingId = this.blockingReqID++;
+		}
+		
 		long start 		= System.currentTimeMillis();
-		SearchReplyAnswer searchAnswer 
-						= sendSearchQueryToCS(searchQuery, expiryTime);
+		BlockingSearchReply blockingSearch = new BlockingSearchReply(currBlockingId);
+		
+		sendSearchQueryToCS(searchQuery, expiryTime, blockingSearch, blockingCallBack);
+		
+		blockingSearch.waitForCompletion();
 		
 		List<CSSearchReplyTransformedMessage> searchRepTransformList 
 						= new LinkedList<CSSearchReplyTransformedMessage>();
 		
-		for(int i=0; i<searchAnswer.resultArray.length(); i++)
+		for(int i=0; i<blockingSearch.getSearchReplyArray().length(); i++)
 		{
 			try
 			{
-				JSONArray jsoArr1 = searchAnswer.resultArray.getJSONArray(i);
+				JSONArray jsoArr1 = blockingSearch.getSearchReplyArray().getJSONArray(i);
 				for( int j=0; j<jsoArr1.length(); j++ )
 				{
 					JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
@@ -417,7 +750,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 						replyArray.put(searchRepJSON);
 					}
 				}
-			} catch ( JSONException e )
+			} 
+			catch ( JSONException e )
 			{
 				e.printStackTrace();
 			}
@@ -445,102 +779,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
 						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
 			
-			return searchAnswer.resultSize;
-		}
-	}
-	
-	@Override
-	public JSONObject sendGetRequestSecure(String GUID, GuidEntry myGUIDInfo) throws Exception
-	{
-		// fetch it form GNS
-		if(gnsClient != null)
-		{
-			JSONObject encryptedJSON = gnsClient.read(GUID, myGUIDInfo);
-			GNSTransformedMessage gnsTransformedMesg 
-							= new GNSTransformedMessage(encryptedJSON);
-			
-			return this.gnsPrivacyTransform.unTransformGetReply(gnsTransformedMesg, myGUIDInfo);
-		}
-		return null;
-	}
-	
-	/**
-	 * assumption is that ACL always fits in memory.
-	 * @throws JSONException 
-	 */
-	@Override
-	public List<AnonymizedIDEntry> computeAnonymizedIDs( GuidEntry myGuidEntry,
-			HashMap<String, List<ACLEntry>> aclMap ) throws JSONException
-	{
-		return this.anonymizedIDCreation.computeAnonymizedIDs(myGuidEntry, aclMap);
-	}
-	
-	/**
-	 * Sends update to CS in both privacy and non privacy case.
-	 * filtering of CS attributes has already happened before this function call.
-	 * It assumes all attributes in csAttrValMap are CS attributes.
-	 */
-	public void sendUpdateToCS( String GUID, 
-			JSONObject csAttrValPair, JSONArray anonymizedIDToGuidMappingArray, 
-			long versionNum, boolean blocking )
-	{
-		try
-		{
-			long currId;
-			
-			synchronized( this.updateIdLock )
-			{
-				currId = this.updateReqId++;
-			}
-			
-			long requestID = currId;
-			
-//			ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = 
-//				new ValueUpdateFromGNS<NodeIDType>(null, versionNum, GUID, 
-//						jsonObject, reqeustID, sourceIP, sourcePort, 
-//							System.currentTimeMillis() );
-			
-			ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = new
-					ValueUpdateFromGNS<NodeIDType>( null, versionNum, GUID, 
-							csAttrValPair, requestID, sourceIP, sourcePort, 
-							System.currentTimeMillis(), anonymizedIDToGuidMappingArray );
-			
-			UpdateStorage<NodeIDType> updateQ = new UpdateStorage<NodeIDType>();
-			updateQ.requestID = currId;
-			//updateQ.valUpdFromGNS = valUpdFromGNS;
-			updateQ.valUpdFromGNS = valUpdFromGNS;
-			updateQ.valUpdFromGNSReply = null;
-			updateQ.blocking = blocking;
-			
-			this.pendingUpdate.put(currId, updateQ);
-			
-			InetSocketAddress sockAddr = this.csNodeAddresses.get(rand.nextInt(csNodeAddresses.size()));
-			
-			ContextServiceLogger.getLogger().fine("ContextClient sending update requestID "+currId+" to "+sockAddr+" json "+
-					valUpdFromGNS);
-			niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
-			
-			if( blocking )
-			{
-				synchronized( updateQ )
-				{
-					while( updateQ.valUpdFromGNSReply == null )
-					{
-						try 
-						{
-							updateQ.wait();
-						} catch (InterruptedException e) 
-						{
-							e.printStackTrace();
-						}
-					}
-				}
-				pendingUpdate.remove(currId);
-			}
-		}
-		catch ( Exception | Error e )
-		{
-			e.printStackTrace();
+			return blockingSearch.getReplySize();
 		}
 	}
 	
@@ -578,6 +817,76 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		return true;
 	}
 	
+	/**
+	 * Sends update to CS in both privacy and non privacy case.
+	 * filtering of CS attributes has already happened before this function call.
+	 * It assumes all attributes in csAttrValMap are CS attributes.
+	 */
+	private void sendUpdateToCS( String GUID, 
+			JSONObject csAttrValPair, JSONArray anonymizedIDToGuidMappingArray, 
+			long versionNum, UpdateReplyInterface updReplyObj, CallBackInterface callback )
+	{
+		try
+		{
+			long currId;
+			
+			synchronized( this.updateIdLock )
+			{
+				currId = this.updateReqId++;
+			}
+			
+			long requestID = currId;
+			
+//			ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = 
+//				new ValueUpdateFromGNS<NodeIDType>(null, versionNum, GUID, 
+//						jsonObject, reqeustID, sourceIP, sourcePort, 
+//							System.currentTimeMillis() );
+			
+			ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = new
+					ValueUpdateFromGNS<NodeIDType>( null, versionNum, GUID, 
+							csAttrValPair, requestID, sourceIP, sourcePort, 
+							System.currentTimeMillis(), anonymizedIDToGuidMappingArray );
+			
+			UpdateStorage<NodeIDType> updateQ = new UpdateStorage<NodeIDType>();
+			updateQ.requestID = currId;
+			updateQ.valUpdFromGNS = valUpdFromGNS;
+			updateQ.valUpdFromGNSReply = null;
+			updateQ.updReplyObj = updReplyObj;
+			updateQ.callback = callback;
+			//updateQ.blocking = blocking;
+			
+			this.pendingUpdate.put(currId, updateQ);
+			
+			InetSocketAddress sockAddr = this.csNodeAddresses.get(rand.nextInt(csNodeAddresses.size()));
+			
+			ContextServiceLogger.getLogger().fine("ContextClient sending update requestID "+currId+" to "+sockAddr+" json "+
+					valUpdFromGNS);
+			niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
+			
+//			if( blocking )
+//			{
+//				synchronized( updateQ )
+//				{
+//					while( updateQ.valUpdFromGNSReply == null )
+//					{
+//						try 
+//						{
+//							updateQ.wait();
+//						} catch (InterruptedException e) 
+//						{
+//							e.printStackTrace();
+//						}
+//					}
+//				}
+//				pendingUpdate.remove(currId);
+//			}
+		}
+		catch ( Exception | Error e )
+		{
+			e.printStackTrace();
+		}
+	}
+	
 	private void sendUpdateToGNS(GuidEntry writingGuid, 
 			JSONObject attrValuePair)
 	{
@@ -596,8 +905,11 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 	}
 	
-	private SearchReplyAnswer sendSearchQueryToCS(String searchQuery, long expiryTime)
-	{	
+	
+	private void sendSearchQueryToCS(String searchQuery, 
+			long expiryTime, SearchReplyInterface searchRep, 
+			CallBackInterface callback)
+	{
 		long currId;
 		synchronized( this.searchIdLock )
 		{
@@ -612,9 +924,12 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		searchQ.requestID = currId;
 		searchQ.queryMsgFromUser = qmesgU;
 		searchQ.queryMsgFromUserReply = null; 
+		searchQ.searchRep = searchRep;
+		searchQ.callback = callback;
 		
 		this.pendingSearches.put(currId, searchQ);
-		InetSocketAddress sockAddr = this.csNodeAddresses.get(rand.nextInt(csNodeAddresses.size()));
+		InetSocketAddress sockAddr 
+				= this.csNodeAddresses.get(rand.nextInt(csNodeAddresses.size()));
 		
 		try 
 		{
@@ -627,28 +942,28 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			e.printStackTrace();
 		}
 		
-		synchronized( searchQ )
-		{
-			while( searchQ.queryMsgFromUserReply == null )
-			{
-				try 
-				{
-					searchQ.wait();
-				} catch (InterruptedException e) 
-				{
-					e.printStackTrace();
-				}
-			}
-		}
+//		synchronized( searchQ )
+//		{
+//			while( searchQ.queryMsgFromUserReply == null )
+//			{
+//				try 
+//				{
+//					searchQ.wait();
+//				} catch (InterruptedException e) 
+//				{
+//					e.printStackTrace();
+//				}
+//			}
+//		}
 		
-		JSONArray result = searchQ.queryMsgFromUserReply.getResultGUIDs();
-		int resultSize = searchQ.queryMsgFromUserReply.getReplySize();
-		pendingSearches.remove(currId);
-		
-		SearchReplyAnswer searchAnswer = new SearchReplyAnswer();
-		searchAnswer.resultArray = result;
-		searchAnswer.resultSize = resultSize;
-		return searchAnswer;
+//		JSONArray result = searchQ.queryMsgFromUserReply.getResultGUIDs();
+//		int resultSize = searchQ.queryMsgFromUserReply.getReplySize();
+//		pendingSearches.remove(currId);
+//		
+//		SearchReplyAnswer searchAnswer = new SearchReplyAnswer();
+//		searchAnswer.resultArray = result;
+//		searchAnswer.resultSize = resultSize;
+//		return searchAnswer;
 	}
 	
 	/**
@@ -657,11 +972,11 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	 * @author adipc
 	 *
 	 */
-	private class SearchReplyAnswer 
-	{
-		JSONArray resultArray;
-		int resultSize;
-	}
+//	private class SearchReplyAnswer 
+//	{
+//		JSONArray resultArray;
+//		int resultSize;
+//	}
 	
 	private void handleUpdateReply(JSONObject jso)
 	{
@@ -677,25 +992,18 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		long currReqID = vur.getUserReqNum();
 		ContextServiceLogger.getLogger().fine("Update reply recvd "+currReqID);
 		UpdateStorage<NodeIDType> replyUpdObj = this.pendingUpdate.get(currReqID);
+		
 		if( replyUpdObj != null )
 		{
-			if( replyUpdObj.blocking )
-			{
-				replyUpdObj.valUpdFromGNSReply = vur;
-				
-				synchronized(replyUpdObj)
-				{
-					replyUpdObj.notify();
-				}
-			}
-			else
-			{
-				this.pendingUpdate.remove(currReqID);
-			}
+			replyUpdObj.valUpdFromGNSReply = vur;
+			replyUpdObj.callback.updateCompletion(replyUpdObj.updReplyObj);
+			
+			this.pendingUpdate.remove(currReqID);
 		}
 		else
 		{
-			ContextServiceLogger.getLogger().fine("Update reply recvd "+currReqID+" update Obj null");
+			ContextServiceLogger.getLogger().fine("Update reply recvd "
+											+currReqID+" update Obj null");
 			assert(false);
 		}
 	}
@@ -769,21 +1077,19 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			qmur = new QueryMsgFromUserReply<NodeIDType>(jso);
 			
 			long reqID = qmur.getUserReqNum();
-			//int resultSize = qmur.getReplySize();
-			SearchQueryStorage<NodeIDType> replySearchObj = this.pendingSearches.get(reqID);
+			SearchQueryStorage<NodeIDType> replySearchObj 
+									= this.pendingSearches.get(reqID);
 			replySearchObj.queryMsgFromUserReply = qmur;
 			
-			synchronized(replySearchObj)
-			{
-				replySearchObj.notify();
-			}
+			JSONArray result = qmur.getResultGUIDs();
+			int resultSize = qmur.getReplySize();
 			
-//			r(int i=0;i<qmur.getResultGUIDs().length();i++)
-//			{
-//				resultSize = resultSize+qmur.getResultGUIDs().getJSONArray(i).length();
-//			}
-			//System.out.println("Search query completion requestID "+reqID+" time "+System.currentTimeMillis()+
-			//		" replySize "+resultSize);
+			replySearchObj.searchRep.setSearchReplyArray(result);
+			replySearchObj.searchRep.setReplySize(resultSize);
+			
+			replySearchObj.callback.searchCompletion(replySearchObj.searchRep);
+			
+			pendingSearches.remove(reqID);
 		} catch (JSONException e)
 		{
 			e.printStackTrace();
@@ -885,62 +1191,17 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			anonymizedIDCreation = new HyperspaceBasedAnonymizedIDCreator();
 			
 			// for cs transform
-			csPrivacyTransform = new HyperspaceBasedCSTransform(executorService);
+			csPrivacyTransform = new HyperspaceBasedCSTransform();
 		}
 		else if( this.transformType == GUID_BASED_CS_TRANSFORM )
 		{
 			anonymizedIDCreation = new GUIDBasedAnonymizedIDCreator();
 			// for cs transform
-			csPrivacyTransform = new HyperspaceBasedCSTransform(executorService);
+			csPrivacyTransform = new HyperspaceBasedCSTransform();
 		}
 		
 		// for gnsTransform
 		gnsPrivacyTransform = new EncryptionBasedGNSPrivacyTransform();
-	}
-	
-	/**
-	 * Thread tha performs the update.
-	 * @author adipc
-	 */
-	private class UpdateOperationThread implements Runnable
-	{
-		private final String guid;
-		private final CSUpdateTransformedMessage csTransformedMessage;
-		private final long versionNum;
-		private final boolean blocking;
-		private final ParallelUpdateStateStorage updateState;
-		private final long startTime;
-		
-		
-		public UpdateOperationThread(String guid, CSUpdateTransformedMessage csTransformedMessage
-				, long versionNum, boolean blocking, ParallelUpdateStateStorage updateState)
-		{
-			this.guid = guid;
-			this.csTransformedMessage = csTransformedMessage;
-			this.versionNum = versionNum;
-			this.blocking = blocking;
-			this.updateState = updateState;
-			startTime = System.currentTimeMillis();
-		}
-		
-		@Override
-		public void run() 
-		{
-			String IDString = Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
-			
-			sendUpdateToCS( IDString, csTransformedMessage.getAttrValJSON(), 
-					csTransformedMessage.getAnonymizedIDToGuidMapping(), 
-					versionNum, blocking );
-			
-			long endTime = System.currentTimeMillis();
-//			if(ContextServiceConfig.DEBUG_MODE )
-//			{
-//				System.out.println("GUID "+guid+" AnonymizedID "+IDString+" update finished at "
-//							+(endTime-startTime)+" full mesg "+csTransformedMessage.toString());
-//			}
-			
-			updateState.incrementNumCompleted((endTime-startTime));
-		}
 	}
 	
 	// testing secure client code
@@ -1058,6 +1319,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		ContextServiceClient<Integer> csClient = new ContextServiceClient<Integer>("127.0.0.1", 8000, 
 				ContextServiceClient.SUBSPACE_BASED_CS_TRANSFORM);
 		
+		CallBackInterface callback = new SampleCallBack();
+		
+		
 		List<AnonymizedIDEntry> anonymizedIdList = csClient.computeAnonymizedIDs
 					(myGUID, aclMap);
 		JSONObject attrValPair = new JSONObject();
@@ -1065,14 +1329,21 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 		attrValPair.put("attr2", 15+"");
 		
-		csClient.sendUpdateSecure(guid0, myGUID, attrValPair, -1, true, aclMap, anonymizedIdList);
+		UpdateReplyInterface updateRep = new SampleUpdateReply(1);
+		
+		csClient.sendUpdateSecureWithCallback(guid0, 
+				myGUID, attrValPair, -1, aclMap, anonymizedIdList, updateRep, callback);
 		
 		Thread.sleep(2000);
 		
 		String searchQuery = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE attr1 >= 5 AND attr1 <= 15";
 		JSONArray replyArray = new JSONArray();
 		GuidEntry queryingGuid = guidsVector.get(3);
-		csClient.sendSearchQuerySecure(searchQuery, replyArray, 300000, queryingGuid);
+		
+		SearchReplyInterface searchRep = new SampleSearchReply(2);
+		
+		csClient.sendSearchQuerySecureWithCallBack
+					(searchQuery, 300000, queryingGuid, searchRep, callback);
 		
 		System.out.println("Query for attr1 querying GUID "+ queryingGuid.getGuid()+
 				" Real GUID "+guid0+" reply Arr "+replyArray);
@@ -1082,7 +1353,11 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				+ " AND attr2 >= 10 AND attr2 <= 20";
 		replyArray = new JSONArray();
 		queryingGuid = guidsVector.get(1);
-		csClient.sendSearchQuerySecure(searchQuery, replyArray, 300000, queryingGuid);
+		
+		searchRep = new SampleSearchReply(3);
+		
+		csClient.sendSearchQuerySecureWithCallBack(searchQuery, 300000, queryingGuid,
+				searchRep, callback);
 		
 		System.out.println("Query for att1 and attr4 querying GUID "+ queryingGuid.getGuid()+
 				" Real GUID "+guid0+" reply Arr "+replyArray);
@@ -1093,7 +1368,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 	
 	/**
-	 * COnverts attr value JSON given in the api calls to
+	 * Converts attr value JSON given in the api calls to
 	 * attr AttrValueRepresentationJSON map
 	 * @return
 	 * @throws JSONException 
@@ -1114,5 +1389,168 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			map.put(attrName, valRep);
 		}
 		return map;
+	}*/
+	
+//	@Override
+//	public void sendUpdateSecure( String GUID, GuidEntry myGUIDInfo, 
+//			JSONObject attrValuePairs, long versionNum, boolean blocking,
+//			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList )
+//	{
+//		try
+//		{
+//			if(gnsClient != null)
+//			{
+//				GNSTransformedMessage gnsTransformMesg = 
+//						this.gnsPrivacyTransform.transformUpdateForGNSPrivacy
+//						(attrValuePairs, aclmap);
+//				
+//				sendUpdateToGNS( myGUIDInfo, 
+//						gnsTransformMesg.getEncryptedAttrValuePair() );
+//			}
+//			
+//			JSONObject csAttrValuePairs = filterCSAttributes(attrValuePairs);
+//			// no context service attribute matching.
+//			if( csAttrValuePairs.length() <= 0 )
+//			{
+//				return;
+//			}
+//			
+////			HashMap<String, AttrValueRepresentationJSON> attrValueMap =
+////					convertAttrValueToSystemFormat(csAttrValuePairs);
+//			
+//			// TODO: Different CSUpdateTransformedMessage messages can be computed
+//			// in parallel.
+//			
+//			long start1 = System.currentTimeMillis();
+//			
+//			List<CSUpdateTransformedMessage> transformedMesgList 
+//				= this.csPrivacyTransform.transformUpdateForCSPrivacy
+//				(myGUIDInfo.getGuid(), attrValuePairs, aclmap, anonymizedIDList);
+//			
+//			long end1 = System.currentTimeMillis();
+//			
+//			// now all the anonymized IDs and the attributes that needs to be updated
+//			// are calculated, 
+//			// just need to send out updates
+//			
+//			List<Long> finishTimeList = new LinkedList<Long>();
+//			
+//			ParallelUpdateStateStorage updateState 
+//								= new ParallelUpdateStateStorage(transformedMesgList, 
+//										finishTimeList);
+//			
+//			for( int i=0; i<transformedMesgList.size(); i++ )
+//			{
+//				CSUpdateTransformedMessage csTransformedMessage = transformedMesgList.get(i);
+//			
+//				UpdateOperationThread updateThread = new UpdateOperationThread(GUID, 
+//						csTransformedMessage, versionNum, blocking, 
+//						updateState );
+//				this.executorService.execute(updateThread);
+//				
+//				//String IDString = Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
+//				//sendUpdateToCS( IDString, csTransformedMessage.getAttrValMap() , 
+//				//		versionNum, blocking );
+//			}
+//			updateState.waitForCompletion();
+//			
+//			long end2 = System.currentTimeMillis();
+//			
+//			finishTimeList.sort(null);
+//			
+//			if(transformedMesgList.size() > 0)
+//			{
+//				System.out.println
+//				("sendUpdateSecure complete GUID "+GUID+" transform time "+(end1-start1)
+//					+" total time "+(end2-start1)+
+//					" length "+attrValuePairs.length()+" transformedMesgList size "
+//					+transformedMesgList.size() +" first anonymized ID finish time "
+//					+finishTimeList.get(0) );
+//			}
+//		}
+//		catch( JSONException jsoEx )
+//		{
+//			jsoEx.printStackTrace();
+//		}
+//	}
+	
+//	public int sendSearchQuery(String searchQuery, JSONArray replyArray, 
+//			long expiryTime)
+//	{
+//		if( replyArray == null )
+//		{
+//			ContextServiceLogger.getLogger().warning("null passsed "
+//					+ "as replyArray in sendSearchQuery");
+//			return -1;
+//		}
+//		
+//		SearchReplyAnswer searchAnswer = sendSearchQueryToCS(searchQuery, expiryTime);
+//		
+//		// no untransformation needed in no privacy case.
+//		// context service returns an array of JSONArrays.
+//		// Each JSONArray contains the SearchReplyGUIDRepresentationJSON JSONObjects 
+//		for(int i=0; i<searchAnswer.resultArray.length(); i++)
+//		{
+//			try
+//			{
+//				JSONArray jsoArr1 = searchAnswer.resultArray.getJSONArray(i);
+//				for(int j=0; j<jsoArr1.length(); j++)
+//				{
+//					//resultGUIDMap.put(jsoArr1.getString(j), true);
+//					JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
+//					SearchReplyGUIDRepresentationJSON searchRepObj 
+//							= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
+//					replyArray.put(searchRepObj.getID());
+//				}
+//			} catch ( JSONException e )
+//			{
+//				e.printStackTrace();
+//			}
+//		}
+//		return searchAnswer.resultSize;
+//	}
+	
+	/**
+	 * Thread tha performs the update.
+	 * @author adipc
+	 */
+	/*private class UpdateOperationThread implements Runnable
+	{
+		private final String guid;
+		private final CSUpdateTransformedMessage csTransformedMessage;
+		private final long versionNum;
+		private final boolean blocking;
+		private final ParallelUpdateStateStorage updateState;
+		private final long startTime;
+		
+		
+		public UpdateOperationThread(String guid, CSUpdateTransformedMessage csTransformedMessage
+				, long versionNum, boolean blocking, ParallelUpdateStateStorage updateState)
+		{
+			this.guid = guid;
+			this.csTransformedMessage = csTransformedMessage;
+			this.versionNum = versionNum;
+			this.blocking = blocking;
+			this.updateState = updateState;
+			startTime = System.currentTimeMillis();
+		}
+		
+		@Override
+		public void run() 
+		{
+			String IDString = Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
+			
+			sendUpdateToCS( IDString, csTransformedMessage.getAttrValJSON(), 
+					csTransformedMessage.getAnonymizedIDToGuidMapping(), 
+					versionNum, blocking );
+			
+			long endTime = System.currentTimeMillis();
+//			if(ContextServiceConfig.DEBUG_MODE )
+//			{
+//				System.out.println("GUID "+guid+" AnonymizedID "+IDString+" update finished at "
+//							+(endTime-startTime)+" full mesg "+csTransformedMessage.toString());
+//			}
+			updateState.incrementNumCompleted((endTime-startTime));
+		}
 	}*/
 }

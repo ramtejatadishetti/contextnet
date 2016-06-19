@@ -56,9 +56,13 @@ public abstract class AbstractContextServiceClient<NodeIDType>
 	protected final Object getIdLock													= new Object();
 	protected final Object configLock													= new Object();
 	
+	protected final Object privacyUpdateIdLock											= new Object();
+	
 	protected long searchReqId															= 0;
 	protected long updateReqId															= 0;
 	protected long getReqId																= 0;
+	
+	protected long privacyReqId															= 0;
 	
 	protected NodeIDType nodeid															= null;
 	

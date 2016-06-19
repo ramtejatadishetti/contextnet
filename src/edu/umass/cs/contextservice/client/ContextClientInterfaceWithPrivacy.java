@@ -32,8 +32,9 @@ public interface ContextClientInterfaceWithPrivacy
 	 * @param blocking true then the update will block until CS confirms completion.
 	 */
 	public void sendUpdateSecure(String GUID, GuidEntry myGUIDInfo, 
-			JSONObject attrValuePairs, long versionNum, boolean blocking,
-			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList );
+			JSONObject attrValuePairs, long versionNum,
+			HashMap<String, List<ACLEntry>> aclmap, 
+			List<AnonymizedIDEntry> anonymizedIDList );
 	
 	/**
 	 * computes anonymized Ids for a user

@@ -22,7 +22,7 @@ public interface ContextServiceClientInterfaceWithoutPrivacy
 	 * @param blocking
 	 */
 	public void sendUpdate(String GUID, GuidEntry myGuidEntry, 
-			JSONObject attrValuePairs, long versionNum, boolean blocking);
+			JSONObject attrValuePairs, long versionNum);
 	
 	//blocking call
 	/**

@@ -73,8 +73,8 @@ public class ContextServiceTests
 		long expiryTime = 300000; // 5 min
 		int numRep = csClient.sendSearchQuery(selectQuery, replyArray, expiryTime);
 		
-		assertEquals(numRep, 0);
-		assertEquals(replyArray.length(), 0);
+		assertEquals(0, numRep);
+		assertEquals(0, replyArray.length());
 	}
 	
 	@Test
@@ -89,7 +89,7 @@ public class ContextServiceTests
 			String realAlias = memberAliasPrefix+i;
 			String myGUID = getGUID(realAlias);
 			JSONObject attrValJSON = getARandomAttrValSet();
-			csClient.sendUpdate(myGUID, null, attrValJSON, -1, true);
+			csClient.sendUpdate(myGUID, null, attrValJSON, -1);
 		}
 		String selectQuery = 
 			"SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE "
@@ -111,10 +111,11 @@ public class ContextServiceTests
 	{
 		// these tests require full search replies to be sent.
 		assert( ContextServiceConfig.sendFullReplies );
-				
+		
+		assert(ContextServiceConfig.PRIVACY_ENABLED);
+		
+		assert(ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED);
 		// if privacy not enabled then just return.
-		if(!ContextServiceConfig.PRIVACY_ENABLED)
-			return;
 		
 		GuidEntry userGUID = getAGUIDEntry("userGuid");
 		
@@ -198,7 +199,7 @@ public class ContextServiceTests
 		
 		csClient.sendUpdateSecure
 			(userGUID.getGuid(), userGUID, attrValJSON, 
-					-1, true, aclMap, anonymizedIDsList);
+					-1, aclMap, anonymizedIDsList);
 		
 		
 		for(int i=0; i<10; i++)

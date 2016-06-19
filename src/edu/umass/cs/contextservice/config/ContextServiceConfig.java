@@ -100,8 +100,6 @@ public class ContextServiceConfig
     // set in conjuction with that. and also the hyperpsace hashing thread pool
     // size should be set greater than that. These things affect system performance a lot.
 	// change back to 214 for experiments.
-	//FIXME: change this back to 214 for emulab d710 machines.
-	// 10 for my laptop testing.
 	public static final int MYSQL_MAX_CONNECTIONS					= 214;
 	
 	// it is also important to set this at least the size of the database connection pool.
@@ -130,7 +128,7 @@ public class ContextServiceConfig
 	
 	// if this is set to true then the context service client will do decryptions 
 	// on receiving the search reply.
-	public static boolean DECRYPTIONS_ON_SEARCH_REPLY_ENABLED		= false;
+	public static boolean DECRYPTIONS_ON_SEARCH_REPLY_ENABLED		= true;
 	
 	public static final String AssymmetricEncAlgorithm				= "RSA";
 	public static final String SymmetricEncAlgorithm				= "DES";

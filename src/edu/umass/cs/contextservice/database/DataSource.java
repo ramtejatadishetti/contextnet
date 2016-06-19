@@ -17,7 +17,7 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 public class DataSource<NodeIDType>
 {
 	//private final Connection dbConnection;
-	private final NodeIDType myNodeID;
+	//private final NodeIDType myNodeID;
 	private final HashMap<NodeIDType, SQLNodeInfo> sqlNodeInfoMap;
 	
     //private static DataSource     datasource;
@@ -25,7 +25,7 @@ public class DataSource<NodeIDType>
 
     public DataSource(NodeIDType myNodeID) throws IOException, SQLException, PropertyVetoException 
     {
-    	this.myNodeID = myNodeID;
+    	//this.myNodeID = myNodeID;
     	this.sqlNodeInfoMap = new HashMap<NodeIDType, SQLNodeInfo>();
     	readDBNodeSetup();
     	

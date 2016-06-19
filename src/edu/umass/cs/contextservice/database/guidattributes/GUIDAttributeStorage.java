@@ -36,7 +36,6 @@ import edu.umass.cs.utils.DelayProfiler;
  * This class has moethids for table creation, updates and searches of 
  * context service.
  * @author adipc
- *
  */
 public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInterface<NodeIDType>
 {

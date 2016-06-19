@@ -27,9 +27,9 @@ import edu.umass.cs.nio.interfaces.NodeConfig;
 
 
 /**
- * Just a simple four node CS setup for local testing.
+ * Just a simple four node CS setup for 
+ * local testing.
  * @author adipc
- *
  */
 public class FourNodeLocalCSSetup extends ContextServiceNode<Integer>
 {
@@ -264,7 +264,7 @@ public class FourNodeLocalCSSetup extends ContextServiceNode<Integer>
 				attrValuePair.put("geoLocationCurrentLong", longitude);
 				
 				long startTime = System.currentTimeMillis();
-				csClient.sendUpdate(myGUID, null, attrValuePair, currID, true);
+				csClient.sendUpdate(myGUID, null, attrValuePair, currID);
 				System.out.println("Update completion requestID "+requestID+" time "
 						+(System.currentTimeMillis()-startTime));
 			} catch (JSONException e)
