@@ -128,7 +128,7 @@ public class ContextServiceConfig
 	
 	// if this is set to true then the context service client will do decryptions 
 	// on receiving the search reply.
-	public static boolean DECRYPTIONS_ON_SEARCH_REPLY_ENABLED		= true;
+	public static boolean DECRYPTIONS_ON_SEARCH_REPLY_ENABLED		= false;
 	
 	public static final String AssymmetricEncAlgorithm				= "RSA";
 	public static final String SymmetricEncAlgorithm				= "DES";
