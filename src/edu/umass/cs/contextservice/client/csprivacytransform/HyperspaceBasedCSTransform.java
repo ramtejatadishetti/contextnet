@@ -60,17 +60,25 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 				AnonymizedIDUpdateInfo updateInfo 
 											= anonymizedIdToBeUpdateMap.get(anonymizedIDString);
 				
-				JSONObject randJSON = randomizeAttrValue( updateInfo.attrValPair );
+				// just for testing and debugging system.
+				if(ContextServiceConfig.RAND_VAL_JSON)
+				{
+					JSONObject randJSON = randomizeAttrValue( updateInfo.attrValPair );
 				
-				CSUpdateTransformedMessage transforMessage = new CSUpdateTransformedMessage
+					CSUpdateTransformedMessage transforMessage = new CSUpdateTransformedMessage
 						(anonymizedIDBytes, randJSON, 
-									updateInfo.anonymizedIDEntry.getAnonymizedIDToGUIDMapping());
-				
-				// just for testing not sending anonymizedIDToGUdi mapping
-//				CSUpdateTransformedMessage transforMessage = new CSUpdateTransformedMessage
-//				(anonymizedIDBytes, updateInfo.attrValPair, null);
-				
-				transformedMesgList.add(transforMessage);
+									null);
+					
+					transformedMesgList.add(transforMessage);
+				}
+				else
+				{
+					CSUpdateTransformedMessage transforMessage = new CSUpdateTransformedMessage
+							(anonymizedIDBytes, updateInfo.attrValPair, 
+								updateInfo.anonymizedIDEntry.getAnonymizedIDToGUIDMapping());
+					
+					transformedMesgList.add(transforMessage);
+				}
 			}
 			return transformedMesgList;	
 		}
@@ -104,6 +112,7 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 				e.printStackTrace();
 			}
 		}
+		System.out.println("randomizeAttrValue ori "+attrValPair +" new "+randomJSON);
 		return randomJSON;
 	}
 	

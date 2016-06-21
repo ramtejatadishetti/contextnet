@@ -133,13 +133,17 @@ public class ContextServiceConfig
 	// if true, no encryption happens. cipher text and plain text are same.
 	public static boolean NO_ENCRYPTION								= true;
 	
+	// if set to true then anonymized IDs will have random attr-val pairs.
+	// only for testing.
+	public static boolean RAND_VAL_JSON								= true;
+	
+	
 	public static final String AssymmetricEncAlgorithm				= "RSA";
 	public static final String SymmetricEncAlgorithm				= "DES";
 	public static final String STRING_ENCODING						= "UTF-8";
 	
 	// if true some debugging information will be computed and printed.
 	public static final boolean DEBUG_MODE							= true;
-	
 	
 	
 	//  model paramters

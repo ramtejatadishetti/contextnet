@@ -1212,7 +1212,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					}
 				}
 			}
-			catch (Exception | Error ex)
+			catch(Exception | Error ex)
 			{
 				ex.printStackTrace();
 			}
