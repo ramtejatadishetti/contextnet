@@ -29,7 +29,6 @@ import edu.umass.cs.contextservice.client.callback.implementations.BlockingSearc
 import edu.umass.cs.contextservice.client.callback.implementations.BlockingUpdateReply;
 import edu.umass.cs.contextservice.client.callback.implementations.PrivacyCallBack;
 import edu.umass.cs.contextservice.client.callback.implementations.PrivacyUpdateReply;
-import edu.umass.cs.contextservice.client.callback.implementations.PrivacyUpdateReplyTracker;
 import edu.umass.cs.contextservice.client.callback.implementations.SampleCallBack;
 import edu.umass.cs.contextservice.client.callback.implementations.SampleSearchReply;
 import edu.umass.cs.contextservice.client.callback.implementations.SampleUpdateReply;
@@ -358,12 +357,15 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				currId = this.privacyReqId++;
 			}
 			
-			UpdateReplyInterface privacyUpdRep = new PrivacyUpdateReply(currId);
-			PrivacyUpdateReplyTracker privacyUpdRepTracker 
-				= new PrivacyUpdateReplyTracker(updReplyObj, 
-						callback, transformedMesgList.size());
+			UpdateReplyInterface privacyUpdRep 
+					= new PrivacyUpdateReply( currId, updReplyObj, callback, 
+							transformedMesgList.size() );
 			
-			privacyCallBack.addUpdateReply(currId, privacyUpdRepTracker);
+//			PrivacyUpdateReplyTracker privacyUpdRepTracker 
+//				= new PrivacyUpdateReplyTracker( updReplyObj, 
+//						callback, transformedMesgList.size() );
+			
+			//privacyCallBack.addUpdateReply(currId, privacyUpdRepTracker);
 			
 			// now all the anonymized IDs and the attributes that needs to be updated
 			// are calculated, 
@@ -646,12 +648,14 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			BlockingUpdateReply blockingUpd = new BlockingUpdateReply(currblockReqId);
 			
 			
-			UpdateReplyInterface privacyUpdRep = new PrivacyUpdateReply(currId);
-			PrivacyUpdateReplyTracker privacyUpdRepTracker 
-				= new PrivacyUpdateReplyTracker(blockingUpd, 
-						this.blockingCallBack, transformedMesgList.size());
+			UpdateReplyInterface privacyUpdRep = new PrivacyUpdateReply(currId, 
+					blockingUpd, this.blockingCallBack, transformedMesgList.size());
 			
-			privacyCallBack.addUpdateReply(currId, privacyUpdRepTracker);
+//			PrivacyUpdateReplyTracker privacyUpdRepTracker 
+//				= new PrivacyUpdateReplyTracker(, 
+//						);
+//			
+//			privacyCallBack.addUpdateReply(currId, privacyUpdRepTracker);
 			
 			// now all the anonymized IDs and the attributes that needs to be updated
 			// are calculated, 

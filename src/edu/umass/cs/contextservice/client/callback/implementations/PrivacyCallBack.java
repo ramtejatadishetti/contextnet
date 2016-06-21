@@ -1,6 +1,5 @@
 package edu.umass.cs.contextservice.client.callback.implementations;
 
-import java.util.concurrent.ConcurrentHashMap;
 
 import edu.umass.cs.contextservice.client.callback.interfaces.CallBackInterface;
 import edu.umass.cs.contextservice.client.callback.interfaces.SearchReplyInterface;
@@ -11,11 +10,11 @@ public class PrivacyCallBack implements CallBackInterface
 	// key is the privacy req requesID,  value is the 
 	// anonymized ID update tracker.
 	
-	private ConcurrentHashMap<Long, PrivacyUpdateReplyTracker> requestIDMap;
+	//private ConcurrentHashMap<Long, PrivacyUpdateReplyTracker> requestIDMap;
 	
 	public PrivacyCallBack()
 	{
-		requestIDMap = new ConcurrentHashMap<Long, PrivacyUpdateReplyTracker>();
+		//requestIDMap = new ConcurrentHashMap<Long, PrivacyUpdateReplyTracker>();
 	}
 	
 	@Override
@@ -36,23 +35,20 @@ public class PrivacyCallBack implements CallBackInterface
 		// on a privacy update. On completion the client uses 
 		// user call back to signal privacy update completion 
 		// to the user/application.
-		PrivacyUpdateReplyTracker tracker = 
-					requestIDMap.get(updateRep.getCallerReqId());
-		assert(tracker != null);
-		boolean compl = tracker.incrementReplies();
+		((PrivacyUpdateReply)updateRep).incrementReplies();
 		
-		if(compl)
-		{
-			requestIDMap.remove(updateRep.getCallerReqId());
-		}
+//		if( compl )
+//		{
+//			requestIDMap.remove(updateRep.getCallerReqId());
+//		}
 	}
 	
 	/**
 	 * @param contextServiceReqID
 	 */
-	public void addUpdateReply( long privacyReqID,
-			PrivacyUpdateReplyTracker replyTracker )
-	{
-		requestIDMap.put(privacyReqID, replyTracker);
-	}
+//	public void addUpdateReply( long privacyReqID,
+//			PrivacyUpdateReplyTracker replyTracker )
+//	{
+//		requestIDMap.put(privacyReqID, replyTracker);
+//	}
 }
