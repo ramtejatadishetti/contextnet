@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -59,8 +60,10 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 				AnonymizedIDUpdateInfo updateInfo 
 											= anonymizedIdToBeUpdateMap.get(anonymizedIDString);
 				
+				JSONObject randJSON = randomizeAttrValue( updateInfo.attrValPair );
+				
 				CSUpdateTransformedMessage transforMessage = new CSUpdateTransformedMessage
-						(anonymizedIDBytes, updateInfo.attrValPair, 
+						(anonymizedIDBytes, randJSON, 
 									updateInfo.anonymizedIDEntry.getAnonymizedIDToGUIDMapping());
 				
 				// just for testing not sending anonymizedIDToGUdi mapping
@@ -77,7 +80,34 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 		}
 		return null;
 	}
-
+	
+	/**
+	 * Randomize the attrValue pair for each anonymized ID
+	 * so that we know if that affects the throughput.
+	 * @return
+	 */
+	private JSONObject randomizeAttrValue( JSONObject attrValPair )
+	{
+		JSONObject randomJSON = new JSONObject();
+		Iterator<String> attrIter = attrValPair.keys();
+		
+		Random rand = new Random(System.currentTimeMillis());
+		
+		while( attrIter.hasNext() )
+		{
+			String attrName = attrIter.next();
+			double randVal = 1 + rand.nextDouble()*1498.0;
+			try {
+				randomJSON.put(attrName, randVal);
+			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return randomJSON;
+	}
+	
+	
 	@Override
 	public void unTransformSearchReply(GuidEntry myGuid, 
 			List<CSSearchReplyTransformedMessage> csTransformedList
