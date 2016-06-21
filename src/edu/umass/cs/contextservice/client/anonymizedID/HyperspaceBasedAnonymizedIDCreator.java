@@ -34,7 +34,7 @@ import edu.umass.cs.gnsclient.client.GuidEntry;
 public class HyperspaceBasedAnonymizedIDCreator 
 							implements AnonymizedIDCreationInterface
 {
-	private final Random anonymizedIDRand				= new Random();
+	private final Random anonymizedIDRand				= new Random(System.currentTimeMillis());
 	
 	@Override
 	public List<AnonymizedIDEntry> computeAnonymizedIDs

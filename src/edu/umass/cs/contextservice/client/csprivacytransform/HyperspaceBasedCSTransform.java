@@ -28,9 +28,10 @@ import edu.umass.cs.gnsclient.client.GuidEntry;
 public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 {
 	private final ExecutorService exectutorService;
-	
+	private final Random rand;
 	public HyperspaceBasedCSTransform()
 	{
+		rand = new Random(System.currentTimeMillis());
 		this.exectutorService = Executors.newFixedThreadPool(200);
 	}
 	
@@ -99,8 +100,6 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 		JSONObject randomJSON = new JSONObject();
 		Iterator<String> attrIter = attrValPair.keys();
 		
-		Random rand = new Random(System.currentTimeMillis());
-		
 		while( attrIter.hasNext() )
 		{
 			String attrName = attrIter.next();
@@ -108,7 +107,6 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 			try {
 				randomJSON.put(attrName, randVal);
 			} catch (JSONException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}

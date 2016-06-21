@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -81,6 +83,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	public static final int GUID_BASED_CS_TRANSFORM					= 3;
 	
 	
+	public static final int NUM_THREADS								= 200;
+	
 	private Queue<JSONObject> refreshTriggerQueue;
 	
 	private final Object refreshTriggerClientWaitLock 				= new Object();
@@ -103,6 +107,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	private long blockingReqID 										= 0;
 	private final Object blockingReqIDLock 							= new Object();
 	
+	private final ExecutorService execService;
 	
 	// indicates the transform type.
 	private final int transformType;
@@ -121,7 +126,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		gnsClient = null;
 		privacyCallBack = new PrivacyCallBack();
 		blockingCallBack = new BlockingCallBack();
-		//executorService = Executors.newCachedThreadPool();
+		execService = Executors.newFixedThreadPool(NUM_THREADS);
 		initializeClient();
 	}
 	
@@ -147,6 +152,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		props.setProperty("javax.net.ssl.trustStore", "conf/gnsClientConf/trustStore/node100.jks");
 		props.setProperty("javax.net.ssl.keyStorePassword", "qwerty");
 		props.setProperty("javax.net.ssl.keyStore", "conf/gnsClientConf/keyStore/node100.jks");
+		
+		execService = Executors.newFixedThreadPool(NUM_THREADS);
 		
 		privacyCallBack = new PrivacyCallBack();
 		blockingCallBack = new BlockingCallBack();
@@ -787,37 +794,38 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 	}
 	
-	
 	@Override
 	public boolean handleMessage(JSONObject jsonObject)
 	{
-		try
-		{
-			if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE) 
-					== ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY.getInt() )
-			{
-				handleQueryReply(jsonObject);
-			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-					== ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY.getInt() )
-			{
-				handleUpdateReply(jsonObject);
-			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-					== ContextServicePacket.PacketType.REFRESH_TRIGGER.getInt() )
-			{
-				handleRefreshTrigger(jsonObject);
-			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-					== ContextServicePacket.PacketType.GET_REPLY_MESSAGE.getInt() )
-			{
-				handleGetReply(jsonObject);
-			} else if(jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-					== ContextServicePacket.PacketType.CONFIG_REPLY.getInt() )
-			{
-				handleConfigReply(jsonObject);
-			}
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
+		this.execService.execute(new HandleMessageThread(jsonObject));
+//		try
+//		{
+//			
+//			if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE) 
+//					== ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY.getInt() )
+//			{
+//				handleQueryReply(jsonObject);
+//			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
+//					== ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY.getInt() )
+//			{
+//				handleUpdateReply(jsonObject);
+//			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
+//					== ContextServicePacket.PacketType.REFRESH_TRIGGER.getInt() )
+//			{
+//				handleRefreshTrigger(jsonObject);
+//			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
+//					== ContextServicePacket.PacketType.GET_REPLY_MESSAGE.getInt() )
+//			{
+//				handleGetReply(jsonObject);
+//			} else if(jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
+//					== ContextServicePacket.PacketType.CONFIG_REPLY.getInt() )
+//			{
+//				handleConfigReply(jsonObject);
+//			}
+//		} catch (JSONException e)
+//		{
+//			e.printStackTrace();
+//		}
 		return true;
 	}
 	
@@ -861,7 +869,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			
 			this.pendingUpdate.put(currId, updateQ);
 			
-			InetSocketAddress sockAddr = this.csNodeAddresses.get(rand.nextInt(csNodeAddresses.size()));
+			InetSocketAddress sockAddr 
+						= this.csNodeAddresses.get(rand.nextInt(csNodeAddresses.size()));
 			
 			ContextServiceLogger.getLogger().fine("ContextClient sending update requestID "+currId+" to "+sockAddr+" json "+
 					valUpdFromGNS);
@@ -982,174 +991,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 //		int resultSize;
 //	}
 	
-	private void handleUpdateReply(JSONObject jso)
-	{
-		ValueUpdateFromGNSReply<NodeIDType> vur = null;
-		try
-		{
-			vur = new ValueUpdateFromGNSReply<NodeIDType>(jso);
-		}
-		catch(Exception ex)
-		{
-			ex.printStackTrace();
-		}
-		long currReqID = vur.getUserReqNum();
-		ContextServiceLogger.getLogger().fine("Update reply recvd "+currReqID);
-		UpdateStorage<NodeIDType> replyUpdObj = this.pendingUpdate.get(currReqID);
-		
-		if( replyUpdObj != null )
-		{
-			replyUpdObj.valUpdFromGNSReply = vur;
-			replyUpdObj.callback.updateCompletion(replyUpdObj.updReplyObj);
-			
-			this.pendingUpdate.remove(currReqID);
-		}
-		else
-		{
-			ContextServiceLogger.getLogger().fine("Update reply recvd "
-											+currReqID+" update Obj null");
-			assert(false);
-		}
-	}
 	
-	private void handleGetReply(JSONObject jso)
-	{
-		try
-		{
-			GetReplyMessage<NodeIDType> getReply;
-			getReply = new GetReplyMessage<NodeIDType>(jso);
-			
-			long reqID = getReply.getReqID();
-			GetStorage<NodeIDType> replyGetObj = this.pendingGet.get(reqID);
-			replyGetObj.getReplyMessage = getReply;
-			
-			synchronized(replyGetObj)
-			{
-				replyGetObj.notify();
-			}
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-	}
-	
-	private void handleConfigReply(JSONObject jso)
-	{
-		try
-		{
-			ClientConfigReply<NodeIDType> configReply
-									= new ClientConfigReply<NodeIDType>(jso);
-			
-			JSONArray nodeIPArray 		= configReply.getNodeConfigArray();
-			JSONArray attrInfoArray 	= configReply.getAttributeArray();
-			JSONArray subspaceInfoArray = configReply.getSubspaceInfoArray();
-			
-			for( int i=0;i<nodeIPArray.length();i++ )
-			{
-				String ipPort = nodeIPArray.getString(i);
-				String[] parsed = ipPort.split(":");
-				csNodeAddresses.add(new InetSocketAddress(parsed[0], Integer.parseInt(parsed[1])));
-			}
-			
-			for(int i=0;i<attrInfoArray.length();i++)
-			{
-				String attrName = attrInfoArray.getString(i);
-				attributeHashMap.put(attrName, true);	
-			}
-			
-			for( int i=0; i<subspaceInfoArray.length(); i++ )
-			{
-				JSONArray subspaceAttrJSON = subspaceInfoArray.getJSONArray(i);
-				subspaceAttrMap.put(i, subspaceAttrJSON);
-			}
-			
-			synchronized( this.configLock )
-			{
-				configLock.notify();
-			}
-		} catch ( JSONException e )
-		{
-			e.printStackTrace();
-		}
-	}
-	
-	private void handleQueryReply(JSONObject jso)
-	{
-		try
-		{
-			QueryMsgFromUserReply<NodeIDType> qmur;
-			qmur = new QueryMsgFromUserReply<NodeIDType>(jso);
-			
-			long reqID = qmur.getUserReqNum();
-			SearchQueryStorage<NodeIDType> replySearchObj 
-									= this.pendingSearches.get(reqID);
-			replySearchObj.queryMsgFromUserReply = qmur;
-			
-			JSONArray result = qmur.getResultGUIDs();
-			int resultSize = qmur.getReplySize();
-			
-			replySearchObj.searchRep.setSearchReplyArray(result);
-			replySearchObj.searchRep.setReplySize(resultSize);
-			
-			replySearchObj.callback.searchCompletion(replySearchObj.searchRep);
-			
-			pendingSearches.remove(reqID);
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-	}
-	
-	private void sendConfigRequest()
-	{	
-		ClientConfigRequest<NodeIDType> clientConfigReq 
-			= new ClientConfigRequest<NodeIDType>(this.nodeid, sourceIP, sourcePort);
-		
-		InetSocketAddress sockAddr = new InetSocketAddress(configHost, configPort);
-		
-		try 
-		{
-			niot.sendToAddress(sockAddr, clientConfigReq.toJSONObject());
-		} catch (IOException e) 
-		{
-			e.printStackTrace();
-		} catch (JSONException e) 
-		{
-			e.printStackTrace();
-		}
-		
-		synchronized( this.configLock )
-		{
-			while( csNodeAddresses.size() == 0 )
-			{
-				try 
-				{
-					this.configLock.wait();
-				} catch (InterruptedException e) 
-				{
-					e.printStackTrace();
-				}
-			}
-		}
-	}
-	
-	private void handleRefreshTrigger(JSONObject jso)
-	{
-		try
-		{
-			RefreshTrigger<NodeIDType> qmur 
-						= new RefreshTrigger<NodeIDType>(jso);
-			
-			synchronized(refreshTriggerClientWaitLock)
-			{
-				refreshTriggerQueue.add(qmur.toJSONObject());
-				refreshTriggerClientWaitLock.notify();
-			}
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-	}
 	
 	/**
 	 * filters attributes, returns only attributes value pairs 
@@ -1206,6 +1048,217 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 		// for gnsTransform
 		gnsPrivacyTransform = new EncryptionBasedGNSPrivacyTransform();
+	}
+	
+	private void sendConfigRequest()
+	{	
+		ClientConfigRequest<NodeIDType> clientConfigReq 
+			= new ClientConfigRequest<NodeIDType>(nodeid, sourceIP, sourcePort);
+		
+		InetSocketAddress sockAddr = new InetSocketAddress(configHost, configPort);
+		
+		try 
+		{
+			niot.sendToAddress(sockAddr, clientConfigReq.toJSONObject());
+		} catch (IOException e) 
+		{
+			e.printStackTrace();
+		} catch (JSONException e) 
+		{
+			e.printStackTrace();
+		}
+		
+		synchronized( configLock )
+		{
+			while( csNodeAddresses.size() == 0 )
+			{
+				try 
+				{
+					configLock.wait();
+				} catch (InterruptedException e) 
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	private class HandleMessageThread implements Runnable
+	{
+		private final JSONObject mesgJSON;
+		public HandleMessageThread(JSONObject mesgJSON)
+		{
+			this.mesgJSON = mesgJSON;
+		}
+		
+		@Override
+		public void run() 
+		{
+			try
+			{
+				if( mesgJSON.getInt(ContextServicePacket.PACKET_TYPE) 
+						== ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY.getInt() )
+				{
+					handleQueryReply(mesgJSON);
+				} else if( mesgJSON.getInt(ContextServicePacket.PACKET_TYPE)
+						== ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY.getInt() )
+				{
+					handleUpdateReply(mesgJSON);
+				} else if( mesgJSON.getInt(ContextServicePacket.PACKET_TYPE)
+						== ContextServicePacket.PacketType.REFRESH_TRIGGER.getInt() )
+				{
+					handleRefreshTrigger(mesgJSON);
+				} else if( mesgJSON.getInt(ContextServicePacket.PACKET_TYPE)
+						== ContextServicePacket.PacketType.GET_REPLY_MESSAGE.getInt() )
+				{
+					handleGetReply(mesgJSON);
+				} else if(mesgJSON.getInt(ContextServicePacket.PACKET_TYPE)
+						== ContextServicePacket.PacketType.CONFIG_REPLY.getInt() )
+				{
+					handleConfigReply(mesgJSON);
+				}
+			} catch (JSONException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		private void handleUpdateReply(JSONObject jso)
+		{
+			ValueUpdateFromGNSReply<NodeIDType> vur = null;
+			try
+			{
+				vur = new ValueUpdateFromGNSReply<NodeIDType>(jso);
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+			}
+			long currReqID = vur.getUserReqNum();
+			ContextServiceLogger.getLogger().fine("Update reply recvd "+currReqID);
+			UpdateStorage<NodeIDType> replyUpdObj = pendingUpdate.get(currReqID);
+			
+			if( replyUpdObj != null )
+			{
+				replyUpdObj.valUpdFromGNSReply = vur;
+				replyUpdObj.callback.updateCompletion(replyUpdObj.updReplyObj);
+				
+				pendingUpdate.remove(currReqID);
+			}
+			else
+			{
+				ContextServiceLogger.getLogger().fine("Update reply recvd "
+												+currReqID+" update Obj null");
+				assert(false);
+			}
+		}
+		
+		private void handleGetReply(JSONObject jso)
+		{
+			try
+			{
+				GetReplyMessage<NodeIDType> getReply;
+				getReply = new GetReplyMessage<NodeIDType>(jso);
+				
+				long reqID = getReply.getReqID();
+				GetStorage<NodeIDType> replyGetObj = pendingGet.get(reqID);
+				replyGetObj.getReplyMessage = getReply;
+				
+				synchronized(replyGetObj)
+				{
+					replyGetObj.notify();
+				}
+			} catch (JSONException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		private void handleConfigReply(JSONObject jso)
+		{
+			try
+			{
+				ClientConfigReply<NodeIDType> configReply
+										= new ClientConfigReply<NodeIDType>(jso);
+				
+				JSONArray nodeIPArray 		= configReply.getNodeConfigArray();
+				JSONArray attrInfoArray 	= configReply.getAttributeArray();
+				JSONArray subspaceInfoArray = configReply.getSubspaceInfoArray();
+				
+				for( int i=0;i<nodeIPArray.length();i++ )
+				{
+					String ipPort = nodeIPArray.getString(i);
+					String[] parsed = ipPort.split(":");
+					csNodeAddresses.add(new InetSocketAddress(parsed[0], 
+							Integer.parseInt(parsed[1])));
+				}
+				
+				for(int i=0;i<attrInfoArray.length();i++)
+				{
+					String attrName = attrInfoArray.getString(i);
+					attributeHashMap.put(attrName, true);	
+				}
+				
+				for( int i=0; i<subspaceInfoArray.length(); i++ )
+				{
+					JSONArray subspaceAttrJSON = subspaceInfoArray.getJSONArray(i);
+					subspaceAttrMap.put(i, subspaceAttrJSON);
+				}
+				
+				synchronized( configLock )
+				{
+					configLock.notify();
+				}
+			} catch ( JSONException e )
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		private void handleQueryReply(JSONObject jso)
+		{
+			try
+			{
+				QueryMsgFromUserReply<NodeIDType> qmur;
+				qmur = new QueryMsgFromUserReply<NodeIDType>(jso);
+				
+				long reqID = qmur.getUserReqNum();
+				SearchQueryStorage<NodeIDType> replySearchObj 
+										= pendingSearches.get(reqID);
+				replySearchObj.queryMsgFromUserReply = qmur;
+				
+				JSONArray result = qmur.getResultGUIDs();
+				int resultSize = qmur.getReplySize();
+				
+				replySearchObj.searchRep.setSearchReplyArray(result);
+				replySearchObj.searchRep.setReplySize(resultSize);
+				
+				replySearchObj.callback.searchCompletion(replySearchObj.searchRep);
+				
+				pendingSearches.remove(reqID);
+			} catch (JSONException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		private void handleRefreshTrigger(JSONObject jso)
+		{
+			try
+			{
+				RefreshTrigger<NodeIDType> qmur 
+							= new RefreshTrigger<NodeIDType>(jso);
+				
+				synchronized(refreshTriggerClientWaitLock)
+				{
+					refreshTriggerQueue.add(qmur.toJSONObject());
+					refreshTriggerClientWaitLock.notify();
+				}
+			} catch (JSONException e)
+			{
+				e.printStackTrace();
+			}
+		}
 	}
 	
 	// testing secure client code

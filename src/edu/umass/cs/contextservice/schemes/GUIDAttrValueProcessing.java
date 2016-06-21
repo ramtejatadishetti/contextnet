@@ -771,9 +771,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		Vector<MaxAttrMatchingStorageClass> maxMatchingSubspaceNumVector 
 			= matchingSubspaceHashMap.get(maxMatchingAttrs);
 		
-		Random rand = new Random();
-		
-		int returnIndex = rand.nextInt( maxMatchingSubspaceNumVector.size() );
+		int returnIndex = replicaChoosingRand.nextInt( maxMatchingSubspaceNumVector.size() );
 		matchingAttributes.clear();
 		matchingAttributes.addAll(maxMatchingSubspaceNumVector.get(returnIndex).currMatchingComponents);
 		
