@@ -130,6 +130,9 @@ public class ContextServiceConfig
 	// on receiving the search reply.
 	public static boolean DECRYPTIONS_ON_SEARCH_REPLY_ENABLED		= false;
 	
+	// if true, no encryption happens. cipher text and plain text are same.
+	public static boolean NO_ENCRYPTION								= true;
+	
 	public static final String AssymmetricEncAlgorithm				= "RSA";
 	public static final String SymmetricEncAlgorithm				= "DES";
 	public static final String STRING_ENCODING						= "UTF-8";

@@ -245,6 +245,9 @@ public class Utils
 	public static byte[] doPublicKeyEncryption(byte[] publicKeyBytes, byte[] plainTextByteArray) 
 			throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException
 	{
+		if(ContextServiceConfig.NO_ENCRYPTION)
+			return plainTextByteArray;
+		
 		
 		long start = System.currentTimeMillis();
 //		byte[] privateKeyBytes;
@@ -288,6 +291,9 @@ public class Utils
 	public static byte[] doPrivateKeyDecryption(byte[] privateKeyBytes, byte[] encryptedTextByteArray) 
 			throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException
 	{
+		if(ContextServiceConfig.NO_ENCRYPTION)
+			return encryptedTextByteArray;
+		
 //		byte[] privateKeyBytes;
 //		byte[] publicKeyBytes;
 //		KeyFactory kf = KeyFactory.getInstance("RSA"); // or "EC" or whatever
