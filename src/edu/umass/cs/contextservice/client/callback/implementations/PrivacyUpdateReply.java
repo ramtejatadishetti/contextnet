@@ -5,7 +5,7 @@ import edu.umass.cs.contextservice.client.callback.interfaces.UpdateReplyInterfa
 
 public class PrivacyUpdateReply implements UpdateReplyInterface
 {
-	private long callerReqId;
+	//private long callerReqId;
 	
 	private final UpdateReplyInterface userUpdReplyObj;
 	private final CallBackInterface userCallback;
@@ -16,21 +16,13 @@ public class PrivacyUpdateReply implements UpdateReplyInterface
 	private final Object localLock = new Object();
 	
 	
-	public PrivacyUpdateReply( long callerReqId, UpdateReplyInterface userUpdReplyObj
+	public PrivacyUpdateReply(UpdateReplyInterface userUpdReplyObj
 			, CallBackInterface userCallback, int totalAnonymizedIDUpdated )
-	{
-		this.callerReqId = callerReqId;
-		
+	{	
 		this.userUpdReplyObj = userUpdReplyObj;
 		this.userCallback = userCallback;
 		this.totalAnonymizedIDUpdated = totalAnonymizedIDUpdated;
 		numberCompletionRepliesSoFar = 0;
-	}
-
-	@Override
-	public long getCallerReqId() 
-	{
-		return callerReqId;
 	}
 	
 	/**

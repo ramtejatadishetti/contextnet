@@ -67,7 +67,7 @@ public class SubspaceBasedAnonymizedIDCreator
 				
 				JSONArray attrArray = this.subspaceAttrMap.get(mapKey);
 				
-				System.out.println("subspace attrs "+attrArray);
+//				System.out.println("subspace attrs "+attrArray);
 				
 				// String is GUIDString
 				HashMap<String, List<String>> guidToAttributesMap 
@@ -88,8 +88,8 @@ public class SubspaceBasedAnonymizedIDCreator
 				HashMap<String, JSONArray> minimizedAttrSet = removeRedundantAnonymizedIDs
 				( attributesToGuidsMap );
 				
-				System.out.println("Reduction from minimization before "+
-						attributesToGuidsMap.size()+" after "+minimizedAttrSet.size());
+//				System.out.println("Reduction from minimization before "+
+//						attributesToGuidsMap.size()+" after "+minimizedAttrSet.size());
 				// now assign anonymized ID
 				//HashMap<String, List<byte[]>> attributesToGuidsMap 
 				//	= new HashMap<String, List<byte[]>>();
@@ -522,7 +522,7 @@ public class SubspaceBasedAnonymizedIDCreator
 			{
 				printStr = printStr + " , "+attrList.get(i);
 			}
-			System.out.println("printStr "+printStr);
+//			System.out.println("printStr "+printStr);
 		}
 	}
 	
@@ -633,9 +633,9 @@ public class SubspaceBasedAnonymizedIDCreator
 		
 		
 		List<AnonymizedIDEntry> anonymizedIds = anonymizedIDCreator.computeAnonymizedIDs(null, aclMap);
-		System.out.println("Number of anonymizedIds "+anonymizedIds.size());
-		
-		System.out.println("\n\n\n##################################\n\n\n");
+//		System.out.println("Number of anonymizedIds "+anonymizedIds.size());
+//		
+//		System.out.println("\n\n\n##################################\n\n\n");
 		
 		for(int i=0;i<anonymizedIds.size();i++)
 		{

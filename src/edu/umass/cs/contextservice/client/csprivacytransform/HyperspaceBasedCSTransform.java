@@ -110,7 +110,7 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 				e.printStackTrace();
 			}
 		}
-		System.out.println("randomizeAttrValue ori "+attrValPair +" new "+randomJSON);
+//		System.out.println("randomizeAttrValue ori "+attrValPair +" new "+randomJSON);
 		return randomJSON;
 	}
 	
@@ -128,9 +128,9 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 		
 		if(ContextServiceConfig.DEBUG_MODE)
 		{
-			System.out.println
-				("Total decryptions "+parallelSearchDecryption.getTotalDecryptionsOverall()
-				+" replyArray size "+replyArray.length());
+//			System.out.println
+//				("Total decryptions "+parallelSearchDecryption.getTotalDecryptionsOverall()
+//				+" replyArray size "+replyArray.length());
 		}
 		
 //		for(int i=0; i<csTransformedList.size();i++)
@@ -363,18 +363,18 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 		
 		List<AnonymizedIDEntry> anonymizedIdList 
 						= anonymizedIDCreator.computeAnonymizedIDs(null, aclMap);
-		System.out.println("Number of anonymizedIds "+anonymizedIdList.size());
-		
-		System.out.println("\n\n\n##################################\n\n\n");
+//		System.out.println("Number of anonymizedIds "+anonymizedIdList.size());
+//		
+//		System.out.println("\n\n\n##################################\n\n\n");
 		for(int i=0;i<anonymizedIdList.size();i++)
 		{
 			AnonymizedIDEntry anonymizedEntry = anonymizedIdList.get(i);
-			System.out.println(anonymizedEntry.toString());
+//			System.out.println(anonymizedEntry.toString());
 		}
 		
-		System.out.println("\n\n\n##################################\n\n\n");
-		
-		System.out.println("\n Updating attr1 \n");
+//		System.out.println("\n\n\n##################################\n\n\n");
+//		
+//		System.out.println("\n Updating attr1 \n");
 		
 //		HashMap<String, AttrValueRepresentationJSON> attrValueMap 
 //					= new HashMap<String, AttrValueRepresentationJSON>();

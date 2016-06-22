@@ -143,7 +143,7 @@ public class ContextServiceConfig
 	public static final String STRING_ENCODING						= "UTF-8";
 	
 	// if true some debugging information will be computed and printed.
-	public static final boolean DEBUG_MODE							= true;
+	public static final boolean DEBUG_MODE							= false;
 	
 	
 	//  model paramters

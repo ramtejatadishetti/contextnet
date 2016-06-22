@@ -299,7 +299,6 @@ public class AttributeTypes
 		{
 			case AttributeTypes.DoubleType:
 			{
-				
 				double minValD = Double.parseDouble(minValue);
 				double maxValD = Double.parseDouble(maxValue);
 				
@@ -421,7 +420,7 @@ public class AttributeTypes
 			default:
 				assert(false);
 		}
-		assert(domainParitionInfo.size() > 0);
+		assert( domainParitionInfo.size() > 0 );
 //		for(int i=0;i<domainParitionInfo.size();i++)
 //		{
 //			DomainPartitionInfo dinfo = domainParitionInfo.get(i);

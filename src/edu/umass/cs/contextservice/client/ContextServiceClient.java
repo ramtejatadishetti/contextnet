@@ -83,7 +83,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	public static final int GUID_BASED_CS_TRANSFORM					= 3;
 	
 	
-	public static final int NUM_THREADS								= 200;
+	public static final int NUM_THREADS								= 1000;
 	
 	private Queue<JSONObject> refreshTriggerQueue;
 	
@@ -107,7 +107,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	private long blockingReqID 										= 0;
 	private final Object blockingReqIDLock 							= new Object();
 	
-	private final ExecutorService execService;
+	//private final ExecutorService execService;
 	
 	// indicates the transform type.
 	private final int transformType;
@@ -126,7 +126,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		gnsClient = null;
 		privacyCallBack = new PrivacyCallBack();
 		blockingCallBack = new BlockingCallBack();
-		execService = Executors.newFixedThreadPool(NUM_THREADS);
+		//execService = Executors.newFixedThreadPool(NUM_THREADS);
 		initializeClient();
 	}
 	
@@ -153,7 +153,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		props.setProperty("javax.net.ssl.keyStorePassword", "qwerty");
 		props.setProperty("javax.net.ssl.keyStore", "conf/gnsClientConf/keyStore/node100.jks");
 		
-		execService = Executors.newFixedThreadPool(NUM_THREADS);
+		//execService = Executors.newFixedThreadPool(NUM_THREADS);
 		
 		privacyCallBack = new PrivacyCallBack();
 		blockingCallBack = new BlockingCallBack();
@@ -357,15 +357,15 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			
 			assert(transformedMesgList.size() > 0);
 			
-			long currId;
-			
-			synchronized( this.privacyUpdateIdLock )
-			{
-				currId = this.privacyReqId++;
-			}
+//			long currId;
+//			
+//			synchronized( this.privacyUpdateIdLock )
+//			{
+//				currId = this.privacyReqId++;
+//			}
 			
 			UpdateReplyInterface privacyUpdRep 
-					= new PrivacyUpdateReply( currId, updReplyObj, callback, 
+					= new PrivacyUpdateReply( updReplyObj, callback, 
 							transformedMesgList.size() );
 			
 //			PrivacyUpdateReplyTracker privacyUpdRepTracker 
@@ -406,11 +406,11 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			
 			if( transformedMesgList.size() > 0 )
 			{
-				System.out.println
-				("sendUpdateSecure complete GUID "+GUID+" transform time "+(end1-start1)
-					+" total time "+(end2-start1)+
-					" length "+attrValuePairs.length()+" transformedMesgList size "
-					+transformedMesgList.size());
+//				System.out.println
+//				("sendUpdateSecure complete GUID "+GUID+" transform time "+(end1-start1)
+//					+" total time "+(end2-start1)+
+//					" length "+attrValuePairs.length()+" transformedMesgList size "
+//					+transformedMesgList.size());
 			}
 		}
 		catch( JSONException jsoEx )
@@ -638,12 +638,12 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			
 			assert(transformedMesgList.size() > 0);
 			
-			long currId;
-			
-			synchronized( this.privacyUpdateIdLock )
-			{
-				currId = this.privacyReqId++;
-			}
+//			long currId;
+//			
+//			synchronized( this.privacyUpdateIdLock )
+//			{
+//				currId = this.privacyReqId++;
+//			}
 			
 			long currblockReqId;
 			
@@ -655,7 +655,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			BlockingUpdateReply blockingUpd = new BlockingUpdateReply(currblockReqId);
 			
 			
-			UpdateReplyInterface privacyUpdRep = new PrivacyUpdateReply(currId, 
+			UpdateReplyInterface privacyUpdRep = new PrivacyUpdateReply( 
 					blockingUpd, this.blockingCallBack, transformedMesgList.size());
 			
 //			PrivacyUpdateReplyTracker privacyUpdRepTracker 
@@ -696,11 +696,11 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			
 			if( transformedMesgList.size() > 0 )
 			{
-				System.out.println
-				("sendUpdateSecure complete GUID "+GUID+" transform time "+(end1-start1)
-					+" total time "+(end2-start1)+
-					" length "+attrValuePairs.length()+" transformedMesgList size "
-					+transformedMesgList.size() );
+//				System.out.println
+//				("sendUpdateSecure complete GUID "+GUID+" transform time "+(end1-start1)
+//					+" total time "+(end2-start1)+
+//					" length "+attrValuePairs.length()+" transformedMesgList size "
+//					+transformedMesgList.size() );
 			}
 			
 			blockingUpd.waitForCompletion();
@@ -776,9 +776,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				searchRepTransformList, replyArray );
 			long end2 = System.currentTimeMillis();
 			
-			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
-						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
-						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
+//			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
+//						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
+//						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
 			
 			return replyArray.length();
 		}
@@ -786,9 +786,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		{
 			long end2 = System.currentTimeMillis();
 			
-			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
-						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
-						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
+//			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
+//						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
+//						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
 			
 			return blockingSearch.getReplySize();
 		}
@@ -797,7 +797,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	@Override
 	public boolean handleMessage(JSONObject jsonObject)
 	{
-		this.execService.execute(new HandleMessageThread(jsonObject));
+		//this.execService.execute(new HandleMessageThread(jsonObject));
+		(new HandleMessageThread(jsonObject)).run();;
 //		try
 //		{
 //			
@@ -1291,7 +1292,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		PublicKey publicKey0 = kp0.getPublic();
 		PrivateKey privateKey0 = kp0.getPrivate();
 		
-		System.out.println("privateKey0 "+((RSAPrivateKey)privateKey0).getModulus().bitLength());
+//		System.out.println("privateKey0 "+((RSAPrivateKey)privateKey0).getModulus().bitLength());
 		byte[] publicKeyByteArray0 = publicKey0.getEncoded();
 		byte[] privateKeyByteArray0 = privateKey0.getEncoded();
 		
@@ -1402,8 +1403,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		csClient.sendSearchQuerySecureWithCallBack
 					(searchQuery, 300000, queryingGuid, searchRep, callback);
 		
-		System.out.println("Query for attr1 querying GUID "+ queryingGuid.getGuid()+
-				" Real GUID "+guid0+" reply Arr "+replyArray);
+//		System.out.println("Query for attr1 querying GUID "+ queryingGuid.getGuid()+
+//				" Real GUID "+guid0+" reply Arr "+replyArray);
 		
 		
 		searchQuery = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE attr1 >= 5 AND attr1 <= 15"
@@ -1416,8 +1417,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		csClient.sendSearchQuerySecureWithCallBack(searchQuery, 300000, queryingGuid,
 				searchRep, callback);
 		
-		System.out.println("Query for att1 and attr4 querying GUID "+ queryingGuid.getGuid()+
-				" Real GUID "+guid0+" reply Arr "+replyArray);
+//		System.out.println("Query for att1 and attr4 querying GUID "+ queryingGuid.getGuid()+
+//				" Real GUID "+guid0+" reply Arr "+replyArray);
 		
 //		queryingGuid = guidsVector.get(1);
 //		JSONObject getObj = csClient.sendGetRequestSecure(guid0, queryingGuid);

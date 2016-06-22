@@ -206,8 +206,8 @@ public class GUIDBasedAnonymizedIDCreator
 				e.printStackTrace();
 			}
 		}
-		System.out.println("Number of guids in ACL not stored in correct localtion "
-								+notAssignedGuids+" total length "+guidSet.length());
+//		System.out.println("Number of guids in ACL not stored in correct localtion "
+//								+notAssignedGuids+" total length "+guidSet.length());
 		
 		// assign remaining ones
 		// are assigned any location free after their hashed location.
@@ -371,14 +371,14 @@ public class GUIDBasedAnonymizedIDCreator
 		
 		List<AnonymizedIDEntry> anonymizedIds 
 			= anonymizedIDCreator.computeAnonymizedIDs(myGUID, aclMap);
-		System.out.println("Number of anonymizedIds "+anonymizedIds.size());
-		
-		System.out.println("\n\n\n##################################\n\n\n");
+//		System.out.println("Number of anonymizedIds "+anonymizedIds.size());
+//		
+//		System.out.println("\n\n\n##################################\n\n\n");
 		
 		for( int i=0; i<anonymizedIds.size(); i++ )
 		{
 			AnonymizedIDEntry anonymizedEntry = anonymizedIds.get(i);
-			System.out.println( anonymizedEntry.toString() );
+//			System.out.println( anonymizedEntry.toString() );
 		}
 	}
 }

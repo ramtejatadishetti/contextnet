@@ -316,7 +316,7 @@ public class Utils
 		
 		long end = System.currentTimeMillis();
 		
-		System.out.println("doPrivateKeyDecryption time "+(end-start));
+//		System.out.println("doPrivateKeyDecryption time "+(end-start));
 	    return plainText;
 	}
 	
@@ -343,7 +343,7 @@ public class Utils
 		c.init(Cipher.ENCRYPT_MODE, keyObj);
 		long end = System.currentTimeMillis();
 		
-		System.out.println("doSymmetricEncryption time "+(end-start));
+//		System.out.println("doSymmetricEncryption time "+(end-start));
 		
 		return c.doFinal(plainTextByteArray);
 	}
@@ -374,7 +374,7 @@ public class Utils
 		
 		long end = System.currentTimeMillis();
 		
-		System.out.println("doSymmetricDecryption time "+(end-start));
+//		System.out.println("doSymmetricDecryption time "+(end-start));
 		
 		return c.doFinal(encryptedByteArray);
 	}
@@ -431,25 +431,27 @@ public class Utils
 		{
 			byte[] guidBytes = new byte[20];
 			rand.nextBytes(guidBytes);
-			String guidString = Utils.bytArrayToHex(guidBytes);
+			//String guidString = Utils.bytArrayToHex(guidBytes);
 			
-			resultJSON.put(guidString);
+			//resultJSON.put(guidString);
 		}
-		System.out.println("time taken "+(System.currentTimeMillis() - start)+
-				" "+resultJSON.getString(0));
+//		System.out.println("ByteArrayToHEx time taken "+(System.currentTimeMillis() - start));
+//		
+//		System.out.println("time taken "+(System.currentTimeMillis() - start)+
+//				" "+resultJSON.getString(0));
 		
 		// time to convert to json tostring
 		start = System.currentTimeMillis();
 		String jsonString = resultJSON.toString();
-		System.out.println("JSON tostring time taken "
-						+(System.currentTimeMillis() - start));
+//		System.out.println("JSON tostring time taken "
+//						+(System.currentTimeMillis() - start));
 		
 		
 		// time from string
 		start = System.currentTimeMillis();
 		resultJSON = new JSONArray(jsonString);
-		System.out.println("JSON fromString time taken "
-				+(System.currentTimeMillis() - start));
+//		System.out.println("JSON fromString time taken "
+//				+(System.currentTimeMillis() - start));
 		
 		KeyPairGenerator kpg = KeyPairGenerator.getInstance( "RSA" );
 		KeyPair kp0 = kpg.generateKeyPair();

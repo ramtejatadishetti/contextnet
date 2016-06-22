@@ -34,13 +34,14 @@ public class SampleCallBack implements CallBackInterface
 	@Override
 	public void updateCompletion(UpdateReplyInterface updateRep) 
 	{
-		Long startTime = requestIDMap.get(updateRep.getCallerReqId());
+		Long startTime = requestIDMap.get(((SampleUpdateReply)updateRep).getCallerReqId());
 		assert(startTime != null);
 
-		System.out.println("Update completion time reqID "+updateRep.getCallerReqId()
+		System.out.println("Update completion time reqID "
+						+((SampleUpdateReply)updateRep).getCallerReqId()
 						+ " time taken "+(System.currentTimeMillis()-startTime));
 		
-		requestIDMap.remove(updateRep.getCallerReqId());
+		requestIDMap.remove(((SampleUpdateReply)updateRep).getCallerReqId());
 	}
 	
 	/**
