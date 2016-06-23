@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,10 +27,10 @@ import edu.umass.cs.gnsclient.client.GuidEntry;
 public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 {
 	private final ExecutorService exectutorService;
-	private final Random rand;
+	//private final Random rand;
 	public HyperspaceBasedCSTransform()
 	{
-		rand = new Random(System.currentTimeMillis());
+		//rand = new Random(System.currentTimeMillis());
 		this.exectutorService = Executors.newFixedThreadPool(200);
 	}
 	
@@ -64,10 +63,10 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 				// just for testing and debugging system.
 				if(ContextServiceConfig.RAND_VAL_JSON)
 				{
-					JSONObject randJSON = randomizeAttrValue( updateInfo.attrValPair );
+					//JSONObject randJSON = randomizeAttrValue( updateInfo.attrValPair );
 				
 					CSUpdateTransformedMessage transforMessage = new CSUpdateTransformedMessage
-						(anonymizedIDString, randJSON, 
+						(anonymizedIDString, updateInfo.attrValPair, 
 									null);
 					
 					transformedMesgList.add(transforMessage);
@@ -95,25 +94,24 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 	 * so that we know if that affects the throughput.
 	 * @return
 	 */
-	private JSONObject randomizeAttrValue( JSONObject attrValPair )
-	{
-		JSONObject randomJSON = new JSONObject();
-		Iterator<String> attrIter = attrValPair.keys();
-		
-		while( attrIter.hasNext() )
-		{
-			String attrName = attrIter.next();
-			double randVal = 1 + rand.nextDouble()*1498.0;
-			try {
-				randomJSON.put(attrName, randVal);
-			} catch (JSONException e) {
-				e.printStackTrace();
-			}
-		}
-//		System.out.println("randomizeAttrValue ori "+attrValPair +" new "+randomJSON);
-		return randomJSON;
-	}
-	
+//	private JSONObject randomizeAttrValue( JSONObject attrValPair )
+//	{
+//		JSONObject randomJSON = new JSONObject();
+//		Iterator<String> attrIter = attrValPair.keys();
+//		
+//		while( attrIter.hasNext() )
+//		{
+//			String attrName = attrIter.next();
+//			double randVal = 1 + rand.nextDouble()*1498.0;
+//			try {
+//				randomJSON.put(attrName, randVal);
+//			} catch (JSONException e) {
+//				e.printStackTrace();
+//			}
+//		}
+////		System.out.println("randomizeAttrValue ori "+attrValPair +" new "+randomJSON);
+//		return randomJSON;
+//	}
 	
 	@Override
 	public void unTransformSearchReply(GuidEntry myGuid, 
