@@ -9,7 +9,6 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
-import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.gnsclient.client.GuidEntry;
 
 public class NoopCSTransform implements CSPrivacyTransformInterface
@@ -20,7 +19,7 @@ public class NoopCSTransform implements CSPrivacyTransformInterface
 			List<AnonymizedIDEntry> anonymizedIDList) 
 	{
 		CSUpdateTransformedMessage csTransformedMessage 
-			= new CSUpdateTransformedMessage(Utils.hexStringToByteArray(targetGuid), 
+			= new CSUpdateTransformedMessage(targetGuid, 
 					attrValuePairs, null);
 		List<CSUpdateTransformedMessage> returnList 
 						= new LinkedList<CSUpdateTransformedMessage>();

@@ -1,5 +1,7 @@
 package edu.umass.cs.contextservice.client.common;
 
+import java.util.HashMap;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -13,8 +15,8 @@ import edu.umass.cs.contextservice.utils.Utils;
  */
 public class AnonymizedIDEntry 
 {	
-	private final byte[] anonymizedIDByteArray;
-	private final JSONArray attributeSet;
+	private final String anonymizedIDString;
+	private final HashMap<String, Boolean> attributeMap;
 	private final JSONArray guidSet;
 	
 	// this array is in order so that a search querier can do a quick lookup
@@ -29,32 +31,32 @@ public class AnonymizedIDEntry
 	// This could be advantageous as decrypting whole list sequentially gives high overhead.
 	private final JSONArray anonymizedIDToGUIDMapping;
 	
-	public AnonymizedIDEntry(byte[] anonymizedIDByteArray, JSONArray attributeSet, 
+	public AnonymizedIDEntry(String anonymizedIDString, HashMap<String, Boolean> attributeMap, 
 			JSONArray guidSet, JSONArray anonymizedIDToGUIDMapping)
 	{
-		assert(anonymizedIDByteArray != null);
-		assert(attributeSet != null);
+		assert(anonymizedIDString.length() > 0);
+		assert(attributeMap != null);
 		assert(guidSet != null);
 		assert(anonymizedIDToGUIDMapping != null);
-		assert(attributeSet.length()>0);
+		assert(attributeMap.size()>0);
 		assert(guidSet.length()>0);
 		assert(anonymizedIDToGUIDMapping.length() == guidSet.length());
 		
-		this.anonymizedIDByteArray = anonymizedIDByteArray;
-		this.attributeSet = attributeSet;
+		this.anonymizedIDString = anonymizedIDString;
+		this.attributeMap = attributeMap;
 		this.guidSet = guidSet;
 		this.anonymizedIDToGUIDMapping = anonymizedIDToGUIDMapping;
 	}
 	
 	
-	public byte[] getID()
+	public String getID()
 	{
-		return anonymizedIDByteArray;
+		return anonymizedIDString;
 	}
 	
-	public JSONArray getAttributeSet()
+	public HashMap<String, Boolean> getAttributeMap()
 	{
-		return attributeSet;
+		return attributeMap;
 	}
 	
 	public JSONArray getGUIDSet()
@@ -69,7 +71,7 @@ public class AnonymizedIDEntry
 	
 	public String toString()
 	{
-		String str = "ID: "+Utils.bytArrayToHex(anonymizedIDByteArray)+" AttrSet: "+attributeSet+" GuidSet: ";
+		String str = "ID: "+anonymizedIDString+" AttrMap: "+attributeMap+" GuidSet: ";
 		for(int i=0;i<guidSet.length();i++)
 		{
 			byte[] guidBytes;

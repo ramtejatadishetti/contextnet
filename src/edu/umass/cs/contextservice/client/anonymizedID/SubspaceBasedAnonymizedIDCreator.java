@@ -101,6 +101,7 @@ public class SubspaceBasedAnonymizedIDCreator
 					// JSONArray in string format
 					String key = attrSetIter.next();
 					JSONArray attrSet = new JSONArray(key);
+					HashMap<String, Boolean> attrMap = convertJSONArrayToMap(attrSet);
 					JSONArray guidSet = minimizedAttrSet.get(key);
 					assert(attrSet != null);
 					assert(guidSet != null);
@@ -111,7 +112,8 @@ public class SubspaceBasedAnonymizedIDCreator
 					anonymizedIDRand.nextBytes(anonymizedID);
 					
 					AnonymizedIDEntry anonymizedIDObj 
-						= new AnonymizedIDEntry(anonymizedID, attrSet, guidSet, null);
+						= new AnonymizedIDEntry(Utils.bytArrayToHex(anonymizedID), attrMap, 
+								guidSet, null);
 					
 					
 					anonymizedIDList.add(anonymizedIDObj);
@@ -124,6 +126,23 @@ public class SubspaceBasedAnonymizedIDCreator
 			jsoEx.printStackTrace();
 		}
 		return null;
+	}
+	
+	private HashMap<String, Boolean> convertJSONArrayToMap(JSONArray attrSet)
+	{
+		HashMap<String, Boolean> attrMap = new HashMap<String, Boolean>();
+		
+		for(int i=0; i<attrSet.length(); i++)
+		{
+			try 
+			{
+				String attrName = attrSet.getString(i);
+				attrMap.put(attrName, true);
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}	
+		}
+		return attrMap;
 	}
 	
 	/**

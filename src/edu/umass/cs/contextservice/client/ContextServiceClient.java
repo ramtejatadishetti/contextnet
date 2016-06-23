@@ -7,7 +7,6 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.interfaces.RSAPrivateKey;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -24,7 +23,6 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.anonymizedID.AnonymizedIDCreationInterface;
-import edu.umass.cs.contextservice.client.anonymizedID.GUIDBasedAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.anonymizedID.HyperspaceBasedAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.callback.implementations.BlockingCallBack;
 import edu.umass.cs.contextservice.client.callback.implementations.BlockingSearchReply;
@@ -42,6 +40,7 @@ import edu.umass.cs.contextservice.client.csprivacytransform.CSPrivacyTransformI
 import edu.umass.cs.contextservice.client.csprivacytransform.CSSearchReplyTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSUpdateTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.HyperspaceBasedCSTransform;
+import edu.umass.cs.contextservice.client.csprivacytransform.NoopCSTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.EncryptionBasedGNSPrivacyTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSPrivacyTransformInterface;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSTransformedMessage;
@@ -394,10 +393,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 //						updateState );
 //				this.executorService.execute(updateThread);
 				
-				String IDString 
-					= Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
-				
-				sendUpdateToCS( IDString, csTransformedMessage.getAttrValJSON(), 
+				sendUpdateToCS( csTransformedMessage.getAnonymizedIDString(), csTransformedMessage.getAttrValJSON(), 
 						csTransformedMessage.getAnonymizedIDToGuidMapping(), 
 						versionNum, privacyUpdRep, privacyCallBack );
 			}
@@ -684,10 +680,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 //						updateState );
 //				this.executorService.execute(updateThread);
 				
-				String IDString 
-					= Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
-				
-				sendUpdateToCS( IDString, csTransformedMessage.getAttrValJSON(), 
+				sendUpdateToCS( csTransformedMessage.getAnonymizedIDString(), 
+						csTransformedMessage.getAttrValJSON(), 
 						csTransformedMessage.getAnonymizedIDToGuidMapping(), 
 						versionNum, privacyUpdRep, privacyCallBack );
 			}
@@ -1039,12 +1033,13 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			
 			// for cs transform
 			csPrivacyTransform = new HyperspaceBasedCSTransform();
+			//csPrivacyTransform = new NoopCSTransform();
 		}
 		else if( this.transformType == GUID_BASED_CS_TRANSFORM )
 		{
-			anonymizedIDCreation = new GUIDBasedAnonymizedIDCreator();
-			// for cs transform
-			csPrivacyTransform = new HyperspaceBasedCSTransform();
+//			anonymizedIDCreation = new GUIDBasedAnonymizedIDCreator();
+//			// for cs transform
+//			csPrivacyTransform = new HyperspaceBasedCSTransform();
 		}
 		
 		// for gnsTransform

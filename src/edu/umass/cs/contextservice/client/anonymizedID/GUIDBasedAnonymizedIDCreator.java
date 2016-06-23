@@ -57,13 +57,13 @@ public class GUIDBasedAnonymizedIDCreator
 			HashMap<String, Boolean> attrMap = guidToAttributesMap.get(guidString);
 			
 			
-			JSONArray attrSet = new JSONArray();
+			HashMap<String, Boolean> anonmizedIDAttrMap= new HashMap<String, Boolean>();
 			
 			Iterator<String> attrMapIter = attrMap.keySet().iterator();
 			
 			while(attrMapIter.hasNext())
 			{
-				attrSet.put(attrMapIter.next());
+				anonmizedIDAttrMap.put(attrMapIter.next(), true);
 			}
 			
 			byte[] anonymizedID 
@@ -79,7 +79,7 @@ public class GUIDBasedAnonymizedIDCreator
 					computeAnonymizedIDToGUIDMapping(myGuidEntry, guidSet, unionGuidsMap);
 			
 			AnonymizedIDEntry anonymizedIDEntry 
-						= new AnonymizedIDEntry(anonymizedID , attrSet, guidSet, anonymizedIDToGuidMapping);
+						= new AnonymizedIDEntry(Utils.bytArrayToHex(anonymizedID) , anonmizedIDAttrMap, guidSet, anonymizedIDToGuidMapping);
 			
 			anonymizedIDList.add(anonymizedIDEntry);
 		}

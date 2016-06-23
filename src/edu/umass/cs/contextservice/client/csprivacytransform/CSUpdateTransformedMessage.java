@@ -3,8 +3,6 @@ package edu.umass.cs.contextservice.client.csprivacytransform;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import edu.umass.cs.contextservice.utils.Utils;
-
 /**
  * This message stores  the anonymized ID, attrValuePairs,  
  * the mapping information to real GUID for each attribute 
@@ -13,22 +11,22 @@ import edu.umass.cs.contextservice.utils.Utils;
  */
 public class CSUpdateTransformedMessage 
 {
-	private final byte[] anonymizedID; 
+	private final String anonymizedIDString; 
 	private final JSONObject csAttrValPairs;
 
 	private final JSONArray anonymizedIDToGuidMapping;
 	
-	public CSUpdateTransformedMessage( byte[] anonymizedID, 
+	public CSUpdateTransformedMessage( String anonymizedIDString, 
 			JSONObject csAttrValPairs, JSONArray anonymizedIDToGuidMapping )
 	{
-		this.anonymizedID = anonymizedID;
+		this.anonymizedIDString = anonymizedIDString;
 		this.csAttrValPairs = csAttrValPairs;
 		this.anonymizedIDToGuidMapping = anonymizedIDToGuidMapping;
 	}
 	
-	public byte[] getAnonymizedID()
+	public String getAnonymizedIDString()
 	{
-		return this.anonymizedID;
+		return this.anonymizedIDString;
 	}
 	
 	public JSONObject getAttrValJSON()
@@ -43,7 +41,7 @@ public class CSUpdateTransformedMessage
 	
 	public String toString()
 	{
-		String str="anonymized ID "+Utils.bytArrayToHex(anonymizedID)+" csAttrValPairs "
+		String str="anonymized ID "+anonymizedIDString+" csAttrValPairs "
 					+csAttrValPairs;
 		
 		if( anonymizedIDToGuidMapping != null )

@@ -57,7 +57,7 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 			while( anonymizedIter.hasNext() )
 			{
 				String anonymizedIDString 	= anonymizedIter.next();
-				byte[] anonymizedIDBytes    = Utils.hexStringToByteArray(anonymizedIDString);
+				//byte[] anonymizedIDBytes    = Utils.hexStringToByteArray(anonymizedIDString);
 				AnonymizedIDUpdateInfo updateInfo 
 											= anonymizedIdToBeUpdateMap.get(anonymizedIDString);
 				
@@ -67,7 +67,7 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 					JSONObject randJSON = randomizeAttrValue( updateInfo.attrValPair );
 				
 					CSUpdateTransformedMessage transforMessage = new CSUpdateTransformedMessage
-						(anonymizedIDBytes, randJSON, 
+						(anonymizedIDString, randJSON, 
 									null);
 					
 					transformedMesgList.add(transforMessage);
@@ -75,7 +75,7 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 				else
 				{
 					CSUpdateTransformedMessage transforMessage = new CSUpdateTransformedMessage
-							(anonymizedIDBytes, updateInfo.attrValPair, 
+							(anonymizedIDString, updateInfo.attrValPair, 
 								updateInfo.anonymizedIDEntry.getAnonymizedIDToGUIDMapping());
 					
 					transformedMesgList.add(transforMessage);
@@ -183,13 +183,13 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 					= anonymizedIDList.get(i);
 				
 				boolean containsAttr = checkIfAttributeSetContainsGivenAttribute
-											(anonymizedIDEntry.getAttributeSet(), updAttr);
+											(anonymizedIDEntry.getAttributeMap(), updAttr);
 				
 				// only anonymized IDs that contain the updated attribute are updated.
 				// otherwise there is a privacy leak.
 				if( containsAttr )
 				{
-					String anonymizedIDString = Utils.bytArrayToHex(anonymizedIDEntry.getID());
+					String anonymizedIDString = anonymizedIDEntry.getID();
 					AnonymizedIDUpdateInfo anonymizedIDUpdInfo 
 						= anonymizedIDsToBeUpdated.get(anonymizedIDString);
 	
@@ -218,28 +218,9 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 	 * @return
 	 */
 	private boolean checkIfAttributeSetContainsGivenAttribute
-									(JSONArray attributeSet, String attrName)
+									(HashMap<String, Boolean> attributeMap, String attrName)
 	{
-		boolean found = false;
-		
-		for( int i=0; i<attributeSet.length(); i++ )
-		{
-			try
-			{
-				String currAttrName = attributeSet.getString(i);
-				
-				if( currAttrName.equals(attrName) )
-				{
-					found = true;
-					break;
-				}
-			}
-			catch (JSONException e)
-			{
-				e.printStackTrace();
-			}
-		}
-		return found;
+		return attributeMap.containsKey(attrName);
 	}
 	
 	
