@@ -518,14 +518,17 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 					// doing translation here saves multiple strng to JSON translations later in code.
 					if(colName.equals(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName))
 					{
-						if(colVal.length() > 0)
+						if(colVal != null)
 						{
-							try
+							if(colVal.length() > 0)
 							{
-								oldValueJSON.put(colName, new JSONArray(colVal));
-							} catch (JSONException e) 
-							{
-								e.printStackTrace();
+								try
+								{
+									oldValueJSON.put(colName, new JSONArray(colVal));
+								} catch (JSONException e) 
+								{
+									e.printStackTrace();
+								}
 							}
 						}
 					} else if(colName.equals(HyperspaceMySQLDB.unsetAttrsColName))
