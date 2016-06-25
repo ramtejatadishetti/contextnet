@@ -458,6 +458,8 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			String GUID , long requestID,
 			long updateStartTime, JSONObject primarySubspaceJSON ) throws JSONException
 	{
+		ContextServiceLogger.getLogger().fine
+			("processFirstTimeInsertIntoSecondarySubspace "+primarySubspaceJSON);
 		Vector<ProcessingQueryComponent> newQueryComponents 
 								= new Vector<ProcessingQueryComponent>();
 		
