@@ -605,13 +605,14 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				if( updateValJSON.has(attrName) )
 				{
 					attrVal = updateValJSON.getString(attrName);
+					jsonToWrite.put(attrName, attrVal);
 				}
 				else if( !oldValJSON.has(attrName) )
 				{
 					attrVal = attrMetaInfo.getARandomValue
 									(this.defaultAttrValGenerator);
+					jsonToWrite.put(attrName, attrVal);
 				}
-				jsonToWrite.put(attrName, attrVal);
 			}
 			
 			// update unset attributes
