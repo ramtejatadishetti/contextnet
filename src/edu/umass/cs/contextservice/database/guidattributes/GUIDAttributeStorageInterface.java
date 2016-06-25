@@ -17,13 +17,13 @@ import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
  * This interface defines the tables for context service
  * that supports updates and range queries.
  * @author adipc
- *
  */
 public interface GUIDAttributeStorageInterface<NodeIDType> 
 {
 	public void createTables();
 	
-	public int processSearchQueryInSubspaceRegion(int subspaceId, String query, JSONArray resultArray);
+	public int processSearchQueryInSubspaceRegion
+							(int subspaceId, String query, JSONArray resultArray);
 	
 	public JSONObject getGUIDStoredInPrimarySubspace( String guid );
 	
@@ -31,16 +31,13 @@ public interface GUIDAttributeStorageInterface<NodeIDType>
 			List<Integer> subspaceVector, NodeIDType respNodeId);
 	
 	public void bulkInsertIntoSubspacePartitionInfo( int subspaceId, int replicaNum,
-			List<List<Integer>> subspaceVectorList, List<NodeIDType> respNodeIdList );	
+			List<List<Integer>> subspaceVectorList, List<NodeIDType> respNodeIdList );
 	
-	public void storeGUIDInPrimarySubspace(String tableName, String nodeGUID, 
-    		JSONObject updatedAttrValJSON, 
-    		int updateOrInsert, JSONObject oldValJSON, JSONArray anonymizedIDToGuidMapping ) 
-    				throws JSONException;
+	public void storeGUIDInPrimarySubspace(String nodeGUID, JSONObject jsonToWrite, 
+    		int updateOrInsert ) throws JSONException;
 	
 	public void storeGUIDInSecondarySubspace( String tableName, String nodeGUID, 
-    		JSONObject updatedAttrValMap, int updateOrInsert, 
-    		JSONObject oldValJSON, JSONArray anonymizedIDToGuidMapping ) 
+    		JSONObject updatedAttrValMap, int updateOrInsert )
     					throws JSONException;
 	
 	public void deleteGUIDFromSubspaceRegion(String tableName, String nodeGUID);

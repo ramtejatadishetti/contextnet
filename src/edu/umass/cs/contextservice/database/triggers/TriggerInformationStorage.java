@@ -141,7 +141,7 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 			AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
 			AttributeMetaInfo attrMetaInfo = attrPartInfo.getAttrMetaInfo();
 			String dataType = attrMetaInfo.getDataType();
-			String defaultVal = attrPartInfo.getDefaultValue();
+			String defaultVal = attrMetaInfo.getDefaultValue();
 			String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
 			
 			// partition info storage info

@@ -5,6 +5,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,6 +20,7 @@ import org.paukov.combinatorics.ICombinatoricsVector;
 
 import com.google.common.hash.Hashing;
 
+import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.configurator.AbstractSubspaceConfigurator;
@@ -71,6 +73,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	private final GUIDAttrValueProcessingInterface<NodeIDType> guidAttrValProcessing;
 	private TriggerProcessingInterface<NodeIDType> triggerProcessing;
 	
+	private final Random defaultAttrValGenerator;
+	
 	public static final Logger log 														= ContextServiceLogger.getLogger();
 	
 	public HyperspaceHashing(NodeConfig<NodeIDType> nc,
@@ -79,6 +83,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		super(nc, m);
 		
 		nodeES = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
+		
+		defaultAttrValGenerator = new Random(this.getMyID().hashCode());
 		
 		guidUpdateInfoMap = new HashMap<String, GUIDUpdateInfo<NodeIDType>>();
 		
@@ -89,12 +95,14 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		if( optimalHCalculator.getBasicOrReplicated() )
 		{
 			subspaceConfigurator 
-			= new BasicSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), optimalHCalculator.getOptimalH() );
+				= new BasicSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), 
+						optimalHCalculator.getOptimalH() );
 		}
 		else
 		{
 			subspaceConfigurator 
-			= new ReplicatedSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), optimalHCalculator.getOptimalH() );
+				= new ReplicatedSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), 
+						optimalHCalculator.getOptimalH() );
 		}
 			
 		ContextServiceLogger.getLogger().fine("configure subspace started");
@@ -354,6 +362,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 		else
 		{
+			// this piece of code takes care of consistency. Updates to a 
+			// GUID are serialized here. For a GUID only one update is outstanding at
+			// time. But multiple GUIDs can be updated in parallel.
 			ContextServiceLogger.getLogger().fine("primary node case souceIp "
 								+valueUpdateFromGNS.getSourceIP()
 								+" sourcePort "+valueUpdateFromGNS.getSourcePort());
@@ -394,48 +405,48 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
-	private void setDefaultAttrValuesInJSON(JSONObject oldValueJSON)
-	{
-		try
-		{
-			// attributes which are not set should be set to default value
-			// for attribute-space hashing
-			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap = 
-					this.subspaceConfigurator.getSubspaceInfoMap();					
-			
-			Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
-			while(subapceIdIter.hasNext())
-			{
-				int subspaceId = subapceIdIter.next();
-				// at least one replica and all replica have same default value for each attribute.
-				SubspaceInfo<NodeIDType> currSubspaceInfo 
-											= subspaceInfoMap.get(subspaceId).get(0);
-				HashMap<String, AttributePartitionInfo> attrSubspaceMap 
-											= currSubspaceInfo.getAttributesOfSubspace();
-				
-				Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
-				while(attrIter.hasNext())
-				{
-					String attrName = attrIter.next();
-					AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
-					if( !oldValueJSON.has(attrName) )
-					{
-						try
-						{
-							oldValueJSON.put(attrName, attrPartInfo.getDefaultValue());
-						} catch (JSONException e)
-						{
-							e.printStackTrace();
-						}
-					}
-				}
-			}
-		}
-		catch(Error | Exception ex)
-		{
-			ex.printStackTrace();
-		}
-	}
+//	private void setDefaultAttrValuesInJSON(JSONObject oldValueJSON)
+//	{
+//		try
+//		{
+//			// attributes which are not set should be set to default value
+//			// for attribute-space hashing
+//			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap = 
+//					this.subspaceConfigurator.getSubspaceInfoMap();					
+//			
+//			Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
+//			while(subapceIdIter.hasNext())
+//			{
+//				int subspaceId = subapceIdIter.next();
+//				// at least one replica and all replica have same default value for each attribute.
+//				SubspaceInfo<NodeIDType> currSubspaceInfo 
+//											= subspaceInfoMap.get(subspaceId).get(0);
+//				HashMap<String, AttributePartitionInfo> attrSubspaceMap 
+//											= currSubspaceInfo.getAttributesOfSubspace();
+//				
+//				Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
+//				while( attrIter.hasNext() )
+//				{
+//					String attrName = attrIter.next();
+//					AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
+//					if( !oldValueJSON.has(attrName) )
+//					{
+//						try
+//						{
+//							oldValueJSON.put(attrName, attrPartInfo.getDefaultValue());
+//						} catch (JSONException e)
+//						{
+//							e.printStackTrace();
+//						}
+//					}
+//				}
+//			}
+//		}
+//		catch(Error | Exception ex)
+//		{
+//			ex.printStackTrace();
+//		}
+//	}
 	
 	/**
 	 * This function processes a request serially.
@@ -469,14 +480,14 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		
 		// get the old value and process the update in primary subspace and other subspaces.
-		String tableName = "primarySubspaceDataStorage";
 		
 		try
 		{	
 			boolean firstTimeInsert = false;
 			
 			long start 	 = System.currentTimeMillis();
-			// FIXME: fetch only those attributes which are specified in the updated attrs.
+			// FIXME: fetch only those attributes which are specified 
+			// in the updated attrs.
 			JSONObject oldValueJSON 	
 						 = this.hyperspaceDB.getGUIDStoredInPrimarySubspace(GUID);
 			
@@ -502,49 +513,57 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			}
 			
 			// default values are set for all attributes for hyperspace indexing.
-			setDefaultAttrValuesInJSON(oldValueJSON);
-			
+			//setDefaultAttrValuesInJSON(oldValueJSON);
 			// ACL info doesn't need to be stored in primary subspace.
 			// so just passing an empty JSONObject()
 			// update for primary subspace
-			boolean privacyInfoToBeUpdated = false;
 			
-			if( ContextServiceConfig.PRIVACY_ENABLED )
-			{
-				boolean alreadyStored = checkIfAnonymizedIDToGuidInfoAlreadyStored(oldValueJSON);
-				
-				if( !alreadyStored )
-				{
-					privacyInfoToBeUpdated = true;
-				}
-			}
+			JSONObject jsonToWrite = getJSONToWriteInPrimarySubspace( oldValueJSON, 
+					attrValuePairs, anonymizedIDToGuidMapping );
 			
-			// removing duplicate copies 
-			if(anonymizedIDToGuidMapping != null)
-			{
-				if(oldValueJSON.has(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName))
-				{
-					oldValueJSON.remove(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName);
-				}
-			}
+			this.hyperspaceDB.storeGUIDInPrimarySubspace
+								(GUID, jsonToWrite, updateOrInsert);
+			
+//			boolean privacyInfoToBeUpdated = false;
+//			
+//			if( ContextServiceConfig.PRIVACY_ENABLED )
+//			{
+//				boolean alreadyStored 
+//						= checkIfAnonymizedIDToGuidInfoAlreadyStored(oldValueJSON);
+//				
+//				if( !alreadyStored )
+//				{
+//					privacyInfoToBeUpdated = true;
+//				}
+//			}
+			
+			// removing duplicate copies
+//			if(anonymizedIDToGuidMapping != null)
+//			{
+//				if(oldValueJSON.has(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName))
+//				{
+//					oldValueJSON.remove(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName);
+//				}
+//			}
 			
 			// privacy info needs to be updated in primary subspace.
 			// for secondary subspace, the privacy info is sent in 
 			// the message if the anonymized ID storage changes from one 
 			// node to another.
-			if(privacyInfoToBeUpdated)
-			{
-				this.hyperspaceDB.storeGUIDInPrimarySubspace
-						( tableName, GUID, attrValuePairs, updateOrInsert, 
-								oldValueJSON, anonymizedIDToGuidMapping);
-			}
-			else
-			{
-				// sending null means anonymizedIDToGuidMapping will not be inserted again.
-				this.hyperspaceDB.storeGUIDInPrimarySubspace
-				( tableName, GUID, attrValuePairs, updateOrInsert, 
-						oldValueJSON, null);
-			}
+//			if(privacyInfoToBeUpdated)
+//			{
+//				this.hyperspaceDB.storeGUIDInPrimarySubspace
+//						( tableName, GUID, attrValuePairs, updateOrInsert, 
+//								oldValueJSON, anonymizedIDToGuidMapping);
+//			}
+//			else
+//			{
+//				// sending null means anonymizedIDToGuidMapping will not be inserted again.
+//				this.hyperspaceDB.storeGUIDInPrimarySubspace
+//				( tableName, GUID, attrValuePairs, updateOrInsert, 
+//						oldValueJSON, null);
+//			}
+			
 			if(ContextServiceConfig.DEBUG_MODE)
 			{
 				long now = System.currentTimeMillis();
@@ -555,13 +574,128 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			// set it by reading from primarysubspace storage.
 			updateGUIDInSecondarySubspaces( oldValueJSON , 
 					firstTimeInsert , attrValuePairs , GUID , 
-					requestID, anonymizedIDToGuidMapping, updateStartTime );
+					requestID, updateStartTime, jsonToWrite );
 		}
 		catch ( JSONException e )
 		{
 			e.printStackTrace();
 		}
 	}
+	
+	
+	private JSONObject getJSONToWriteInPrimarySubspace( JSONObject oldValJSON, 
+						JSONObject updateValJSON, JSONArray anonymizedIDToGuidMapping )
+	{
+		JSONObject jsonToWrite = new JSONObject();
+		
+		// set the attributes.
+		try
+		{
+			// attributes which are not set should be set to default value
+			// for attribute-space hashing
+			Iterator<String> attrIter 
+							= AttributeTypes.attributeMap.keySet().iterator();
+			
+			while( attrIter.hasNext() )
+			{
+				String attrName = attrIter.next();
+				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
+				String attrVal = "";
+				
+				if( updateValJSON.has(attrName) )
+				{
+					attrVal = updateValJSON.getString(attrName);
+				}
+				else if( !oldValJSON.has(attrName) )
+				{
+					attrVal = attrMetaInfo.getARandomValue
+									(this.defaultAttrValGenerator);
+				}
+				jsonToWrite.put(attrName, attrVal);
+			}
+			
+			// update unset attributes
+			JSONObject unsetAttrs = getUnsetAttrJSON(oldValJSON);
+			if( unsetAttrs != null )
+			{
+				Iterator<String> updateAttrIter = updateValJSON.keys();
+				
+				while( updateAttrIter.hasNext() )
+				{
+					String updateAttr = updateAttrIter.next();
+					// just removing attr that is set in this update.
+					unsetAttrs.remove(updateAttr);					
+				}
+			}
+			else
+			{
+				unsetAttrs = new JSONObject();
+			
+				attrIter = AttributeTypes.attributeMap.keySet().iterator();
+
+				while( attrIter.hasNext() )
+				{
+					String attrName = attrIter.next();
+					
+					if( !updateValJSON.has(attrName) )
+					{
+						// just "" string for minium space usage.
+						unsetAttrs.put(attrName, "");
+					}
+				}
+			}
+			assert(unsetAttrs != null);
+			jsonToWrite.put(HyperspaceMySQLDB.unsetAttrsColName, unsetAttrs);
+			
+			
+			
+			// now anonymizedIDToGUIDmapping
+			
+			if( ContextServiceConfig.PRIVACY_ENABLED )
+			{
+				boolean alreadyStored 
+						= checkIfAnonymizedIDToGuidInfoAlreadyStored(oldValJSON);
+				
+				if( !alreadyStored )
+				{
+					if(anonymizedIDToGuidMapping != null)
+					{
+						jsonToWrite.put(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName, 
+							anonymizedIDToGuidMapping);
+					}
+				}
+			}
+			
+			return jsonToWrite;
+		}
+		catch( Error | Exception ex )
+		{
+			ex.printStackTrace();
+		}
+		return null;
+	}
+	
+	
+	private JSONObject getUnsetAttrJSON(JSONObject oldValJSON) throws JSONException
+	{
+		JSONObject unsetAttrJSON = null;
+		
+		if( oldValJSON.has(HyperspaceMySQLDB.unsetAttrsColName) )
+		{
+			String jsonString 
+					= oldValJSON.getString( HyperspaceMySQLDB.unsetAttrsColName );
+	
+			if( jsonString != null )
+			{
+				if( jsonString.length() > 0 )
+				{
+					unsetAttrJSON = new JSONObject(jsonString);
+				}
+			}
+		}
+		return unsetAttrJSON;
+	}
+	
 	
 	private boolean checkIfAnonymizedIDToGuidInfoAlreadyStored(JSONObject oldValJSON) 
 					throws JSONException
@@ -572,7 +706,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			String jsonArrayString = oldValJSON.getString
 									(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName);
 			
-			if(jsonArrayString != null)
+			if( jsonArrayString != null )
 			{
 				// We don't need to compare the actual value,
 				// because this information change causes whole
@@ -593,10 +727,11 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
+	
 	private void updateGUIDInSecondarySubspaces( JSONObject oldValueJSON , 
 			boolean firstTimeInsert , JSONObject updatedAttrValJSON , 
-			String GUID , long requestID, 
-			JSONArray anonymizedIDToGuidMapping, long updateStartTime )
+			String GUID , long requestID, long updateStartTime, 
+			JSONObject primarySubspaceJSON )
 					throws JSONException
 	{
 		// process update at other subspaces.
@@ -625,7 +760,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				this.guidAttrValProcessing.guidValueProcessingOnUpdate
 					( attrsSubspaceInfo, oldValueJSON, subspaceId, replicaNum, 
 							updatedAttrValJSON, GUID, requestID, firstTimeInsert, 
-							anonymizedIDToGuidMapping, updateStartTime );
+							updateStartTime, 
+							primarySubspaceJSON );
 				
 				
 				// getting group GUIDs that are affected

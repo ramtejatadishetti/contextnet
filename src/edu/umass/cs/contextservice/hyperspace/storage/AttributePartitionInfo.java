@@ -18,6 +18,7 @@ public class AttributePartitionInfo
 	private int triggerNumPartitions;
 	Vector<DomainPartitionInfo> triggerDomainParitionInfo;
 	
+	// Below text is not applicable now. Just keeeping it for reference of an old problem
 	// default value of this attribute.
 	// now default value is chosen uniformly and based on partition.
 	// Like if there are 3 partitions of each attribute and and there 4 attributees
@@ -27,7 +28,7 @@ public class AttributePartitionInfo
 	// So that the default value and especially in trigger case triggers are stored
 	// uniformly across nodes.
 	// This mechanism should also be specified in the paper draft.
-	private String partitionDefaultValue;
+	//private String partitionDefaultValue;
 	
 	public AttributePartitionInfo(AttributeMetaInfo attrMetaInfo )
 	{
@@ -38,8 +39,7 @@ public class AttributePartitionInfo
 	 * Initializes the partition info and sets the default value for this attribute
 	 * @param numPartitions
 	 */
-	public void initializePartitionInfo( int numSubspacePartitions, int triggerNumPartitions, 
-			int defaultPartitionNum )
+	public void initializePartitionInfo( int numSubspacePartitions, int triggerNumPartitions )
 	{
 		assert(triggerNumPartitions > 0 );
 		assert(numSubspacePartitions > 0 );
@@ -59,10 +59,10 @@ public class AttributePartitionInfo
 		
 		// just ignoring defaultPartitionNum for a while. Did this for earlier trigger scheme, 
 		// that scheme has changed so not sure if we need it now.
-		defaultPartitionNum = 0;
-		assert( defaultPartitionNum < subspaceDomainParitionInfo.size() );
-		assert( defaultPartitionNum == subspaceDomainParitionInfo.get(defaultPartitionNum).partitionNum );
-		partitionDefaultValue = subspaceDomainParitionInfo.get(defaultPartitionNum).lowerbound;
+//		defaultPartitionNum = 0;
+//		assert( defaultPartitionNum < subspaceDomainParitionInfo.size() );
+//		assert( defaultPartitionNum == subspaceDomainParitionInfo.get(defaultPartitionNum).partitionNum );
+//		partitionDefaultValue = subspaceDomainParitionInfo.get(defaultPartitionNum).lowerbound;
 	}
 	
 	
@@ -91,8 +91,8 @@ public class AttributePartitionInfo
 		return this.triggerDomainParitionInfo;
 	}
 	
-	public String getDefaultValue()
-	{
-		return this.partitionDefaultValue;
-	}
+//	public String getDefaultValue()
+//	{
+//		return this.partitionDefaultValue;
+//	}
 }

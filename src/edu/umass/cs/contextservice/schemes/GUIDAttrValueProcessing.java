@@ -18,6 +18,7 @@ import org.paukov.combinatorics.Factory;
 import org.paukov.combinatorics.Generator;
 import org.paukov.combinatorics.ICombinatoricsVector;
 
+import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
 import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
@@ -430,15 +431,153 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 	@Override
 	public void guidValueProcessingOnUpdate( 
 			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo , 
-					JSONObject oldValueJSON , int subspaceId , int  replicaNum ,
-					JSONObject updatedAttrValJSON ,
-					String GUID , long requestID , boolean firstTimeInsert, 
-					JSONArray anonymizedIDToGuidMapping,
-					long updateStartTime
-					) throws JSONException
+			JSONObject oldValueJSON , int subspaceId , int  replicaNum ,
+			JSONObject updatedAttrValJSON ,
+			String GUID , long requestID , boolean firstTimeInsert,
+			long updateStartTime, 
+			JSONObject primarySubspaceJSON ) throws JSONException
+	{
+		if( firstTimeInsert )
+		{
+			processFirstTimeInsertIntoSecondarySubspace( 
+					attrsSubspaceInfo, subspaceId , replicaNum ,
+					GUID , requestID, updateStartTime, primarySubspaceJSON );
+		}
+		else
+		{
+			processUpdateIntoSecondarySubspace( 
+					attrsSubspaceInfo, oldValueJSON, subspaceId, replicaNum,
+					updatedAttrValJSON, GUID , requestID ,firstTimeInsert, 
+					updateStartTime, primarySubspaceJSON );
+		}
+	}
+	
+	private void processFirstTimeInsertIntoSecondarySubspace( 
+			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo,
+			int subspaceId , int  replicaNum ,
+			String GUID , long requestID,
+			long updateStartTime, JSONObject primarySubspaceJSON ) throws JSONException
+	{
+		Vector<ProcessingQueryComponent> newQueryComponents 
+								= new Vector<ProcessingQueryComponent>();
+		
+		Iterator<String> subspaceAttrIter
+								= attrsSubspaceInfo.keySet().iterator();
+
+		// the attribtues that are not set by the user.
+		// for those random value set by primary subspace is used for indexing
+		while( subspaceAttrIter.hasNext() )
+		{
+			String attrName = subspaceAttrIter.next();
+			
+			String value;
+			assert(primarySubspaceJSON.has(attrName));
+			
+			value = primarySubspaceJSON.getString(attrName);
+			
+			ProcessingQueryComponent qcomponent 
+				= new ProcessingQueryComponent(attrName, value, value );
+										newQueryComponents.add(qcomponent);
+		}
+
+		HashMap<Integer, OverlappingInfoClass> newOverlappingRegion = 
+				this.hyperspaceDB.getOverlappingRegionsInSubspace( subspaceId, replicaNum, 
+								newQueryComponents );
+		
+		assert(newOverlappingRegion.size() == 1);
+		
+		NodeIDType newRespNodeId 
+						= (NodeIDType)newOverlappingRegion.keySet().iterator().next();
+
+		ContextServiceLogger.getLogger().fine
+					(" newRespNodeId "+newRespNodeId);
+	
+		// compute the JSONToWrite
+		JSONObject jsonToWrite = new JSONObject();
+		
+		
+		JSONObject unsetAttrsJSON = primarySubspaceJSON.getJSONObject
+											(HyperspaceMySQLDB.unsetAttrsColName);
+		
+		Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
+		
+		// unset attributes are set to default values, so that they don't 
+		// satisfy query constraints. But they are set some random value in primary subspace
+		// and they are indexed based on these random values in secondary subspaces.
+		
+		while( attrIter.hasNext() )
+		{
+			String attrName = attrIter.next();
+			assert(primarySubspaceJSON.has(attrName));
+			String attrVal = "";
+			if(unsetAttrsJSON.has(attrName))
+			{
+				attrVal = AttributeTypes.attributeMap.get(attrName).getDefaultValue();
+			}
+			else
+			{
+				attrVal = primarySubspaceJSON.getString(attrName);
+			}
+			
+			jsonToWrite.put(attrName, attrVal);
+		}
+		
+		// add the anonymizedIDToGUID mapping if it is there
+		if(primarySubspaceJSON.has
+				(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName))
+		{
+			JSONArray decodingArray 
+				= primarySubspaceJSON.getJSONArray(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName);
+			
+			assert(decodingArray != null);
+			jsonToWrite.put(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName, 
+					decodingArray);
+		}
+		
+		// add entry for reply
+		// 1 reply as both old and new goes to same node
+		// NOTE: doing this here was a bug, as we are also sending the message out
+		// and sometimes replies were coming back quickly before initialization for all 
+		// subspaces and the request completion code was assuming that the request was complte
+		// before recv replies from all subspaces.
+		//updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
+
+		ValueUpdateToSubspaceRegionMessage<NodeIDType>  
+						valueUpdateToSubspaceRegionMessage = null;
+		
+		// need to send oldValueJSON as it is performed as insert
+		valueUpdateToSubspaceRegionMessage 
+				= new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, 
+							-1, GUID, jsonToWrite, 
+							ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
+							subspaceId, requestID, true, updateStartTime );
+		
+		try
+		{
+			this.messenger.sendToID
+				(newRespNodeId, valueUpdateToSubspaceRegionMessage.toJSONObject());
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+		catch (JSONException e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	
+	private void processUpdateIntoSecondarySubspace( 
+			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo , 
+			JSONObject oldValueJSON , int subspaceId , int  replicaNum ,
+			JSONObject updatedAttrValJSON ,
+			String GUID , long requestID , boolean firstTimeInsert,
+			long updateStartTime, JSONObject primarySubspaceJSON ) throws JSONException
 	{
 		NodeIDType oldRespNodeId = null, newRespNodeId = null;
 		
+		// processes the first time insert
 		Vector<ProcessingQueryComponent> oldQueryComponents 
 											= new Vector<ProcessingQueryComponent>();
 		
@@ -449,9 +588,9 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			String attrName = subspaceAttrIter.next();
 			//( String attributeName, String leftOperator, double leftValue, 
 			//		String rightOperator, double rightValue )
+			String attrVal = oldValueJSON.getString(attrName);
 			ProcessingQueryComponent qcomponent = new ProcessingQueryComponent
-										( attrName, oldValueJSON.getString(attrName), 
-														oldValueJSON.getString(attrName) );
+										( attrName, attrVal, attrVal );
 			oldQueryComponents.add(qcomponent);
 		}
 
@@ -459,15 +598,10 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 				this.hyperspaceDB.getOverlappingRegionsInSubspace
 								(subspaceId, replicaNum, oldQueryComponents);
 
-		if( overlappingRegion.size() != 1 )
-		{	
-			assert(false);
-		}
-		else
-		{
-			//oldValueMapping.put(subspaceNum, overlappingRegion.keySet().iterator().next());
-			oldRespNodeId = (NodeIDType)overlappingRegion.keySet().iterator().next();
-		}
+		assert(overlappingRegion.size() == 1);
+		
+		oldRespNodeId = (NodeIDType)overlappingRegion.keySet().iterator().next();
+		
 
 		// for new value
 		Vector<ProcessingQueryComponent> newQueryComponents 
@@ -492,28 +626,24 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 					= new ProcessingQueryComponent(attrName, value, value );
 			newQueryComponents.add(qcomponent);
 		}
-
+		
 		HashMap<Integer, OverlappingInfoClass> newOverlappingRegion = 
 				this.hyperspaceDB.getOverlappingRegionsInSubspace( subspaceId, replicaNum, 
 						newQueryComponents );
 
-		if( newOverlappingRegion.size() != 1 )
-		{
-			assert(false);
-		}
-		else
-		{
-			newRespNodeId 
-						= (NodeIDType)newOverlappingRegion.keySet().iterator().next();
-		}
+		assert(newOverlappingRegion.size() == 1);
+		
+		newRespNodeId = (NodeIDType)newOverlappingRegion.keySet().iterator().next();
+		
 
 		ContextServiceLogger.getLogger().fine
 							("oldNodeId "+oldRespNodeId
 							+" newRespNodeId "+newRespNodeId);
-
+		
 		// send messages to the subspace region nodes
 		if( oldRespNodeId == newRespNodeId )
 		{
+			// update case
 			// add entry for reply
 			// 1 reply as both old and new goes to same node
 			// NOTE: doing this here was a bug, as we are also sending the message out
@@ -525,26 +655,12 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			ValueUpdateToSubspaceRegionMessage<NodeIDType>  
 							valueUpdateToSubspaceRegionMessage = null;
 
-			if(firstTimeInsert)
-			{
-				// need to send oldValueJSON as it is performed as insert
-				valueUpdateToSubspaceRegionMessage 
-						= new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, 
-										-1, GUID, updatedAttrValJSON, 
-										ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
-										subspaceId, requestID, oldValueJSON, firstTimeInsert, 
-										anonymizedIDToGuidMapping, updateStartTime );
-			}
-			else
-			{
-				// no need to send any oldJSON, as it is an update, 
-				// so we save space by not sending oldJSON.
-				valueUpdateToSubspaceRegionMessage 
+			// just need to send update attr values
+			valueUpdateToSubspaceRegionMessage 
 					= new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, 
 							-1, GUID, updatedAttrValJSON, 
 							ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
-							subspaceId, requestID, new JSONObject(), firstTimeInsert, null, updateStartTime );
-			}
+							subspaceId, requestID, firstTimeInsert, updateStartTime );
 			
 			try
 			{
@@ -567,10 +683,10 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			//updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
 			// it is a remove, so no need for update and old JSON.
 			ValueUpdateToSubspaceRegionMessage<NodeIDType>  oldValueUpdateToSubspaceRegionMessage 
-						= new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, -1, 
-									GUID, new JSONObject(), 
-										ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY, 
-									subspaceId, requestID, new JSONObject(), firstTimeInsert, null, updateStartTime );
+					= new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, -1, 
+							GUID, new JSONObject(), 
+							ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY, 
+							subspaceId, requestID, firstTimeInsert, updateStartTime );
 			
 			try
 			{
@@ -586,14 +702,56 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			
 			// FIXME: send full JSON, so that a new entry can be inserted 
 			// involving attributes which were not updated.
-			// need to send old JSON here, so that full guid entry can be added not just the updated attrs
+			// need to send old JSON here, so that full guid entry can be added 
+			// not just the updated attrs
+			
+			JSONObject jsonToWrite = new JSONObject();
+			JSONObject unsetAttrsJSON = primarySubspaceJSON.getJSONObject
+					(HyperspaceMySQLDB.unsetAttrsColName);
+			
+			// attr values
+			Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
+			while( attrIter.hasNext() )
+			{
+				String attrName = attrIter.next();
+				String attrVal = "";
+				
+				if(updatedAttrValJSON.has(attrName))
+				{
+					attrVal = updatedAttrValJSON.getString(attrName);
+				}
+				else
+				{
+					if(unsetAttrsJSON.has(attrName))
+					{
+						attrVal = AttributeTypes.attributeMap.get(attrName).getDefaultValue();
+					}
+					else
+					{
+						assert(oldValueJSON.has(attrName));
+						attrVal = oldValueJSON.getString(attrName);
+					}
+				}
+				jsonToWrite.put(attrName, attrVal);
+			}
+			
+			// anonymizedIDToGUID mapping
+			if(oldValueJSON.has(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName))
+			{
+				JSONArray decodingArray = oldValueJSON.getJSONArray
+							(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName);
+				
+				assert(decodingArray!= null);
+				jsonToWrite.put(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName
+						, decodingArray);
+			}
+			
 			ValueUpdateToSubspaceRegionMessage<NodeIDType>  
 				newValueUpdateToSubspaceRegionMessage = 
 						new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, -1, 
-								GUID, updatedAttrValJSON,
+								GUID, jsonToWrite,
 								ValueUpdateToSubspaceRegionMessage.ADD_ENTRY, 
-								subspaceId, requestID, oldValueJSON, firstTimeInsert, 
-								anonymizedIDToGuidMapping, updateStartTime );
+								subspaceId, requestID, false, updateStartTime );
 			
 			try
 			{
@@ -613,18 +771,18 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			ValueUpdateToSubspaceRegionMessage<NodeIDType> valueUpdateToSubspaceRegionMessage, 
 			int replicaNum )
 	{
-		int subspaceId  = valueUpdateToSubspaceRegionMessage.getSubspaceNum();
-		String GUID 	= valueUpdateToSubspaceRegionMessage.getGUID();
-		JSONObject updateValPairs = valueUpdateToSubspaceRegionMessage.getUpdateAttrValuePairs();
-		int operType 	= valueUpdateToSubspaceRegionMessage.getOperType();
+		int subspaceId  		= valueUpdateToSubspaceRegionMessage.getSubspaceNum();
+		String GUID 			= valueUpdateToSubspaceRegionMessage.getGUID();
+		JSONObject jsonToWrite  = valueUpdateToSubspaceRegionMessage.getJSONToWrite();
+		int operType 			= valueUpdateToSubspaceRegionMessage.getOperType();
 		boolean firstTimeInsert = valueUpdateToSubspaceRegionMessage.getFirstTimeInsert();
 		// format of this json is different than updateValPairs, this json is created after 
 		// reading attribute value pairs and ACL<attrName> info from primary subspace
-		JSONObject oldValJSON 	= valueUpdateToSubspaceRegionMessage.getOldAttrValuePairs();
-		JSONArray anonymizedIDToGuidMapping 
-						= valueUpdateToSubspaceRegionMessage.getAnonymizedIDToGuidMapping();
+//		JSONObject oldValJSON 	= valueUpdateToSubspaceRegionMessage.getOldAttrValuePairs();
+//		JSONArray anonymizedIDToGuidMapping 
+//						= valueUpdateToSubspaceRegionMessage.getAnonymizedIDToGuidMapping();
 		
-		long udpateStartTime = valueUpdateToSubspaceRegionMessage.getUpdateStartTime();
+		long udpateStartTime 	= valueUpdateToSubspaceRegionMessage.getUpdateStartTime();
 		
 		String tableName 		= "subspaceId"+subspaceId+"DataStorage";
 		try 
@@ -637,10 +795,9 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 					numRep = 2;
 					//if(!ContextServiceConfig.DISABLE_SECONDARY_SUBSPACES_UPDATES)
 					{
-						
 						this.hyperspaceDB.storeGUIDInSecondarySubspace
-						(tableName, GUID, updateValPairs, HyperspaceMySQLDB.INSERT_REC, 
-								subspaceId, oldValJSON, anonymizedIDToGuidMapping);
+						(tableName, GUID, jsonToWrite, HyperspaceMySQLDB.INSERT_REC, 
+								subspaceId);
 					}
 					break;
 				}
@@ -662,18 +819,14 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 						if( firstTimeInsert )
 						{
 							this.hyperspaceDB.storeGUIDInSecondarySubspace
-								(tableName, GUID, updateValPairs, HyperspaceMySQLDB.INSERT_REC, 
-									subspaceId, oldValJSON, anonymizedIDToGuidMapping);
+								(tableName, GUID, jsonToWrite, HyperspaceMySQLDB.INSERT_REC, 
+									subspaceId);
 						}
 						else
 						{
-							// if it is an update and it is not first time insert,
-							// then anonymizedIDToGuidMapping == null, as it should 
-							// already be stored on this node.
-							assert(anonymizedIDToGuidMapping == null); 
 							this.hyperspaceDB.storeGUIDInSecondarySubspace(tableName, GUID, 
-									updateValPairs, HyperspaceMySQLDB.UPDATE_REC, 
-									subspaceId, oldValJSON, anonymizedIDToGuidMapping);
+									jsonToWrite, HyperspaceMySQLDB.UPDATE_REC, 
+									subspaceId);
 						}
 					}
 					break;

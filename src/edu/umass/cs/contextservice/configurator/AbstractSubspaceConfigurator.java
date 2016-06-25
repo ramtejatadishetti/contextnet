@@ -89,16 +89,16 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 				}
 				sortedAttrNameVect.sort(null);
 				
-				int currPartitionNum = 0;
+				//int currPartitionNum = 0;
 				for(int j=0;j<sortedAttrNameVect.size();j++)
 				{
 					String attrName = sortedAttrNameVect.get(j);
 					
 					AttributePartitionInfo attrPartInfo 
 					= currSubInfo.getAttributesOfSubspace().get(attrName);
-					attrPartInfo.initializePartitionInfo(currSubspaceNumPartitions, currTriggerNumPartitions, currPartitionNum);
-					currPartitionNum++;
-					currPartitionNum= currPartitionNum%currSubspaceNumPartitions;
+					attrPartInfo.initializePartitionInfo(currSubspaceNumPartitions, currTriggerNumPartitions);
+//					currPartitionNum++;
+//					currPartitionNum= currPartitionNum%currSubspaceNumPartitions;
 				}
 			}
 		}

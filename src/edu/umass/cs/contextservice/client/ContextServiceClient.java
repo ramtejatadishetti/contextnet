@@ -1027,6 +1027,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 //			// for cs transform
 //			csPrivacyTransform = new SubspaceBasedCSTransform(executorService);
 		}
+		
 		else if( this.transformType == HYPERSPACE_BASED_CS_TRANSFORM )
 		{
 			anonymizedIDCreation = new HyperspaceBasedAnonymizedIDCreator();

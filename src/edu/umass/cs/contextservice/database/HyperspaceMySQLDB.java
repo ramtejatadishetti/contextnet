@@ -37,12 +37,22 @@ public class HyperspaceMySQLDB<NodeIDType>
 	
 	public static final String anonymizedIDToGUIDMappingColName     = "anonymizedIDToGUIDMapping";
 	
+	// this col stores attrs which are not set by the user.
+	// this information is used in indexing scheme.
+	public static final String unsetAttrsColName					= "unsetAttrs";
+	
+	public static final String PRIMARY_SUBSPACE_TABLE_NAME			= "primarySubspaceDataStorage";
+	
+	//unsetAttrsColName is varchar type for now.
+	// FIXME: currently JSONObject is stored as string, but in future
+	// it should be changed to bitmap to save space and stringification overhead.
+	public static final int varcharSizeForunsetAttrsCol				= 1000;
+	
 	private final DataSource<NodeIDType> mysqlDataSource;
 	
 	private final GUIDAttributeStorageInterface<NodeIDType> guidAttributesStorage;
 	private  TriggerInformationStorageInterface<NodeIDType> triggerInformationStorage;
 	
-	//private  PrivacyInformationStorageInterface privacyInformationStorage;
 	
 	public HyperspaceMySQLDB( NodeIDType myNodeID, 
 			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap )
@@ -333,7 +343,8 @@ public class HyperspaceMySQLDB<NodeIDType>
 	
 	public JSONObject getGUIDStoredInPrimarySubspace( String guid )
 	{
-		JSONObject valueJSON = this.guidAttributesStorage.getGUIDStoredInPrimarySubspace(guid);
+		JSONObject valueJSON 
+					= this.guidAttributesStorage.getGUIDStoredInPrimarySubspace(guid);
 		return valueJSON;
 	}
 	
@@ -376,14 +387,12 @@ public class HyperspaceMySQLDB<NodeIDType>
 										(subspaceId, replicaNum, attrName);
 	}
 	
-	public void storeGUIDInPrimarySubspace( String tableName, String nodeGUID, 
-    		JSONObject updatedAttrValJSON, int updateOrInsert, 
-    		JSONObject oldValJSON, JSONArray anonymizedIDToGuidMapping ) throws JSONException
+	public void storeGUIDInPrimarySubspace( String nodeGUID, 
+    		JSONObject jsonToWrite, int updateOrInsert ) throws JSONException
 	{
 		long start = System.currentTimeMillis();
 		this.guidAttributesStorage.storeGUIDInPrimarySubspace
-			( tableName, nodeGUID, updatedAttrValJSON, updateOrInsert, oldValJSON, 
-					anonymizedIDToGuidMapping );
+			( nodeGUID, jsonToWrite, updateOrInsert);
 		
 		long end = System.currentTimeMillis();
 		
@@ -406,8 +415,8 @@ public class HyperspaceMySQLDB<NodeIDType>
      * @throws JSONException
      */
     public void storeGUIDInSecondarySubspace( String tableName, String nodeGUID, 
-    		JSONObject updatedAttrValPairs, int updateOrInsert 
-    		, int subspaceId , JSONObject oldValJSON, JSONArray anonymizedIDToGuidMapping ) 
+    		JSONObject jsonToWrite, int updateOrInsert 
+    		, int subspaceId ) 
     				throws JSONException
     {
     	//if( !ContextServiceConfig.PRIVACY_ENABLED )
@@ -415,8 +424,7 @@ public class HyperspaceMySQLDB<NodeIDType>
     		// no need to add realIDEntryption Info in primary subspaces.
     		long start = System.currentTimeMillis();
     		this.guidAttributesStorage.storeGUIDInSecondarySubspace
-						(tableName, nodeGUID, updatedAttrValPairs, updateOrInsert, 
-								oldValJSON, anonymizedIDToGuidMapping);
+						(tableName, nodeGUID, jsonToWrite, updateOrInsert);
     		long end = System.currentTimeMillis();
     		
     		if( ContextServiceConfig.DEBUG_MODE )

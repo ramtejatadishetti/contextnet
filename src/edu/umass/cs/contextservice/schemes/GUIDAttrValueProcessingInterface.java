@@ -2,7 +2,6 @@ package edu.umass.cs.contextservice.schemes;
 
 import java.util.HashMap;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -38,6 +37,6 @@ public interface GUIDAttrValueProcessingInterface<NodeIDType>
 			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo , 
 			JSONObject oldValueJSON , int subspaceId , int  replicaNum ,
 			JSONObject updatedAttrValJSON , String GUID , long requestID , 
-			boolean firstTimeInsert, 
-			JSONArray anonymizedIDToGuidMapping, long updateStartTime ) throws JSONException;
+			boolean firstTimeInsert, long updateStartTime, 
+			JSONObject primarySubspaceJSON ) throws JSONException;
 }
