@@ -486,6 +486,14 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 				this.hyperspaceDB.getOverlappingRegionsInSubspace( subspaceId, replicaNum, 
 								newQueryComponents );
 		
+		if(newOverlappingRegion.size() != 1)
+		{
+			ContextServiceLogger.getLogger().fine("Not 1 Assertion fail primarySubspaceJSON "
+						+primarySubspaceJSON +" select query print " );
+			this.hyperspaceDB.getOverlappingRegionsInSubspace( subspaceId, replicaNum, 
+					newQueryComponents );
+			
+		}
 		assert(newOverlappingRegion.size() == 1);
 		
 		NodeIDType newRespNodeId 
