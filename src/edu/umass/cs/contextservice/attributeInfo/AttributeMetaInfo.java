@@ -63,7 +63,11 @@ public class AttributeMetaInfo
 				int minValueInt = Integer.parseInt(minValue);
 				int maxValueInt = Integer.parseInt(maxValue);
 				int randValInt 
-						= (int)(randGenerator.nextDouble() * (maxValueInt-minValueInt));
+						= minValueInt + (int)(randGenerator.nextDouble() * (maxValueInt-minValueInt));
+				
+				assert(randValInt >= minValueInt);
+				assert(randValInt < maxValueInt);
+				
 				randVal = randValInt+"";
 				break;
 			}
@@ -72,7 +76,11 @@ public class AttributeMetaInfo
 				long minValueLong = Long.parseLong(minValue);
 				long maxValueLong = Long.parseLong(maxValue);
 				long randValLong  
-						= (long)(randGenerator.nextDouble() * (maxValueLong-minValueLong));
+						= minValueLong + (long)(randGenerator.nextDouble() * (maxValueLong-minValueLong));
+				
+				assert(randValLong >= minValueLong);
+				assert(randValLong < maxValueLong);
+				
 				randVal = randValLong+"";
 				break;
 			}
@@ -80,8 +88,13 @@ public class AttributeMetaInfo
 			{
 				double minValueDouble = Double.parseDouble(minValue);
 				double maxValueDouble = Double.parseDouble(maxValue);
-				double randValDouble  
-						= (double)(randGenerator.nextDouble() * (maxValueDouble-minValueDouble));
+				double randValDouble   
+					= minValueDouble + 
+					(double)(randGenerator.nextDouble() * (maxValueDouble-minValueDouble));
+				
+				assert(randValDouble >= minValueDouble);
+				assert(randValDouble < maxValueDouble);
+				
 				randVal = randValDouble+"";
 				break;
 			}
