@@ -8,14 +8,14 @@ public class ContextServiceLogger
 {
 	//private static Logger LOGGER = Logger.getLogger(ContextServiceLogger.class.getName());
 	private static Logger LOGGER = null;
-	static 
+	static
 	{
 		LOGGER = Logger.getLogger(
 				ContextServiceLogger.class.getName());
 		ConsoleHandler ch = new ConsoleHandler();
-        ch.setLevel(Level.FINE);
+        ch.setLevel(Level.OFF);
         LOGGER.addHandler(ch);
-        LOGGER.setLevel(Level.FINE);
+        LOGGER.setLevel(Level.OFF);
 	}
 	
 	public static Logger getLogger()
