@@ -131,11 +131,11 @@ public class ContextServiceConfig
 	public static boolean DECRYPTIONS_ON_SEARCH_REPLY_ENABLED		= false;
 	
 	// if true, no encryption happens. cipher text and plain text are same.
-	public static boolean NO_ENCRYPTION								= true;
+	public static boolean NO_ENCRYPTION								= false;
 	
 	// if set to true then anonymized IDs will have random attr-val pairs.
 	// only for testing.
-	public static boolean RAND_VAL_JSON								= true;
+	public static boolean RAND_VAL_JSON								= false;
 	
 	
 	public static final String AssymmetricEncAlgorithm				= "RSA";
