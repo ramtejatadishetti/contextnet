@@ -133,6 +133,10 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 				ACLUpdateToSubspaceRegionMessage.class );
 		typeMap.put(ContextServicePacket.PacketType.ACLUPDATE_TO_SUBSPACE_REGION_REPLY_MESSAGE,
 				ACLUpdateToSubspaceRegionReplyMessage.class);
+		typeMap.put(ContextServicePacket.PacketType.NOOP_MEESAGE,
+				NoopMessage.class);
+		typeMap.put(ContextServicePacket.PacketType.NOOP_REPLY_MESSAGE,
+				NoopReplyMessage.class);
 		
 		
 		
