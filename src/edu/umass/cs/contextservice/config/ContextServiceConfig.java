@@ -91,6 +91,10 @@ public class ContextServiceConfig
 	// and search always gores through that and doesn't update trigger info if its is repeated.
 	public static boolean UniqueGroupGUIDEnabled					= false;
 	
+	// disables most of the mysql db operations, apart from the reading of 
+	// subspace info. Just for throuhgput testing.
+	public static boolean disableMySQLDB							= true;
+	
 	// if set to true basic subspace config is enabled.
 	//public static boolean basicSubspaceConfig						= false;
 	
