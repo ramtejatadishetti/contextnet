@@ -122,7 +122,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 					tableName = "subspaceId"+subspaceId+"DataStorage";
 					
 					newTableCommand = "create table "+tableName+" ( "
-						      + "   nodeGUID Binary(20) PRIMARY KEY";
+						      + " nodeGUID Binary(20) PRIMARY KEY";
 					
 					newTableCommand = getDataStorageString(newTableCommand);
 					

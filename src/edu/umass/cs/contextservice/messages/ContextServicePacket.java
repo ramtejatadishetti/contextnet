@@ -62,7 +62,11 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		CONFIG_REQUEST(17),
 		CONFIG_REPLY(18),
 		ACLUPDATE_TO_SUBSPACE_REGION_MESSAGE(19),
-		ACLUPDATE_TO_SUBSPACE_REGION_REPLY_MESSAGE(20);
+		ACLUPDATE_TO_SUBSPACE_REGION_REPLY_MESSAGE(20),
+		// just for throughput testing.
+		NOOP_MEESAGE(21),
+		NOOP_REPLY_MESSAGE(22);
+		
 		
 		private final int number;
 		
@@ -129,6 +133,7 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 				ACLUpdateToSubspaceRegionMessage.class );
 		typeMap.put(ContextServicePacket.PacketType.ACLUPDATE_TO_SUBSPACE_REGION_REPLY_MESSAGE,
 				ACLUpdateToSubspaceRegionReplyMessage.class);
+		
 		
 		
 		for( ContextServicePacket.PacketType type : ContextServicePacket.PacketType.intToType.values() )

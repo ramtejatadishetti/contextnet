@@ -14,8 +14,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.Vector;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -40,7 +38,6 @@ import edu.umass.cs.contextservice.client.csprivacytransform.CSPrivacyTransformI
 import edu.umass.cs.contextservice.client.csprivacytransform.CSSearchReplyTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSUpdateTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.HyperspaceBasedCSTransform;
-import edu.umass.cs.contextservice.client.csprivacytransform.NoopCSTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.EncryptionBasedGNSPrivacyTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSPrivacyTransformInterface;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSTransformedMessage;
