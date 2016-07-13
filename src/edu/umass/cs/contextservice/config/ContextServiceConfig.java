@@ -79,6 +79,13 @@ public class ContextServiceConfig
 	// the actual guids
 	public static final boolean sendFullReplies						= false;
 	
+	// if this is set to true, then mysql table selects
+	// return results row by row. If set to false then
+	// default mysql select semantics is used which fetches all
+	// results in memory on a select, but on large result sizes can cause
+	// memory overflow.
+	public static final boolean rowByRowFetchingEnabled				= false;
+	
 	//if false, replies for any update messages will not be sent
 	// just for measuring update throughout and time in experiments
 	//public static final boolean sendUpdateReplies					= true;

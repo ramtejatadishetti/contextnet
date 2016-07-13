@@ -333,9 +333,17 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 			// for row by row fetching, otherwise default is fetching whole result
 			// set in memory. 
 			// http://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html
-			stmt   = myConn.createStatement(java.sql.ResultSet.TYPE_FORWARD_ONLY, 
+			if( ContextServiceConfig.rowByRowFetchingEnabled )
+			{
+				stmt   = myConn.createStatement(java.sql.ResultSet.TYPE_FORWARD_ONLY, 
 					java.sql.ResultSet.CONCUR_READ_ONLY);
-			stmt.setFetchSize(ContextServiceConfig.MYSQL_CURSOR_FETCH_SIZE);
+				stmt.setFetchSize(ContextServiceConfig.MYSQL_CURSOR_FETCH_SIZE);
+			}
+			else
+			{
+				// fetches all result in memory once
+				stmt   = myConn.createStatement();
+			}
 			
 			ContextServiceLogger.getLogger().fine("processSearchQueryInSubspaceRegion: "
 								+mysqlQuery);

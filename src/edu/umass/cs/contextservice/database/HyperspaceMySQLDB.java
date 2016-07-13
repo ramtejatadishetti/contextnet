@@ -175,7 +175,7 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 		{
 			System.out.println("TIME_DEBUG: processSearchQueryInSubspaceRegion without privacy time "
 					+(end-start));
-		}	
+		}
 		return resultSize;
 	}
 	
