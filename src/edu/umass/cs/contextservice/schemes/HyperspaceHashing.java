@@ -275,7 +275,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	}
 	
 	private void processQueryMsgFromUser
-		(QueryMsgFromUser<NodeIDType> queryMsgFromUser)
+		( QueryMsgFromUser<NodeIDType> queryMsgFromUser )
 	{
 		String query;
 		String userIP;
