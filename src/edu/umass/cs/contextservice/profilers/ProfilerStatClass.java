@@ -23,10 +23,13 @@ public class ProfilerStatClass implements Runnable
 				e.printStackTrace();
 			}
 			
-			System.out.println("numNodesForSearchQuery "+(numNodesForSearchQuery/numSearchReqs)
-					+" numSearchReqs "+numSearchReqs 
-					+" numRepliesFromASubspaceRegion "+(numRepliesFromASubspaceRegion/numSubspaceRegionMesg)
-					+" numSubspaceRegionMesg "+numSubspaceRegionMesg );
+			if((numSearchReqs > 0) && (numSubspaceRegionMesg > 0) )
+			{
+				System.out.println("numNodesForSearchQuery "+(numNodesForSearchQuery/numSearchReqs)
+						+" numSearchReqs "+numSearchReqs 
+						+" numRepliesFromASubspaceRegion "+(numRepliesFromASubspaceRegion/numSubspaceRegionMesg)
+						+" numSubspaceRegionMesg "+numSubspaceRegionMesg );
+			}
 			
 			//ContextServiceLogger.getLogger().fine("QueryFromUserRate "+diff1+" QueryFromUserDepart "+diff2+" QuerySubspaceRegion "+diff3+
 			//		" QuerySubspaceRegionReply "+diff4+
