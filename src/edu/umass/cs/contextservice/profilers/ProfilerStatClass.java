@@ -15,6 +15,10 @@ public class ProfilerStatClass implements Runnable
 	private double overlapTimeSum					= 0;
 	private double dataTimeSum						= 0;
 	
+	private long incomingORate						= 0;
+	private long incomingDRate						= 0;
+	
+	
 	private final Object lock 						= new Object();
 	
 	@Override
@@ -43,20 +47,30 @@ public class ProfilerStatClass implements Runnable
 						+" avgDTime "+avgDTime);
 			}
 			
-			double searchDataThrouhgput  = 0.0;
-			double searchIndexThrouhgput = 0.0;
+			double OutsearchDataThrouhgput  = 0.0;
+			double OutsearchIndexThrouhgput = 0.0;
+			
+			double InsearchDataThrouhgput  = 0.0;
+			double InsearchIndexThrouhgput = 0.0;
 			
 			synchronized(lock)
 			{
-				searchDataThrouhgput = (searchDataDbOperation*1.0)/5.0;
-				searchIndexThrouhgput = (searchIndexDbOperation*1.0)/5.0;
+				OutsearchDataThrouhgput = (searchDataDbOperation*1.0)/5.0;
+				OutsearchIndexThrouhgput = (searchIndexDbOperation*1.0)/5.0;
 				
 				searchDataDbOperation =0;
 				searchIndexDbOperation = 0;
+				
+				InsearchDataThrouhgput = (incomingDRate*1.0)/5.0;
+				InsearchIndexThrouhgput = (incomingORate*1.0)/5.0;
+				incomingDRate = 0;
+				incomingORate = 0;
 			}
 			
-			System.out.println("searchDataThrouhgput "+searchDataThrouhgput
-					+" searchIndexThrouhgput "+searchIndexThrouhgput);
+			System.out.println("OutsearchDataThrouhgput "+OutsearchDataThrouhgput
+					+ " OutsearchIndexThrouhgput "+OutsearchIndexThrouhgput
+					+ " InsearchDataThrouhgput "+InsearchDataThrouhgput
+					+ " InsearchIndexThrouhgput "+InsearchIndexThrouhgput);
 			//ContextServiceLogger.getLogger().fine("QueryFromUserRate "+diff1+" QueryFromUserDepart "+diff2+" QuerySubspaceRegion "+diff3+
 			//		" QuerySubspaceRegionReply "+diff4+
 			//		" DelayProfiler stats "+DelayProfiler.getStats());
@@ -85,6 +99,23 @@ public class ProfilerStatClass implements Runnable
 			numSubspaceRegionMesg++;
 			searchDataDbOperation++;
 			this.dataTimeSum = dataTimeSum + time;
+		}
+	}
+	
+	public void incrementIncomingForOverlap()
+	{
+		synchronized( lock )
+		{
+			incomingORate++;
+		}
+	}
+	
+	
+	public void incrementIncomingForData()
+	{
+		synchronized( lock )
+		{
+			incomingDRate++;
 		}
 	}
 }
