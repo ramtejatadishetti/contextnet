@@ -12,6 +12,9 @@ public class ProfilerStatClass implements Runnable
 	
 	private long searchIndexDbOperation				= 0;
 	
+	private double overlapTimeSum					= 0;
+	private double dataTimeSum						= 0;
+	
 	private final Object lock 						= new Object();
 	
 	@Override
@@ -29,10 +32,15 @@ public class ProfilerStatClass implements Runnable
 			
 			if((numSearchReqs > 0) && (numSubspaceRegionMesg > 0) )
 			{
+				double avgOTime = (overlapTimeSum*1.0)/numSearchReqs;
+				double avgDTime = (dataTimeSum*1.0)/numSubspaceRegionMesg;
+				
 				System.out.println("numNodesForSearchQuery "+(numNodesForSearchQuery/numSearchReqs)
 						+" numSearchReqs "+numSearchReqs 
 						+" numRepliesFromASubspaceRegion "+(numRepliesFromASubspaceRegion/numSubspaceRegionMesg)
-						+" numSubspaceRegionMesg "+numSubspaceRegionMesg );
+						+" numSubspaceRegionMesg "+numSubspaceRegionMesg 
+						+" avgOTime "+avgOTime 
+						+" avgDTime "+avgDTime);
 			}
 			
 			double searchDataThrouhgput  = 0.0;
@@ -58,23 +66,25 @@ public class ProfilerStatClass implements Runnable
 		}
 	}
 	
-	public void incrementNumSearches(int currNumNodes)
+	public void incrementNumSearches(int currNumNodes, long time)
 	{
 		synchronized(lock)
 		{
 			numNodesForSearchQuery = numNodesForSearchQuery + currNumNodes;
 			numSearchReqs++;
 			searchIndexDbOperation++;
+			this.overlapTimeSum = overlapTimeSum+time;
 		}
 	}
 	
-	public void incrementNumRepliesFromSubspaceRegion(int numReplies)
+	public void incrementNumRepliesFromSubspaceRegion(int numReplies, long time)
 	{
 		synchronized( lock )
 		{
 			numRepliesFromASubspaceRegion = numRepliesFromASubspaceRegion + numReplies;
 			numSubspaceRegionMesg++;
 			searchDataDbOperation++;
+			this.dataTimeSum = dataTimeSum + time;
 		}
 	}
 }

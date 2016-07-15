@@ -296,12 +296,13 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			= subspaceInfoMap.get(maxMatchingSubspaceId);
 		int replicaNum = maxMatchingSubspaceReplicas.get(this.replicaChoosingRand.nextInt(maxMatchingSubspaceReplicas.size())).getReplicaNum();
 		
+		long sTime = System.currentTimeMillis();
 	    HashMap<Integer, OverlappingInfoClass> respNodeIdList 
 	    		= this.hyperspaceDB.getOverlappingRegionsInSubspace(maxMatchingSubspaceId, replicaNum, matchingQueryComponents);
 	    
 	    if(ContextServiceConfig.PROFILER_THREAD)
 	    {
-	    	profStats.incrementNumSearches(respNodeIdList.size());
+	    	profStats.incrementNumSearches(respNodeIdList.size(), (System.currentTimeMillis()-sTime));
 	    }
 	    
 		synchronized(this.pendingQueryLock)
@@ -351,12 +352,14 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		int subspaceId 			= queryMesgToSubspaceRegion.getSubspaceNum();
 		JSONArray resultGUIDs = new JSONArray();
 		
+		long sTime = System.currentTimeMillis();
 		int resultSize = this.hyperspaceDB.processSearchQueryInSubspaceRegion
 				(subspaceId, query, resultGUIDs);
 		
 		if(ContextServiceConfig.PROFILER_THREAD)
 		{
-			profStats.incrementNumRepliesFromSubspaceRegion(resultSize);
+			profStats.incrementNumRepliesFromSubspaceRegion(resultSize, 
+					(System.currentTimeMillis()-sTime));
 		}
 		QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply = 
 				new QueryMesgToSubspaceRegionReply<NodeIDType>( myID, queryMesgToSubspaceRegion.getRequestId(), 
