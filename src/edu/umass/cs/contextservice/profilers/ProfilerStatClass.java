@@ -8,6 +8,10 @@ public class ProfilerStatClass implements Runnable
 	private long numSubspaceRegionMesg 				= 0;
 	private long numRepliesFromASubspaceRegion		= 0;
 	
+	private long searchDataDbOperation				= 0;
+	
+	private long searchIndexDbOperation				= 0;
+	
 	private final Object lock 						= new Object();
 	
 	@Override
@@ -31,6 +35,20 @@ public class ProfilerStatClass implements Runnable
 						+" numSubspaceRegionMesg "+numSubspaceRegionMesg );
 			}
 			
+			double searchDataThrouhgput  = 0.0;
+			double searchIndexThrouhgput = 0.0;
+			
+			synchronized(lock)
+			{
+				searchDataThrouhgput = (searchDataDbOperation*1.0)/5.0;
+				searchIndexThrouhgput = (searchIndexDbOperation*1.0)/5.0;
+				
+				searchDataDbOperation =0;
+				searchIndexDbOperation = 0;
+			}
+			
+			System.out.println("searchDataThrouhgput "+searchDataThrouhgput
+					+" searchIndexThrouhgput "+searchIndexThrouhgput);
 			//ContextServiceLogger.getLogger().fine("QueryFromUserRate "+diff1+" QueryFromUserDepart "+diff2+" QuerySubspaceRegion "+diff3+
 			//		" QuerySubspaceRegionReply "+diff4+
 			//		" DelayProfiler stats "+DelayProfiler.getStats());
@@ -46,6 +64,7 @@ public class ProfilerStatClass implements Runnable
 		{
 			numNodesForSearchQuery = numNodesForSearchQuery + currNumNodes;
 			numSearchReqs++;
+			searchIndexDbOperation++;
 		}
 	}
 	
@@ -55,6 +74,7 @@ public class ProfilerStatClass implements Runnable
 		{
 			numRepliesFromASubspaceRegion = numRepliesFromASubspaceRegion + numReplies;
 			numSubspaceRegionMesg++;
+			searchDataDbOperation++;
 		}
 	}
 }
