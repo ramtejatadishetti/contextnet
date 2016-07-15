@@ -47,6 +47,7 @@ import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
 import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionMessage;
 import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionReplyMessage;
+import edu.umass.cs.contextservice.profilers.ProfilerStatClass;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
 import edu.umass.cs.contextservice.updates.GUIDUpdateInfo;
 import edu.umass.cs.contextservice.updates.UpdateInfo;
@@ -75,12 +76,20 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	
 	private final Random defaultAttrValGenerator;
 	
+	private final ProfilerStatClass profStats;
+	
 	public static final Logger log 														= ContextServiceLogger.getLogger();
 	
 	public HyperspaceHashing(NodeConfig<NodeIDType> nc,
 			JSONMessenger<NodeIDType> m) throws Exception
 	{
 		super(nc, m);
+		
+		if(ContextServiceConfig.PROFILER_THREAD)
+		{
+			profStats = new ProfilerStatClass();
+			new Thread(profStats).start();
+		}
 		
 		nodeES = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
 		
@@ -120,7 +129,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		guidAttrValProcessing = new GUIDAttrValueProcessing<NodeIDType>(
 				this.getMyID(), subspaceConfigurator.getSubspaceInfoMap(), 
 				hyperspaceDB, messenger , nodeES ,
-				pendingQueryRequests );
+				pendingQueryRequests , profStats);
 		
 //		if( ContextServiceConfig.PRIVACY_ENABLED )
 //		{
@@ -1356,7 +1365,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
-	
 	public static void main(String[] args)
 	{
 		double numPartitions = Math.ceil(Math.pow(16, 1.0/4));
@@ -1389,44 +1397,4 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					+ "insertIntoSubspacePartitionInfo complete");
 		}
 	}
-	
-//	private class ProfilerStatClass implements Runnable
-//	{
-//		private long localNumberOfQueryFromUser							= 0;
-//		private long localNumberOfQueryFromUserDepart					= 0;
-//		private long localNumberOfQuerySubspaceRegion					= 0;
-//		private long localNumberOfQuerySubspaceRegionReply				= 0;
-//		
-//		@Override
-//		public void run()
-//		{
-//			while(true)
-//			{
-//				try
-//				{
-//					Thread.sleep(10000);
-//				} catch (InterruptedException e)
-//				{
-//					e.printStackTrace();
-//				}
-//				
-//				long diff1 = numberOfQueryFromUser - localNumberOfQueryFromUser;
-//				long diff2 = numberOfQueryFromUserDepart - localNumberOfQueryFromUserDepart;
-//				long diff3 = numberOfQuerySubspaceRegion - localNumberOfQuerySubspaceRegion;
-//				long diff4 = numberOfQuerySubspaceRegionReply - localNumberOfQuerySubspaceRegionReply;
-//				
-//				localNumberOfQueryFromUser							= numberOfQueryFromUser;
-//				localNumberOfQueryFromUserDepart					= numberOfQueryFromUserDepart;
-//				localNumberOfQuerySubspaceRegion					= numberOfQuerySubspaceRegion;
-//				localNumberOfQuerySubspaceRegionReply				= numberOfQuerySubspaceRegionReply;
-//				
-//				//ContextServiceLogger.getLogger().fine("QueryFromUserRate "+diff1+" QueryFromUserDepart "+diff2+" QuerySubspaceRegion "+diff3+
-//				//		" QuerySubspaceRegionReply "+diff4+
-//				//		" DelayProfiler stats "+DelayProfiler.getStats());
-//				
-//				//ContextServiceLogger.getLogger().fine( "Pending query requests "+pendingQueryRequests.size() );
-//				//ContextServiceLogger.getLogger().fine("DelayProfiler stats "+DelayProfiler.getStats());
-//			}
-//		}
-//	}
 }

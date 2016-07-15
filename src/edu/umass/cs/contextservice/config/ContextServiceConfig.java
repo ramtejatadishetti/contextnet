@@ -67,6 +67,8 @@ public class ContextServiceConfig
 	
 	public static boolean DATABASE_SIZE_PRINT						= false;
 	
+	public static final boolean PROFILER_THREAD						= true; 
+	
 	// config files
 	public static String csConfigFileName							= "csConfigFile.txt";
 	public static String subspaceInfoFileName						= "subspaceInfo.txt";

@@ -12,18 +12,32 @@ import sys
 
 #result = minimize(f, [1])
 #print(result.x)
-rho                             = 1.0
+rho                             = 0.5
 #Yc                             = 1.0
-N                               = 120.0
+N                               = math.pow(10.0,3)
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
 # specially if result size increases then estimation error might increase.
-CsByC                           = 0.005319149
-#CsByC                           = 0.009713526
-CuByC                           = 0.00071537
-CiByC                           = 0.003127837
+#CsByC                           = 0.005319149
+#CsByC                          = 0.009713526
+CuByC                           = 1.0/2700.0
+CiByC                           = 1.0/2100.0
+CdByC                           = 1.0/2400.0
 #CiByC                          = 0.00071537
 B                               = 20.0
 Aavg                            = 4.0
+NumGuids                        = 10000.0
+CsByC                           = {}
+CsByC[1000]                     = 1.0/10156.0
+CsByC[2000]                     = 1.0/7932.0
+CsByC[3000]                     = 1.0/5731.0
+CsByC[4000]                     = 1.0/5234.0
+CsByC[5000]                     = 1.0/5108.0
+CsByC[6000]                     = 1.0/4541.0
+CsByC[7000]                     = 1.0/4033.0
+CsByC[8000]                     = 1.0/3644.0
+CsByC[9000]                     = 1.0/3247.0
+CsByC[10000]                    = 1.0/2956.0
+
 
 # if 0 then trigger not enable
 # 1 if enable
@@ -32,7 +46,7 @@ CtByC                           = 0.000002838
 CminByC                         = 0.000313117
 QueryResidenceTime              = 30.0
 disableOptimizer                = False
-inputH                          = 2.0
+inputH                          = 5.0
 inputConfigType                 = 1
 
 BASIC_SUBSPACE_CONFIG           = 1
@@ -121,15 +135,17 @@ def calculateExpectedNumNodesASearchGoesTo(numNodesForSubspace, currH, currM):
         
         #expectedNumNodes = calculateOverlapingNodesForSearch(numNodesForSubspace, currH)
         expectedNumNodes = \
-                calculateOverlapingNodesForSearchWithRatio(numNodesForSubspace, currH, 0.3)
+               calculateOverlapingNodesForSearchWithRatio(numNodesForSubspace, currH, 0.1)
         
         expectedNumNodes = math.pow(expectedNumNodes, currM)
         mByH = (currM * 1.0)/(currH * 1.0)
         
         # calculating expected value of the second term
-        expectedNumNodes = expectedNumNodes * math.pow(numNodesForSubspace, 1.0-mByH)
+        expectedNumNodes = math.ceil(expectedNumNodes * math.pow(numNodesForSubspace, 1.0-mByH))
+        
         print "numNodesForSubspace "+str(numNodesForSubspace)+" currH "+str(currH)+" currM "+str(currM)+" expectedNumSearchNodes "+str(expectedNumNodes) 
         return expectedNumNodes
+
 
 def calcluateExpectedNumNodesAnUpdateGoesTo(numNodesForSubspace, currH):
     currP = math.pow(numNodesForSubspace, 1.0/currH)
@@ -274,25 +290,45 @@ def solveThroughputQuadriticEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtB
         maxT = x1
     else:
         maxT = x2
+    return maxT  
     
-    return maxT    
+def getCsByCValue(numNodesSubspace):
+    guidsPerNode = NumGuids/numNodesSubspace
+    # this will be removed later on, right now we have only values for Cs(g), g>= 1000
+    if(guidsPerNode < 1000.0):
+        guidsPerNode = 1000.0
+        
+    if(guidsPerNode > 10000.0):
+        guidsPerNode = 10000.0
+        
+    guidPerNodeInt = (int) (guidsPerNode/1000.0)
+    guidPerNodeInt = guidPerNodeInt*1000
+    return CsByC[guidPerNodeInt]
+
     
 # equation becomes linear if there are no triggers.
 def solveThroughputLinearEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtByC, CminByC):
     currX= maxBallsFun(H, Aavg, B)
+    
     if ( currX <= 0.0 ):
         currX = (Aavg*H)/B
-        
+    
+    currX = math.ceil(currX)
+    print "currX "+str(currX)
     numNodesSubspace = getNumNodesForASubspace(B, H, N, configType)
     numNodesSearch = calculateExpectedNumNodesASearchGoesTo(numNodesSubspace, H, currX)
-    numNodesUpdate = calcluateExpectedNumNodesAnUpdateGoesTo(numNodesSubspace, H)
+    #numNodesUpdate = calcluateExpectedNumNodesAnUpdateGoesTo(numNodesSubspace, H)
     
     currP = math.pow(numNodesSubspace, 1.0/H)
     if(currP < 1):
         currP = 1
         
-    oneByP = 1.0/currP
-    updComp1 = oneByP*1.0*CuByC + (1.0-oneByP)*2.0*CiByC
+    #oneByP = 1.0/currP
+    oneByNumNodes = 1.0/numNodesSubspace
+    if(oneByNumNodes > 1.0):
+        oneByNumNodes = 1.0
+    
+    updComp1 = oneByNumNodes*1.0*CuByC + (1.0-oneByNumNodes)*(CiByC+CdByC)
 
     numTotalSubspsaces = N/numNodesSubspace
     numUniqueSubspaces = numTotalSubspsaces/((B/H)) 
@@ -302,11 +338,12 @@ def solveThroughputLinearEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtByC,
     
     totalUpdLoad = CuByC + numUniqueSubspaces*updComp1 + (numTotalSubspsaces-numUniqueSubspaces)*CuByC
     
+    csByCForCase = getCsByCValue(numNodesSubspace)
     #totalUpdLoad = (1.0 + (numTotalSubspsaces - 1.0))*CuByC + updComp1
     print "totalUpdLoad "+str(totalUpdLoad)+" currH "+str(H)+" numNodesSearch "+str(numNodesSearch)
-    return N/(rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad )
+    return N/(rho*numNodesSearch*csByCForCase + (1.0-rho) * totalUpdLoad )
     #return N/(rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad * CuByC)
-
+    
     
 # loops through all H values to check for optimal value of H
 def loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtByC, CminByC):
@@ -338,6 +375,7 @@ def loopOptimizer(rho, N, CsByC, B, CuByC, Aavg, configType, triggerEnable, CtBy
     returnDict[optimalHKey] = optimalH
     print "rho "+ str(rho)+" optimalH "+str(optimalH)+" maxValue "+str(maxValue)+"\n"
     return returnDict
+
     
 if(len(sys.argv) >= 13):
     rho              = float(sys.argv[1])

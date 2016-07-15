@@ -32,6 +32,7 @@ import edu.umass.cs.contextservice.messages.QueryMsgFromUser;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
 import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionMessage;
 import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionReplyMessage;
+import edu.umass.cs.contextservice.profilers.ProfilerStatClass;
 //import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
 //import edu.umass.cs.contextservice.messages.dataformat.ParsingMethods;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
@@ -65,10 +66,13 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 	
 	private long queryIdCounter															= 0;
 	
+	private final ProfilerStatClass profStats;
+	
 	public GUIDAttrValueProcessing( NodeIDType myID, HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> 
 		subspaceInfoMap , HyperspaceMySQLDB<NodeIDType> hyperspaceDB, 
 		JSONMessenger<NodeIDType> messenger , ExecutorService nodeES ,
-		ConcurrentHashMap<Long, QueryInfo<NodeIDType>> pendingQueryRequests )
+		ConcurrentHashMap<Long, QueryInfo<NodeIDType>> pendingQueryRequests, 
+		ProfilerStatClass profStats )
 	{
 		this.nodeES = nodeES;
 		this.myID = myID;
@@ -77,6 +81,8 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 
 		this.subspaceInfoMap = subspaceInfoMap;
 		this.hyperspaceDB = hyperspaceDB;
+		
+		this.profStats = profStats;
 		
 		this.pendingQueryRequests = pendingQueryRequests;
 		
@@ -293,6 +299,11 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 	    HashMap<Integer, OverlappingInfoClass> respNodeIdList 
 	    		= this.hyperspaceDB.getOverlappingRegionsInSubspace(maxMatchingSubspaceId, replicaNum, matchingQueryComponents);
 	    
+	    if(ContextServiceConfig.PROFILER_THREAD)
+	    {
+	    	profStats.incrementNumSearches(respNodeIdList.size());
+	    }
+	    
 		synchronized(this.pendingQueryLock)
 		{
 			currReq.setQueryRequestID(queryIdCounter++);
@@ -343,6 +354,10 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		int resultSize = this.hyperspaceDB.processSearchQueryInSubspaceRegion
 				(subspaceId, query, resultGUIDs);
 		
+		if(ContextServiceConfig.PROFILER_THREAD)
+		{
+			profStats.incrementNumRepliesFromSubspaceRegion(resultSize);
+		}
 		QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply = 
 				new QueryMesgToSubspaceRegionReply<NodeIDType>( myID, queryMesgToSubspaceRegion.getRequestId(), 
 						groupGUID, resultGUIDs, resultSize);
