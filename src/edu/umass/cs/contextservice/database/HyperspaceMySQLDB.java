@@ -165,18 +165,25 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 	public int processSearchQueryInSubspaceRegion(int subspaceId, String query, 
 			JSONArray resultArray)
 	{
-		long start = System.currentTimeMillis();
-		int resultSize 
-			= this.guidAttributesStorage.processSearchQueryInSubspaceRegion
-			(subspaceId, query, resultArray);
-		long end = System.currentTimeMillis();
-		
-		if( ContextServiceConfig.DEBUG_MODE )
+		if(ContextServiceConfig.disableMySQLDB)
 		{
-			System.out.println("TIME_DEBUG: processSearchQueryInSubspaceRegion without privacy time "
-					+(end-start));
+			return 1;
 		}
-		return resultSize;
+		else
+		{
+			long start = System.currentTimeMillis();
+			int resultSize 
+				= this.guidAttributesStorage.processSearchQueryInSubspaceRegion
+				(subspaceId, query, resultArray);
+			long end = System.currentTimeMillis();
+			
+			if( ContextServiceConfig.DEBUG_MODE )
+			{
+				System.out.println("TIME_DEBUG: processSearchQueryInSubspaceRegion without privacy time "
+						+(end-start));
+			}
+			return resultSize;
+		}
 	}
 	
 	/**

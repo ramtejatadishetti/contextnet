@@ -1205,9 +1205,11 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply = 
 								(QueryMesgToSubspaceRegionReply<NodeIDType>)event;
 						
-						log.fine("CS"+getMyID()+" received " + event.getType() + ": " + queryMesgToSubspaceRegionReply);
+						log.fine("CS"+getMyID()+" received " + event.getType() + ": " 
+																+ queryMesgToSubspaceRegionReply);
 						
-						guidAttrValProcessing.processQueryMesgToSubspaceRegionReply(queryMesgToSubspaceRegionReply);
+						guidAttrValProcessing.processQueryMesgToSubspaceRegionReply
+																(queryMesgToSubspaceRegionReply);
 						
 						//DelayProfiler.updateDelay("handleQueryMsgToValuenode", t0);
 						break;
