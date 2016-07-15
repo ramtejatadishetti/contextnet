@@ -102,7 +102,7 @@ public class ContextServiceConfig
 	
 	// disables most of the mysql db operations, apart from the reading of 
 	// subspace info. Just for throuhgput testing.
-	public static boolean disableMySQLDB							= true;
+	public static boolean disableMySQLDB							= false;
 	
 	// if set to true basic subspace config is enabled.
 	//public static boolean basicSubspaceConfig						= false;
