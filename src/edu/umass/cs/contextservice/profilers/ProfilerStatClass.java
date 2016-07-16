@@ -18,6 +18,8 @@ public class ProfilerStatClass implements Runnable
 	private long incomingORate						= 0;
 	private long incomingDRate						= 0;
 	
+	private long incomingSearchRate					= 0;
+	
 	
 	private final Object lock 						= new Object();
 	
@@ -53,6 +55,8 @@ public class ProfilerStatClass implements Runnable
 			double InsearchDataThrouhgput  = 0.0;
 			double InsearchIndexThrouhgput = 0.0;
 			
+			double incomingSRate = 0.0;
+			
 			synchronized(lock)
 			{
 				OutsearchDataThrouhgput = (searchDataDbOperation*1.0)/5.0;
@@ -65,12 +69,16 @@ public class ProfilerStatClass implements Runnable
 				InsearchIndexThrouhgput = (incomingORate*1.0)/5.0;
 				incomingDRate = 0;
 				incomingORate = 0;
+				
+				incomingSRate = (incomingSearchRate*1.0)/5.0;
+				incomingSearchRate = 0;
 			}
 			
 			System.out.println("OutsearchDataThrouhgput "+OutsearchDataThrouhgput
 					+ " OutsearchIndexThrouhgput "+OutsearchIndexThrouhgput
 					+ " InsearchDataThrouhgput "+InsearchDataThrouhgput
-					+ " InsearchIndexThrouhgput "+InsearchIndexThrouhgput);
+					+ " InsearchIndexThrouhgput "+InsearchIndexThrouhgput
+					+ " incomingSRate "+incomingSRate);
 			//ContextServiceLogger.getLogger().fine("QueryFromUserRate "+diff1+" QueryFromUserDepart "+diff2+" QuerySubspaceRegion "+diff3+
 			//		" QuerySubspaceRegionReply "+diff4+
 			//		" DelayProfiler stats "+DelayProfiler.getStats());
@@ -116,6 +124,14 @@ public class ProfilerStatClass implements Runnable
 		synchronized( lock )
 		{
 			incomingDRate++;
+		}
+	}
+	
+	public void incrementIncomingSearchRate()
+	{
+		synchronized( lock )
+		{
+			incomingSearchRate++;
 		}
 	}
 }

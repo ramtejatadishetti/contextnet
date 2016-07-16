@@ -154,6 +154,10 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			ProtocolEvent<PacketType, String> event,
 			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
 	{
+		if(ContextServiceConfig.PROFILER_THREAD)
+		{
+			profStats.incrementIncomingSearchRate();;
+		}
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
