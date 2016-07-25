@@ -84,7 +84,7 @@ public class NoopDB<NodeIDType> extends AbstractDB<NodeIDType>
 	@Override
 	public void getTriggerDataInfo(int subspaceId, int replicaNum, String attrName, JSONObject oldValJSON,
 			JSONObject newUpdateVal, HashMap<String, JSONObject> oldValGroupGUIDMap,
-			HashMap<String, JSONObject> newValGroupGUIDMap, int oldOrNewOrBoth) throws InterruptedException 
+			HashMap<String, JSONObject> newValGroupGUIDMap, int oldOrNewOrBoth, JSONObject newUnsetAttrs) throws InterruptedException 
 	{
 		
 	}

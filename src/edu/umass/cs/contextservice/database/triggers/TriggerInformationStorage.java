@@ -548,13 +548,13 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 	 */
 	public void getTriggerDataInfo(int subspaceId, int replicaNum, String attrName, 
 		JSONObject oldValJSON, JSONObject newUpdateVal, HashMap<String, JSONObject> oldValGroupGUIDMap, 
-			HashMap<String, JSONObject> newValGroupGUIDMap, int oldOrNewOrBoth) throws InterruptedException
+			HashMap<String, JSONObject> newValGroupGUIDMap, int oldOrNewOrBoth, JSONObject newUnsetAttrs) throws InterruptedException
 	{
 		assert(oldValGroupGUIDMap != null);
 		assert(newValGroupGUIDMap != null);
 		// oldValJSON should contain all attribtues.
 		// newUpdateVal contains only updated attr:val pairs
-		assert(oldValJSON.length() == AttributeTypes.attributeMap.size());
+		//assert(oldValJSON.length() == AttributeTypes.attributeMap.size());
 		
 		long t0 = System.currentTimeMillis();
 		
@@ -570,7 +570,7 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 		else if( oldOrNewOrBoth == UpdateTriggerMessage.NEW_VALUE )
 		{
 			returnNewValueGroupGUIDs( subspaceId, replicaNum, attrName, oldValJSON, 
-					newUpdateVal, newValGroupGUIDMap );
+					newUpdateVal, newValGroupGUIDMap, newUnsetAttrs);
 		}
 		else if( oldOrNewOrBoth == UpdateTriggerMessage.BOTH )
 		{
@@ -584,7 +584,7 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 			st.start();			
 //			returnOldValueGroupGUIDs(subspaceId, replicaNum, attrName, oldValJSON, oldValGroupGUIDMap);
 			returnNewValueGroupGUIDs( subspaceId, replicaNum, attrName, oldValJSON, 
-					newUpdateVal, newValGroupGUIDMap );
+					newUpdateVal, newValGroupGUIDMap, newUnsetAttrs );
 			st.join();
 		}
 		
@@ -646,10 +646,12 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 	}
 	
 	
-	private void returnNewValueGroupGUIDs( int subspaceId, int replicaNum, String attrName, JSONObject oldValJSON, 
-			JSONObject newUpdateVal, HashMap<String, JSONObject> newValGroupGUIDMap )
+	private void returnNewValueGroupGUIDs( int subspaceId, int replicaNum, String attrName, 
+			JSONObject oldValJSON, JSONObject newUpdateVal, 
+			HashMap<String, JSONObject> newValGroupGUIDMap, JSONObject newUnsetAttrs )
 	{
-		String tableName 			= "subspaceId"+subspaceId+"RepNum"+replicaNum+"Attr"+attrName+"TriggerDataInfo";
+		String tableName 			= "subspaceId"+subspaceId+"RepNum"
+							+replicaNum+"Attr"+attrName+"TriggerDataInfo";
 		
 		Connection myConn 			= null;
 		Statement stmt 				= null;
@@ -669,18 +671,26 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 			while( attrIter.hasNext() )
 			{
 				String currAttrName = attrIter.next();
-				String dataType = AttributeTypes.attributeMap.get(currAttrName).getDataType();
+				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(currAttrName);
 				
-				String attrValForMysql = "";
-				if( newUpdateVal.has(currAttrName) )
+				String dataType = attrMetaInfo.getDataType();
+				
+				String attrValForMysql = attrMetaInfo.getDefaultValue();
+				
+				if( !newUnsetAttrs.has(currAttrName) )
 				{
-					attrValForMysql =
-					AttributeTypes.convertStringToDataTypeForMySQL(newUpdateVal.getString(currAttrName), dataType)+"";
-				}
-				else
-				{
-					attrValForMysql =
-							AttributeTypes.convertStringToDataTypeForMySQL(oldValJSON.getString(currAttrName), dataType)+"";	
+					if( newUpdateVal.has(currAttrName) )
+					{
+						attrValForMysql =
+						AttributeTypes.convertStringToDataTypeForMySQL
+						(newUpdateVal.getString(currAttrName), dataType)+"";
+					}
+					else if( oldValJSON.has(currAttrName) )
+					{
+						attrValForMysql =
+								AttributeTypes.convertStringToDataTypeForMySQL
+								(oldValJSON.getString(currAttrName), dataType)+"";	
+					}
 				}
 				
 				String lowerValCol = "lower"+currAttrName;

@@ -60,7 +60,7 @@ public class ContextServiceTests
 		System.out.println("ContextServiceClient connected");
 	}
 	
-	@Test
+	/*@Test
 	public void test_1_emptyQueryTest() 
 	{
 		String selectQuery = 
@@ -306,6 +306,59 @@ public class ContextServiceTests
 			assert( numRep > 0 );
 			assert( replyArray.length() > 0 );
 		}
+	}*/
+	
+	@Test
+	public void test_4_TriggerTest() throws JSONException
+	{
+		// these tests require full search replies to be sent.
+		assert( ContextServiceConfig.sendFullReplies );
+
+		//Random rand = new Random();
+		String realAlias = memberAliasPrefix+10000;
+		String myGUID = getGUID(realAlias);
+		JSONObject attrValJSON = new JSONObject();
+		attrValJSON.put("attr0", 500);
+		attrValJSON.put("attr1", 500);
+		attrValJSON.put("attr2", 500);
+		attrValJSON.put("attr3", 500);
+		attrValJSON.put("attr4", 500);
+		attrValJSON.put("attr5", 500);
+		
+		System.out.println("Inserting "+myGUID);
+		csClient.sendUpdate(myGUID, null, attrValJSON, -1);
+		
+		String selectQuery = 
+			"SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE "
+			+ "attr0 >= 2 AND attr0 <= 750 AND "
+			+ "attr1 >= 2 AND attr1 <= 750 AND "
+			+ "attr2 >= 2 AND attr2 <= 750 AND "
+			+ "attr3 >= 2 AND attr3 <= 750 AND "
+			+ "attr4 >= 2 AND attr4 <= 750 AND "
+			+ "attr5 >= 2 AND attr5 <= 750";
+		
+		
+		JSONArray replyArray = new JSONArray();
+		long expiryTime = 300000; // 5 min
+		int numRep = csClient.sendSearchQuery(selectQuery, replyArray, expiryTime);
+		
+		assert(numRep >=1);
+		
+		String guidToUpdate = replyArray.getString(0);
+		System.out.println("Guid to update "+guidToUpdate);
+		JSONObject updatedJSON = new JSONObject();
+		
+		updatedJSON.put("attr4", 1000);
+		
+		csClient.sendUpdate(guidToUpdate, null, updatedJSON, -1);
+		
+		JSONArray triggerArray = new JSONArray();
+		csClient.getQueryUpdateTriggers(triggerArray);
+		System.out.println("triggers recvd "+triggerArray);
+		
+		assert(triggerArray.length() >= 1);
+//		assertEquals(100, numRep);
+//		assertEquals(100, replyArray.length());
 	}
 	
 	@AfterClass
@@ -327,7 +380,7 @@ public class ContextServiceTests
 //	    if (client != null) {
 //	      client.close();
 //	    }
-	 }
+	}
 	
 	private static String getGUID(String stringToHash)
 	{
@@ -372,7 +425,7 @@ public class ContextServiceTests
 	private static void startFourNodeSetup() throws Exception
 	{
 		String[] args = new String[4];
-		for(int i=0; i<4; i++)
+		for( int i=0; i<4; i++ )
 		{
 			args[0] = "-id";
 			args[1] = i+"";

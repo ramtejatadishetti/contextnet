@@ -34,7 +34,7 @@ import edu.umass.cs.nio.JSONMessenger;
  */
 public class TriggerProcessing<NodeIDType> implements 
 								TriggerProcessingInterface<NodeIDType>
-{	
+{
 	private final HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> 
 													subspaceInfoMap;
 
@@ -177,7 +177,6 @@ public class TriggerProcessing<NodeIDType> implements
 		}
 	}
 	
-	
 	public void processUpdateTriggerMessage(UpdateTriggerMessage<NodeIDType> updateTriggerMessage) throws InterruptedException
 	{
 		long requestID  = updateTriggerMessage.getRequestId();
@@ -185,14 +184,16 @@ public class TriggerProcessing<NodeIDType> implements
 		int replicaNum  = updateTriggerMessage.getReplicaNum();
 		JSONObject oldValJSON = updateTriggerMessage.getOldUpdateValPair();
 		JSONObject newUpdateVal = updateTriggerMessage.getNewUpdateValPair();
-		int oldOrNewOrBoth = updateTriggerMessage.getOldNewVal();
+		int requestType = updateTriggerMessage.getRequestType();
 		String attrName    = updateTriggerMessage.getAttrName();
+		JSONObject newUnsetAttr = updateTriggerMessage.getUnsetAttrs();
+		
 		
 		HashMap<String, JSONObject> oldValGroupGUIDMap = new HashMap<String, JSONObject>();
 		HashMap<String, JSONObject> newValGroupGUIDMap = new HashMap<String, JSONObject>();
 		
 		this.hyperspaceDB.getTriggerDataInfo(subspaceId, replicaNum, attrName, oldValJSON, 
-				newUpdateVal, oldValGroupGUIDMap, newValGroupGUIDMap, oldOrNewOrBoth);
+				newUpdateVal, oldValGroupGUIDMap, newValGroupGUIDMap, requestType, newUnsetAttr);
 		
 		ContextServiceLogger.getLogger().fine("processUpdateTriggerMessage oldValGroupGUIDMap size "
 				+oldValGroupGUIDMap.size()+" newValGroupGUIDMap size "+newValGroupGUIDMap.size() );
@@ -203,7 +204,7 @@ public class TriggerProcessing<NodeIDType> implements
 		// if both then get the real trigger group guids
 		// otherwise it can only be computed when the sender 
 		// recvs replies for both old and new values.
-		if( oldOrNewOrBoth == UpdateTriggerMessage.BOTH )
+		if( requestType == UpdateTriggerMessage.BOTH )
 		{
 			Iterator<String> oldValGrpGUIDIter = oldValGroupGUIDMap.keySet().iterator();
 			while( oldValGrpGUIDIter.hasNext() )
@@ -229,7 +230,7 @@ public class TriggerProcessing<NodeIDType> implements
 				}
 			}
 		}
-		else if( oldOrNewOrBoth == UpdateTriggerMessage.OLD_VALUE )
+		else if( requestType == UpdateTriggerMessage.OLD_VALUE )
 		{
 			Iterator<String> oldValGrpGUIDIter = oldValGroupGUIDMap.keySet().iterator();
 			while( oldValGrpGUIDIter.hasNext() )
@@ -238,7 +239,7 @@ public class TriggerProcessing<NodeIDType> implements
 				toBeRemoved.put(oldValGroupGUIDMap.get(currGrpGUID));
 			}
 		}
-		else if( oldOrNewOrBoth == UpdateTriggerMessage.NEW_VALUE )
+		else if( requestType == UpdateTriggerMessage.NEW_VALUE )
 		{
 			Iterator<String> newValGrpGUIDIter = newValGroupGUIDMap.keySet().iterator();
 			while( newValGrpGUIDIter.hasNext() )
@@ -253,11 +254,12 @@ public class TriggerProcessing<NodeIDType> implements
 		
 		UpdateTriggerReply<NodeIDType> updTriggerRep = 
 				new UpdateTriggerReply<NodeIDType>( myID, requestID, subspaceId, replicaNum, 
-						toBeRemoved, toBeAdded, updateTriggerMessage.getNumReplies(), oldOrNewOrBoth, attrName );
+						toBeRemoved, toBeAdded, updateTriggerMessage.getNumReplies(), requestType, attrName );
 		
 		try
 		{
-			this.messenger.sendToID( updateTriggerMessage.getSender(), updTriggerRep.toJSONObject() );
+			this.messenger.sendToID
+			( updateTriggerMessage.getSender(), updTriggerRep.toJSONObject() );
 		} catch (IOException e)
 		{
 			e.printStackTrace();
@@ -267,8 +269,34 @@ public class TriggerProcessing<NodeIDType> implements
 		}
 	}
 	
-	public void triggerProcessingOnUpdate( JSONObject attrValuePairs, HashMap<String, AttributePartitionInfo> attrsSubspaceInfo, 
-			int subspaceId, int replicaNum, JSONObject  oldValueJSON, long requestID ) throws JSONException
+	public void triggerProcessingOnUpdate( JSONObject attrValuePairs, 
+			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo, 
+			int subspaceId, int replicaNum, JSONObject oldValueJSON, 
+			long requestID, JSONObject  primarySubspaceJSON , boolean firstTimeInsert )
+					throws JSONException
+	{
+		// only check the new values and notify groups where this
+		// GUID is added.
+		if( firstTimeInsert )
+		{	
+			processTriggerOnFirstInsert( attrValuePairs, 
+					attrsSubspaceInfo, requestID, 
+					subspaceId, replicaNum, primarySubspaceJSON );
+		}
+		else // check both old and the new value and send removal triggers
+			 // to groups from which this GUID is removed. and based on the new
+			 // value send addition triggers to groups to which this GUID is added.
+		{
+			processTriggerOnUpdate( attrValuePairs, oldValueJSON, 
+					attrsSubspaceInfo, requestID, subspaceId, 
+					replicaNum, primarySubspaceJSON );
+		}
+	}
+	
+	private void processTriggerOnFirstInsert( JSONObject attrValuePairs, 
+			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo, long requestID, 
+			int subspaceId, int replicaNum, JSONObject  primarySubspaceJSON )
+					throws JSONException
 	{
 		// update can be over multiple attributes
 		Iterator<String> attrIter = attrValuePairs.keys();
@@ -277,6 +305,81 @@ public class TriggerProcessing<NodeIDType> implements
 		{
 			String currAttrName = attrIter.next();
 			String currValue = attrValuePairs.getString(currAttrName);
+			
+			// current attribute is contained 
+			// in the attribute subspace
+			if( attrsSubspaceInfo.containsKey(currAttrName) )
+			{
+				//find old overlapping groups
+				ProcessingQueryComponent newTriggerComponent 
+						= new ProcessingQueryComponent( currAttrName, currValue, currValue );
+				
+				Integer newRespNodeId = -1;
+				
+				// find new overlapping groups
+				
+				HashMap<Integer, OverlappingInfoClass> newOverlappingRegion = 
+				this.hyperspaceDB.getOverlappingPartitionsInTriggers
+					(subspaceId, replicaNum, currAttrName, newTriggerComponent);
+				
+				
+				if( newOverlappingRegion.size() != 1 )
+				{
+					assert(false);
+				}
+				else
+				{
+					newRespNodeId = newOverlappingRegion.keySet().iterator().next();
+				}
+				
+				JSONObject unsetAttrJSON = HyperspaceHashing.getUnsetAttrJSON(primarySubspaceJSON);
+				
+				assert(unsetAttrJSON != null);
+				
+				
+				UpdateTriggerMessage<NodeIDType>  newUpdateTriggerMessage 
+					= new UpdateTriggerMessage<NodeIDType>( myID, requestID, subspaceId, 
+							replicaNum, new JSONObject(), attrValuePairs, 
+							UpdateTriggerMessage.NEW_VALUE, 1, currAttrName, unsetAttrJSON);
+				
+				try
+				{
+					this.messenger.sendToID( (NodeIDType) newRespNodeId, 
+							newUpdateTriggerMessage.toJSONObject() );
+				} catch (IOException e)
+				{
+					e.printStackTrace();
+				} catch (JSONException e)
+				{
+					e.printStackTrace();
+				}
+				
+				ContextServiceLogger.getLogger().fine("Sending UpdateTriggerMessage from "
+						+myID+" to "+newRespNodeId);	
+			}
+		}
+	}
+	
+	
+	private void processTriggerOnUpdate( JSONObject attrValuePairs, JSONObject oldValueJSON, 
+			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo, long requestID, 
+			int subspaceId, int replicaNum, JSONObject  primarySubspaceJSON ) throws JSONException
+	{
+		assert( oldValueJSON != null );
+		// update can be over multiple attributes
+		JSONObject newUnsetAttrsJSON 
+				= HyperspaceHashing.getUnsetAttrJSON(primarySubspaceJSON);
+		
+		assert(newUnsetAttrsJSON != null);
+		
+		Iterator<String> attrIter = attrValuePairs.keys();
+		while( attrIter.hasNext() )
+		{
+			String currAttrName = attrIter.next();
+			String currValue = attrValuePairs.getString(currAttrName);
+			
+			assert(oldValueJSON.has(currAttrName));
+			
 			String oldValue  = oldValueJSON.getString(currAttrName);
 			
 			// current attribute is contained 
@@ -326,12 +429,14 @@ public class TriggerProcessing<NodeIDType> implements
 				{
 					// 1 reply to expect as both old and new go to same ndoe
 					UpdateTriggerMessage<NodeIDType>  updateTriggerMessage 
-					 = new UpdateTriggerMessage<NodeIDType>( myID, requestID, subspaceId, replicaNum, 
-							 oldValueJSON, attrValuePairs, UpdateTriggerMessage.BOTH, 1, currAttrName);
+					 = new UpdateTriggerMessage<NodeIDType>( myID, requestID, subspaceId, 
+							 replicaNum, oldValueJSON, attrValuePairs, 
+							 UpdateTriggerMessage.BOTH, 1, currAttrName, newUnsetAttrsJSON);
 					
 					try
 					{
-						this.messenger.sendToID((NodeIDType) oldRespNodeId, updateTriggerMessage.toJSONObject());
+						this.messenger.sendToID((NodeIDType) oldRespNodeId, 
+								updateTriggerMessage.toJSONObject());
 					} catch (IOException e)
 					{
 						e.printStackTrace();
@@ -347,8 +452,9 @@ public class TriggerProcessing<NodeIDType> implements
 				{
 					// 2 replies to expect as old and new go to different nodes
 					UpdateTriggerMessage<NodeIDType>  oldUpdateTriggerMessage 
-					 = new UpdateTriggerMessage<NodeIDType>( myID, requestID, subspaceId, replicaNum, 
-							 oldValueJSON, attrValuePairs, UpdateTriggerMessage.OLD_VALUE, 2, currAttrName);
+					 = new UpdateTriggerMessage<NodeIDType>( myID, requestID, subspaceId, 
+							 replicaNum, oldValueJSON, attrValuePairs, 
+							 UpdateTriggerMessage.OLD_VALUE, 2, currAttrName, newUnsetAttrsJSON);
 					
 					try
 					{
@@ -366,8 +472,10 @@ public class TriggerProcessing<NodeIDType> implements
 							+myID+" to "+oldRespNodeId);
 					
 					UpdateTriggerMessage<NodeIDType>  newUpdateTriggerMessage 
-					 = new UpdateTriggerMessage<NodeIDType>( myID, requestID, subspaceId, replicaNum, 
-							 oldValueJSON, attrValuePairs, UpdateTriggerMessage.NEW_VALUE, 2, currAttrName);
+					 = new UpdateTriggerMessage<NodeIDType>( myID, requestID, subspaceId, 
+							 replicaNum, oldValueJSON, attrValuePairs, 
+							 UpdateTriggerMessage.NEW_VALUE, 2, currAttrName, 
+							 newUnsetAttrsJSON);
 					
 					try
 					{
@@ -380,7 +488,6 @@ public class TriggerProcessing<NodeIDType> implements
 					{
 						e.printStackTrace();
 					}
-					
 					ContextServiceLogger.getLogger().fine("Sending UpdateTriggerMessage from "
 							+myID+" to "+newRespNodeId);
 				}
@@ -603,5 +710,4 @@ public class TriggerProcessing<NodeIDType> implements
 		}	
 		ContextServiceLogger.getLogger().fine(" generateTriggerPartitions() completed " );
 	}
-	
 }

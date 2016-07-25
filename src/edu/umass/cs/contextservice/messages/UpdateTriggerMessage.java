@@ -15,8 +15,8 @@ public class UpdateTriggerMessage<NodeIDType> extends BasicContextServicePacket<
 	// both the old and new are on the same node
 	public static final int BOTH					= 3;
 	
-	private enum Keys {REQUESTID, SUBSPACENUM, REPLICA_NUM, OLD_UPDATE_VALUE, OLD_NEW_VAL, 
-		NEW_UPDATE_VALUE, NUM_REPLIES, ATTR_NAME};
+	private enum Keys {REQUESTID, SUBSPACENUM, REPLICA_NUM, OLD_UPDATE_VALUE, 
+		NEW_UPDATE_VALUE, NUM_REPLIES, ATTR_NAME, UNSET_ATTRS, REQUEST_TYPE};
 	
 	//update requestID of the update mesg
 	private final long requestID;
@@ -30,7 +30,7 @@ public class UpdateTriggerMessage<NodeIDType> extends BasicContextServicePacket<
 	
 	// flag indicates whether it is an
 	// old value or a new value
-	private final int oldNewVal;
+	private final int requestType;
 	
 	// number of trigger replies that will come back.
 	// it can be either 1 or 2 depending on if old and new value fall 
@@ -41,12 +41,15 @@ public class UpdateTriggerMessage<NodeIDType> extends BasicContextServicePacket<
 	
 	private final String attrName;
 	
+	private final JSONObject unsetAttrsJSON;
+	
 	/*
 	 * sourceID will be the ID of the node that 
 	 * recvd query from the user.
 	 */
-	public UpdateTriggerMessage( NodeIDType initiator, long requestId, int subspaceNum, int replicaNum,
-			JSONObject oldUpdateValPair, JSONObject newUpdateValPair, int oldNewVal, int numReplies, String attrName )
+	public UpdateTriggerMessage( NodeIDType initiator, long requestId, int subspaceNum, 
+			int replicaNum, JSONObject oldUpdateValPair, JSONObject newUpdateValPair, 
+			int requestType, int numReplies, String attrName, JSONObject unsetAttrsJSON )
 	{
 		super(initiator, ContextServicePacket.PacketType.UPDATE_TRIGGER_MESSAGE);
 		this.requestID = requestId;
@@ -54,12 +57,13 @@ public class UpdateTriggerMessage<NodeIDType> extends BasicContextServicePacket<
 		this.replicaNum = replicaNum;
 		this.oldUpdateValPair = oldUpdateValPair;
 		this.newUpdateValPair = newUpdateValPair;
-		this.oldNewVal = oldNewVal;
+		this.requestType = requestType;
 		this.numReplies = numReplies;
 		this.attrName = attrName;
+		this.unsetAttrsJSON = unsetAttrsJSON;
 	}
 	
-	public UpdateTriggerMessage(JSONObject json) throws JSONException
+	public UpdateTriggerMessage( JSONObject json ) throws JSONException
 	{
 		super(json);
 		this.requestID = json.getLong(Keys.REQUESTID.toString());
@@ -67,9 +71,10 @@ public class UpdateTriggerMessage<NodeIDType> extends BasicContextServicePacket<
 		this.replicaNum = json.getInt(Keys.REPLICA_NUM.toString());
 		this.oldUpdateValPair = json.getJSONObject(Keys.OLD_UPDATE_VALUE.toString());
 		this.newUpdateValPair = json.getJSONObject(Keys.NEW_UPDATE_VALUE.toString());
-		this.oldNewVal = json.getInt(Keys.OLD_NEW_VAL.toString());
+		this.requestType = json.getInt(Keys.REQUEST_TYPE.toString());
 		this.numReplies = json.getInt(Keys.NUM_REPLIES.toString());
 		this.attrName = json.getString(Keys.ATTR_NAME.toString());
+		this.unsetAttrsJSON = json.getJSONObject(Keys.UNSET_ATTRS.toString());
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException
@@ -80,9 +85,10 @@ public class UpdateTriggerMessage<NodeIDType> extends BasicContextServicePacket<
 		json.put(Keys.REPLICA_NUM.toString(), this.replicaNum);
 		json.put(Keys.OLD_UPDATE_VALUE.toString(), this.oldUpdateValPair);
 		json.put(Keys.NEW_UPDATE_VALUE.toString(), this.newUpdateValPair);
-		json.put(Keys.OLD_NEW_VAL.toString(), this.oldNewVal);
+		json.put(Keys.REQUEST_TYPE.toString(), this.requestType);
 		json.put(Keys.NUM_REPLIES.toString(), this.numReplies);
 		json.put(Keys.ATTR_NAME.toString(), this.attrName);
+		json.put(Keys.UNSET_ATTRS.toString(), this.unsetAttrsJSON);
 		return json;
 	}
 	
@@ -111,9 +117,9 @@ public class UpdateTriggerMessage<NodeIDType> extends BasicContextServicePacket<
 		return this.newUpdateValPair;
 	}
 	
-	public int getOldNewVal()
+	public int getRequestType()
 	{
-		return this.oldNewVal;
+		return this.requestType;
 	}
 	
 	public int getNumReplies()
@@ -124,6 +130,11 @@ public class UpdateTriggerMessage<NodeIDType> extends BasicContextServicePacket<
 	public String getAttrName()
 	{
 		return this.attrName;
+	}
+	
+	public JSONObject getUnsetAttrs()
+	{
+		return this.unsetAttrsJSON;
 	}
 	
 	public static void main(String[] args)

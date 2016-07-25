@@ -161,37 +161,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		initializeClient();
 	}
 	
-//	public void sendUpdate( String GUID, GuidEntry myGuidEntry, JSONObject gnsAttrValuePairs, 
-//			long versionNum)
-//	{
-//		//Note: gnsAttrValuePairs, key is attrName, value is attrValue
-//		ContextServiceLogger.getLogger().fine("ContextClient sendUpdate enter "+GUID+" json "+
-//				gnsAttrValuePairs);
-//		try
-//		{
-//			if(gnsClient != null)
-//			{
-//				sendUpdateToGNS(myGuidEntry, gnsAttrValuePairs);
-//			}
-//			
-//			JSONObject csAttrValuePairs 
-//						= filterCSAttributes(gnsAttrValuePairs);
-//			
-//			// no context service attribute matching.
-//			if( csAttrValuePairs.length() <= 0 )
-//			{
-//				return;
-//			}
-//			sendUpdateToCS(GUID, 
-//					csAttrValuePairs, null, versionNum, blocking );
-//		}
-//		catch (Exception | Error e)
-//		{
-//			e.printStackTrace();
-//		}
-//		// no waiting in update
-//	}
-	
 	public void sendUpdateWithCallBack
 		( String GUID, GuidEntry myGuidEntry, JSONObject gnsAttrValuePairs, 
 		long versionNum, UpdateReplyInterface updReplyObj, CallBackInterface callback )
@@ -701,7 +670,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			jsoEx.printStackTrace();
 		}
 	}
-
+	
 	@Override
 	public int sendSearchQuerySecure(String searchQuery, JSONArray replyArray, 
 				long expiryTime, GuidEntry myGUIDInfo)
@@ -775,8 +744,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 		else
 		{
-			long end2 = System.currentTimeMillis();
-			
+			long end2 = System.currentTimeMillis();		
 //			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
 //						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
 //						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
@@ -788,36 +756,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	@Override
 	public boolean handleMessage(JSONObject jsonObject)
 	{
-		//this.execService.execute(new HandleMessageThread(jsonObject));
-		(new HandleMessageThread(jsonObject)).run();;
-//		try
-//		{
-//			
-//			if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE) 
-//					== ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY.getInt() )
-//			{
-//				handleQueryReply(jsonObject);
-//			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-//					== ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY.getInt() )
-//			{
-//				handleUpdateReply(jsonObject);
-//			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-//					== ContextServicePacket.PacketType.REFRESH_TRIGGER.getInt() )
-//			{
-//				handleRefreshTrigger(jsonObject);
-//			} else if( jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-//					== ContextServicePacket.PacketType.GET_REPLY_MESSAGE.getInt() )
-//			{
-//				handleGetReply(jsonObject);
-//			} else if(jsonObject.getInt(ContextServicePacket.PACKET_TYPE)
-//					== ContextServicePacket.PacketType.CONFIG_REPLY.getInt() )
-//			{
-//				handleConfigReply(jsonObject);
-//			}
-//		} catch (JSONException e)
-//		{
-//			e.printStackTrace();
-//		}
+		(new HandleMessageThread(jsonObject)).run();
 		return true;
 	}
 	
@@ -946,43 +885,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		{
 			e.printStackTrace();
 		}
-		
-//		synchronized( searchQ )
-//		{
-//			while( searchQ.queryMsgFromUserReply == null )
-//			{
-//				try 
-//				{
-//					searchQ.wait();
-//				} catch (InterruptedException e) 
-//				{
-//					e.printStackTrace();
-//				}
-//			}
-//		}
-		
-//		JSONArray result = searchQ.queryMsgFromUserReply.getResultGUIDs();
-//		int resultSize = searchQ.queryMsgFromUserReply.getReplySize();
-//		pendingSearches.remove(currId);
-//		
-//		SearchReplyAnswer searchAnswer = new SearchReplyAnswer();
-//		searchAnswer.resultArray = result;
-//		searchAnswer.resultSize = resultSize;
-//		return searchAnswer;
 	}
-	
-	/**
-	 * Just used to return the search reply answer from
-	 * private method to public method
-	 * @author adipc
-	 *
-	 */
-//	private class SearchReplyAnswer 
-//	{
-//		JSONArray resultArray;
-//		int resultSize;
-//	}
-	
 	
 	
 	/**
@@ -1086,7 +989,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 		
 		@Override
-		public void run() 
+		public void run()
 		{
 			try
 			{
@@ -1417,191 +1320,4 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 //		JSONObject getObj = csClient.sendGetRequestSecure(guid0, queryingGuid);
 //		System.out.println("recvd Obj "+getObj);
 	}
-	
-	/**
-	 * Converts attr value JSON given in the api calls to
-	 * attr AttrValueRepresentationJSON map
-	 * @return
-	 * @throws JSONException 
-	 */
-	/*private HashMap<String, AttrValueRepresentationJSON> convertAttrValueToSystemFormat
-								(JSONObject attrValuePairs) throws JSONException
-	{
-		HashMap<String, AttrValueRepresentationJSON> map 
-							= new HashMap<String, AttrValueRepresentationJSON>();
-		
-		Iterator<String> jsonIter = attrValuePairs.keys();
-		while(jsonIter.hasNext())
-		{
-			String attrName = jsonIter.next();
-			String value = attrValuePairs.getString(attrName);
-			AttrValueRepresentationJSON valRep = new AttrValueRepresentationJSON(value);
-			
-			map.put(attrName, valRep);
-		}
-		return map;
-	}*/
-	
-//	@Override
-//	public void sendUpdateSecure( String GUID, GuidEntry myGUIDInfo, 
-//			JSONObject attrValuePairs, long versionNum, boolean blocking,
-//			HashMap<String, List<ACLEntry>> aclmap, List<AnonymizedIDEntry> anonymizedIDList )
-//	{
-//		try
-//		{
-//			if(gnsClient != null)
-//			{
-//				GNSTransformedMessage gnsTransformMesg = 
-//						this.gnsPrivacyTransform.transformUpdateForGNSPrivacy
-//						(attrValuePairs, aclmap);
-//				
-//				sendUpdateToGNS( myGUIDInfo, 
-//						gnsTransformMesg.getEncryptedAttrValuePair() );
-//			}
-//			
-//			JSONObject csAttrValuePairs = filterCSAttributes(attrValuePairs);
-//			// no context service attribute matching.
-//			if( csAttrValuePairs.length() <= 0 )
-//			{
-//				return;
-//			}
-//			
-////			HashMap<String, AttrValueRepresentationJSON> attrValueMap =
-////					convertAttrValueToSystemFormat(csAttrValuePairs);
-//			
-//			// TODO: Different CSUpdateTransformedMessage messages can be computed
-//			// in parallel.
-//			
-//			long start1 = System.currentTimeMillis();
-//			
-//			List<CSUpdateTransformedMessage> transformedMesgList 
-//				= this.csPrivacyTransform.transformUpdateForCSPrivacy
-//				(myGUIDInfo.getGuid(), attrValuePairs, aclmap, anonymizedIDList);
-//			
-//			long end1 = System.currentTimeMillis();
-//			
-//			// now all the anonymized IDs and the attributes that needs to be updated
-//			// are calculated, 
-//			// just need to send out updates
-//			
-//			List<Long> finishTimeList = new LinkedList<Long>();
-//			
-//			ParallelUpdateStateStorage updateState 
-//								= new ParallelUpdateStateStorage(transformedMesgList, 
-//										finishTimeList);
-//			
-//			for( int i=0; i<transformedMesgList.size(); i++ )
-//			{
-//				CSUpdateTransformedMessage csTransformedMessage = transformedMesgList.get(i);
-//			
-//				UpdateOperationThread updateThread = new UpdateOperationThread(GUID, 
-//						csTransformedMessage, versionNum, blocking, 
-//						updateState );
-//				this.executorService.execute(updateThread);
-//				
-//				//String IDString = Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
-//				//sendUpdateToCS( IDString, csTransformedMessage.getAttrValMap() , 
-//				//		versionNum, blocking );
-//			}
-//			updateState.waitForCompletion();
-//			
-//			long end2 = System.currentTimeMillis();
-//			
-//			finishTimeList.sort(null);
-//			
-//			if(transformedMesgList.size() > 0)
-//			{
-//				System.out.println
-//				("sendUpdateSecure complete GUID "+GUID+" transform time "+(end1-start1)
-//					+" total time "+(end2-start1)+
-//					" length "+attrValuePairs.length()+" transformedMesgList size "
-//					+transformedMesgList.size() +" first anonymized ID finish time "
-//					+finishTimeList.get(0) );
-//			}
-//		}
-//		catch( JSONException jsoEx )
-//		{
-//			jsoEx.printStackTrace();
-//		}
-//	}
-	
-//	public int sendSearchQuery(String searchQuery, JSONArray replyArray, 
-//			long expiryTime)
-//	{
-//		if( replyArray == null )
-//		{
-//			ContextServiceLogger.getLogger().warning("null passsed "
-//					+ "as replyArray in sendSearchQuery");
-//			return -1;
-//		}
-//		
-//		SearchReplyAnswer searchAnswer = sendSearchQueryToCS(searchQuery, expiryTime);
-//		
-//		// no untransformation needed in no privacy case.
-//		// context service returns an array of JSONArrays.
-//		// Each JSONArray contains the SearchReplyGUIDRepresentationJSON JSONObjects 
-//		for(int i=0; i<searchAnswer.resultArray.length(); i++)
-//		{
-//			try
-//			{
-//				JSONArray jsoArr1 = searchAnswer.resultArray.getJSONArray(i);
-//				for(int j=0; j<jsoArr1.length(); j++)
-//				{
-//					//resultGUIDMap.put(jsoArr1.getString(j), true);
-//					JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
-//					SearchReplyGUIDRepresentationJSON searchRepObj 
-//							= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
-//					replyArray.put(searchRepObj.getID());
-//				}
-//			} catch ( JSONException e )
-//			{
-//				e.printStackTrace();
-//			}
-//		}
-//		return searchAnswer.resultSize;
-//	}
-	
-	/**
-	 * Thread tha performs the update.
-	 * @author adipc
-	 */
-	/*private class UpdateOperationThread implements Runnable
-	{
-		private final String guid;
-		private final CSUpdateTransformedMessage csTransformedMessage;
-		private final long versionNum;
-		private final boolean blocking;
-		private final ParallelUpdateStateStorage updateState;
-		private final long startTime;
-		
-		
-		public UpdateOperationThread(String guid, CSUpdateTransformedMessage csTransformedMessage
-				, long versionNum, boolean blocking, ParallelUpdateStateStorage updateState)
-		{
-			this.guid = guid;
-			this.csTransformedMessage = csTransformedMessage;
-			this.versionNum = versionNum;
-			this.blocking = blocking;
-			this.updateState = updateState;
-			startTime = System.currentTimeMillis();
-		}
-		
-		@Override
-		public void run() 
-		{
-			String IDString = Utils.bytArrayToHex(csTransformedMessage.getAnonymizedID());
-			
-			sendUpdateToCS( IDString, csTransformedMessage.getAttrValJSON(), 
-					csTransformedMessage.getAnonymizedIDToGuidMapping(), 
-					versionNum, blocking );
-			
-			long endTime = System.currentTimeMillis();
-//			if(ContextServiceConfig.DEBUG_MODE )
-//			{
-//				System.out.println("GUID "+guid+" AnonymizedID "+IDString+" update finished at "
-//							+(endTime-startTime)+" full mesg "+csTransformedMessage.toString());
-//			}
-			updateState.incrementNumCompleted((endTime-startTime));
-		}
-	}*/
 }

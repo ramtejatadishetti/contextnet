@@ -18,11 +18,9 @@ public abstract class AbstractDB<NodeIDType>
 			getOverlappingRegionsInSubspace(int subspaceId, int replicaNum, 
 				Vector<ProcessingQueryComponent> matchingQueryComponents);
 	
-	
 	public abstract HashMap<Integer, OverlappingInfoClass> 
 		getOverlappingPartitionsInTriggers( int subspaceId, int replicaNum, 
 			String attrName, ProcessingQueryComponent matchingQueryComponent );
-	
 	
 	public abstract int processSearchQueryInSubspaceRegion(int subspaceId, String query, 
 			JSONArray resultArray);
@@ -44,7 +42,7 @@ public abstract class AbstractDB<NodeIDType>
 	
 	public abstract void getTriggerDataInfo(int subspaceId, int replicaNum, String attrName, 
 			JSONObject oldValJSON, JSONObject newUpdateVal, HashMap<String, JSONObject> oldValGroupGUIDMap, 
-				HashMap<String, JSONObject> newValGroupGUIDMap, int oldOrNewOrBoth) throws InterruptedException;
+				HashMap<String, JSONObject> newValGroupGUIDMap, int oldOrNewOrBoth, JSONObject newUnsetAttrs) throws InterruptedException;
 	
 	
 	public abstract int deleteExpiredSearchQueries( int subspaceId, int replicaNum, String attrName );

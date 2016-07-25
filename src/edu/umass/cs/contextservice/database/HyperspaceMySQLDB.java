@@ -280,11 +280,11 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 	 */
 	public void getTriggerDataInfo(int subspaceId, int replicaNum, String attrName, 
 		JSONObject oldValJSON, JSONObject newUpdateVal, HashMap<String, JSONObject> oldValGroupGUIDMap, 
-			HashMap<String, JSONObject> newValGroupGUIDMap, int oldOrNewOrBoth) throws InterruptedException
+			HashMap<String, JSONObject> newValGroupGUIDMap, int oldOrNewOrBoth, JSONObject newUnsetAttrs) throws InterruptedException
 	{
 		this.triggerInformationStorage.getTriggerDataInfo
 			(subspaceId, replicaNum, attrName, oldValJSON, newUpdateVal, oldValGroupGUIDMap, 
-				newValGroupGUIDMap, oldOrNewOrBoth);
+				newValGroupGUIDMap, oldOrNewOrBoth, newUnsetAttrs);
 	}
 	
 	/**
@@ -368,7 +368,7 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 	public boolean getSearchQueryRecordFromPrimaryTriggerSubspace( String groupGUID, 
 			String userIP, int userPort ) throws UnknownHostException
 	{
-		return this.getSearchQueryRecordFromPrimaryTriggerSubspace
+		return triggerInformationStorage.getSearchQueryRecordFromPrimaryTriggerSubspace
 				(groupGUID, userIP, userPort);
 	}
 }

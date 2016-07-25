@@ -14,29 +14,44 @@ import sys
 #print(result.x)
 rho                             = 0.5
 #Yc                             = 1.0
-N                               = math.pow(10.0,3)
+#N                               = math.pow(10.0,5)
+N                               = 15000.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
 # specially if result size increases then estimation error might increase.
-#CsByC                           = 0.005319149
+#CsByC                          = 0.005319149
 #CsByC                          = 0.009713526
 CuByC                           = 1.0/2700.0
 CiByC                           = 1.0/2100.0
 CdByC                           = 1.0/2400.0
+CgByC                           = 1.0/14800.0
+ChByC                           = 1.0/8220.0
 #CiByC                          = 0.00071537
 B                               = 20.0
 Aavg                            = 4.0
 NumGuids                        = 10000.0
 CsByC                           = {}
-CsByC[1000]                     = 1.0/10156.0
-CsByC[2000]                     = 1.0/7932.0
-CsByC[3000]                     = 1.0/5731.0
-CsByC[4000]                     = 1.0/5234.0
-CsByC[5000]                     = 1.0/5108.0
-CsByC[6000]                     = 1.0/4541.0
-CsByC[7000]                     = 1.0/4033.0
-CsByC[8000]                     = 1.0/3644.0
-CsByC[9000]                     = 1.0/3247.0
-CsByC[10000]                    = 1.0/2956.0
+
+#CsByC[1000]                     = 1.0/10156.0
+#CsByC[2000]                     = 1.0/7932.0
+#CsByC[3000]                     = 1.0/5731.0
+#CsByC[4000]                     = 1.0/5234.0
+#CsByC[5000]                     = 1.0/5108.0
+#CsByC[6000]                     = 1.0/4541.0
+#CsByC[7000]                     = 1.0/4033.0
+#CsByC[8000]                     = 1.0/3644.0
+#CsByC[9000]                     = 1.0/3247.0
+#CsByC[10000]                    = 1.0/2956.0
+
+CsByC[1000]                     = 1.0/3966.4365289681027
+CsByC[2000]                     = 1.0/2969.6522295711543
+CsByC[3000]                     = 1.0/2073.0960996514864
+CsByC[4000]                     = 1.0/1596.8885783357027
+CsByC[5000]                     = 1.0/1299.4137982864872
+CsByC[6000]                     = 1.0/1092.8272750614385
+CsByC[7000]                     = 1.0/942.81434571155
+CsByC[8000]                     = 1.0/832.1314437733197
+CsByC[9000]                     = 1.0/738.3749842278318
+CsByC[10000]                    = 1.0/671.9668211231644
 
 
 # if 0 then trigger not enable
@@ -104,7 +119,7 @@ def calculateOverlapingNodesForSearch(numNodesForSubspace, currH):
         print "Overlap for a predicate numNodesForSubspace "+str(numNodesForSubspace)+" currH "+str(currH)+" expectedNumOverlapNodes "+str(expectedNumNodes) 
         return expectedNumNodes
     
-def calculateOverlapingNodesForSearchWithRatio(numNodesForSubspace, currH, yByDRatio):  
+def calculateOverlapingNodesForSearchWithRatio(numNodesForSubspace, currH, yByDRatio):
         expectedNumNodes = \
                 ( math.ceil(yByDRatio * math.pow(numNodesForSubspace, (1.0/currH)) ) )
         print "Overlap for a predicate numNodesForSubspace "+str(numNodesForSubspace)+" currH "+str(currH)+" expectedNumOverlapNodes "+str(expectedNumNodes) 
@@ -112,7 +127,7 @@ def calculateOverlapingNodesForSearchWithRatio(numNodesForSubspace, currH, yByDR
     
     
     # calculates number fo ndoes for single subspace trigger
-def calculateOverlapingNodesForTrigger(numNodesForSubspace, currH):  
+def calculateOverlapingNodesForTrigger(numNodesForSubspace, currH):
         expectedNumNodes = 0.0
         # calculating expected value of the first term
         for ybdi in YByDArray:
@@ -135,7 +150,7 @@ def calculateExpectedNumNodesASearchGoesTo(numNodesForSubspace, currH, currM):
         
         #expectedNumNodes = calculateOverlapingNodesForSearch(numNodesForSubspace, currH)
         expectedNumNodes = \
-               calculateOverlapingNodesForSearchWithRatio(numNodesForSubspace, currH, 0.1)
+               calculateOverlapingNodesForSearchWithRatio(numNodesForSubspace, currH, 0.5)
         
         expectedNumNodes = math.pow(expectedNumNodes, currM)
         mByH = (currM * 1.0)/(currH * 1.0)
@@ -319,9 +334,9 @@ def solveThroughputLinearEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtByC,
     numNodesSearch = calculateExpectedNumNodesASearchGoesTo(numNodesSubspace, H, currX)
     #numNodesUpdate = calcluateExpectedNumNodesAnUpdateGoesTo(numNodesSubspace, H)
     
-    currP = math.pow(numNodesSubspace, 1.0/H)
-    if(currP < 1):
-        currP = 1
+    #currP = math.pow(numNodesSubspace, 1.0/H)
+    #if(currP < 1):
+    #    currP = 1
         
     #oneByP = 1.0/currP
     oneByNumNodes = 1.0/numNodesSubspace
@@ -330,18 +345,19 @@ def solveThroughputLinearEq(H, rho, N, CsByC, B, CuByC, Aavg, configType, CtByC,
     
     updComp1 = oneByNumNodes*1.0*CuByC + (1.0-oneByNumNodes)*(CiByC+CdByC)
 
-    numTotalSubspsaces = N/numNodesSubspace
+    numTotalSubspsaces = 1.0*(N/numNodesSubspace)
     numUniqueSubspaces = numTotalSubspsaces/((B/H)) 
     
     # assuming basic, will be inaccurate in replicated
     # only one subspace will have more than 1 node, others will be just 1
     
-    totalUpdLoad = CuByC + numUniqueSubspaces*updComp1 + (numTotalSubspsaces-numUniqueSubspaces)*CuByC
+    totalUpdLoad = CgByC + CuByC + ((2.0*numTotalSubspsaces)*ChByC)+ numUniqueSubspaces*updComp1 + (numTotalSubspsaces-numUniqueSubspaces)*CuByC
     
     csByCForCase = getCsByCValue(numNodesSubspace)
+    totalSearchLoad = ChByC + (numNodesSearch*csByCForCase)
     #totalUpdLoad = (1.0 + (numTotalSubspsaces - 1.0))*CuByC + updComp1
     print "totalUpdLoad "+str(totalUpdLoad)+" currH "+str(H)+" numNodesSearch "+str(numNodesSearch)
-    return N/(rho*numNodesSearch*csByCForCase + (1.0-rho) * totalUpdLoad )
+    return N/(rho*totalSearchLoad + (1.0-rho) * totalUpdLoad )
     #return N/(rho*numNodesSearch*CsByC + (1.0-rho) * totalUpdLoad * CuByC)
     
     

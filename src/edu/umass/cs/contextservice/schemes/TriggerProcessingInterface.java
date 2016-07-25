@@ -18,15 +18,16 @@ import edu.umass.cs.contextservice.updates.UpdateInfo;
  */
 public interface TriggerProcessingInterface<NodeIDType> 
 {
-		
 	public void processTriggerOnQueryMsgFromUser(QueryInfo<NodeIDType> currReq);
 	
 	public void processQueryTriggerMessage(QueryTriggerMessage<NodeIDType> queryTriggerMessage);
 	
 	public void processUpdateTriggerMessage(UpdateTriggerMessage<NodeIDType> updateTriggerMessage) throws InterruptedException;
 	
-	public void triggerProcessingOnUpdate( JSONObject attrValuePairs, HashMap<String, AttributePartitionInfo> attrsSubspaceInfo, 
-			int subspaceId, int replicaNum, JSONObject  oldValueJSON, long requestID ) throws JSONException;
+	public void triggerProcessingOnUpdate( JSONObject attrValuePairs, 
+			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo, 
+			int subspaceId, int replicaNum, JSONObject  oldValueJSON, 
+			long requestID, JSONObject primarySubspaceJSON, boolean firstTimeInsert) throws JSONException;
 	
 	public void sendOutAggregatedRefreshTrigger(UpdateInfo<NodeIDType> updInfo) throws JSONException;
 }

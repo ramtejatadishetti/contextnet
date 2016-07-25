@@ -173,11 +173,15 @@ public class CalculateOptimalNumAttrsInSubspace
 		}
 		catch(Exception ex)
 		{
-			ex.printStackTrace();
+			//ex.printStackTrace();
+			ContextServiceLogger.getLogger().info
+					("HOptimizerJavaCallable.py extraction from ar failed");
 		}
 		catch(Error er)
 		{
 			er.printStackTrace();
 		}
 	}
+	
+	
 }

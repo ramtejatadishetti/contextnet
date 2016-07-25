@@ -79,7 +79,7 @@ public class ContextServiceConfig
 	//control if full guids are sent in the search query
 	// reply, if false only sends the number of guids, not
 	// the actual guids
-	public static final boolean sendFullReplies						= false;
+	public static final boolean sendFullReplies						= true;
 	
 	// if this is set to true, then mysql table selects
 	// return results row by row. If set to false then
@@ -93,12 +93,12 @@ public class ContextServiceConfig
 	//public static final boolean sendUpdateReplies					= true;
 	
 	// if true group update trigger is enabled, not enabled if false
-	public static boolean TRIGGER_ENABLED							= false;
+	public static boolean TRIGGER_ENABLED							= true;
 	
 	
 	// if set to true then there is a primary node for each groupGUID
 	// and search always gores through that and doesn't update trigger info if its is repeated.
-	public static boolean UniqueGroupGUIDEnabled					= false;
+	public static boolean UniqueGroupGUIDEnabled					= true;
 	
 	// disables most of the mysql db operations, apart from the reading of 
 	// subspace info. Just for throuhgput testing.
@@ -141,7 +141,7 @@ public class ContextServiceConfig
 	
 	// if this is set to true then the context service client will do decryptions 
 	// on receiving the search reply.
-	public static boolean DECRYPTIONS_ON_SEARCH_REPLY_ENABLED		= false;
+	public static boolean DECRYPTIONS_ON_SEARCH_REPLY_ENABLED		= true;
 	
 	// if true, no encryption happens. cipher text and plain text are same.
 	public static boolean NO_ENCRYPTION								= false;
