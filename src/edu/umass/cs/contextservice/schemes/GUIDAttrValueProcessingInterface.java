@@ -2,13 +2,13 @@ package edu.umass.cs.contextservice.schemes;
 
 import java.util.HashMap;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegion;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegionReply;
-import edu.umass.cs.contextservice.messages.QueryMsgFromUser;
 import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionMessage;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
 
@@ -20,16 +20,16 @@ import edu.umass.cs.contextservice.queryparsing.QueryInfo;
  */
 public interface GUIDAttrValueProcessingInterface<NodeIDType>
 {
-	public QueryInfo<NodeIDType> processQueryMsgFromUser
-		(QueryMsgFromUser<NodeIDType> queryMsgFromUser);
+	public void processQueryMsgFromUser
+		(QueryInfo<NodeIDType> queryInfo, boolean storeQueryForTrigger);
 	
-	public void processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion<NodeIDType> 
-		queryMesgToSubspaceRegion);
+	public int processQueryMesgToSubspaceRegion( QueryMesgToSubspaceRegion<NodeIDType> 
+		queryMesgToSubspaceRegion, JSONArray resultGUIDArray );
 	
-	public void processQueryMesgToSubspaceRegionReply(QueryMesgToSubspaceRegionReply<NodeIDType> 
-					queryMesgToSubspaceRegionReply);
+	public void processQueryMesgToSubspaceRegionReply( QueryMesgToSubspaceRegionReply<NodeIDType> 
+					queryMesgToSubspaceRegionReply );
 	
-	public void processValueUpdateToSubspaceRegionMessage( 
+	public int processValueUpdateToSubspaceRegionMessage( 
 			ValueUpdateToSubspaceRegionMessage<NodeIDType> 
 								valueUpdateToSubspaceRegionMessage, int replicaNum );
 	

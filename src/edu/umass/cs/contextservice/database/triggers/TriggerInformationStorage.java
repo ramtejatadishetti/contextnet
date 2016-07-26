@@ -15,16 +15,15 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
-import edu.umass.cs.contextservice.attributeInfo.AttributeTypes.DomainPartitionInfo;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.DataSource;
-import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
-import edu.umass.cs.contextservice.messages.UpdateTriggerMessage;
+import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionMessage;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
+import edu.umass.cs.contextservice.schemes.HyperspaceHashing;
 import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.utils.DelayProfiler;
 
@@ -125,16 +124,30 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 	private void createTablesForTriggers(SubspaceInfo<NodeIDType> subInfo, Statement  stmt) throws SQLException
 	{
 		int subspaceId = subInfo.getSubspaceId();
-		int replicaNum = subInfo.getReplicaNum();
+		//int replicaNum = subInfo.getReplicaNum();
 		// creating for all attributes rather than just the attributes of the subspace for better mataching
 		
 		// at least one replica and all replica have same default value for each attribute.
 		// FIXME: replicas may not have same default value for each attribute, because they can have 
 		// different number of nodes. But it may not changes number of partitions. Need to check.
 		// can be easily fixed by setting default value to partition 0 .but for now set to all partitions for load balancing/uniform.
-		HashMap<String, AttributePartitionInfo> attrSubspaceMap = subInfo.getAttributesOfSubspace();
+		//HashMap<String, AttributePartitionInfo> attrSubspaceMap = subInfo.getAttributesOfSubspace();
 		
-		Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
+		if( !subInfo.checkIfSubspaceHasMyID(myNodeID) )
+		{
+			return;
+		}
+		
+		String tableName = "subspaceId"+subspaceId+"TriggerDataInfo";
+		
+		String newTableCommand = "create table "+tableName+" ( groupGUID BINARY(20) NOT NULL , "
+				+ "userIP Binary(4) NOT NULL ,  userPort INTEGER NOT NULL , expiryTime BIGINT NOT NULL ";
+		newTableCommand = getPartitionInfoStorageString(newTableCommand);
+		
+		newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort), INDEX USING BTREE(expiryTime) )";
+		stmt.executeUpdate(newTableCommand);
+		
+		/*Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
 		while( attrIter.hasNext() )
 		{
 			String attrName = attrIter.next();
@@ -145,23 +158,23 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 			String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
 			
 			// partition info storage info
-			String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"Attr"+attrName+"TriggerPartitionInfo";
+			//String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"Attr"+attrName+"TriggerPartitionInfo";
 			
-			String newTableCommand = "create table "+tableName+" ( hashCode INTEGER PRIMARY KEY , "
+			//String newTableCommand = "create table "+tableName+" ( hashCode INTEGER PRIMARY KEY , "
 				      + "   respNodeID INTEGER ";
 			
-			String lowerAttrName = "lower"+attrName;
-			String upperAttrName = "upper"+attrName;
+			//String lowerAttrName = "lower"+attrName;
+			//String upperAttrName = "upper"+attrName;
 			
-			newTableCommand = newTableCommand + " , "+lowerAttrName+" "+mySQLDataType
-					+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
-					+ " , "+upperAttrName+" "+mySQLDataType+" DEFAULT "
-					+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
-					+ " , INDEX USING BTREE("+lowerAttrName+" , "+upperAttrName+")";
+//			newTableCommand = newTableCommand + " , "+lowerAttrName+" "+mySQLDataType
+//					+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
+//					+ " , "+upperAttrName+" "+mySQLDataType+" DEFAULT "
+//					+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
+//					+ " , INDEX USING BTREE("+lowerAttrName+" , "+upperAttrName+")";
 			
-			newTableCommand = newTableCommand +" )";
-			//ContextServiceLogger.getLogger().fine("newTableCommand "+newTableCommand);
-			stmt.executeUpdate(newTableCommand);
+//			newTableCommand = newTableCommand +" )";
+//			//ContextServiceLogger.getLogger().fine("newTableCommand "+newTableCommand);
+//			stmt.executeUpdate(newTableCommand);
 			
 			// partition info table is created for every node,
 			// whether or not it is in replica, but data storage table
@@ -182,7 +195,7 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 			
 			newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort), INDEX USING BTREE(expiryTime) )";
 			stmt.executeUpdate(newTableCommand);
-		}
+		}*/
 	}
 	
 	private String getPartitionInfoStorageString(String newTableCommand)
@@ -236,7 +249,7 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 	 * @param qcomponents, takes matching attributes as input
 	 * @return
 	 */
-	public HashMap<Integer, OverlappingInfoClass> 
+	/*public HashMap<Integer, OverlappingInfoClass> 
 		getOverlappingPartitionsInTriggers(int subspaceId, int replicaNum, String attrName, 
 				ProcessingQueryComponent matchingQueryComponent)
 	{
@@ -356,7 +369,7 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 			DelayProfiler.updateDelay("getOverlappingPartitionsInTriggers", t0);
 		}
 		return answerList;
-	}
+	}*/
 
 	
 	/**
@@ -365,7 +378,7 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 	 * @param subspaceNum
 	 * @param subspaceVector
 	 */
-	public void insertIntoTriggerPartitionInfo(int subspaceId, int replicaNum, String attrName, 
+	/*public void insertIntoTriggerPartitionInfo(int subspaceId, int replicaNum, String attrName, 
 			int partitionNum, NodeIDType respNodeId)
 	{
 		long t0 			= System.currentTimeMillis();
@@ -441,7 +454,7 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 		{
 			DelayProfiler.updateDelay("insertIntoTriggerPartitionInfo", t0);
 		}
-	}
+	}*/
 	
 	
 	/**
@@ -449,15 +462,15 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 	 * @param subspaceNum
 	 * @param subspaceVector
 	 */
-	public void insertIntoSubspaceTriggerDataInfo( int subspaceId, int replicaNum, 
-			String attrName, String userQuery, String groupGUID, String userIP, int userPort, 
+	public void insertIntoSubspaceTriggerDataInfo( int subspaceId, String userQuery, 
+			String groupGUID, String userIP, int userPort, 
 			long expiryTimeFromNow )
 	{
 		long t0 			= System.currentTimeMillis();
 		Connection myConn   = null;
 		Statement stmt      = null;
 		
-		String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"Attr"+attrName+"TriggerDataInfo";
+		String tableName = "subspaceId"+subspaceId+"TriggerDataInfo";
 		
 		QueryInfo<NodeIDType> processedQInfo = new QueryInfo<NodeIDType>(userQuery);
 		HashMap<String, ProcessingQueryComponent> pqcMap = processedQInfo.getProcessingQC();
@@ -546,46 +559,60 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 	 * @return
 	 * @throws InterruptedException 
 	 */
-	public void getTriggerDataInfo(int subspaceId, int replicaNum, String attrName, 
-		JSONObject oldValJSON, JSONObject newUpdateVal, HashMap<String, JSONObject> oldValGroupGUIDMap, 
-			HashMap<String, JSONObject> newValGroupGUIDMap, int oldOrNewOrBoth, JSONObject newUnsetAttrs) throws InterruptedException
+	public void getTriggerDataInfo(int subspaceId,  
+		JSONObject oldValJSON, JSONObject newJSONToWrite, 
+		HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap, 
+		HashMap<String, GroupGUIDInfoClass> newValGroupGUIDMap, 
+		int requestType, JSONObject newUnsetAttrs,
+		boolean firstTimeInsert) 
+					throws InterruptedException
 	{
 		assert(oldValGroupGUIDMap != null);
 		assert(newValGroupGUIDMap != null);
 		// oldValJSON should contain all attribtues.
 		// newUpdateVal contains only updated attr:val pairs
 		//assert(oldValJSON.length() == AttributeTypes.attributeMap.size());
-		
 		long t0 = System.currentTimeMillis();
 		
 		
-		if( oldOrNewOrBoth == UpdateTriggerMessage.OLD_VALUE )
+		if( requestType == ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY )
 		{
 			OldValueGroupGUIDs<NodeIDType> old = new OldValueGroupGUIDs<NodeIDType>
-			(subspaceId, replicaNum, attrName, oldValJSON, oldValGroupGUIDMap,
+			(subspaceId, oldValJSON, newJSONToWrite, newUnsetAttrs, oldValGroupGUIDMap,
 					dataSource);
 			old.run();
-			//returnOldValueGroupGUIDs(subspaceId, replicaNum, attrName, oldValJSON, oldValGroupGUIDMap);
+			// returnOldValueGroupGUIDs(subspaceId, replicaNum, attrName, 
+			// oldValJSON, oldValGroupGUIDMap);
 		}
-		else if( oldOrNewOrBoth == UpdateTriggerMessage.NEW_VALUE )
+		else if( requestType == ValueUpdateToSubspaceRegionMessage.ADD_ENTRY )
 		{
-			returnNewValueGroupGUIDs( subspaceId, replicaNum, attrName, oldValJSON, 
-					newUpdateVal, newValGroupGUIDMap, newUnsetAttrs);
+			returnAddedGroupGUIDs( subspaceId, oldValJSON, 
+					newJSONToWrite, newValGroupGUIDMap, newUnsetAttrs, firstTimeInsert);
 		}
-		else if( oldOrNewOrBoth == UpdateTriggerMessage.BOTH )
+		else if( requestType == ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY )
 		{
-			// both old and new value GUIDs stored at same nodes,
-			// makes it possible to find which groupGUIDs needs to be triggered.
-			// in parallel
-			OldValueGroupGUIDs<NodeIDType> old = new OldValueGroupGUIDs<NodeIDType>
-					(subspaceId, replicaNum, attrName, 
-					oldValJSON, oldValGroupGUIDMap, dataSource);
-			Thread st = new Thread(old);
-			st.start();			
-//			returnOldValueGroupGUIDs(subspaceId, replicaNum, attrName, oldValJSON, oldValGroupGUIDMap);
-			returnNewValueGroupGUIDs( subspaceId, replicaNum, attrName, oldValJSON, 
-					newUpdateVal, newValGroupGUIDMap, newUnsetAttrs );
-			st.join();
+			// first time insert is done as udpate, as it results reply from one node.
+			// so we don't need to check for old groups to which this new GUID was part of.
+			if(firstTimeInsert)
+			{
+				returnAddedGroupGUIDs( subspaceId, oldValJSON, 
+						newJSONToWrite, newValGroupGUIDMap, newUnsetAttrs, firstTimeInsert );
+			}
+			else
+			{
+				// both old and new value GUIDs stored at same nodes,
+				// makes it possible to find which groupGUIDs needs to be triggered.
+				// in parallel
+				OldValueGroupGUIDs<NodeIDType> old = new OldValueGroupGUIDs<NodeIDType>
+				(subspaceId, oldValJSON, newJSONToWrite, newUnsetAttrs, oldValGroupGUIDMap,
+						dataSource);
+				Thread st = new Thread(old);
+				st.start();			
+//				returnOldValueGroupGUIDs(subspaceId, replicaNum, attrName, oldValJSON, oldValGroupGUIDMap);
+				returnAddedGroupGUIDs( subspaceId, oldValJSON, 
+						newJSONToWrite, newValGroupGUIDMap, newUnsetAttrs, firstTimeInsert );
+				st.join();
+			}
 		}
 		
 		if( ContextServiceConfig.DELAY_PROFILER_ON )
@@ -594,18 +621,158 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 		}
 	}
 	
+	public static String getQueryToGetOldValueGroups(JSONObject oldValJSON, int subspaceId) throws JSONException
+	{
+		String tableName 			= "subspaceId"+subspaceId+"TriggerDataInfo";
+		
+		JSONObject oldUnsetAttrs 	= HyperspaceHashing.getUnsetAttrJSON(oldValJSON);
+		
+		assert( oldUnsetAttrs != null );
+		
+		
+		Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
+		//		attrSubspaceInfo.keySet().iterator();
+		// for groups associated with old value
+		boolean first = true;
+		String selectQuery = "SELECT groupGUID FROM "+tableName+" WHERE ";
+		
+		while( attrIter.hasNext() )
+		{
+			String currAttrName = attrIter.next();
+			
+			AttributeMetaInfo attrMetaInfo 
+					= AttributeTypes.attributeMap.get(currAttrName);
+			
+			String dataType = attrMetaInfo.getDataType();
+			
+			String attrValForMysql = "";
+			
+			if( oldUnsetAttrs.has(currAttrName) )
+			{
+				attrValForMysql = attrMetaInfo.getDefaultValue();
+			}
+			else
+			{
+				attrValForMysql = AttributeTypes.convertStringToDataTypeForMySQL
+						(oldValJSON.getString(currAttrName), dataType)+"";
+			}
+			
+			
+			
+			String lowerValCol = "lower"+currAttrName;
+			String upperValCol = "upper"+currAttrName;
+			//FIXME: for circular queries, this won't work.
+			if( first )
+			{
+				// <= and >= both to handle the == case of the default value
+				selectQuery = selectQuery + lowerValCol+" <= "+attrValForMysql
+						+" AND "+upperValCol+" >= "+attrValForMysql;
+				first = false;
+			}
+			else
+			{
+				selectQuery = selectQuery+" AND "+lowerValCol+" <= "+attrValForMysql
+						+" AND "+upperValCol+" >= "+attrValForMysql;
+			}
+		}
+		return selectQuery;
+	}
+	
+	public static String getQueryToGetNewValueGroups
+				( JSONObject oldValJSON, JSONObject newJSONToWrite, 
+						JSONObject newUnsetAttrs,int subspaceId ) throws JSONException
+	{
+		String tableName 			= "subspaceId"+subspaceId+"TriggerDataInfo";
+
+		Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
+		// for groups associated with the new value
+		try
+		{
+			boolean first = true;
+			String selectQuery = "SELECT groupGUID FROM "
+						+tableName+" WHERE ";
+			while( attrIter.hasNext() )
+			{
+				String currAttrName = attrIter.next();
+				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(currAttrName);
+				
+				String dataType = attrMetaInfo.getDataType();
+				
+				String attrValForMysql = attrMetaInfo.getDefaultValue();
+				
+				if( !newUnsetAttrs.has(currAttrName) )
+				{
+					if( newJSONToWrite.has(currAttrName) )
+					{
+						attrValForMysql =
+						AttributeTypes.convertStringToDataTypeForMySQL
+						(newJSONToWrite.getString(currAttrName), dataType)+"";
+					}
+					else if( oldValJSON.has(currAttrName) )
+					{
+						attrValForMysql =
+								AttributeTypes.convertStringToDataTypeForMySQL
+								(oldValJSON.getString(currAttrName), dataType)+"";	
+					}
+				}
+				
+				String lowerValCol = "lower"+currAttrName;
+				String upperValCol = "upper"+currAttrName;
+				//FIXME: will not work for cicular queries
+				if( first )
+				{
+					// <= and >= both to handle the == case of the default value
+					selectQuery = selectQuery + lowerValCol+" <= "+attrValForMysql
+							+" AND "+upperValCol+" >= "+attrValForMysql;
+					first = false;
+				}
+				else
+				{
+					selectQuery = selectQuery+" AND "+lowerValCol+" <= "+attrValForMysql
+							+" AND "+upperValCol+" >= "+attrValForMysql;
+				}
+			}
+			return selectQuery;
+//			myConn 	     = this.dataSource.getConnection();
+//			stmt   		 = myConn.createStatement();
+//			ResultSet rs = stmt.executeQuery(selectQuery);
+//			
+//			while( rs.next() )
+//			{
+//				JSONObject tableRow = new JSONObject();
+//				byte[] groupGUIDBytes = rs.getBytes("groupGUID");
+//				String groupGUIDString = Utils.bytArrayToHex(groupGUIDBytes);
+//				byte[] ipAddressBytes = rs.getBytes("userIP");
+//				String userIPStirng = InetAddress.getByAddress(ipAddressBytes).getHostAddress();
+//				//tableRow.put( "userQuery", rs.getString("userQuery") );
+//				tableRow.put( "groupGUID", groupGUIDString );
+//				tableRow.put( "userIP", userIPStirng );
+//				tableRow.put( "userPort", rs.getInt("userPort") );
+//				newValGroupGUIDMap.put(groupGUIDString, tableRow);
+//			}
+//			//ContextServiceLogger.getLogger().fine("NodeId "+this.myNodeID+" getGUIDRecordFromPrimarySubspace guid "
+//			//		+ ""+GUID+" oldValueJSON size "+oldValueJSON.length()+"oldValueJSON "+oldValueJSON);
+//			rs.close();
+		}
+		catch (JSONException e) 
+		{
+			e.printStackTrace();
+		}
+		assert(false);
+		return "";
+	}
 	
 	/**
 	 * this function runs independently on every node 
 	 * and deletes expired queries.
 	 * @return
 	 */
-	public int deleteExpiredSearchQueries( int subspaceId, int replicaNum, String attrName )
+	public int deleteExpiredSearchQueries( int subspaceId )
 	{
 		long currTime = System.currentTimeMillis();
 		int rumRowsDeleted = -1;
 		
-		String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"Attr"+attrName+"TriggerDataInfo";
+		String tableName = "subspaceId"+subspaceId+"TriggerDataInfo";
 		String deleteCommand = "DELETE FROM "+tableName+" WHERE expiryTime <= "+currTime;
 		Connection myConn 	= null;
 		Statement stmt 		= null;
@@ -646,12 +813,12 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 	}
 	
 	
-	private void returnNewValueGroupGUIDs( int subspaceId, int replicaNum, String attrName, 
+	private void returnAddedGroupGUIDs( int subspaceId, 
 			JSONObject oldValJSON, JSONObject newUpdateVal, 
-			HashMap<String, JSONObject> newValGroupGUIDMap, JSONObject newUnsetAttrs )
+			HashMap<String, GroupGUIDInfoClass> newValGroupGUIDMap, JSONObject newUnsetAttrs, 
+			boolean firstTimeInsert )
 	{
-		String tableName 			= "subspaceId"+subspaceId+"RepNum"
-							+replicaNum+"Attr"+attrName+"TriggerDataInfo";
+		String tableName 			= "subspaceId"+subspaceId+"TriggerDataInfo";
 		
 		Connection myConn 			= null;
 		Statement stmt 				= null;
@@ -661,53 +828,30 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 //		
 //		HashMap<String, AttributePartitionInfo> attrSubspaceInfo 
 //												= currSubInfo.getAttributesOfSubspace();
-		
-		Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
 		// for groups associated with the new value
 		try
 		{
-			boolean first = true;
 			String selectQuery = "SELECT groupGUID, userIP, userPort FROM "+tableName+" WHERE ";
-			while( attrIter.hasNext() )
+			if( firstTimeInsert )
 			{
-				String currAttrName = attrIter.next();
-				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(currAttrName);
+				String newGroupsQuery = 
+						getQueryToGetNewValueGroups
+						( oldValJSON, newUpdateVal, 
+								newUnsetAttrs, subspaceId );
+				selectQuery = selectQuery + " groupGUID IN ( "+newGroupsQuery+" ) ";
+			}
+			else
+			{
+				String newGroupsQuery = 
+						getQueryToGetNewValueGroups
+						( oldValJSON, newUpdateVal, 
+								newUnsetAttrs, subspaceId );
 				
-				String dataType = attrMetaInfo.getDataType();
+				String oldGroupsQuery 
+					= getQueryToGetOldValueGroups(oldValJSON, subspaceId);
 				
-				String attrValForMysql = attrMetaInfo.getDefaultValue();
-				
-				if( !newUnsetAttrs.has(currAttrName) )
-				{
-					if( newUpdateVal.has(currAttrName) )
-					{
-						attrValForMysql =
-						AttributeTypes.convertStringToDataTypeForMySQL
-						(newUpdateVal.getString(currAttrName), dataType)+"";
-					}
-					else if( oldValJSON.has(currAttrName) )
-					{
-						attrValForMysql =
-								AttributeTypes.convertStringToDataTypeForMySQL
-								(oldValJSON.getString(currAttrName), dataType)+"";	
-					}
-				}
-				
-				String lowerValCol = "lower"+currAttrName;
-				String upperValCol = "upper"+currAttrName;
-				//FIXME: will not work for cicular queries
-				if( first )
-				{
-					// <= and >= both to handle the == case of the default value
-					selectQuery = selectQuery + lowerValCol+" <= "+attrValForMysql
-							+" AND "+upperValCol+" >= "+attrValForMysql;
-					first = false;
-				}
-				else
-				{
-					selectQuery = selectQuery+" AND "+lowerValCol+" <= "+attrValForMysql
-							+" AND "+upperValCol+" >= "+attrValForMysql;
-				}
+				selectQuery = selectQuery + " groupGUID NOT IN ( "+oldGroupsQuery
+						+" ) AND groupGUID IN ( "+newGroupsQuery+" ) ";
 			}
 		
 			myConn 	     = this.dataSource.getConnection();
@@ -716,16 +860,19 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 			
 			while( rs.next() )
 			{
-				JSONObject tableRow = new JSONObject();
+				//JSONObject tableRow = new JSONObject();
 				byte[] groupGUIDBytes = rs.getBytes("groupGUID");
 				String groupGUIDString = Utils.bytArrayToHex(groupGUIDBytes);
 				byte[] ipAddressBytes = rs.getBytes("userIP");
-				String userIPStirng = InetAddress.getByAddress(ipAddressBytes).getHostAddress();
+				String userIPString = InetAddress.getByAddress(ipAddressBytes).getHostAddress();
+				int userPort = rs.getInt("userPort");
 				//tableRow.put( "userQuery", rs.getString("userQuery") );
-				tableRow.put( "groupGUID", groupGUIDString );
-				tableRow.put( "userIP", userIPStirng );
-				tableRow.put( "userPort", rs.getInt("userPort") );
-				newValGroupGUIDMap.put(groupGUIDString, tableRow);
+				GroupGUIDInfoClass groupGUIDInfoClass = new GroupGUIDInfoClass(
+						groupGUIDString, userIPString, userPort);
+//				tableRow.put( "groupGUID", groupGUIDString );
+//				tableRow.put( "userIP", userIPStirng );
+//				tableRow.put( "userPort", rs.getInt("userPort") );
+				newValGroupGUIDMap.put(groupGUIDString, groupGUIDInfoClass);
 			}
 			//ContextServiceLogger.getLogger().fine("NodeId "+this.myNodeID+" getGUIDRecordFromPrimarySubspace guid "
 			//		+ ""+GUID+" oldValueJSON size "+oldValueJSON.length()+"oldValueJSON "+oldValueJSON);
@@ -733,10 +880,10 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 		} catch (SQLException e)
 		{
 			e.printStackTrace();
-		} catch (JSONException e) 
+		} catch (JSONException e)
 		{
 			e.printStackTrace();
-		} catch (UnknownHostException e) 
+		} catch (UnknownHostException e)
 		{
 			e.printStackTrace();
 		} finally
@@ -756,7 +903,7 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 	}
 	
 	
-	public boolean getSearchQueryRecordFromPrimaryTriggerSubspace(String groupGUID, 
+	public boolean checkAndInsertSearchQueryRecordFromPrimaryTriggerSubspace(String groupGUID, 
 			String userIP, int userPort) throws UnknownHostException
 	{
 		long t0 = System.currentTimeMillis();

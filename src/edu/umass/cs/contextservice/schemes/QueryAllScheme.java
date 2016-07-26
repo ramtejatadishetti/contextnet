@@ -317,7 +317,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		QueryInfo<NodeIDType> currReq  
 			= new QueryInfo<NodeIDType>( query, this.getMyID(), grpGUID, userReqID, 
-					userIP, userPort);
+					userIP, userPort, queryMsgFromUser.getExpiryTime());
 		
 		Vector<NodeIDType> allNodeIDs = this.allNodeIDs;
 		
@@ -351,7 +351,8 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	    	
 	    	QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion = 
 					new QueryMesgToSubspaceRegion<NodeIDType>
-	    (this.getMyID(), currReq.getRequestId(), query, grpGUID, -1, userIP, userPort);
+	    (this.getMyID(), currReq.getRequestId(), query, grpGUID, -1, userIP, userPort, 
+	    		false, queryMsgFromUser.getExpiryTime());
 	    	
 			try
 			{

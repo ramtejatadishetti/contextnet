@@ -3,9 +3,11 @@ package edu.umass.cs.contextservice.messages;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class QueryMesgToSubspaceRegion<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class QueryMesgToSubspaceRegion<NodeIDType> 
+								extends BasicContextServicePacket<NodeIDType>
 {
-	private enum Keys {QUERY, REQUESTID, GROUP_GUID, SUBSPACENUM, USER_IP, USER_PORT};
+	private enum Keys {QUERY, REQUESTID, GROUP_GUID, SUBSPACENUM, USER_IP, USER_PORT
+						, STORE_QUERY_FOR_TRIGGER, EXPIRY_TIME};
 	
 	//private final NodeIDType sourceNodeId;
 	private final long requestID;
@@ -23,12 +25,16 @@ public class QueryMesgToSubspaceRegion<NodeIDType> extends BasicContextServicePa
 	
 	private final int userPort;
 	
+	private final boolean storeQueryForTrigger;
+	private final long expiryTime;
+	
 	/*
 	 * sourceID will be the ID of the node that 
 	 * recvd query from the user.
 	 */
-	public QueryMesgToSubspaceRegion(NodeIDType initiator, long requestId, String query, 
-			String groupGUID, int subspaceNum, String userIP, int userPort)
+	public QueryMesgToSubspaceRegion( NodeIDType initiator, long requestId, String query, 
+			String groupGUID, int subspaceNum, String userIP, int userPort, 
+			boolean storeQueryForTrigger, long expiryTime )
 	{
 		super(initiator, ContextServicePacket.PacketType.QUERY_MESG_TO_SUBSPACE_REGION);
 		//this.predicate = predicate;
@@ -40,6 +46,8 @@ public class QueryMesgToSubspaceRegion<NodeIDType> extends BasicContextServicePa
 		
 		this.userIP = userIP;
 		this.userPort = userPort;
+		this.storeQueryForTrigger = storeQueryForTrigger;
+		this.expiryTime = expiryTime;
 	}
 	
 	public QueryMesgToSubspaceRegion(JSONObject json) throws JSONException
@@ -53,6 +61,8 @@ public class QueryMesgToSubspaceRegion<NodeIDType> extends BasicContextServicePa
 		this.subspaceNum = json.getInt(Keys.SUBSPACENUM.toString());
 		this.userIP = json.getString(Keys.USER_IP.toString());
 		this.userPort = json.getInt(Keys.USER_PORT.toString());
+		this.storeQueryForTrigger = json.getBoolean(Keys.STORE_QUERY_FOR_TRIGGER.toString());
+		this.expiryTime = json.getLong(Keys.EXPIRY_TIME.toString());
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException
@@ -63,9 +73,11 @@ public class QueryMesgToSubspaceRegion<NodeIDType> extends BasicContextServicePa
 		json.put(Keys.REQUESTID.toString(), requestID);
 		json.put(Keys.QUERY.toString(), this.query);
 		json.put(Keys.GROUP_GUID.toString(), this.groupGUID);
-		json.put(Keys.SUBSPACENUM.toString(), this.subspaceNum);
+		json.put(Keys.SUBSPACENUM.toString(), subspaceNum);
 		json.put(Keys.USER_IP.toString(), userIP);
 		json.put(Keys.USER_PORT.toString(), userPort);
+		json.put(Keys.STORE_QUERY_FOR_TRIGGER.toString(), this.storeQueryForTrigger);
+		json.put(Keys.EXPIRY_TIME.toString(), this.expiryTime);
 		return json;
 	}
 	
@@ -97,6 +109,16 @@ public class QueryMesgToSubspaceRegion<NodeIDType> extends BasicContextServicePa
 	public int getUserPort()
 	{
 		return this.userPort;
+	}
+	
+	public boolean getStoreQueryForTrigger()
+	{
+		return this.storeQueryForTrigger;
+	}
+	
+	public long getExpiryTime()
+	{
+		return this.expiryTime;
 	}
 	
 	public static void main(String[] args)

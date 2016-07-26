@@ -18,7 +18,9 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		
 		
 	private enum Keys { VERSION_NUM, GUID, JSON_TO_WRITE, 
-		OPER_TYPE, SUBSPACENUM, REQUEST_ID, FIRST_TIME_INSERT, UPDATE_START_TIME };
+		OPER_TYPE, SUBSPACENUM, REQUEST_ID, FIRST_TIME_INSERT, UPDATE_START_TIME, 
+		OLD_VAL_JSON,
+		NEW_UNSET_ATTRS};
 	
 	private final long versionNum;
 	//GUID of the update
@@ -30,7 +32,9 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 //	// old attr value pairs, contains all attributes, 
 //	// which are needed in ADD_ENTRY case,
 //	// as when an entry is added to a subspace all the attributes are added.
-//	private final JSONObject oldAttrValuePairs;
+	private final JSONObject oldValJSON;
+	
+	private final JSONObject newUnsetAttrs;
 	
 	private final int operType;
 	private final int subspaceNum;
@@ -47,8 +51,9 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 	private final long updateStartTime;
 	
 	public ValueUpdateToSubspaceRegionMessage( NodeIDType initiator, long versionNum, 
-			String GUID, JSONObject jsonToWrite, int operType, int subspaceNum, long requestID, 
-			boolean firstTimeInsert , long updateStartTime )
+			String GUID, JSONObject jsonToWrite, int operType, int subspaceNum, 
+			long requestID, boolean firstTimeInsert , long updateStartTime, 
+			JSONObject oldValJSON, JSONObject newUnsetAttrs )
 	{
 		super( initiator, 
 				ContextServicePacket.PacketType.VALUEUPDATE_TO_SUBSPACE_REGION_MESSAGE );
@@ -58,8 +63,9 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		this.operType = operType;
 		this.subspaceNum = subspaceNum;
 		this.requestID = requestID;
-//		this.oldAttrValuePairs = oldAttrValuePairs;
+		this.oldValJSON = oldValJSON;
 		this.firstTimeInsert = firstTimeInsert;
+		this.newUnsetAttrs = newUnsetAttrs;
 //		this.anonymizedIDToGuidMapping = anonymizedIDToGuidMapping;
 		this.updateStartTime = updateStartTime;
 	}
@@ -73,8 +79,9 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		this.operType = json.getInt(Keys.OPER_TYPE.toString());
 		this.subspaceNum = json.getInt(Keys.SUBSPACENUM.toString());
 		this.requestID = json.getLong( Keys.REQUEST_ID.toString() );
-//		this.oldAttrValuePairs = json.getJSONObject(Keys.OLD_ATTR_VAL_PAIRS.toString());
+		this.oldValJSON = json.getJSONObject(Keys.OLD_VAL_JSON.toString());
 		this.firstTimeInsert = json.getBoolean(Keys.FIRST_TIME_INSERT.toString());
+		this.newUnsetAttrs = json.getJSONObject(Keys.NEW_UNSET_ATTRS.toString());
 		
 //		if( json.has(Keys.ANONYMIZEDID_TO_GUID_MAPPING.toString()) )
 //		{
@@ -97,8 +104,9 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		json.put(Keys.OPER_TYPE.toString(), this.operType);
 		json.put(Keys.SUBSPACENUM.toString(), this.subspaceNum);
 		json.put(Keys.REQUEST_ID.toString(), this.requestID);
-//		json.put(Keys.OLD_ATTR_VAL_PAIRS.toString(), this.oldAttrValuePairs);
+		json.put(Keys.OLD_VAL_JSON.toString(), this.oldValJSON);
 		json.put(Keys.FIRST_TIME_INSERT.toString(), this.firstTimeInsert);
+		json.put(Keys.NEW_UNSET_ATTRS.toString(), this.newUnsetAttrs);
 //		if( this.anonymizedIDToGuidMapping != null )
 //		{
 //			json.put(Keys.ANONYMIZEDID_TO_GUID_MAPPING.toString(), this.anonymizedIDToGuidMapping);
@@ -137,10 +145,15 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		return this.requestID;
 	}
 	
-//	public JSONObject getOldAttrValuePairs()
-//	{
-//		return this.oldAttrValuePairs;
-//	}
+	public JSONObject getOldValJSON()
+	{
+		return this.oldValJSON;
+	}
+	
+	public JSONObject getNewUnsetAttrs()
+	{
+		return this.newUnsetAttrs;
+	}
 	
 	public boolean getFirstTimeInsert()
 	{

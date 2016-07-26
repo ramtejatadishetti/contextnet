@@ -60,7 +60,7 @@ public class ContextServiceTests
 		System.out.println("ContextServiceClient connected");
 	}
 	
-	/*@Test
+	@Test
 	public void test_1_emptyQueryTest() 
 	{
 		String selectQuery = 
@@ -306,7 +306,7 @@ public class ContextServiceTests
 			assert( numRep > 0 );
 			assert( replyArray.length() > 0 );
 		}
-	}*/
+	}
 	
 	@Test
 	public void test_4_TriggerTest() throws JSONException

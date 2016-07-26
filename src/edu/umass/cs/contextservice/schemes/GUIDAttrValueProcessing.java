@@ -22,16 +22,13 @@ import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
 import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
-import edu.umass.cs.contextservice.gns.GNSCalls;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegion;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegionReply;
-import edu.umass.cs.contextservice.messages.QueryMsgFromUser;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
 import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionMessage;
-import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionReplyMessage;
 import edu.umass.cs.contextservice.profilers.ProfilerStatClass;
 //import edu.umass.cs.contextservice.messages.dataformat.AttrValueRepresentationJSON;
 //import edu.umass.cs.contextservice.messages.dataformat.ParsingMethods;
@@ -215,31 +212,29 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 							(" generateSubspacePartitions() completed " );
 	}
 	
-	public QueryInfo<NodeIDType> processQueryMsgFromUser
-		(QueryMsgFromUser<NodeIDType> queryMsgFromUser)
+	public void processQueryMsgFromUser
+		( QueryInfo<NodeIDType> queryInfo, boolean storeQueryForTrigger )
 	{
 		String query;
 		long userReqID;
 		String userIP;
 		int userPort;
+		String grpGUID;
+		long expiryTime;
 		
-		query   = queryMsgFromUser.getQuery();
-		userReqID = queryMsgFromUser.getUserReqNum();
-		userIP  = queryMsgFromUser.getSourceIP();
-		userPort   = queryMsgFromUser.getSourcePort();
-		
-		ContextServiceLogger.getLogger().fine("QUERY RECVD: QUERY_MSG recvd query recvd "+query);
-		
-		// create the empty group in GNS
-		String grpGUID = GNSCalls.createQueryGroup(query);
+		query   = queryInfo.getQuery();
+		userReqID = queryInfo.getUserReqID();
+		userIP  = queryInfo.getUserIP();
+		userPort   = queryInfo.getUserPort();
+		grpGUID = queryInfo.getGroupGUID();
+		expiryTime = queryInfo.getExpiryTime();
 		
 		if( grpGUID.length() <= 0 )
 		{
 			ContextServiceLogger.getLogger().fine
-			("Query request failed at the recieving node "+queryMsgFromUser);
-			return null;
+			("Query request failed at the recieving node ");
+			return;
 		}
-		
 		
 		//Vector<QueryComponent> qcomponents = QueryParser.parseQueryNew(query);
 		//FIXME: for conflicting queries , need to be handled sometime
@@ -273,15 +268,13 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			return;
 	    }*/
 		
-		QueryInfo<NodeIDType> currReq  
-			= new QueryInfo<NodeIDType>( query, myID, grpGUID, userReqID, 
-					userIP, userPort);
+		Vector<ProcessingQueryComponent> matchingQueryComponents 
+										= new Vector<ProcessingQueryComponent>();
+		int maxMatchingSubspaceId = getMaxOverlapSubspace
+					(queryInfo.getProcessingQC(), matchingQueryComponents);
 		
-		
-		Vector<ProcessingQueryComponent> matchingQueryComponents = new Vector<ProcessingQueryComponent>();
-		int maxMatchingSubspaceId = getMaxOverlapSubspace(currReq.getProcessingQC(), matchingQueryComponents);
-		
-		ContextServiceLogger.getLogger().fine("userReqID "+userReqID+" maxMatchingSubspaceNum "+maxMatchingSubspaceId+" matchingQueryComponents "
+		ContextServiceLogger.getLogger().fine("userReqID "+userReqID+" maxMatchingSubspaceNum "
+				+maxMatchingSubspaceId+" matchingQueryComponents "
 				+matchingQueryComponents.size()+" query "+query);
 		/*for(int i=0;i<matchingQueryComponents.size();i++)
 		{
@@ -294,7 +287,8 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		// choose a replica randomly
 		Vector<SubspaceInfo<NodeIDType>> maxMatchingSubspaceReplicas 
 			= subspaceInfoMap.get(maxMatchingSubspaceId);
-		int replicaNum = maxMatchingSubspaceReplicas.get(this.replicaChoosingRand.nextInt(maxMatchingSubspaceReplicas.size())).getReplicaNum();
+		int replicaNum = maxMatchingSubspaceReplicas.get
+				(this.replicaChoosingRand.nextInt(maxMatchingSubspaceReplicas.size())).getReplicaNum();
 		
 		if(ContextServiceConfig.PROFILER_THREAD)
 		{
@@ -302,7 +296,8 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		}
 		long sTime = System.currentTimeMillis();
 	    HashMap<Integer, OverlappingInfoClass> respNodeIdList 
-	    		= this.hyperspaceDB.getOverlappingRegionsInSubspace(maxMatchingSubspaceId, replicaNum, matchingQueryComponents);
+	    		= this.hyperspaceDB.getOverlappingRegionsInSubspace(maxMatchingSubspaceId, 
+	    				replicaNum, matchingQueryComponents);
 	    
 	    if(ContextServiceConfig.PROFILER_THREAD)
 	    {
@@ -311,30 +306,35 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 	    
 		synchronized(this.pendingQueryLock)
 		{
-			currReq.setQueryRequestID(queryIdCounter++);
+			queryInfo.setQueryRequestID(queryIdCounter++);
 		}
 		
-		pendingQueryRequests.put(currReq.getRequestId(), currReq);
+		pendingQueryRequests.put(queryInfo.getRequestId(), queryInfo);
 		
-		ContextServiceLogger.getLogger().fine("processQueryMsgFromUser respNodeIdList size "+respNodeIdList.size()+
-	    		" requestId "+currReq.getRequestId() +" maxMatchingSubspaceNum "+maxMatchingSubspaceId);
+		ContextServiceLogger.getLogger().fine("processQueryMsgFromUser respNodeIdList size "
+				+ respNodeIdList.size()+
+	    		" requestId "+queryInfo.getRequestId() +" maxMatchingSubspaceNum "
+				+ maxMatchingSubspaceId);
 		
-	    currReq.initializeRegionalReplies(respNodeIdList);
+		queryInfo.initializeRegionalReplies(respNodeIdList);
 		
 	    Iterator<Integer> respNodeIdIter = respNodeIdList.keySet().iterator();
 	    
 	    while( respNodeIdIter.hasNext() )
 	    {
 	    	Integer respNodeId = respNodeIdIter.next();
-	    	OverlappingInfoClass overlapInfo = respNodeIdList.get(respNodeId);
+	    	//OverlappingInfoClass overlapInfo = respNodeIdList.get(respNodeId);
 	    	
 	    	QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion = 
 					new QueryMesgToSubspaceRegion<NodeIDType>
-	    (myID, currReq.getRequestId(), query, grpGUID, maxMatchingSubspaceId, userIP, userPort);
+	    			(myID, queryInfo.getRequestId(), query, grpGUID, 
+	    					maxMatchingSubspaceId, userIP, userPort, 
+	    					storeQueryForTrigger, expiryTime);
 	    	
 			try
 			{
-				this.messenger.sendToID( (NodeIDType)respNodeId, queryMesgToSubspaceRegion.toJSONObject() );
+				this.messenger.sendToID( (NodeIDType)respNodeId, 
+						queryMesgToSubspaceRegion.toJSONObject() );
 			} catch (IOException e)
 			{
 				e.printStackTrace();
@@ -345,16 +345,16 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			ContextServiceLogger.getLogger().info("Sending QueryMesgToSubspaceRegion mesg from " 
 					+ myID +" to node "+respNodeId);
 	    }
-	    return currReq;
 	}
 	
-	public void processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion<NodeIDType> 
-													queryMesgToSubspaceRegion)
+	
+	public int processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion<NodeIDType> 
+													queryMesgToSubspaceRegion, 
+													JSONArray resultGUIDs)
 	{
-		String query 			= queryMesgToSubspaceRegion.getQuery();
-		String groupGUID 		= queryMesgToSubspaceRegion.getGroupGUID();
-		int subspaceId 			= queryMesgToSubspaceRegion.getSubspaceNum();
-		JSONArray resultGUIDs = new JSONArray();
+		String query 				 = queryMesgToSubspaceRegion.getQuery();
+		//String groupGUID 			 = queryMesgToSubspaceRegion.getGroupGUID();
+		int subspaceId 				 = queryMesgToSubspaceRegion.getSubspaceNum();
 		
 		long sTime = System.currentTimeMillis();
 		if(ContextServiceConfig.PROFILER_THREAD)
@@ -369,23 +369,28 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			profStats.incrementNumRepliesFromSubspaceRegion(resultSize, 
 					(System.currentTimeMillis()-sTime));
 		}
-		QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply = 
-				new QueryMesgToSubspaceRegionReply<NodeIDType>( myID, queryMesgToSubspaceRegion.getRequestId(), 
-						groupGUID, resultGUIDs, resultSize);
+		return resultSize;
 		
-		try
-		{
-			this.messenger.sendToID(queryMesgToSubspaceRegion.getSender(), queryMesgToSubspaceRegionReply.toJSONObject());
-		} catch (IOException e)
-		{
-			e.printStackTrace();
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-		
-		ContextServiceLogger.getLogger().info("Sending queryMesgToSubspaceRegionReply mesg from " 
-				+ myID +" to node "+queryMesgToSubspaceRegion.getSender());
+//		QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply = 
+//				new QueryMesgToSubspaceRegionReply<NodeIDType>( myID, 
+//						queryMesgToSubspaceRegion.getRequestId(), 
+//						groupGUID, resultGUIDs, resultSize);
+//		
+//		
+//		
+//		try
+//		{
+//			this.messenger.sendToID(queryMesgToSubspaceRegion.getSender(), queryMesgToSubspaceRegionReply.toJSONObject());
+//		} catch (IOException e)
+//		{
+//			e.printStackTrace();
+//		} catch (JSONException e)
+//		{
+//			e.printStackTrace();
+//		}
+//		
+//		ContextServiceLogger.getLogger().info("Sending queryMesgToSubspaceRegionReply mesg from " 
+//				+ myID +" to node "+queryMesgToSubspaceRegion.getSender());
 	}
 	
 	public void processQueryMesgToSubspaceRegionReply(QueryMesgToSubspaceRegionReply<NodeIDType> 
@@ -586,7 +591,8 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 				= new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, 
 							-1, GUID, jsonToWrite, 
 							ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
-							subspaceId, requestID, true, updateStartTime );
+							subspaceId, requestID, true, updateStartTime, new JSONObject(),
+							unsetAttrsJSON);
 		
 		try
 		{
@@ -675,6 +681,8 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		ContextServiceLogger.getLogger().fine
 							("oldNodeId "+oldRespNodeId
 							+" newRespNodeId "+newRespNodeId);
+		JSONObject unsetAttrsJSON = primarySubspaceJSON.getJSONObject
+				(HyperspaceMySQLDB.unsetAttrsColName);
 		
 		// send messages to the subspace region nodes
 		if( oldRespNodeId == newRespNodeId )
@@ -696,7 +704,8 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 					= new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, 
 							-1, GUID, updatedAttrValJSON, 
 							ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
-							subspaceId, requestID, firstTimeInsert, updateStartTime );
+							subspaceId, requestID, firstTimeInsert, updateStartTime, 
+							oldValueJSON, unsetAttrsJSON);
 			
 			try
 			{
@@ -720,9 +729,10 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			// it is a remove, so no need for update and old JSON.
 			ValueUpdateToSubspaceRegionMessage<NodeIDType>  oldValueUpdateToSubspaceRegionMessage 
 					= new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, -1, 
-							GUID, new JSONObject(), 
+							GUID, updatedAttrValJSON, 
 							ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY, 
-							subspaceId, requestID, firstTimeInsert, updateStartTime );
+							subspaceId, requestID, firstTimeInsert, updateStartTime,
+							oldValueJSON, unsetAttrsJSON );
 			
 			try
 			{
@@ -742,8 +752,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			// not just the updated attrs
 			
 			JSONObject jsonToWrite = new JSONObject();
-			JSONObject unsetAttrsJSON = primarySubspaceJSON.getJSONObject
-					(HyperspaceMySQLDB.unsetAttrsColName);
+			
 			
 			// attr values
 			Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
@@ -787,7 +796,8 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 						new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, -1, 
 								GUID, jsonToWrite,
 								ValueUpdateToSubspaceRegionMessage.ADD_ENTRY, 
-								subspaceId, requestID, false, updateStartTime );
+								subspaceId, requestID, false, updateStartTime,
+								oldValueJSON, unsetAttrsJSON);
 			
 			try
 			{
@@ -803,7 +813,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		}
 	}
 	
-	public void processValueUpdateToSubspaceRegionMessage( 
+	public int processValueUpdateToSubspaceRegionMessage( 
 			ValueUpdateToSubspaceRegionMessage<NodeIDType> valueUpdateToSubspaceRegionMessage, 
 			int replicaNum )
 	{
@@ -812,18 +822,13 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		JSONObject jsonToWrite  = valueUpdateToSubspaceRegionMessage.getJSONToWrite();
 		int operType 			= valueUpdateToSubspaceRegionMessage.getOperType();
 		boolean firstTimeInsert = valueUpdateToSubspaceRegionMessage.getFirstTimeInsert();
-		// format of this json is different than updateValPairs, this json is created after 
-		// reading attribute value pairs and ACL<attrName> info from primary subspace
-//		JSONObject oldValJSON 	= valueUpdateToSubspaceRegionMessage.getOldAttrValuePairs();
-//		JSONArray anonymizedIDToGuidMapping 
-//						= valueUpdateToSubspaceRegionMessage.getAnonymizedIDToGuidMapping();
 		
 		long udpateStartTime 	= valueUpdateToSubspaceRegionMessage.getUpdateStartTime();
 		
 		String tableName 		= "subspaceId"+subspaceId+"DataStorage";
+		int numRep = 1;
 		try 
 		{	
-			int numRep = 1;
 			switch(operType)
 			{
 				case ValueUpdateToSubspaceRegionMessage.ADD_ENTRY:
@@ -876,27 +881,28 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 						+(now-udpateStartTime));
 			}
 			
-			ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>  
-				valueUpdateToSubspaceRegionReplyMessage 
-				= new ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>(myID, 
-						valueUpdateToSubspaceRegionMessage.getVersionNum(), numRep, 
-						valueUpdateToSubspaceRegionMessage.getRequestID(), subspaceId, replicaNum);
-			
-			try
-			{
-				this.messenger.sendToID(valueUpdateToSubspaceRegionMessage.getSender(), 
-						valueUpdateToSubspaceRegionReplyMessage.toJSONObject());
-			} catch (IOException e)
-			{
-				e.printStackTrace();
-			} catch (JSONException e)
-			{
-				e.printStackTrace();
-			}
+//			ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>  
+//				valueUpdateToSubspaceRegionReplyMessage 
+//				= new ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>(myID, 
+//						valueUpdateToSubspaceRegionMessage.getVersionNum(), numRep, 
+//						valueUpdateToSubspaceRegionMessage.getRequestID(), subspaceId, replicaNum);
+//			
+//			try
+//			{
+//				this.messenger.sendToID(valueUpdateToSubspaceRegionMessage.getSender(), 
+//						valueUpdateToSubspaceRegionReplyMessage.toJSONObject());
+//			} catch (IOException e)
+//			{
+//				e.printStackTrace();
+//			} catch (JSONException e)
+//			{
+//				e.printStackTrace();
+//			}
 		} catch (JSONException e)
 		{
 			e.printStackTrace();
 		}
+		return numRep;
 	}
 	
 	/**

@@ -35,6 +35,9 @@ public class QueryInfo<NodeIDType>
 	private  String userIP;
 	private  int userPort;
 	
+	private long expiryTime;
+	
+	
 	//private final AbstractScheme<NodeIDType> scheme;
 	// stores the parsed query components
 	public Vector<QueryComponent> queryComponents;
@@ -59,8 +62,9 @@ public class QueryInfo<NodeIDType>
 	private int regionalRepliesCounter 		 = 0;
 	
 	
-	public QueryInfo(String query, 
-			NodeIDType sourceNodeId, String grpGUID, long userReqID, String userIP, int userPort)
+	public QueryInfo( String query, 
+			NodeIDType sourceNodeId, String grpGUID, long userReqID, 
+			String userIP, int userPort, long expiryTime )
 	{
 		this.searchQuery = query;
 		this.sourceNodeId = sourceNodeId;
@@ -73,6 +77,7 @@ public class QueryInfo<NodeIDType>
 		this.userReqID = userReqID;
 		this.userIP = userIP;
 		this.userPort = userPort;
+		this.expiryTime = expiryTime;
 		
 		regionalReplies = new HashMap<Integer, OverlappingInfoClass>();
 		regionalRepliesSize = new HashMap<Integer, Integer>();
@@ -170,9 +175,14 @@ public class QueryInfo<NodeIDType>
 		return this.hyperdexResultArray;
 	}
 	
+	public long getExpiryTime()
+	{
+		return this.expiryTime;
+	}
+	
 	/**
 	 * Initialize regional replies with number of regions 
-	 * contacted for the search query
+	 * contacted for the search query.
 	 */
 	public void initializeRegionalReplies(HashMap<Integer, OverlappingInfoClass> regionalReplies)
 	{

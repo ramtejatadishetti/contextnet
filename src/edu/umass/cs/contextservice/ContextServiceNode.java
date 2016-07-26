@@ -8,7 +8,6 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ContextServicePacket.PacketType;
 import edu.umass.cs.contextservice.schemes.AbstractScheme;
 import edu.umass.cs.contextservice.schemes.HyperspaceHashing;
-import edu.umass.cs.contextservice.schemes.QueryAllScheme;
 import edu.umass.cs.nio.AbstractJSONPacketDemultiplexer;
 import edu.umass.cs.nio.JSONMessenger;
 import edu.umass.cs.nio.JSONNIOTransport;

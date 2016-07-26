@@ -5,9 +5,6 @@ import java.util.HashMap;
 
 import org.json.JSONObject;
 
-import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
-import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
-
 /**
  * 
  * This interface defines the trigger information storage 
@@ -28,25 +25,27 @@ public interface TriggerInformationStorageInterface<NodeIDType>
 	 * @param matchingQueryComponent
 	 * @return
 	 */
-	public HashMap<Integer, OverlappingInfoClass> 
-		getOverlappingPartitionsInTriggers(int subspaceId, int replicaNum, String attrName, 
-			ProcessingQueryComponent matchingQueryComponent);
+//	public HashMap<Integer, OverlappingInfoClass> 
+//		getOverlappingPartitionsInTriggers(int subspaceId, int replicaNum, String attrName, 
+//			ProcessingQueryComponent matchingQueryComponent);
 	
-	public void insertIntoTriggerPartitionInfo(int subspaceId, int replicaNum, String attrName, 
-			int partitionNum, NodeIDType respNodeId);
+//	public void insertIntoTriggerPartitionInfo(int subspaceId, int replicaNum, String attrName, 
+//			int partitionNum, NodeIDType respNodeId);
 	
-	public void insertIntoSubspaceTriggerDataInfo( int subspaceId, int replicaNum, 
-			String attrName, String userQuery, String groupGUID, String userIP, int userPort, 
+	public void insertIntoSubspaceTriggerDataInfo( int subspaceId, 
+			String userQuery, String groupGUID, String userIP, int userPort, 
 			long expiryTimeFromNow );
 	
-	public void getTriggerDataInfo(int subspaceId, int replicaNum, String attrName, 
-			JSONObject oldValJSON, JSONObject newUpdateVal, HashMap<String, JSONObject> oldValGroupGUIDMap, 
-				HashMap<String, JSONObject> newValGroupGUIDMap, int oldOrNewOrBoth, JSONObject newUnsetAttrs)
+	public void getTriggerDataInfo(int subspaceId,  
+			JSONObject oldValJSON, JSONObject newUpdateVal, 
+			HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap, 
+			HashMap<String, GroupGUIDInfoClass> newValGroupGUIDMap, 
+			int requestType, JSONObject newUnsetAttrs,
+			boolean firstTimeInsert)
 						throws InterruptedException;
 	
-	public int deleteExpiredSearchQueries( int subspaceId, 
-			int replicaNum, String attrName );
+	public int deleteExpiredSearchQueries( int subspaceId);
 	
-	public boolean getSearchQueryRecordFromPrimaryTriggerSubspace(String groupGUID, 
+	public boolean checkAndInsertSearchQueryRecordFromPrimaryTriggerSubspace(String groupGUID, 
 			String userIP, int userPort) throws UnknownHostException;
 }

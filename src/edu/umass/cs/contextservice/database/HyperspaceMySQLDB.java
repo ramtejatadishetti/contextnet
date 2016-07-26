@@ -20,6 +20,7 @@ import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.guidattributes.GUIDAttributeStorage;
 import edu.umass.cs.contextservice.database.guidattributes.GUIDAttributeStorageInterface;
 import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
+import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
 import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorage;
 import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorageInterface;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
@@ -144,15 +145,15 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 	 * @param qcomponents, takes matching attributes as input
 	 * @return
 	 */
-	public HashMap<Integer, OverlappingInfoClass> 
-		getOverlappingPartitionsInTriggers( int subspaceId, int replicaNum, 
-				String attrName, ProcessingQueryComponent matchingQueryComponent )
-	{
-		HashMap<Integer, OverlappingInfoClass> answerlist = 
-				triggerInformationStorage.getOverlappingPartitionsInTriggers
-				( subspaceId, replicaNum, attrName, matchingQueryComponent );
-		return answerlist;
-	}
+//	public HashMap<Integer, OverlappingInfoClass> 
+//		getOverlappingPartitionsInTriggers( int subspaceId, int replicaNum, 
+//				String attrName, ProcessingQueryComponent matchingQueryComponent )
+//	{
+//		HashMap<Integer, OverlappingInfoClass> answerlist = 
+//				triggerInformationStorage.getOverlappingPartitionsInTriggers
+//				( subspaceId, replicaNum, attrName, matchingQueryComponent );
+//		return answerlist;
+//	}
 	
 	/**
 	 * This function is implemented here as it involves 
@@ -212,12 +213,12 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 	 * @param subspaceNum
 	 * @param subspaceVector
 	 */
-	public void insertIntoTriggerPartitionInfo(int subspaceId, int replicaNum, 
-			String attrName, int partitionNum, NodeIDType respNodeId)
-	{
-		this.triggerInformationStorage.insertIntoTriggerPartitionInfo
-				(subspaceId, replicaNum, attrName, partitionNum, respNodeId);
-	}
+//	public void insertIntoTriggerPartitionInfo(int subspaceId, int replicaNum, 
+//			String attrName, int partitionNum, NodeIDType respNodeId)
+//	{
+//		this.triggerInformationStorage.insertIntoTriggerPartitionInfo
+//				(subspaceId, replicaNum, attrName, partitionNum, respNodeId);
+//	}
 	
 	public JSONObject getGUIDStoredInPrimarySubspace( String guid )
 	{
@@ -263,12 +264,12 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 	 * @param subspaceNum
 	 * @param subspaceVector
 	 */
-	public void insertIntoSubspaceTriggerDataInfo( int subspaceId, int replicaNum, 
-			String attrName, String userQuery, String groupGUID, String userIP, 
+	public void insertIntoSubspaceTriggerDataInfo( int subspaceId, 
+			String userQuery, String groupGUID, String userIP, 
 			int userPort, long expiryTimeFromNow )
 	{
 		this.triggerInformationStorage.insertIntoSubspaceTriggerDataInfo
-			(subspaceId, replicaNum, attrName, userQuery, groupGUID, userIP, userPort, expiryTimeFromNow);
+			(subspaceId, userQuery, groupGUID, userIP, userPort, expiryTimeFromNow);
 	}
 	
 	/**
@@ -278,13 +279,16 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 	 * @return
 	 * @throws InterruptedException 
 	 */
-	public void getTriggerDataInfo(int subspaceId, int replicaNum, String attrName, 
-		JSONObject oldValJSON, JSONObject newUpdateVal, HashMap<String, JSONObject> oldValGroupGUIDMap, 
-			HashMap<String, JSONObject> newValGroupGUIDMap, int oldOrNewOrBoth, JSONObject newUnsetAttrs) throws InterruptedException
+	public void getTriggerDataInfo(int subspaceId, 
+		JSONObject oldValJSON, JSONObject newJSONToWrite, 
+		HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap, 
+		HashMap<String, GroupGUIDInfoClass> newValGroupGUIDMap, 
+		int requestType, JSONObject newUnsetAttrs, boolean firstTimeInsert) 
+				throws InterruptedException
 	{
 		this.triggerInformationStorage.getTriggerDataInfo
-			(subspaceId, replicaNum, attrName, oldValJSON, newUpdateVal, oldValGroupGUIDMap, 
-				newValGroupGUIDMap, oldOrNewOrBoth, newUnsetAttrs);
+			(subspaceId, oldValJSON, newJSONToWrite, oldValGroupGUIDMap, 
+				newValGroupGUIDMap, requestType, newUnsetAttrs, firstTimeInsert);
 	}
 	
 	/**
@@ -292,10 +296,10 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 	 * and deletes expired queries.
 	 * @return
 	 */
-	public int deleteExpiredSearchQueries( int subspaceId, int replicaNum, String attrName )
+	public int deleteExpiredSearchQueries( int subspaceId )
 	{
 		return this.triggerInformationStorage.deleteExpiredSearchQueries
-										(subspaceId, replicaNum, attrName);
+										(subspaceId);
 	}
 	
 	public void storeGUIDInPrimarySubspace( String nodeGUID, 
@@ -365,10 +369,17 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 		}
 	}
 	
-	public boolean getSearchQueryRecordFromPrimaryTriggerSubspace( String groupGUID, 
+	public boolean checkAndInsertSearchQueryRecordFromPrimaryTriggerSubspace( String groupGUID, 
 			String userIP, int userPort ) throws UnknownHostException
 	{
-		return triggerInformationStorage.getSearchQueryRecordFromPrimaryTriggerSubspace
+		return triggerInformationStorage.checkAndInsertSearchQueryRecordFromPrimaryTriggerSubspace
 				(groupGUID, userIP, userPort);
+	}
+
+	@Override
+	public void insertIntoSubspaceTriggerDataInfo(int subspaceId, int replicaNum, String attrName, String userQuery,
+			String groupGUID, String userIP, int userPort, long expiryTimeFromNow) {
+		// TODO Auto-generated method stub
+		
 	}
 }

@@ -7,64 +7,65 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
-import java.util.Iterator;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
-import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.database.DataSource;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.schemes.HyperspaceHashing;
 import edu.umass.cs.contextservice.utils.Utils;
 
 /**
+ * 
  * Class created to parallelize old and new guids fetching
  * @author adipc
- *
  */
 public class OldValueGroupGUIDs<NodeIDType> implements Runnable
 {
 	private int subspaceId;
-	private int replicaNum;
-	private String attrName;
+	//private int replicaNum;
+	//private String attrName;
 	private JSONObject oldValJSON;
-	private HashMap<String, JSONObject> oldValGroupGUIDMap;
+	private JSONObject updateValJSON;
+	private JSONObject newUnsetAttrs;
+	private HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap;
 	private final DataSource<NodeIDType> dataSource;
 	
-	public OldValueGroupGUIDs(int subspaceId, int replicaNum, String attrName, 
-			JSONObject oldValJSON, HashMap<String, JSONObject> oldValGroupGUIDMap,
+	
+	public OldValueGroupGUIDs(int subspaceId, JSONObject oldValJSON, 
+			JSONObject updateValJSON, JSONObject newUnsetAttrs,
+			HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap,
 			DataSource<NodeIDType> dataSource )
 	{
 		this.subspaceId = subspaceId;
-		this.replicaNum = replicaNum;
-		this.attrName = attrName;
 		this.oldValJSON = oldValJSON;
+		this.updateValJSON = updateValJSON;
+		this.newUnsetAttrs = newUnsetAttrs;
 		this.oldValGroupGUIDMap = oldValGroupGUIDMap;
 		this.dataSource = dataSource;
 	}
 	@Override
 	public void run() 
 	{
-		returnOldValueGroupGUIDs(subspaceId, replicaNum, attrName, 
-				oldValJSON, oldValGroupGUIDMap);
+		returnRemovedGroupGUIDs();
 	}
 	
-	private void returnOldValueGroupGUIDs( int subspaceId, int replicaNum, String attrName, 
-			JSONObject oldValJSON, HashMap<String, JSONObject> oldValGroupGUIDMap )
+	private void returnRemovedGroupGUIDs()
 	{
-		String tableName 			= "subspaceId"+subspaceId+"RepNum"+replicaNum
-										+"Attr"+attrName+"TriggerDataInfo";
+		String tableName 			= "subspaceId"+subspaceId+"TriggerDataInfo";
 		
+		assert(oldValJSON != null);
+		assert(oldValJSON.length() > 0);
 		JSONObject oldUnsetAttrs 	= HyperspaceHashing.getUnsetAttrJSON(oldValJSON);
 		
+		// it can be empty but should not be null
 		assert( oldUnsetAttrs != null );
 		
 		Connection myConn 			= null;
 		Statement stmt 				= null;
 		
-		//FIXME: it could be changed to calculating tobe removed GUIDs right here.
+		//FIXME: DONE: it could be changed to calculating tobe removed GUIDs right here.
 		// in one single mysql query once can check to old group guid and new group guids
 		// and return groupGUIDs which are in old value but no in new value.
 		// but usually complex queries have more cost, so not sure if it would help.
@@ -78,83 +79,102 @@ public class OldValueGroupGUIDs<NodeIDType> implements Runnable
 //		HashMap<String, AttributePartitionInfo> attrSubspaceInfo 
 //												= currSubInfo.getAttributesOfSubspace();
 		
-		Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
+		//Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
 		//		attrSubspaceInfo.keySet().iterator();
 		// for groups associated with old value
 		try
 		{
-			boolean first = true;
-			String selectQuery = "SELECT groupGUID, userIP, userPort FROM "+tableName+" WHERE ";
+			//boolean first = true;
+			//String selectQuery = "SELECT groupGUID, userIP, userPort FROM "+tableName+" WHERE ";
+			String oldGroupsQuery 
+				= TriggerInformationStorage.getQueryToGetOldValueGroups(oldValJSON, subspaceId);
 			
-			while( attrIter.hasNext() )
-			{
-				String currAttrName = attrIter.next();
-				
-				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(currAttrName);
-				
-				String dataType = attrMetaInfo.getDataType();
-				
-				String attrValForMysql = "";
-				
-				if( oldUnsetAttrs.has(currAttrName) )
-				{
-					attrValForMysql = attrMetaInfo.getDefaultValue();
-				}
-				else
-				{
-					attrValForMysql = AttributeTypes.convertStringToDataTypeForMySQL
-							(oldValJSON.getString(currAttrName), dataType)+"";
-				}
-				
-				
-				
-				String lowerValCol = "lower"+currAttrName;
-				String upperValCol = "upper"+currAttrName;
-				//FIXME: for circular queries, this won't work.
-				if( first )
-				{
-					// <= and >= both to handle the == case of the default value
-					selectQuery = selectQuery + lowerValCol+" <= "+attrValForMysql
-							+" AND "+upperValCol+" >= "+attrValForMysql;
-					first = false;
-				}
-				else
-				{
-					selectQuery = selectQuery+" AND "+lowerValCol+" <= "+attrValForMysql
-							+" AND "+upperValCol+" >= "+attrValForMysql;
-				}
-			}
+			String newGroupsQuery = TriggerInformationStorage.getQueryToGetNewValueGroups
+					( oldValJSON, updateValJSON, 
+							newUnsetAttrs, subspaceId );
+			
+			String removedGroupQuery = "SELECT groupGUID, userIP, userPort FROM "
+					+ tableName+" WHERE "
+				    + " groupGUID IN ( "+oldGroupsQuery+" ) AND groupGUID NOT IN ( "
+					+ newGroupsQuery+" ) ";
+			
+//			while( attrIter.hasNext() )
+//			{
+//				String currAttrName = attrIter.next();
+//				
+//				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(currAttrName);
+//				
+//				String dataType = attrMetaInfo.getDataType();
+//				
+//				String attrValForMysql = "";
+//				
+//				if( oldUnsetAttrs.has(currAttrName) )
+//				{
+//					attrValForMysql = attrMetaInfo.getDefaultValue();
+//				}
+//				else
+//				{
+//					attrValForMysql = AttributeTypes.convertStringToDataTypeForMySQL
+//							(oldValJSON.getString(currAttrName), dataType)+"";
+//				}	
+//				
+//				String lowerValCol = "lower"+currAttrName;
+//				String upperValCol = "upper"+currAttrName;
+//				//FIXME: for circular queries, this won't work.
+//				if( first )
+//				{
+//					// <= and >= both to handle the == case of the default value
+//					selectQuery = selectQuery + lowerValCol+" <= "+attrValForMysql
+//							+" AND "+upperValCol+" >= "+attrValForMysql;
+//					first = false;
+//				}
+//				else
+//				{
+//					selectQuery = selectQuery+" AND "+lowerValCol+" <= "+attrValForMysql
+//							+" AND "+upperValCol+" >= "+attrValForMysql;
+//				}
+//			}
 			
 			//oldValGroupGUIDs = new JSONArray();
-			ContextServiceLogger.getLogger().fine("getTriggerInfo "+selectQuery);
+			ContextServiceLogger.getLogger().fine("returnOldValueGroupGUIDs getTriggerInfo "
+												+removedGroupQuery);
 			myConn 	     = dataSource.getConnection();
 			stmt   		 = myConn.createStatement();
-			ResultSet rs = stmt.executeQuery(selectQuery);
+			ResultSet rs = stmt.executeQuery(removedGroupQuery);
 			
 			while( rs.next() )
 			{
-				JSONObject tableRow = new JSONObject();
+				//JSONObject tableRow = new JSONObject();
+				// FIXME: need to replace these with macros
 				byte[] groupGUIDBytes = rs.getBytes("groupGUID");
 				String groupGUIDString = Utils.bytArrayToHex(groupGUIDBytes);
 				byte[] ipAddressBytes = rs.getBytes("userIP");
-				String userIPStirng = InetAddress.getByAddress(ipAddressBytes).getHostAddress();
+				String userIPString = InetAddress.getByAddress(ipAddressBytes).getHostAddress();
+				int userPort = rs.getInt("userPort");
+				
 				//tableRow.put( "userQuery", rs.getString("userQuery") );
-				tableRow.put( "groupGUID", groupGUIDString );
-				tableRow.put( "userIP", userIPStirng );
-				tableRow.put( "userPort", rs.getInt("userPort") );
-				oldValGroupGUIDMap.put(groupGUIDString, tableRow);
+//				tableRow.put( "groupGUID", groupGUIDString );
+//				tableRow.put( "userIP", userIPStirng );
+//				tableRow.put( "userPort", rs.getInt("userPort") );
+				GroupGUIDInfoClass groupGUIDInfo = new GroupGUIDInfoClass(
+						groupGUIDString, userIPString, userPort);
+				oldValGroupGUIDMap.put(groupGUIDString, groupGUIDInfo);
 			}
 			rs.close();
-		} catch (SQLException e)
+		} 
+		catch (SQLException e)
 		{
 			e.printStackTrace();
-		} catch (JSONException e)
+		}
+		catch (JSONException e)
 		{
 			e.printStackTrace();
-		} catch (UnknownHostException e)
+		}
+		catch (UnknownHostException e)
 		{
 			e.printStackTrace();
-		} finally
+		}
+		finally
 		{
 			try
 			{

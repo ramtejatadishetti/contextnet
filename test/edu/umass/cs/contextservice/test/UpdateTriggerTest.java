@@ -442,31 +442,31 @@ public class UpdateTriggerTest extends ContextServiceNode<Integer>
 				System.out.println("RefreshTrigger completion requestID "
 						+reqID+" time "+System.currentTimeMillis()+" "+qmur);
 				
-				if(qmur.getAddRemove() == RefreshTrigger.ADD)
-				{
-					// expecting removal but trigger recvd for addition
-					if(!checkForTrigger)
-					{
-						assert(false);
-					}
-					else
-					{
-						System.out.println("addition trigger revcd");
-					}
-				}
-				
-				if(qmur.getAddRemove() == RefreshTrigger.REMOVE)
-				{
-					// expecting addition but trigger recvd for removal
-					if(checkForTrigger)
-					{
-						assert(false);
-					}
-					else
-					{
-						System.out.println("removal trigger revcd");
-					}
-				}
+//				if(qmur.getAddRemove() == RefreshTrigger.ADD)
+//				{
+//					// expecting removal but trigger recvd for addition
+//					if(!checkForTrigger)
+//					{
+//						assert(false);
+//					}
+//					else
+//					{
+//						System.out.println("addition trigger revcd");
+//					}
+//				}
+//				
+//				if(qmur.getAddRemove() == RefreshTrigger.REMOVE)
+//				{
+//					// expecting addition but trigger recvd for removal
+//					if(checkForTrigger)
+//					{
+//						assert(false);
+//					}
+//					else
+//					{
+//						System.out.println("removal trigger revcd");
+//					}
+//				}
 			} catch (JSONException e)
 			{
 				e.printStackTrace();

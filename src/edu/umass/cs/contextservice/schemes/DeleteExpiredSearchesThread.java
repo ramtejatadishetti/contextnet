@@ -56,19 +56,12 @@ public class DeleteExpiredSearchesThread<NodeIDType> implements Runnable
 					{
 						HashMap<String, AttributePartitionInfo> attrSubspaceMap 
 								= currSubspaceInfo.getAttributesOfSubspace();
-						
-						Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
-						
-						while(attrIter.hasNext())
-						{
-							String attrName = attrIter.next();
-							int numDeleted = hyperspaceDB.deleteExpiredSearchQueries
-							(subspaceId, replicaNum, attrName);
-							if(numDeleted > 0)
-								ContextServiceLogger.getLogger().fine( "Group guids deleted "
-									+ " for subspaceId "+subspaceId+" replicaNum "+replicaNum
-									+" attrName "+attrName+" numDeleted "+numDeleted );
-						}
+						int numDeleted = hyperspaceDB.deleteExpiredSearchQueries
+								(subspaceId);
+								if(numDeleted > 0)
+									ContextServiceLogger.getLogger().fine( "Group guids deleted "
+										+ " for subspaceId "+subspaceId+" replicaNum "+replicaNum+
+										" numDeleted "+numDeleted );
 					}
 				}
 			}

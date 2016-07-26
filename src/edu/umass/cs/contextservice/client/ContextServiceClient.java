@@ -312,13 +312,13 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				return;
 			}
 			
-			long start1 = System.currentTimeMillis();
+//			long start1 = System.currentTimeMillis();
 			
 			List<CSUpdateTransformedMessage> transformedMesgList 
 				= this.csPrivacyTransform.transformUpdateForCSPrivacy
 				(myGUIDInfo.getGuid(), attrValuePairs, aclmap, anonymizedIDList);
 			
-			long end1 = System.currentTimeMillis();
+//			long end1 = System.currentTimeMillis();
 			
 			assert(transformedMesgList.size() > 0);
 			
@@ -364,7 +364,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 						versionNum, privacyUpdRep, privacyCallBack );
 			}
 			
-			long end2 = System.currentTimeMillis();
+//			long end2 = System.currentTimeMillis();
 			
 			if( transformedMesgList.size() > 0 )
 			{
@@ -590,13 +590,13 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				return;
 			}
 			
-			long start1 = System.currentTimeMillis();
+//			long start1 = System.currentTimeMillis();
 			
 			List<CSUpdateTransformedMessage> transformedMesgList 
 				= this.csPrivacyTransform.transformUpdateForCSPrivacy
 				(myGUIDInfo.getGuid(), attrValuePairs, aclmap, anonymizedIDList);
 			
-			long end1 = System.currentTimeMillis();
+//			long end1 = System.currentTimeMillis();
 			
 			assert(transformedMesgList.size() > 0);
 			
@@ -652,7 +652,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 						versionNum, privacyUpdRep, privacyCallBack );
 			}
 			
-			long end2 = System.currentTimeMillis();
+//			long end2 = System.currentTimeMillis();
 			
 			if( transformedMesgList.size() > 0 )
 			{
@@ -688,7 +688,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			currBlockingId = this.blockingReqID++;
 		}
 		
-		long start 		= System.currentTimeMillis();
+//		long start 		= System.currentTimeMillis();
 		BlockingSearchReply blockingSearch = new BlockingSearchReply(currBlockingId);
 		
 		sendSearchQueryToCS(searchQuery, expiryTime, blockingSearch, blockingCallBack);
@@ -728,13 +728,13 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			}
 		}
 		
-		long end1 = System.currentTimeMillis();
+//		long end1 = System.currentTimeMillis();
 		
 		if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
 		{
 			this.csPrivacyTransform.unTransformSearchReply( myGUIDInfo,
 				searchRepTransformList, replyArray );
-			long end2 = System.currentTimeMillis();
+//			long end2 = System.currentTimeMillis();
 			
 //			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
 //						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
@@ -744,7 +744,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 		else
 		{
-			long end2 = System.currentTimeMillis();		
+//			long end2 = System.currentTimeMillis();		
 //			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
 //						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
 //						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
