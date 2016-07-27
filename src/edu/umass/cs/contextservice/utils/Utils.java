@@ -248,8 +248,6 @@ public class Utils
 		if(ContextServiceConfig.NO_ENCRYPTION)
 			return plainTextByteArray;
 		
-		
-		long start = System.currentTimeMillis();
 //		byte[] privateKeyBytes;
 //		byte[] publicKeyBytes;
 //		KeyFactory kf = KeyFactory.getInstance("RSA"); // or "EC" or whatever
@@ -267,7 +265,6 @@ public class Utils
 		// encrypt the plain text using the public key
 		cipher.init(Cipher.ENCRYPT_MODE, publicKey);
 		cipherText = cipher.doFinal(plainTextByteArray);
-		long end = System.currentTimeMillis();
 		
 //		System.out.println("doPublicKeyEncryption time "+(end-start)+" plainTextByteArray "
 //						+plainTextByteArray.length);
@@ -300,8 +297,6 @@ public class Utils
 //		PrivateKey private = kf.generatePrivate(new PKCS8EncodedKeySpec(privateKeyBytes));
 //		PublicKey public = kf.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
 		
-		long start = System.currentTimeMillis();
-		
 		KeyFactory kf = KeyFactory.getInstance("RSA"); // or "EC" or whatever
 		PrivateKey privateKey = kf.generatePrivate(new PKCS8EncodedKeySpec(privateKeyBytes));
 		//PublicKey publicKey = kf.generatePublic(new X509EncodedKeySpec(publicKeyBytes));
@@ -313,8 +308,6 @@ public class Utils
 		// encrypt the plain text using the public key
 		cipher.init(Cipher.DECRYPT_MODE, privateKey);
 		plainText = cipher.doFinal(encryptedTextByteArray);
-		
-		long end = System.currentTimeMillis();
 		
 //		System.out.println("doPrivateKeyDecryption time "+(end-start));
 	    return plainText;
@@ -335,15 +328,11 @@ public class Utils
 			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, 
 			IllegalBlockSizeException, BadPaddingException
 	{
-		long start = System.currentTimeMillis();
 		SecretKey keyObj = new SecretKeySpec(symmetricKey, 0, symmetricKey.length, 
 				ContextServiceConfig.SymmetricEncAlgorithm);
 		
 		Cipher c = Cipher.getInstance(ContextServiceConfig.SymmetricEncAlgorithm);
 		c.init(Cipher.ENCRYPT_MODE, keyObj);
-		long end = System.currentTimeMillis();
-		
-//		System.out.println("doSymmetricEncryption time "+(end-start));
 		
 		return c.doFinal(plainTextByteArray);
 	}
@@ -363,19 +352,12 @@ public class Utils
 	public static byte[] doSymmetricDecryption(byte[] symmetricKey, byte[] encryptedByteArray) 
 			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, 
 			IllegalBlockSizeException, BadPaddingException
-	{
-		long start = System.currentTimeMillis();
-		
+	{	
 		SecretKey keyObj = new SecretKeySpec(symmetricKey, 0, symmetricKey.length, 
 				ContextServiceConfig.SymmetricEncAlgorithm);
 		
 		Cipher c = Cipher.getInstance(ContextServiceConfig.SymmetricEncAlgorithm);
 		c.init(Cipher.DECRYPT_MODE, keyObj);
-		
-		long end = System.currentTimeMillis();
-		
-//		System.out.println("doSymmetricDecryption time "+(end-start));
-		
 		return c.doFinal(encryptedByteArray);
 	}
 	
@@ -426,29 +408,15 @@ public class Utils
 		Random rand = new Random(0);
 		JSONArray resultJSON = new JSONArray();
 		
-		long start = System.currentTimeMillis();
 		for(int i=0; i<numGuids; i++)
 		{
 			byte[] guidBytes = new byte[20];
 			rand.nextBytes(guidBytes);
-			//String guidString = Utils.bytArrayToHex(guidBytes);
-			
-			//resultJSON.put(guidString);
 		}
-//		System.out.println("ByteArrayToHEx time taken "+(System.currentTimeMillis() - start));
-//		
-//		System.out.println("time taken "+(System.currentTimeMillis() - start)+
-//				" "+resultJSON.getString(0));
 		
 		// time to convert to json tostring
-		start = System.currentTimeMillis();
-		String jsonString = resultJSON.toString();
-//		System.out.println("JSON tostring time taken "
-//						+(System.currentTimeMillis() - start));
+		String jsonString = resultJSON.toString();		
 		
-		
-		// time from string
-		start = System.currentTimeMillis();
 		resultJSON = new JSONArray(jsonString);
 //		System.out.println("JSON fromString time taken "
 //				+(System.currentTimeMillis() - start));
@@ -456,7 +424,6 @@ public class Utils
 		KeyPairGenerator kpg = KeyPairGenerator.getInstance( "RSA" );
 		KeyPair kp0 = kpg.generateKeyPair();
 		PublicKey publicKey0 = kp0.getPublic();
-		PrivateKey privateKey0 = kp0.getPrivate();
 		byte[] publicKeyBytes = publicKey0.getEncoded();
 		
 		byte[] guidBytes = new byte[20];
@@ -513,244 +480,4 @@ public class Utils
 		
 		System.out.println("JSONArray from string time "+(e1-s1));
 	}
-	  /**
-	   * takes list of elements as input and returns the
-	   * conjunction over list of elements.
-	   * @param elements
-	   * @return
-	   */
-//	  public static JSONArray doConjuction(LinkedList<LinkedList<String>> elements)
-//	  {
-//		  LinkedList<String> result = new LinkedList<String>();
-//		  int numPredicates = elements.size();
-//		  //ContextServiceLogger.getLogger().fine(" numPredicates "+numPredicates);
-//		  HashMap<String, Integer> conjuctionMap = new HashMap<String, Integer>();
-//		  for (int i=0;i<elements.size();i++)
-//		  {
-//			  LinkedList<String> currList = elements.get(i);
-//			  for(int j=0;j<currList.size();j++)
-//			  {
-//				  String curString = currList.get(j);
-//				  Integer count = conjuctionMap.get(curString);
-//				  if(count == null)
-//				  {
-//					  //ContextServiceLogger.getLogger().fine("Key "+curString);
-//					  conjuctionMap.put(curString, 1);
-//				  } 
-//				  else
-//				  {
-//					  //ContextServiceLogger.getLogger().fine("Key++ "+curString+", "+count+1);
-//					  conjuctionMap.put(curString, count+1);
-//				  }
-//			  }
-//		  }
-//		  
-//		  for (Map.Entry<String, Integer> entry : conjuctionMap.entrySet()) 
-//		  {
-//			    String key = entry.getKey();
-//			    Integer value = entry.getValue();
-//			    if(value == numPredicates)
-//			    {
-//			    	result.add(key);
-//			    }
-//		  }
-//		  
-//		  JSONArray resultJSON = new JSONArray();
-//		  
-//		  for(int i=0;i<result.size();i++)
-//		  {
-//			  resultJSON.put(result.get(i));
-//		  }
-//		  //ContextServiceLogger.getLogger().fine("conjuctionMap "+conjuctionMap);
-//		  return resultJSON;
-//	  }
-	  
-	  
-//	  public static JSONArray doDisjuction(LinkedList<LinkedList<String>> elements)
-//	  {
-//		  LinkedList<String> result = new LinkedList<String>();
-//		  //ContextServiceLogger.getLogger().fine(" numPredicates "+numPredicates);
-//		  HashMap<String, Integer> disjunctionMap = new HashMap<String, Integer>();
-//		  for (int i=0;i<elements.size();i++)
-//		  {
-//			  LinkedList<String> currList = elements.get(i);
-//			  for(int j=0;j<currList.size();j++)
-//			  {
-//				  String curString = currList.get(j);
-//				  Integer count = disjunctionMap.get(curString);
-//				  if(count == null)
-//				  {
-//					  //ContextServiceLogger.getLogger().fine("Key "+curString);
-//					  disjunctionMap.put(curString, 1);
-//				  } 
-//				  else
-//				  {
-//					  //ContextServiceLogger.getLogger().fine("Key++ "+curString+", "+count+1);
-//					  disjunctionMap.put(curString, count+1);
-//				  }
-//			  }
-//		  }
-//		  
-//		  result.addAll(disjunctionMap.keySet());
-//		  
-//		  JSONArray resultJSON = new JSONArray();
-//		  
-//		  for(int i=0;i<result.size();i++)
-//		  {
-//			  resultJSON.put(result.get(i));
-//		  }
-//		  //ContextServiceLogger.getLogger().fine("conjuctionMap "+conjuctionMap);
-//		  return resultJSON;
-//	  }
-	  
-//	  public static  List<String> JSONArayToList(JSONArray jsonArr)
-//	  {
-//		  List<String> returnList = new LinkedList<String>();
-//		  
-//		  for(int i=0;i<jsonArr.length();i++)
-//		  {
-//			  try 
-//			  {
-//				  returnList.add(jsonArr.getString(i));
-//			  } catch (JSONException e) 
-//			  {
-//				e.printStackTrace();
-//			  }
-//		  }
-//		  return returnList;
-//	  }
-	
-	
-	/**
-	 * checks if the input attr value lies within the range
-	 * @return
-	 */
-	/*public static boolean checkQCForOverlapWithValue(double attrValue, QueryComponent qc)
-	{
-		if( (qc.getLeftValue() <= attrValue) && (qc.getRightValue() > attrValue) )
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
-	}*/
-	
-	/**
-	 * Takes all the context attributes, new and the old values, 
-	 * checks if the group query is still satisfied or not.
-	 * @return
-	 * @throws JSONException 
-	 * @throws NumberFormatException 
-	 */
-	/*public static boolean groupMemberCheck(JSONObject allAttr, String updateAttrName
-			, double attrVal, String groupQuery)
-			throws JSONException
-	{
-		boolean satisfiesGroup = true;
-		Vector<QueryComponent> groupQC = QueryParser.parseQuery(groupQuery);
-		
-		for(int j=0;j<groupQC.size();j++)
-		{
-			QueryComponent qc = groupQC.get(j);
-			String attrName = qc.getAttributeName();
-			
-			// if this is the case, don't use the given val
-			if(attrName.equals(updateAttrName))
-			{
-				// values are indexed by attr names
-				double recValue = attrVal;
-				boolean checkRes = Utils.checkQCForOverlapWithValue(recValue, qc);
-				
-				// if not satisfies, then group not satisfied
-				if(!checkRes)
-				{
-					satisfiesGroup = false;
-					break;
-				}
-			} else
-			{
-				// values are indexed by attr names
-				double recValue = Double.parseDouble(allAttr.getString(attrName));
-				boolean checkRes = Utils.checkQCForOverlapWithValue(recValue, qc);
-				
-				// if not satisfies, then group not satisfied
-				if(!checkRes)
-				{
-					satisfiesGroup = false;
-					break;
-				}
-			}
-		}
-		return satisfiesGroup;
-	}*/
-	
-	/**
-	 * Takes all the context attributes, new and the old values, 
-	 * checks if the group query is still satisfied or not.
-	 * @return
-	 * @throws JSONException 
-	 * @throws NumberFormatException 
-	 */
-	/*public static boolean groupMemberCheck(Map<String, Object> hyperdexMap, String updateAttrName
-			, double attrVal, String groupQuery)
-			throws JSONException
-	{
-		boolean satisfiesGroup = true;
-		Vector<QueryComponent> groupQC = QueryParser.parseQuery(groupQuery);
-		
-		for(int j=0;j<groupQC.size();j++)
-		{
-			QueryComponent qc = groupQC.get(j);
-			String attrName = qc.getAttributeName();
-			
-			// if this is the case, don't use the given val
-			if( attrName.equals(updateAttrName) )
-			{
-				// values are indexed by attr names
-				double recValue = attrVal;
-				boolean checkRes = Utils.checkQCForOverlapWithValue(recValue, qc);
-				
-				// if not satisfies, then group not satisfied
-				if(!checkRes)
-				{
-					satisfiesGroup = false;
-					break;
-				}
-			} else
-			{
-				if(hyperdexMap != null)
-				{
-					// values are indexed by attr names
-					Object retObj = hyperdexMap.get(attrName);
-					if( retObj != null )
-					{
-						double recValue =  (Double)retObj;
-						boolean checkRes = Utils.checkQCForOverlapWithValue(recValue, qc);
-						
-						// if not satisfies, then group not satisfied
-						if(!checkRes)
-						{
-							satisfiesGroup = false;
-							break;
-						}
-					}
-				}
-			}
-		}
-		return satisfiesGroup;
-	}*/
-	
-	/*public static List<String> getAttributesInQuery(String query)
-	{
-		Vector<QueryComponent> groupQC = QueryParser.parseQuery(query);
-		List<String> attrList = new LinkedList<String>();
-		
-		for(int i=0;i<groupQC.size();i++)
-		{
-			attrList.add(groupQC.get(i).getAttributeName());
-		}
-		return attrList;
-	}*/
 }

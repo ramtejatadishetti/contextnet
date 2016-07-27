@@ -27,10 +27,9 @@ import edu.umass.cs.gnsclient.client.GuidEntry;
 public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 {
 	private final ExecutorService exectutorService;
-	//private final Random rand;
+	
 	public HyperspaceBasedCSTransform()
 	{
-		//rand = new Random(System.currentTimeMillis());
 		this.exectutorService = Executors.newFixedThreadPool(200);
 	}
 	
@@ -89,30 +88,6 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 		return null;
 	}
 	
-	/**
-	 * Randomize the attrValue pair for each anonymized ID
-	 * so that we know if that affects the throughput.
-	 * @return
-	 */
-//	private JSONObject randomizeAttrValue( JSONObject attrValPair )
-//	{
-//		JSONObject randomJSON = new JSONObject();
-//		Iterator<String> attrIter = attrValPair.keys();
-//		
-//		while( attrIter.hasNext() )
-//		{
-//			String attrName = attrIter.next();
-//			double randVal = 1 + rand.nextDouble()*1498.0;
-//			try {
-//				randomJSON.put(attrName, randVal);
-//			} catch (JSONException e) {
-//				e.printStackTrace();
-//			}
-//		}
-////		System.out.println("randomizeAttrValue ori "+attrValPair +" new "+randomJSON);
-//		return randomJSON;
-//	}
-	
 	@Override
 	public void unTransformSearchReply(GuidEntry myGuid, 
 			List<CSSearchReplyTransformedMessage> csTransformedList
@@ -120,36 +95,15 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 	{	
 		ParallelSearchReplyDecryption parallelSearchDecryption =
 				new ParallelSearchReplyDecryption(myGuid , csTransformedList
-						, replyArray, exectutorService);	
-		
+						, replyArray, exectutorService);
 		parallelSearchDecryption.doDecryption();
 		
-		if(ContextServiceConfig.DEBUG_MODE)
+		if( ContextServiceConfig.DEBUG_MODE )
 		{
 //			System.out.println
 //				("Total decryptions "+parallelSearchDecryption.getTotalDecryptionsOverall()
 //				+" replyArray size "+replyArray.length());
 		}
-		
-//		for(int i=0; i<csTransformedList.size();i++)
-//		{
-//			CSSearchReplyTransformedMessage csSearchRepMessage 
-//							= csTransformedList.get(i);
-//			
-//			byte[] realGuidBytes 
-//					= decryptRealIDFromSearchRep(myGuid, csSearchRepMessage.getSearchGUIDObj());
-//			
-//			// just adding the  ID
-//			if(realGuidBytes == null)
-//			{
-//				ContextServiceLogger.getLogger().info("Unable to map this ID "+
-//						csSearchRepMessage.getSearchGUIDObj().getID());
-//			}
-//			else
-//			{
-//				replyArray.put(Utils.bytArrayToHex(realGuidBytes));
-//			}
-//		}
 	}
 	
 	/**

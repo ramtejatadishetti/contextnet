@@ -27,9 +27,9 @@ import edu.umass.cs.contextservice.client.callback.implementations.BlockingSearc
 import edu.umass.cs.contextservice.client.callback.implementations.BlockingUpdateReply;
 import edu.umass.cs.contextservice.client.callback.implementations.PrivacyCallBack;
 import edu.umass.cs.contextservice.client.callback.implementations.PrivacyUpdateReply;
-import edu.umass.cs.contextservice.client.callback.implementations.SampleCallBack;
-import edu.umass.cs.contextservice.client.callback.implementations.SampleSearchReply;
-import edu.umass.cs.contextservice.client.callback.implementations.SampleUpdateReply;
+import edu.umass.cs.contextservice.client.callback.implementations.NoopCallBack;
+import edu.umass.cs.contextservice.client.callback.implementations.NoopSearchReply;
+import edu.umass.cs.contextservice.client.callback.implementations.NoopUpdateReply;
 import edu.umass.cs.contextservice.client.callback.interfaces.CallBackInterface;
 import edu.umass.cs.contextservice.client.callback.interfaces.SearchReplyInterface;
 import edu.umass.cs.contextservice.client.callback.interfaces.UpdateReplyInterface;
@@ -126,6 +126,18 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		initializeClient();
 	}
 	
+	public ContextServiceClient(String csHostName, int csPortNum)
+			throws IOException, NoSuchAlgorithmException
+	{
+		super( csHostName, csPortNum );
+		this.transformType = HYPERSPACE_BASED_CS_TRANSFORM;
+		gnsClient = null;
+		privacyCallBack = new PrivacyCallBack();
+		blockingCallBack = new BlockingCallBack();
+		//execService = Executors.newFixedThreadPool(NUM_THREADS);
+		initializeClient();
+	}
+	
 	/**
 	 * Use this constructor when CS and GNS are used.
 	 * @param csHostName
@@ -197,12 +209,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	public void sendSearchQueryWithCallBack(String searchQuery, 
 			long expiryTime, SearchReplyInterface searchRep, CallBackInterface callback)
 	{
-//		if( searchRep.getSearchReplyArray() == null )
-//		{
-//			ContextServiceLogger.getLogger().warning("null passed "
-//					+ "as replyArray in sendSearchQuery");
-//			return -1;
-//		}
 		sendSearchQueryToCS(searchQuery, expiryTime, 
 				searchRep, callback);
 	}
@@ -295,7 +301,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	{
 		try
 		{
-			if(gnsClient != null)
+			if( gnsClient != null )
 			{
 				GNSTransformedMessage gnsTransformMesg = 
 						this.gnsPrivacyTransform.transformUpdateForGNSPrivacy
@@ -312,59 +318,26 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				return;
 			}
 			
-//			long start1 = System.currentTimeMillis();
-			
 			List<CSUpdateTransformedMessage> transformedMesgList 
 				= this.csPrivacyTransform.transformUpdateForCSPrivacy
 				(myGUIDInfo.getGuid(), attrValuePairs, aclmap, anonymizedIDList);
 			
-//			long end1 = System.currentTimeMillis();
-			
 			assert(transformedMesgList.size() > 0);
-			
-//			long currId;
-//			
-//			synchronized( this.privacyUpdateIdLock )
-//			{
-//				currId = this.privacyReqId++;
-//			}
 			
 			UpdateReplyInterface privacyUpdRep 
 					= new PrivacyUpdateReply( updReplyObj, callback, 
 							transformedMesgList.size() );
 			
-//			PrivacyUpdateReplyTracker privacyUpdRepTracker 
-//				= new PrivacyUpdateReplyTracker( updReplyObj, 
-//						callback, transformedMesgList.size() );
-			
-			//privacyCallBack.addUpdateReply(currId, privacyUpdRepTracker);
-			
-			// now all the anonymized IDs and the attributes that needs to be updated
-			// are calculated, 
-			// just need to send out updates
-			
-			//List<Long> finishTimeList = new LinkedList<Long>();
-			
-//			ParallelUpdateStateStorage updateState 
-//								= new ParallelUpdateStateStorage(transformedMesgList, 
-//										finishTimeList);
-			
 			for( int i=0; i<transformedMesgList.size(); i++ )
 			{
 				CSUpdateTransformedMessage csTransformedMessage 
 									= transformedMesgList.get(i);
-			
-//				UpdateOperationThread updateThread = new UpdateOperationThread(GUID, 
-//						csTransformedMessage, versionNum, blocking, 
-//						updateState );
-//				this.executorService.execute(updateThread);
 				
 				sendUpdateToCS( csTransformedMessage.getAnonymizedIDString(), csTransformedMessage.getAttrValJSON(), 
 						csTransformedMessage.getAnonymizedIDToGuidMapping(), 
 						versionNum, privacyUpdRep, privacyCallBack );
 			}
 			
-//			long end2 = System.currentTimeMillis();
 			
 			if( transformedMesgList.size() > 0 )
 			{
@@ -386,72 +359,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			long expiryTime, GuidEntry myGUIDInfo, 
 			SearchReplyInterface searchRep, CallBackInterface callback )
 	{
-//		if( replyArray == null )
-//		{
-//			ContextServiceLogger.getLogger().warning("null passsed "
-//					+ "as replyArray in sendSearchQuery");
-//			return -1;
-//		}
-		
-		//long start 		= System.currentTimeMillis();
 		sendSearchQueryToCS(searchQuery, expiryTime, searchRep, callback);
-		
-//		List<CSSearchReplyTransformedMessage> searchRepTransformList 
-//						= new LinkedList<CSSearchReplyTransformedMessage>();
-//		
-//		for(int i=0; i<searchAnswer.resultArray.length(); i++)
-//		{
-//			try
-//			{
-//				JSONArray jsoArr1 = searchAnswer.resultArray.getJSONArray(i);
-//				for( int j=0; j<jsoArr1.length(); j++ )
-//				{
-//					JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
-//
-//					if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
-//					{
-//						SearchReplyGUIDRepresentationJSON searchRepObj 
-//						= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
-//						CSSearchReplyTransformedMessage csSearchRepTransform 
-//										= new CSSearchReplyTransformedMessage(searchRepObj);
-//						searchRepTransformList.add(csSearchRepTransform);
-//					}
-//					else
-//					{
-//						// just adding the whole JSON here for the user to decrypt later on.
-//						replyArray.put(searchRepJSON);
-//					}
-//				}
-//			} catch ( JSONException e )
-//			{
-//				e.printStackTrace();
-//			}
-//		}
-//		
-//		long end1 = System.currentTimeMillis();
-//		
-//		if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
-//		{
-//			this.csPrivacyTransform.unTransformSearchReply( myGUIDInfo,
-//				searchRepTransformList, replyArray );
-//			long end2 = System.currentTimeMillis();
-//			
-//			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
-//						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
-//						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
-//			
-//			return replyArray.length();
-//		}
-//		else
-//		{
-//			long end2 = System.currentTimeMillis();
-//			
-//			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
-//						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
-//						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
-//			
-//			return searchAnswer.resultSize;
-//		}
 	}
 	
 	
@@ -546,7 +454,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		blockingSearch.waitForCompletion();
 		
 		assert(blockingSearch.getSearchReplyArray() != null);
-		for(int i=0; i<blockingSearch.getSearchReplyArray().length(); i++)
+		for( int i=0; i<blockingSearch.getSearchReplyArray().length(); i++ )
 		{
 			try
 			{
@@ -590,22 +498,12 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				return;
 			}
 			
-//			long start1 = System.currentTimeMillis();
-			
 			List<CSUpdateTransformedMessage> transformedMesgList 
 				= this.csPrivacyTransform.transformUpdateForCSPrivacy
 				(myGUIDInfo.getGuid(), attrValuePairs, aclmap, anonymizedIDList);
 			
-//			long end1 = System.currentTimeMillis();
-			
 			assert(transformedMesgList.size() > 0);
 			
-//			long currId;
-//			
-//			synchronized( this.privacyUpdateIdLock )
-//			{
-//				currId = this.privacyReqId++;
-//			}
 			
 			long currblockReqId;
 			
@@ -620,39 +518,17 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			UpdateReplyInterface privacyUpdRep = new PrivacyUpdateReply( 
 					blockingUpd, this.blockingCallBack, transformedMesgList.size());
 			
-//			PrivacyUpdateReplyTracker privacyUpdRepTracker 
-//				= new PrivacyUpdateReplyTracker(, 
-//						);
-//			
-//			privacyCallBack.addUpdateReply(currId, privacyUpdRepTracker);
-			
-			// now all the anonymized IDs and the attributes that needs to be updated
-			// are calculated, 
-			// just need to send out updates
-			
-			//List<Long> finishTimeList = new LinkedList<Long>();
-			
-//			ParallelUpdateStateStorage updateState 
-//								= new ParallelUpdateStateStorage(transformedMesgList, 
-//										finishTimeList);
 			
 			for( int i=0; i<transformedMesgList.size(); i++ )
 			{
 				CSUpdateTransformedMessage csTransformedMessage 
 									= transformedMesgList.get(i);
-			
-//				UpdateOperationThread updateThread = new UpdateOperationThread(GUID, 
-//						csTransformedMessage, versionNum, blocking, 
-//						updateState );
-//				this.executorService.execute(updateThread);
 				
 				sendUpdateToCS( csTransformedMessage.getAnonymizedIDString(), 
 						csTransformedMessage.getAttrValJSON(), 
 						csTransformedMessage.getAnonymizedIDToGuidMapping(), 
 						versionNum, privacyUpdRep, privacyCallBack );
 			}
-			
-//			long end2 = System.currentTimeMillis();
 			
 			if( transformedMesgList.size() > 0 )
 			{
@@ -688,7 +564,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			currBlockingId = this.blockingReqID++;
 		}
 		
-//		long start 		= System.currentTimeMillis();
 		BlockingSearchReply blockingSearch = new BlockingSearchReply(currBlockingId);
 		
 		sendSearchQueryToCS(searchQuery, expiryTime, blockingSearch, blockingCallBack);
@@ -728,7 +603,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			}
 		}
 		
-//		long end1 = System.currentTimeMillis();
 		
 		if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
 		{
@@ -777,13 +651,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			{
 				currId = this.updateReqId++;
 			}
-			
 			long requestID = currId;
-			
-//			ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = 
-//				new ValueUpdateFromGNS<NodeIDType>(null, versionNum, GUID, 
-//						jsonObject, reqeustID, sourceIP, sourcePort, 
-//							System.currentTimeMillis() );
 			
 			ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = new
 					ValueUpdateFromGNS<NodeIDType>( null, versionNum, GUID, 
@@ -806,24 +674,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			ContextServiceLogger.getLogger().fine("ContextClient sending update requestID "+currId+" to "+sockAddr+" json "+
 					valUpdFromGNS);
 			niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
-			
-//			if( blocking )
-//			{
-//				synchronized( updateQ )
-//				{
-//					while( updateQ.valUpdFromGNSReply == null )
-//					{
-//						try 
-//						{
-//							updateQ.wait();
-//						} catch (InterruptedException e) 
-//						{
-//							e.printStackTrace();
-//						}
-//					}
-//				}
-//				pendingUpdate.remove(currId);
-//			}
 		}
 		catch ( Exception | Error e )
 		{
@@ -949,35 +799,42 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	
 	private void sendConfigRequest()
 	{	
-		ClientConfigRequest<NodeIDType> clientConfigReq 
-			= new ClientConfigRequest<NodeIDType>(nodeid, sourceIP, sourcePort);
-		
-		InetSocketAddress sockAddr = new InetSocketAddress(configHost, configPort);
-		
-		try 
+		do
 		{
-			niot.sendToAddress(sockAddr, clientConfigReq.toJSONObject());
-		} catch (IOException e) 
-		{
-			e.printStackTrace();
-		} catch (JSONException e) 
-		{
-			e.printStackTrace();
-		}
-		
-		synchronized( configLock )
-		{
-			while( csNodeAddresses.size() == 0 )
+			ClientConfigRequest<NodeIDType> clientConfigReq 
+				= new ClientConfigRequest<NodeIDType>(nodeid, sourceIP, sourcePort);
+			
+			InetSocketAddress sockAddr = new InetSocketAddress(configHost, configPort);
+			
+			try 
 			{
-				try 
+				niot.sendToAddress(sockAddr, clientConfigReq.toJSONObject());
+			} catch (IOException e) 
+			{
+				e.printStackTrace();
+			} catch (JSONException e) 
+			{
+				e.printStackTrace();
+			}
+			
+			synchronized( configLock )
+			{
+				while( csNodeAddresses.size() == 0 )
 				{
-					configLock.wait();
-				} catch (InterruptedException e) 
-				{
-					e.printStackTrace();
+					try 
+					{
+						configLock.wait(5000);
+						break;
+					} catch (InterruptedException e) 
+					{
+						e.printStackTrace();
+						break;
+					}
 				}
 			}
-		}
+			if(csNodeAddresses.size() == 0)
+			System.out.println("Contect service client failed to get config. Trying again");
+		} while(csNodeAddresses.size() == 0);
 	}
 	
 	private class HandleMessageThread implements Runnable
@@ -1075,35 +932,39 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		{
 			try
 			{
-				ClientConfigReply<NodeIDType> configReply
-										= new ClientConfigReply<NodeIDType>(jso);
-				
-				JSONArray nodeIPArray 		= configReply.getNodeConfigArray();
-				JSONArray attrInfoArray 	= configReply.getAttributeArray();
-				JSONArray subspaceInfoArray = configReply.getSubspaceInfoArray();
-				
-				for( int i=0;i<nodeIPArray.length();i++ )
-				{
-					String ipPort = nodeIPArray.getString(i);
-					String[] parsed = ipPort.split(":");
-					csNodeAddresses.add(new InetSocketAddress(parsed[0], 
-							Integer.parseInt(parsed[1])));
-				}
-				
-				for(int i=0;i<attrInfoArray.length();i++)
-				{
-					String attrName = attrInfoArray.getString(i);
-					attributeHashMap.put(attrName, true);	
-				}
-				
-				for( int i=0; i<subspaceInfoArray.length(); i++ )
-				{
-					JSONArray subspaceAttrJSON = subspaceInfoArray.getJSONArray(i);
-					subspaceAttrMap.put(i, subspaceAttrJSON);
-				}
-				
 				synchronized( configLock )
 				{
+					ClientConfigReply<NodeIDType> configReply
+											= new ClientConfigReply<NodeIDType>(jso);
+					if(csNodeAddresses.size() > 0)
+					{
+						configLock.notify();
+						return;
+					}
+					
+					JSONArray nodeIPArray 		= configReply.getNodeConfigArray();
+					JSONArray attrInfoArray 	= configReply.getAttributeArray();
+					JSONArray subspaceInfoArray = configReply.getSubspaceInfoArray();
+					
+					for( int i=0;i<nodeIPArray.length();i++ )
+					{
+						String ipPort = nodeIPArray.getString(i);
+						String[] parsed = ipPort.split(":");
+						csNodeAddresses.add(new InetSocketAddress(parsed[0], 
+								Integer.parseInt(parsed[1])));
+					}
+					
+					for(int i=0;i<attrInfoArray.length();i++)
+					{
+						String attrName = attrInfoArray.getString(i);
+						attributeHashMap.put(attrName, true);	
+					}
+					
+					for( int i=0; i<subspaceInfoArray.length(); i++ )
+					{
+						JSONArray subspaceAttrJSON = subspaceInfoArray.getJSONArray(i);
+						subspaceAttrMap.put(i, subspaceAttrJSON);
+					}
 					configLock.notify();
 				}
 			} catch ( JSONException e )
@@ -1273,7 +1134,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		ContextServiceClient<Integer> csClient = new ContextServiceClient<Integer>("127.0.0.1", 8000, 
 				ContextServiceClient.SUBSPACE_BASED_CS_TRANSFORM);
 		
-		CallBackInterface callback = new SampleCallBack();
+		CallBackInterface callback = new NoopCallBack();
 		
 		
 		List<AnonymizedIDEntry> anonymizedIdList = csClient.computeAnonymizedIDs
@@ -1283,7 +1144,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 		attrValPair.put("attr2", 15+"");
 		
-		UpdateReplyInterface updateRep = new SampleUpdateReply(1);
+		UpdateReplyInterface updateRep = new NoopUpdateReply();
 		
 		csClient.sendUpdateSecureWithCallback(guid0, 
 				myGUID, attrValPair, -1, aclMap, anonymizedIdList, updateRep, callback);
@@ -1294,7 +1155,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		JSONArray replyArray = new JSONArray();
 		GuidEntry queryingGuid = guidsVector.get(3);
 		
-		SearchReplyInterface searchRep = new SampleSearchReply(2);
+		SearchReplyInterface searchRep = new NoopSearchReply(2);
 		
 		csClient.sendSearchQuerySecureWithCallBack
 					(searchQuery, 300000, queryingGuid, searchRep, callback);
@@ -1308,7 +1169,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		replyArray = new JSONArray();
 		queryingGuid = guidsVector.get(1);
 		
-		searchRep = new SampleSearchReply(3);
+		searchRep = new NoopSearchReply(3);
 		
 		csClient.sendSearchQuerySecureWithCallBack(searchQuery, 300000, queryingGuid,
 				searchRep, callback);

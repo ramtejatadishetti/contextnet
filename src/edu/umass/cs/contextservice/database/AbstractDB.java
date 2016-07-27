@@ -19,10 +19,6 @@ public abstract class AbstractDB<NodeIDType>
 			getOverlappingRegionsInSubspace(int subspaceId, int replicaNum, 
 				Vector<ProcessingQueryComponent> matchingQueryComponents);
 	
-//	public abstract HashMap<Integer, OverlappingInfoClass> 
-//		getOverlappingPartitionsInTriggers( int subspaceId, int replicaNum, 
-//			String attrName, ProcessingQueryComponent matchingQueryComponent );
-	
 	public abstract int processSearchQueryInSubspaceRegion(int subspaceId, String query, 
 			JSONArray resultArray);
 	
@@ -32,13 +28,10 @@ public abstract class AbstractDB<NodeIDType>
 	public abstract void bulkInsertIntoSubspacePartitionInfo( int subspaceId, int replicaNum,
 			List<List<Integer>> subspaceVectorList, List<NodeIDType> respNodeIdList );
 	
-//	public abstract void insertIntoTriggerPartitionInfo(int subspaceId, int replicaNum, 
-//			String attrName, int partitionNum, NodeIDType respNodeId);
-	
 	public abstract JSONObject getGUIDStoredInPrimarySubspace( String guid );
 	
-	public abstract void insertIntoSubspaceTriggerDataInfo( int subspaceId, int replicaNum, 
-			String attrName, String userQuery, String groupGUID, String userIP, 
+	public abstract void insertIntoSubspaceTriggerDataInfo( int subspaceId, 
+			String userQuery, String groupGUID, String userIP, 
 			int userPort, long expiryTimeFromNow );
 	
 	public abstract void getTriggerDataInfo(int subspaceId, 

@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.Vector;
 
 import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
-import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 
@@ -54,8 +53,6 @@ public class DeleteExpiredSearchesThread<NodeIDType> implements Runnable
 					if( currSubspaceInfo.checkIfSubspaceHasMyID(myNodeId)
 							 )
 					{
-						HashMap<String, AttributePartitionInfo> attrSubspaceMap 
-								= currSubspaceInfo.getAttributesOfSubspace();
 						int numDeleted = hyperspaceDB.deleteExpiredSearchQueries
 								(subspaceId);
 								if(numDeleted > 0)

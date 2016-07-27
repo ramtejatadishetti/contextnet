@@ -101,7 +101,7 @@ public class CSConfigFileLoader
 	    		properties.getProperty(ContextServiceConfig.privacyEnabledString, 
 	    				ContextServiceConfig.PRIVACY_ENABLED+"") );
 	  
-	  System.out.println("read props ContextServiceConfig.modelRho "+ContextServiceConfig.modelRho
+	  ContextServiceLogger.getLogger().info("read props ContextServiceConfig.modelRho "+ContextServiceConfig.modelRho
     		+" ContextServiceConfig.modelCsByC "+ContextServiceConfig.modelCsByC
     		+" ContextServiceConfig.modelCuByC "+ContextServiceConfig.modelCuByC
     		+" ContextServiceConfig.modelAavg "+ContextServiceConfig.modelAavg
@@ -114,7 +114,6 @@ public class CSConfigFileLoader
     		+" ContextServiceConfig.basicConfig "+ContextServiceConfig.basicConfig
     		+" ContextServiceConfig.optimalH "+ContextServiceConfig.optimalH 
     		+" ContextServiceConfig.PRIVACY_ENABLED "+ContextServiceConfig.PRIVACY_ENABLED);
-	  
   }
   
   /**

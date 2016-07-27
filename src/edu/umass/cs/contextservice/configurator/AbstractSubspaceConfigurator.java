@@ -37,12 +37,12 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 			int distinctSubId = subspceIter.next();
 			
 			Vector<SubspaceInfo<NodeIDType>> replicaVect = subspaceInfoMap.get(distinctSubId);
-			System.out.println("number of replicas for subspaceid "+distinctSubId
+			ContextServiceLogger.getLogger().fine("number of replicas for subspaceid "+distinctSubId
 					+" "+replicaVect.size());
 			for(int i=0; i<replicaVect.size();i++)
 			{
 				SubspaceInfo<NodeIDType> currSubspace = replicaVect.get(i);
-				System.out.println(currSubspace.toString());
+				ContextServiceLogger.getLogger().fine(currSubspace.toString());
 			}
 		}
 	}

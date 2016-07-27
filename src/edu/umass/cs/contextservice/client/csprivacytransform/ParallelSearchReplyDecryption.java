@@ -29,7 +29,6 @@ public class ParallelSearchReplyDecryption
 	private final JSONArray replyArray;
 	private final ExecutorService execService;
 	
-	//private long numStarted  				= 0;
 	private long numFinished 				= 0;
 	private final Object lock 				= new Object();
 	

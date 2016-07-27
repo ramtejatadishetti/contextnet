@@ -18,20 +18,6 @@ public interface TriggerInformationStorageInterface<NodeIDType>
 	 */
 	public void createTables();
 	
-	/**
-	 * @param subspaceId
-	 * @param replicaNum
-	 * @param attrName
-	 * @param matchingQueryComponent
-	 * @return
-	 */
-//	public HashMap<Integer, OverlappingInfoClass> 
-//		getOverlappingPartitionsInTriggers(int subspaceId, int replicaNum, String attrName, 
-//			ProcessingQueryComponent matchingQueryComponent);
-	
-//	public void insertIntoTriggerPartitionInfo(int subspaceId, int replicaNum, String attrName, 
-//			int partitionNum, NodeIDType respNodeId);
-	
 	public void insertIntoSubspaceTriggerDataInfo( int subspaceId, 
 			String userQuery, String groupGUID, String userIP, int userPort, 
 			long expiryTimeFromNow );

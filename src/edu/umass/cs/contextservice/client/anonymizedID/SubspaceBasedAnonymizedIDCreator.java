@@ -192,7 +192,6 @@ public class SubspaceBasedAnonymizedIDCreator
 				}
 			}
 		}
-		
 		ContextServiceLogger.getLogger().fine( "Size of guidToAttributesMap "
 				+guidToAttributesMap.size() );
 		return guidToAttributesMap;
@@ -521,7 +520,6 @@ public class SubspaceBasedAnonymizedIDCreator
 		}
 		return inUnuion;
 	}
-	
 	
 	private void printGuidToAttributesMap( HashMap<String, 
 			List<String>> guidToAttributesMap )

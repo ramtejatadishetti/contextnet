@@ -33,6 +33,9 @@ import edu.umass.cs.gnsclient.client.util.GuidUtils;
 
 public class SubspaceBasedCSTransform
 {
+	// this file may need to be re-written if we develop
+	// subspace based privacy scheme, compared to hyperspace based privacy scheme now.
+	
 //	private final ExecutorService exectutorService;
 //	
 //	public SubspaceBasedCSTransform(ExecutorService exectutorService)

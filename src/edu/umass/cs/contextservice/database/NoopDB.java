@@ -22,14 +22,6 @@ public class NoopDB<NodeIDType> extends AbstractDB<NodeIDType>
 	{
 		return null;
 	}
-
-//	@Override
-//	public HashMap<Integer, OverlappingInfoClass> getOverlappingPartitionsInTriggers
-//		(int subspaceId, int replicaNum, String attrName, 
-//				ProcessingQueryComponent matchingQueryComponent) 
-//	{
-//		return null;
-//	}
 	
 	@Override
 	public int processSearchQueryInSubspaceRegion
@@ -50,13 +42,6 @@ public class NoopDB<NodeIDType> extends AbstractDB<NodeIDType>
 	{	
 	}
 
-//	@Override
-//	public void insertIntoTriggerPartitionInfo(int subspaceId, int replicaNum, 
-//			String attrName, int partitionNum,
-//			NodeIDType respNodeId) 
-//	{	
-//	}
-
 	@Override
 	public JSONObject getGUIDStoredInPrimarySubspace(String guid) 
 	{
@@ -64,14 +49,14 @@ public class NoopDB<NodeIDType> extends AbstractDB<NodeIDType>
 	}
 
 	@Override
-	public void insertIntoSubspaceTriggerDataInfo(int subspaceId, int replicaNum, String attrName, String userQuery,
+	public void insertIntoSubspaceTriggerDataInfo(int subspaceId, String userQuery,
 			String groupGUID, String userIP, int userPort, long expiryTimeFromNow) 
 	{
 	}
 
 	@Override
-	public int deleteExpiredSearchQueries(int subspaceId) {
-		// TODO Auto-generated method stub
+	public int deleteExpiredSearchQueries(int subspaceId) 
+	{
 		return 0;
 	}
 
@@ -103,8 +88,7 @@ public class NoopDB<NodeIDType> extends AbstractDB<NodeIDType>
 	public void getTriggerDataInfo(int subspaceId, JSONObject oldValJSON, JSONObject newJSONToWrite,
 			HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap,
 			HashMap<String, GroupGUIDInfoClass> newValGroupGUIDMap, int requestType, JSONObject newUnsetAttrs,
-			boolean firstTimeInsert) throws InterruptedException {
-		// TODO Auto-generated method stub
-		
+			boolean firstTimeInsert) throws InterruptedException 
+	{	
 	}
 }

@@ -34,42 +34,16 @@ public class QueryAllMySQLDB<NodeIDType>
 	// maximum query length of 1000bytes
 	public static final int MAX_QUERY_LENGTH						= 1000;
 	
-	//public static final String userQuery = "userQuery";
 	public static final String groupGUID 							= "groupGUID";
 	public static final String userIP 								= "userIP";
 	public static final String userPort 							= "userPort";
 	
-	//public static final String anonymizedIDToGUIDMappingColName     = "anonymizedIDToGUIDMapping";
-	
 	private final DataSource<NodeIDType> mysqlDataSource;
-	
-	//private final GUIDAttributeStorageInterface<NodeIDType> guidAttributesStorage;
-	//private  TriggerInformationStorageInterface<NodeIDType> triggerInformationStorage;
 	
 	public QueryAllMySQLDB( NodeIDType myNodeID )
 			throws Exception
 	{
 		this.mysqlDataSource = new DataSource<NodeIDType>(myNodeID);
-		
-//		guidAttributesStorage = new GUIDAttributeStorage<NodeIDType>
-//							(myNodeID, subspaceInfoMap , mysqlDataSource);
-		
-//		if( ContextServiceConfig.TRIGGER_ENABLED )
-//		{
-//			// Currently it is assumed that there are only conjunctive queries
-//			// DNF form queries can be added by inserting its multiple conjunctive 
-//			// components.
-//			ContextServiceLogger.getLogger().fine( "HyperspaceMySQLDB "
-//					+ " TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED );
-//			triggerInformationStorage = new TriggerInformationStorage<NodeIDType>
-//											(myNodeID, subspaceInfoMap , mysqlDataSource);
-//		}
-		
-//		if( ContextServiceConfig.PRIVACY_ENABLED )
-//		{
-//			privacyInformationStorage = new PrivacyInformationStorage<NodeIDType>
-//										(subspaceInfoMap, mysqlDataSource);
-//		}
 		createTables();
 	}
 	

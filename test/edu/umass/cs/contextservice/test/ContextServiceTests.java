@@ -45,7 +45,11 @@ public class ContextServiceTests
 		kpg = KeyPairGenerator.getInstance("RSA");
 		// context service config to use.
 		ContextServiceConfig.configFileDirectory 
-			= "/home/adipc/Documents/MobilityFirstGitHub/ContextNet/contextnet/conf/testConf/contextServiceConf"; 
+			= "conf/testConf/contextServiceConf"; 
+		
+//		new Thread(new ClientConnectionTest()).start();
+//		
+//		Thread.sleep(20000);
 		
 		// start context service.
 		startFourNodeSetup();
@@ -59,6 +63,26 @@ public class ContextServiceTests
 		
 		System.out.println("ContextServiceClient connected");
 	}
+	
+//	public static class ClientConnectionTest implements Runnable
+//	{
+//		@Override
+//		public void run() {
+//			// TODO Auto-generated method stub
+//			// make a client connection
+//			String csNodeIp = "127.0.0.1";
+//			int csPort = 8000;
+//			
+//			try {
+//				csClient = new ContextServiceClient<Integer>(csNodeIp, csPort, 
+//						ContextServiceClient.HYPERSPACE_BASED_CS_TRANSFORM);
+//			} catch (NoSuchAlgorithmException | IOException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//		}
+//		
+//	}
 	
 	@Test
 	public void test_1_emptyQueryTest() 
@@ -83,7 +107,6 @@ public class ContextServiceTests
 		// these tests require full search replies to be sent.
 		assert( ContextServiceConfig.sendFullReplies );
 		
-		Random rand = new Random();
 		for(int i=0; i<100; i++)
 		{
 			String realAlias = memberAliasPrefix+i;

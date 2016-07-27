@@ -16,7 +16,6 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.ContextServiceProtocolTask;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
-import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.BasicContextServicePacket;
 import edu.umass.cs.contextservice.messages.ContextServicePacket;
@@ -57,8 +56,6 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 	
 	// lock for synchronizing number of msg update
 	protected long numMessagesInSystem													= 0;
-	
-	//protected  DatagramSocket client_socket;
 	
 	public static final Logger log = ContextServiceLogger.getLogger();
 	
@@ -115,21 +112,6 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 	public JSONMessenger<NodeIDType> getJSONMessenger()
 	{
 		return messenger;
-	}
-	
-	/**
-	 * java has issues converting LisnkedList.toArray(), that's why this function
-	 * @return
-	 */
-	public GenericMessagingTask<NodeIDType, ?>[] convertLinkedListToArray(LinkedList<?> givenList)
-	{
-		@SuppressWarnings("unchecked")
-		GenericMessagingTask<NodeIDType, ?>[] array = new GenericMessagingTask[givenList.size()];
-		for(int i=0;i<givenList.size();i++)
-		{
-			array[i] = (GenericMessagingTask<NodeIDType, ?>) givenList.get(i);
-		}
-		return array;
 	}
 	
 	@Override

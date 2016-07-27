@@ -98,9 +98,4 @@ public class SubspaceInfo<NodeIDType>
 		}
 		return false;
 	}
-	
-//	public int getKeyOfHashMap()
-//	{
-//		return this.keyForMap;
-//	}
 }

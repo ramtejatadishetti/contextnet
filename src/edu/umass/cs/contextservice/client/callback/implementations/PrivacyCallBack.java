@@ -10,11 +10,8 @@ public class PrivacyCallBack implements CallBackInterface
 	// key is the privacy req requesID,  value is the 
 	// anonymized ID update tracker.
 	
-	//private ConcurrentHashMap<Long, PrivacyUpdateReplyTracker> requestIDMap;
-	
 	public PrivacyCallBack()
 	{
-		//requestIDMap = new ConcurrentHashMap<Long, PrivacyUpdateReplyTracker>();
 	}
 	
 	@Override
@@ -36,19 +33,5 @@ public class PrivacyCallBack implements CallBackInterface
 		// user call back to signal privacy update completion 
 		// to the user/application.
 		((PrivacyUpdateReply)updateRep).incrementReplies();
-		
-//		if( compl )
-//		{
-//			requestIDMap.remove(updateRep.getCallerReqId());
-//		}
 	}
-	
-	/**
-	 * @param contextServiceReqID
-	 */
-//	public void addUpdateReply( long privacyReqID,
-//			PrivacyUpdateReplyTracker replyTracker )
-//	{
-//		requestIDMap.put(privacyReqID, replyTracker);
-//	}
 }

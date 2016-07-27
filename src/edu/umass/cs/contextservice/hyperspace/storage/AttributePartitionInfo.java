@@ -90,9 +90,4 @@ public class AttributePartitionInfo
 	{
 		return this.triggerDomainParitionInfo;
 	}
-	
-//	public String getDefaultValue()
-//	{
-//		return this.partitionDefaultValue;
-//	}
 }

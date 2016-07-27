@@ -25,7 +25,6 @@ import edu.umass.cs.contextservice.messages.GetMessage;
 import edu.umass.cs.contextservice.messages.GetReplyMessage;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUser;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
-import edu.umass.cs.contextservice.messages.RefreshTrigger;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
 import edu.umass.cs.contextservice.queryparsing.GeoJSON;
@@ -151,10 +150,6 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 		
 		private CSNodeConfig<Integer> localNodeConfig							= null;
 		
-		private final Object replyWaitMonitor									= new Object();
-			
-		public static String writerName;
-		
 		public static int requestID 											= 0;
 		
 		private final int myID;
@@ -162,7 +157,6 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 		public static void startRequests() throws Exception
 		{
 			System.out.println("Starting requests");
-			writerName = "writer1";
 			
 			RequestClass basicObj = new RequestClass();
 			sendAMessage(basicObj, UPDATE);
@@ -280,7 +274,6 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 			String memberAlias = CLIENT_GUID_PREFIX+myID;
 			String realAlias = memberAlias+guidNum;
 			String myGUID = getSHA1(realAlias);
-			Random valRand = new Random();
 			//double latitude = (valRand.nextDouble()-0.5)*180;
 			//double longitude = (valRand.nextDouble()-0.5)*360;
 			String latitude  = "";
@@ -353,12 +346,6 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 			}
 		}
 		
-		public void stopThis()
-		{
-			this.niot.stop();
-			this.messenger.stop();
-		}
-		
 		public void handleUpdateReply(JSONObject jso)
 		{
 			ValueUpdateFromGNSReply<Integer> vur;
@@ -404,23 +391,6 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 //				}
 				System.out.println("Search query completion requestID "+reqID+" time "+System.currentTimeMillis()+
 						" replySize "+resultSize);
-			} catch (JSONException e)
-			{
-				e.printStackTrace();
-			}
-		}
-		
-		private void handleRefreshTrigger(JSONObject jso)
-		{
-			try
-			{
-				RefreshTrigger<Integer> qmur;
-				qmur = new RefreshTrigger<Integer>(jso);
-				
-				long reqID = qmur.getVersionNum();
-				
-			
-				System.out.println("RefreshTrigger completion requestID "+reqID+" time "+System.currentTimeMillis());
 			} catch (JSONException e)
 			{
 				e.printStackTrace();

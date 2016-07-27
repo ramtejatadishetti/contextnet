@@ -1231,41 +1231,18 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     		while( colIter.hasNext() )
     		{
     			String colName = colIter.next();
-    			// at least one replica and all replica have same default value for each attribute.
-//    			SubspaceInfo<NodeIDType> currSubspaceInfo 
-//    										= subspaceInfoMap.get(subspaceId).get(0);
-//    			HashMap<String, AttributePartitionInfo> attrSubspaceMap 
-//    										= currSubspaceInfo.getAttributesOfSubspace();
-//    			
-//    			Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
-    			
-//    			while( attrIter.hasNext() )
-    			{
-//    				String currAttrName = attrIter.next();
-    				if(first)
-    	            {
-    	                insertQuery = insertQuery + colName;
-    	                first = false;
-    	            }
-    	            else
-    	            {
-    	                insertQuery = insertQuery +", "+colName;
-    	            }
-    			}
+//    			String currAttrName = attrIter.next();
+				if(first)
+	            {
+	                insertQuery = insertQuery + colName;
+	                first = false;
+	            }
+	            else
+	            {
+	                insertQuery = insertQuery +", "+colName;
+	            }
     		}
-    		
     		insertQuery = insertQuery + ", nodeGUID) " + "VALUES"+ "(";
-    		
-//    		if( anonymizedIDToGuidMapping != null )
-//    		{
-//    			insertQuery = insertQuery + " , nodeGUID , "
-//    						+ HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName
-//    						+ " ) " + "VALUES"+ "( ";
-//    		}
-//    		else
-//    		{
-//    			insertQuery = insertQuery + ", nodeGUID) " + "VALUES"+ "(";
-//    		}
     		
     		first = true;
     		colIter = toWriteJSON.keys();
@@ -1275,67 +1252,41 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     		{
     			String colName = colIter.next();
     			// at least one replica and all replica have same default value for each attribute.
-//    			SubspaceInfo<NodeIDType> currSubspaceInfo 
-//    										= subspaceInfoMap.get(subspaceId).get(0);
-//    			HashMap<String, AttributePartitionInfo> attrSubspaceMap 
-//    										= currSubspaceInfo.getAttributesOfSubspace();
-//    			
-//    			Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
     			
-//    			while( attrIter.hasNext() )
-    			{
-    				String colValue = "";
+				String colValue = "";
+				
+				if(colName.equals(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName))
+				{
+					String jsonArrString = toWriteJSON.getString(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName);
+					assert(jsonArrString != null);
+					colValue = "'"+jsonArrString+"'";
+				}
+				else
+				{
+					colValue = toWriteJSON.getString(colName);
     				
-    				if(colName.equals(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName))
-    				{
-    					String jsonArrString = toWriteJSON.getString(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName);
-    					assert(jsonArrString != null);
-    					colValue = "'"+jsonArrString+"'";
-    				}
-    				else
-    				{
-    					colValue = toWriteJSON.getString(colName);
-        				
-        				AttributeMetaInfo attrMetaInfo 
-        							= AttributeTypes.attributeMap.get(colName);
-        				assert(attrMetaInfo != null);
-        			    String dataType = attrMetaInfo.getDataType();
-        				
-        			    colValue = AttributeTypes.convertStringToDataTypeForMySQL
-        						(colValue, dataType)+"";
-    				}
-    			    
-    				if(first)
-    	            {
-    					insertQuery = insertQuery + colValue;
-    	                first = false;
-    	            }
-    	            else
-    	            {
-    	            	insertQuery = insertQuery +" , "+colValue;
-    	            }
-    			}
+    				AttributeMetaInfo attrMetaInfo 
+    							= AttributeTypes.attributeMap.get(colName);
+    				assert(attrMetaInfo != null);
+    			    String dataType = attrMetaInfo.getDataType();
+    				
+    			    colValue = AttributeTypes.convertStringToDataTypeForMySQL
+    						(colValue, dataType)+"";
+				}
+			    
+				if(first)
+	            {
+					insertQuery = insertQuery + colValue;
+	                first = false;
+	            }
+	            else
+	            {
+	            	insertQuery = insertQuery +" , "+colValue;
+	            }
     		}
     		long end1 = System.currentTimeMillis();
-    		
     		insertQuery = insertQuery +" , X'"+nodeGUID+"' )";
     		
-//    		if( anonymizedIDToGuidMapping != null )
-//    		{
-//    			long start = System.currentTimeMillis();
-//    			String jsonToString =anonymizedIDToGuidMapping.toString();
-////    			if( ContextServiceConfig.DEBUG_MODE )
-////    			{
-////    				System.out.println("TIME_DEBUG: jsonToString time "
-////    									+(System.currentTimeMillis()-start));
-////    			}
-//    			insertQuery = insertQuery +" , X'"+nodeGUID+"' , '"
-//    								+jsonToString+"' )";    			
-//    		}
-//    		else
-//    		{
-//    			insertQuery = insertQuery +" , X'"+nodeGUID+"' )";
-//    		}
     		long end2 = System.currentTimeMillis();
     		
     		
@@ -1542,17 +1493,6 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
     		
     		insertQuery = insertQuery + ", nodeGUID) " + "VALUES"+ "(";
     		
-//    		if( anonymizedIDToGuidMapping != null )
-//    		{
-//    			insertQuery = insertQuery + " , nodeGUID , "
-//    						+ HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName
-//    						+ " ) " + "VALUES"+ "( ";
-//    		}
-//    		else
-//    		{
-//    			insertQuery = insertQuery + ", nodeGUID) " + "VALUES"+ "(";
-//    		}
-    		
     		first = true;
     		colIter = jsonToWrite.keys();
     		
@@ -1607,17 +1547,8 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	            }
 			}
     		
-			insertQuery = insertQuery +" , X'"+nodeGUID+"' )";
-			
-//			if( anonymizedIDToGuidMapping != null )
-//			{
-//				insertQuery = insertQuery +" , X'"+nodeGUID+"' , '"
-//								+anonymizedIDToGuidMapping.toString()+"' )";
-//			}
-//			else
-//			{
-//				insertQuery = insertQuery +" , X'"+nodeGUID+"' )";
-//			}
+			insertQuery = insertQuery +" , X'"+nodeGUID+"' )";			
+
     		
     		myConn = this.dataSource.getConnection();
             stmt = myConn.createStatement();  
@@ -1688,26 +1619,6 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType
 						+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
 						+" , INDEX USING BTREE("+attrName+")";
-				
-				// FIXME: to be removed later on
-//				if( ContextServiceConfig.PRIVACY_ENABLED )
-//				{
-//					//ACL<attrName> is ACL info for each attribute needed in privacy scheme.
-//					// not sure if BLOB is right datatype. ALso not sure if this is most optimized way to do this.
-//					// ACL info can be very large, CS can parse each element of JSONArray and store it row wise in a separate table.
-//					// but that will require CS parsing, which is not needed for CS for any other purpose and 
-//					// another drawback is after result Anonymized IDs are computed then there is another database 
-//					// lookup to fetch ACL info of all those Anonymized IDs.
-//					// So doing it like this now and see the performance.
-//					// Benefit of this approach is that everything can be selected in one select query.
-//					
-//					newTableCommand 
-//						= newTableCommand + ", "+attrName+" "+mySQLDataType+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
-//						+" , INDEX USING BTREE("+attrName+") , ACL"+attrName+" BLOB";
-//				}
-//				else
-//				{
-//				}
 			}
 		}
 		return newTableCommand;
@@ -1720,42 +1631,6 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				+" TEXT";
 		
 		return newTableCommand;
-		/*Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
-		while( subapceIdIter.hasNext() )
-		{
-			int subspaceId = subapceIdIter.next();
-			// at least one replica and all replica have same default value for each attribute.
-			SubspaceInfo<NodeIDType> currSubspaceInfo = subspaceInfoMap.get(subspaceId).get(0);
-			HashMap<String, AttributePartitionInfo> attrSubspaceMap 
-													= currSubspaceInfo.getAttributesOfSubspace();
-			
-			Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
-			while( attrIter.hasNext() )
-			{
-				String attrName = attrIter.next();
-				//AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
-				//AttributeMetaInfo attrMetaInfo = attrPartInfo.getAttrMetaInfo();
-				//String dataType = attrMetaInfo.getDataType();
-				//String defaultVal = attrPartInfo.getDefaultValue();
-				//String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
-				
-				
-//				newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType
-//						+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL
-//				(defaultVal, dataType)
-//						+" , INDEX USING BTREE("+attrName+")";
-				
-				if( ContextServiceConfig.PRIVACY_ENABLED )
-				{
-					// ACL<attrName> is ACL info for each attribute needed in privacy scheme.
-					// using TEXT datatype and will check how much performance of getGUIDFromPrimarySubspace 
-					// is affected.
-					// not sure if TEXT is right datatype. ALso not sure if this is most optimized way to do 
-					// this this column stores JSONArray are String.
-					newTableCommand = newTableCommand + " , ACL"+attrName+" TEXT";
-				}
-			}
-		}*/
 	}
 	
 	/**
@@ -1780,280 +1655,4 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		}
 		return isFun;
 	}
-	
-	/*private String getPrivacyStorageString( String newTableCommand )
-	{
-		Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
-		while( subapceIdIter.hasNext() )
-		{
-			int subspaceId = subapceIdIter.next();
-			// at least one replica and all replica have same default value for each attribute.
-			SubspaceInfo<NodeIDType> currSubspaceInfo = subspaceInfoMap.get(subspaceId).get(0);
-			HashMap<String, AttributePartitionInfo> attrSubspaceMap 
-													= currSubspaceInfo.getAttributesOfSubspace();
-			
-			Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
-			
-			while( attrIter.hasNext() )
-			{
-				String attrName = attrIter.next();
-				//AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
-				//AttributeMetaInfo attrMetaInfo = attrPartInfo.getAttrMetaInfo();
-				//String dataType = attrMetaInfo.getDataType();
-				//String defaultVal = attrPartInfo.getDefaultValue();
-				//String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
-				
-				
-//				newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType
-//						+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL
-//				(defaultVal, dataType)
-//						+" , INDEX USING BTREE("+attrName+")";
-				
-				if( ContextServiceConfig.PRIVACY_ENABLED )
-				{
-					//ACL<attrName> is ACL info for each attribute needed in privacy scheme.
-					// using TEXT datatype and will check how much performance of getGUIDFromPrimarySubspace is affected.
-					// not sure if TEXT is right datatype. ALso not sure if this is most optimized way to do this.
-					// this column stores JSONArray are String.
-					
-					newTableCommand = newTableCommand + " , ACL"+attrName+" TEXT";
-				}
-			}
-		}
-		return newTableCommand;
-	}*/
-	
-	// Old storeGUIDInSubpace will be removed after overhaul of storeGUIDInSubspace fun
-	/**
-     * Stores GUID in a subspace. The decision to store a guid on this node
-     * in this subspace is not made in this function.
-     * @param subspaceNum
-     * @param nodeGUID
-     * @param attrValuePairs
-     * @return
-     * @throws JSONException
-     */
-//    public void storeGUIDInSubspace(String tableName, String nodeGUID, 
-//    		HashMap<String, AttrValueRepresentationJSON> atrToValueRep, int updateOrInsert
-//    		, JSONObject oldValJSON ) throws JSONException
-//    {
-//    	ContextServiceLogger.getLogger().fine("storeGUIDInSubspace "+tableName+" nodeGUID "+nodeGUID+
-//    			" updateOrInsert "+updateOrInsert);
-//    	
-//        long t0 = System.currentTimeMillis();
-//        Connection myConn      = null;
-//        Statement stmt         = null;
-//        
-//        String updateSqlQuery     	= "UPDATE "+tableName
-//                + " SET ";
-//       
-//        // delayed insert performs better than just insert
-//        String insertQuery         = "INSERT INTO "+tableName+ " (";
-//        
-//        //JSONObject oldValueJSON = new JSONObject();
-//        try
-//        {
-//        	Iterator<String> attrNameIter = atrToValueRep.keySet().iterator();
-//        	int i=0;
-//	        while( attrNameIter.hasNext() )
-//	        {
-//	            String attrName = attrNameIter.next();  
-//	            AttrValueRepresentationJSON attrValRep 
-//	            		= atrToValueRep.get(attrName);
-//	            
-//	            String newVal   = attrValRep.getActualAttrValue();
-//	            
-//	            AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-//				assert(attrMetaInfo != null);
-//	            String dataType = attrMetaInfo.getDataType();
-//				
-//				newVal = AttributeTypes.convertStringToDataTypeForMySQL
-//						(newVal, dataType)+"";	
-//				
-//	            //oldValueJSON.put(attrName, AttributeTypes.NOT_SET);
-//	           
-//	            if(i == 0)
-//	            {
-//	                //selectQuery = selectQuery + attrName;
-//	                updateSqlQuery = updateSqlQuery + attrName +" = "+newVal;
-//	                insertQuery = insertQuery + attrName;
-//	            }
-//	            else
-//	            {
-//	                //selectQuery = selectQuery + ", "+attrName+" ";
-//	                updateSqlQuery = updateSqlQuery +" , "+ attrName +" = "+newVal;
-//	                insertQuery = insertQuery +", "+attrName;
-//	            }
-//	            i++;
-//	        }
-//	        
-//	        //selectQuery = selectQuery + " FROM "+tableName+" WHERE nodeGUID = '"+nodeGUID+"'";
-//	        updateSqlQuery = updateSqlQuery + " WHERE nodeGUID = X'"+nodeGUID+"'";
-//	        insertQuery = insertQuery + ", nodeGUID) " + "VALUES"+ "(";
-//            //+ ",'"+nodeGUID+"' )
-//	        //double oldValue = Double.MIN_VALUE;
-//	        
-//	        
-//            i = 0;
-//            //try insert, if fails then update
-//            attrNameIter = atrToValueRep.keySet().iterator();
-//            while( attrNameIter.hasNext() )
-//            {
-//                String attrName = attrNameIter.next();
-//                AttrValueRepresentationJSON attrValRep 
-//        							= atrToValueRep.get(attrName);
-//                
-//                String newValue = attrValRep.getActualAttrValue();
-//                
-//                AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-//    			
-//                String dataType = attrMetaInfo.getDataType();
-//    			
-//                newValue = AttributeTypes.convertStringToDataTypeForMySQL
-//    					(newValue, dataType)+"";
-//               
-//                if(i == 0)
-//                {
-//                    insertQuery = insertQuery + newValue;
-//                }
-//                else
-//                {
-//                    insertQuery = insertQuery +" , "+newValue;
-//                }
-//                
-////                if(ContextServiceConfig.PRIVACY_ENABLED &&  
-////                		(attrValRep.getRealIDMappingInfo() != null) )
-////                {
-////                	JSONArray encryptedRealIDArray = attrValRep.getRealIDMappingInfo();
-////                	
-////            		if( encryptedRealIDArray.length() > 0 )
-////            		{
-////            			String hexRep 
-////            				= Utils.bytArrayToHex( encryptedRealIDArray.toString().getBytes() );
-////            			// now add it in the query    	                
-////    	                insertQuery = insertQuery +" , X'"+hexRep+"'";
-////            		}
-////                }    
-//                i++;
-//            }
-//            insertQuery = insertQuery +" , X'"+nodeGUID+"' )";
-//            
-//            myConn = this.dataSource.getConnection();
-//            stmt = myConn.createStatement();   
-//            
-//            if( updateOrInsert == HyperspaceMySQLDB.UPDATE_REC )
-//            {
-//            	// if update fails then insert
-//            	try
-//                {
-//            		//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE "+updateSqlQuery);
-//            		long start   = System.currentTimeMillis();
-//                	int rowCount = stmt.executeUpdate(updateSqlQuery);
-//                	long end     = System.currentTimeMillis();
-//                	
-//                	if(ContextServiceConfig.DEBUG_MODE)
-//                	{
-//                		System.out.println("TIME_DEBUG: storeGUIDInSubspace update "+(end-start));
-//                	}
-//                	
-//                	//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE rowCount "+rowCount);
-//                	// update failed try insert
-//                	if(rowCount == 0)
-//                	{
-//                		//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE EXCP "+insertQuery);
-//                		start   = System.currentTimeMillis();
-//                		rowCount = stmt.executeUpdate(insertQuery);
-//                		end     = System.currentTimeMillis();
-//                		
-//                		if(ContextServiceConfig.DEBUG_MODE)
-//                    	{
-//                    		System.out.println("TIME_DEBUG: storeGUIDInSubspace insert "+(end-start));
-//                    	}
-//                		//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE EXCP rowCount "+rowCount);
-//                	}
-//                } catch(SQLException sqlEx)
-//                {
-//                	try
-//                	{
-//	                	//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE EXCP "+insertQuery);
-//                		long start   = System.currentTimeMillis();
-//                		int rowCount = stmt.executeUpdate(insertQuery);
-//                		long end     = System.currentTimeMillis();
-//                		if(ContextServiceConfig.DEBUG_MODE)
-//                    	{
-//                    		System.out.println("TIME_DEBUG: storeGUIDInSubspace insert "+(end-start));
-//                    	}
-//                		//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE EXCP rowCount "+rowCount);
-//                	}
-//                	// insert failed because of another insert, which caused primary key violation
-//                	catch( SQLException sqlEx2 )
-//                	{
-//                		long start   = System.currentTimeMillis();
-//                		int rowCount = stmt.executeUpdate(updateSqlQuery);
-//                		long end     = System.currentTimeMillis();
-//                		
-//                		if(ContextServiceConfig.DEBUG_MODE)
-//                    	{
-//                    		System.out.println("TIME_DEBUG: storeGUIDInSubspace update "+(end-start));
-//                    	}
-//                	}
-//                }
-//            }
-//            else if(updateOrInsert == HyperspaceMySQLDB.INSERT_REC)
-//            {
-//            	try
-//                {
-//            		ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING INSERT "+insertQuery);
-//            		long start   = System.currentTimeMillis();
-//            		int rowCount = stmt.executeUpdate(insertQuery);
-//            		long end     = System.currentTimeMillis();
-//            		
-//            		if(ContextServiceConfig.DEBUG_MODE)
-//                	{
-//                		System.out.println("TIME_DEBUG: storeGUIDInSubspace insert "+(end-start));
-//                	}
-//            		
-//            		ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING INSERT rowCount "+rowCount+" insertQuery "+insertQuery);
-//            		// duplicate insert always gives exception so no need to check rowCount and do update
-//            		// it happends in exception code
-//                } catch( SQLException sqlEx )
-//                {
-//                	// ContextServiceLogger.getLogger().fine("EXECUTING INSERT "+updateSqlQuery);
-//                	long start   = System.currentTimeMillis();
-//                	int rowCount = stmt.executeUpdate(updateSqlQuery);
-//                	long end     = System.currentTimeMillis();
-//                	
-//                	if(ContextServiceConfig.DEBUG_MODE)
-//                	{
-//                		System.out.println("TIME_DEBUG: storeGUIDInSubspace update "+(end-start));
-//                	}
-//                	// ContextServiceLogger.getLogger().fine("EXECUTING INSERT rowCount "+rowCount);
-//                }
-//            }
-//            // execute insert SQL statement
-//            // statement.executeUpdate(sqlQuery);
-//        } catch ( Exception  | Error ex )
-//        {
-//            ex.printStackTrace();
-//        } finally
-//        {
-//            try
-//            {
-//                if ( stmt != null )
-//                    stmt.close();
-//                
-//                if ( myConn != null )
-//                    myConn.close();
-//            }
-//            catch(SQLException e)
-//            {
-//            	e.printStackTrace();
-//            }
-//        }
-//        
-//        if( ContextServiceConfig.DELAY_PROFILER_ON )
-//        {
-//            DelayProfiler.updateDelay("StoreGUIDInSubspace", t0);
-//        }
-//    }
 }

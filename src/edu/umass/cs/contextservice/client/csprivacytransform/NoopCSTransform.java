@@ -37,10 +37,4 @@ public class NoopCSTransform implements CSPrivacyTransformInterface
 			replyArray.put(csTransformedList.get(i).getSearchGUIDObj().getID());
 		}
 	}
-
-//	@Override
-//	public List<String> transformSearchQueryForCSPrivacy(String userSearchQuery,
-//			HashMap<Integer, JSONArray> subspaceAttrMap) {
-//		return null;
-//	}
 }

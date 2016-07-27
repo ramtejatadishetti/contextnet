@@ -56,9 +56,6 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		GET_MESSAGE(11),
 		GET_REPLY_MESSAGE(12),
 		VALUEUPDATE_TO_SUBSPACE_REGION_REPLY_MESSAGE(13),
-		QUERY_TRIGGER_MESSAGE(14),
-		UPDATE_TRIGGER_MESSAGE(15),
-		UPDATE_TRIGGER_REPLY_MESSAGE(16),
 		CONFIG_REQUEST(17),
 		CONFIG_REPLY(18),
 		ACLUPDATE_TO_SUBSPACE_REGION_MESSAGE(19),
@@ -117,12 +114,6 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		typeMap.put(ContextServicePacket.PacketType.GET_REPLY_MESSAGE, GetReplyMessage.class);
 		typeMap.put(ContextServicePacket.PacketType.VALUEUPDATE_TO_SUBSPACE_REGION_REPLY_MESSAGE,
 				ValueUpdateToSubspaceRegionReplyMessage.class);
-		typeMap.put(ContextServicePacket.PacketType.QUERY_TRIGGER_MESSAGE,
-				QueryTriggerMessage.class);
-		typeMap.put(ContextServicePacket.PacketType.UPDATE_TRIGGER_MESSAGE,
-				UpdateTriggerMessage.class);
-		typeMap.put(ContextServicePacket.PacketType.UPDATE_TRIGGER_REPLY_MESSAGE,
-				UpdateTriggerReply.class);
 		typeMap.put(ContextServicePacket.PacketType.REFRESH_TRIGGER,
 				RefreshTrigger.class);
 		typeMap.put(ContextServicePacket.PacketType.CONFIG_REQUEST,

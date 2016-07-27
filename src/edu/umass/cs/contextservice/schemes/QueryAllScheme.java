@@ -75,27 +75,6 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		queryAllDB = new QueryAllMySQLDB<NodeIDType>(this.getMyID());
 		
 		ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
-		
-		
-//		guidAttrValProcessing = new GUIDAttrValueProcessing<NodeIDType>(
-//				this.getMyID(), subspaceConfigurator.getSubspaceInfoMap(), 
-//				hyperspaceDB, messenger , nodeES ,
-//				pendingQueryRequests );
-		
-//		if( ContextServiceConfig.PRIVACY_ENABLED )
-//		{
-//			privacyProcesing = new PrivacyProcessing<NodeIDType>( this.getMyID() , 
-//					hyperspaceDB ,  messenger );
-//		}
-		
-//		if( ContextServiceConfig.TRIGGER_ENABLED )
-//		{
-//			triggerProcessing = new TriggerProcessing<NodeIDType>(this.getMyID(), 
-//				subspaceConfigurator.getSubspaceInfoMap(), hyperspaceDB, messenger);
-//		}
-		//ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
-		//nodeES = Executors.newCachedThreadPool();
-		//new Thread(new ProfilerStatClass()).start();
 	}
 	
 	//TODO not sure what is the overhead of synchronizig exectutor service
@@ -858,24 +837,6 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 					}
 					
 					case VALUEUPDATE_TO_SUBSPACE_REGION_REPLY_MESSAGE:
-					{
-						assert(false);
-						break;
-					}
-					
-					case QUERY_TRIGGER_MESSAGE:
-					{
-						assert(false);
-						break;
-					}
-					
-					case UPDATE_TRIGGER_MESSAGE:
-					{
-						assert(false);
-						break;
-					}
-					
-					case UPDATE_TRIGGER_REPLY_MESSAGE:
 					{
 						assert(false);
 						break;

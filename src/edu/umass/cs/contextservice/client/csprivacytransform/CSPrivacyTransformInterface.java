@@ -41,8 +41,6 @@ public interface CSPrivacyTransformInterface
 	 * @param subspaceAttrMap
 	 * @return
 	 */
-//	public List<String> transformSearchQueryForCSPrivacy( String userSearchQuery, 
-//			HashMap<Integer, JSONArray> subspaceAttrMap );
 
 	/**
 	 * untransforms the result of anonymized IDs obtained in a search reply.

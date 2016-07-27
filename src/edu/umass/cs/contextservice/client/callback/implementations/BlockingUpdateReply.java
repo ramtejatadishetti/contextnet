@@ -6,7 +6,6 @@ public class BlockingUpdateReply implements UpdateReplyInterface
 {
 	private final long callerReqID;
 	
-	
 	private final Object lock 	= new Object();
 	private boolean completion 	= false;
 	

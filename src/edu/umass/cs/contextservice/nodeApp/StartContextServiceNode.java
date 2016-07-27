@@ -138,7 +138,8 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 			myObj = new StartContextServiceNode(myID, csNodeConfig);
 			new Thread(new NumMessagesPerSec(myObj)).start();
 			
-			System.out.print("##################### StartContextServiceNode complete ###############");
+			System.out.println("############# StartContextServiceNode ID "+myID+" completed. "+
+					csNodeConfig.getNodes().size() +"total. ############");
 		}
 		catch(Exception ex)
 		{

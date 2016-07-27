@@ -38,7 +38,6 @@ public class QueryInfo<NodeIDType>
 	private long expiryTime;
 	
 	
-	//private final AbstractScheme<NodeIDType> scheme;
 	// stores the parsed query components
 	public Vector<QueryComponent> queryComponents;
 	
@@ -48,7 +47,6 @@ public class QueryInfo<NodeIDType>
 	// Hash map indexed by componentId, and Vector<String> stores 
 	// the GUIDs
 	public HashMap<Integer, LinkedList<String>> componentReplies;
-	//public HashMap<Integer, JSONArray> componentReplies;
 	
 	private JSONArray hyperdexResultArray;
 	
@@ -68,12 +66,9 @@ public class QueryInfo<NodeIDType>
 	{
 		this.searchQuery = query;
 		this.sourceNodeId = sourceNodeId;
-		//this.requestId = requestID;
 		this.groupGUID = grpGUID;
 		
 		this.componentReplies = new HashMap<Integer, LinkedList<String>>();
-		//this.componentReplies = new HashMap<Integer, JSONArray>();
-		//this.scheme = scheme;
 		this.userReqID = userReqID;
 		this.userIP = userIP;
 		this.userPort = userPort;
@@ -144,11 +139,6 @@ public class QueryInfo<NodeIDType>
 	{
 		return this.userPort;
 	}
-	
-	/*public void setQueryComponents(Vector<QueryComponent> qc)
-	{
-		queryComponents.addAll(qc);
-	}*/
 	
 	public void setQueryRequestID(long requestId)
 	{

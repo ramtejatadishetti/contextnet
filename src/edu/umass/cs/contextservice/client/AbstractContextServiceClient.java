@@ -83,8 +83,10 @@ public abstract class AbstractContextServiceClient<NodeIDType>
 		pendingUpdate = new ConcurrentHashMap<Long, UpdateStorage<NodeIDType>>();
 		pendingGet = new ConcurrentHashMap<Long, GetStorage<NodeIDType>>();
 		
-		rand = new Random
-			(Utils.getActiveInterfaceInetAddresses().get(0).getHostAddress().hashCode());
+//		rand = new Random
+//			(Utils.getActiveInterfaceInetAddresses().get(0).getHostAddress().hashCode());
+		
+		rand = new Random(System.currentTimeMillis());
 		
 		sourcePort = 2000+rand.nextInt(50000);
 		sourceIP =  Utils.getActiveInterfaceInetAddresses().get(0).getHostAddress();

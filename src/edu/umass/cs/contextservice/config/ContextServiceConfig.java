@@ -67,7 +67,7 @@ public class ContextServiceConfig
 	
 	public static boolean DATABASE_SIZE_PRINT						= false;
 	
-	public static final boolean PROFILER_THREAD						= true; 
+	public static final boolean PROFILER_THREAD						= false; 
 	
 	// config files
 	public static String csConfigFileName							= "csConfigFile.txt";
@@ -113,10 +113,10 @@ public class ContextServiceConfig
     // set in conjuction with that. and also the hyperpsace hashing thread pool
     // size should be set greater than that. These things affect system performance a lot.
 	// change back to 214 for experiments.
-	public static final int MYSQL_MAX_CONNECTIONS					= 214;
+	public static final int MYSQL_MAX_CONNECTIONS					= 10;
 	
 	// it is also important to set this at least the size of the database connection pool.
-	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 214;
+	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 10;
 	
 	//public static final int PRIVACY_THREAD_POOL_SIZE				= 214;
 	

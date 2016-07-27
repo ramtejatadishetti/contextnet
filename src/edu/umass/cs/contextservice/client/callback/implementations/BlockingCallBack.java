@@ -8,7 +8,6 @@ public class BlockingCallBack implements CallBackInterface
 {
 	public BlockingCallBack()
 	{
-		
 	}
 	
 	@Override

@@ -261,35 +261,6 @@ public class AttributeTypes
 		}
 		return null;
 	}
-
-	
-//	public static void insertStringToDataTypeForMySQLPrepStmt(String value, String dataType
-//			, PreparedStatement prepStmt, int parameterIndex) throws NumberFormatException, SQLException
-//	{
-//		switch(dataType)
-//		{
-//			case IntType:
-//			{
-//				prepStmt.setInt(parameterIndex, Integer.parseInt(value));
-//				break;
-//			}
-//			case LongType:
-//			{
-//				prepStmt.setLong(parameterIndex, Long.parseLong(value));
-//				break;
-//			}
-//			case DoubleType:
-//			{
-//				prepStmt.setDouble(parameterIndex, Double.parseDouble(value));
-//				break;
-//			}
-//			case StringType:
-//			{
-//				prepStmt.setString(parameterIndex, value);
-//				break;
-//			}
-//		}
-//	}
 	
 	public static Vector<DomainPartitionInfo> partitionDomain(int numPartitions, 
 			String minValue, String maxValue, String dataType)

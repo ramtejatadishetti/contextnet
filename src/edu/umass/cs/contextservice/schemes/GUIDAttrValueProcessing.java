@@ -276,11 +276,6 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		ContextServiceLogger.getLogger().fine("userReqID "+userReqID+" maxMatchingSubspaceNum "
 				+maxMatchingSubspaceId+" matchingQueryComponents "
 				+matchingQueryComponents.size()+" query "+query);
-		/*for(int i=0;i<matchingQueryComponents.size();i++)
-		{
-			ProcessingQueryComponent pqc = matchingQueryComponents.get(i);
-			ContextServiceLogger.getLogger().fine("matching Comp "+pqc.getAttributeName()+" "+pqc.getLowerBound()+" "+pqc.getUpperBound());
-		}*/
 		
 		// get number of nodes/or regions to send to in that subspace.
 		
@@ -323,7 +318,6 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 	    while( respNodeIdIter.hasNext() )
 	    {
 	    	Integer respNodeId = respNodeIdIter.next();
-	    	//OverlappingInfoClass overlapInfo = respNodeIdList.get(respNodeId);
 	    	
 	    	QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion = 
 					new QueryMesgToSubspaceRegion<NodeIDType>
@@ -353,7 +347,6 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 													JSONArray resultGUIDs)
 	{
 		String query 				 = queryMesgToSubspaceRegion.getQuery();
-		//String groupGUID 			 = queryMesgToSubspaceRegion.getGroupGUID();
 		int subspaceId 				 = queryMesgToSubspaceRegion.getSubspaceNum();
 		
 		long sTime = System.currentTimeMillis();
@@ -370,27 +363,6 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 					(System.currentTimeMillis()-sTime));
 		}
 		return resultSize;
-		
-//		QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply = 
-//				new QueryMesgToSubspaceRegionReply<NodeIDType>( myID, 
-//						queryMesgToSubspaceRegion.getRequestId(), 
-//						groupGUID, resultGUIDs, resultSize);
-//		
-//		
-//		
-//		try
-//		{
-//			this.messenger.sendToID(queryMesgToSubspaceRegion.getSender(), queryMesgToSubspaceRegionReply.toJSONObject());
-//		} catch (IOException e)
-//		{
-//			e.printStackTrace();
-//		} catch (JSONException e)
-//		{
-//			e.printStackTrace();
-//		}
-//		
-//		ContextServiceLogger.getLogger().info("Sending queryMesgToSubspaceRegionReply mesg from " 
-//				+ myID +" to node "+queryMesgToSubspaceRegion.getSender());
 	}
 	
 	public void processQueryMesgToSubspaceRegionReply(QueryMesgToSubspaceRegionReply<NodeIDType> 
@@ -880,24 +852,6 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 				System.out.println("processValueUpdateToSubspaceRegionMessage completes "
 						+(now-udpateStartTime));
 			}
-			
-//			ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>  
-//				valueUpdateToSubspaceRegionReplyMessage 
-//				= new ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>(myID, 
-//						valueUpdateToSubspaceRegionMessage.getVersionNum(), numRep, 
-//						valueUpdateToSubspaceRegionMessage.getRequestID(), subspaceId, replicaNum);
-//			
-//			try
-//			{
-//				this.messenger.sendToID(valueUpdateToSubspaceRegionMessage.getSender(), 
-//						valueUpdateToSubspaceRegionReplyMessage.toJSONObject());
-//			} catch (IOException e)
-//			{
-//				e.printStackTrace();
-//			} catch (JSONException e)
-//			{
-//				e.printStackTrace();
-//			}
 		} catch (JSONException e)
 		{
 			e.printStackTrace();
@@ -1008,8 +962,6 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		{
 			try
 			{
-//				hyperspaceDB.insertIntoSubspacePartitionInfo(subspaceId, replicaNum, 
-//						permVector, respNodeId);
 				hyperspaceDB.bulkInsertIntoSubspacePartitionInfo(subspaceId, replicaNum, 
 						permVectorList, respNodeIdList);
 				synchronized(subspacePartitionInsertLock)

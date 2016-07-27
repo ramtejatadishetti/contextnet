@@ -56,11 +56,11 @@ public class SQLDBTesting
 			{
 				stmt.close();
 		        conn.close();        
-		    } catch (SQLException e) 
+		    }
+			catch (SQLException e) 
 			{
 		    	e.printStackTrace();
 		    }
 		}
 	}
-	
 }

@@ -182,6 +182,4 @@ public class CalculateOptimalNumAttrsInSubspace
 			er.printStackTrace();
 		}
 	}
-	
-	
 }

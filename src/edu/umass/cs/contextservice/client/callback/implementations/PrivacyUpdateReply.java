@@ -4,9 +4,7 @@ import edu.umass.cs.contextservice.client.callback.interfaces.CallBackInterface;
 import edu.umass.cs.contextservice.client.callback.interfaces.UpdateReplyInterface;
 
 public class PrivacyUpdateReply implements UpdateReplyInterface
-{
-	//private long callerReqId;
-	
+{	
 	private final UpdateReplyInterface userUpdReplyObj;
 	private final CallBackInterface userCallback;
 	private final int totalAnonymizedIDUpdated;

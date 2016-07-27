@@ -24,8 +24,6 @@ import edu.umass.cs.contextservice.utils.Utils;
 public class OldValueGroupGUIDs<NodeIDType> implements Runnable
 {
 	private int subspaceId;
-	//private int replicaNum;
-	//private String attrName;
 	private JSONObject oldValJSON;
 	private JSONObject updateValJSON;
 	private JSONObject newUnsetAttrs;
@@ -72,20 +70,8 @@ public class OldValueGroupGUIDs<NodeIDType> implements Runnable
 		// but this optimization can be checked later on if number of group guids returned becomes 
 		// an issue later on. 
 		
-		
-		// there is always at least one replica
-		//SubspaceInfo<NodeIDType> currSubInfo = subspaceInfoMap.get(subspaceId).get(replicaNum);
-		
-//		HashMap<String, AttributePartitionInfo> attrSubspaceInfo 
-//												= currSubInfo.getAttributesOfSubspace();
-		
-		//Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
-		//		attrSubspaceInfo.keySet().iterator();
-		// for groups associated with old value
 		try
 		{
-			//boolean first = true;
-			//String selectQuery = "SELECT groupGUID, userIP, userPort FROM "+tableName+" WHERE ";
 			String oldGroupsQuery 
 				= TriggerInformationStorage.getQueryToGetOldValueGroups(oldValJSON, subspaceId);
 			
@@ -98,44 +84,6 @@ public class OldValueGroupGUIDs<NodeIDType> implements Runnable
 				    + " groupGUID IN ( "+oldGroupsQuery+" ) AND groupGUID NOT IN ( "
 					+ newGroupsQuery+" ) ";
 			
-//			while( attrIter.hasNext() )
-//			{
-//				String currAttrName = attrIter.next();
-//				
-//				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(currAttrName);
-//				
-//				String dataType = attrMetaInfo.getDataType();
-//				
-//				String attrValForMysql = "";
-//				
-//				if( oldUnsetAttrs.has(currAttrName) )
-//				{
-//					attrValForMysql = attrMetaInfo.getDefaultValue();
-//				}
-//				else
-//				{
-//					attrValForMysql = AttributeTypes.convertStringToDataTypeForMySQL
-//							(oldValJSON.getString(currAttrName), dataType)+"";
-//				}	
-//				
-//				String lowerValCol = "lower"+currAttrName;
-//				String upperValCol = "upper"+currAttrName;
-//				//FIXME: for circular queries, this won't work.
-//				if( first )
-//				{
-//					// <= and >= both to handle the == case of the default value
-//					selectQuery = selectQuery + lowerValCol+" <= "+attrValForMysql
-//							+" AND "+upperValCol+" >= "+attrValForMysql;
-//					first = false;
-//				}
-//				else
-//				{
-//					selectQuery = selectQuery+" AND "+lowerValCol+" <= "+attrValForMysql
-//							+" AND "+upperValCol+" >= "+attrValForMysql;
-//				}
-//			}
-			
-			//oldValGroupGUIDs = new JSONArray();
 			ContextServiceLogger.getLogger().fine("returnOldValueGroupGUIDs getTriggerInfo "
 												+removedGroupQuery);
 			myConn 	     = dataSource.getConnection();
@@ -144,7 +92,6 @@ public class OldValueGroupGUIDs<NodeIDType> implements Runnable
 			
 			while( rs.next() )
 			{
-				//JSONObject tableRow = new JSONObject();
 				// FIXME: need to replace these with macros
 				byte[] groupGUIDBytes = rs.getBytes("groupGUID");
 				String groupGUIDString = Utils.bytArrayToHex(groupGUIDBytes);
@@ -152,10 +99,6 @@ public class OldValueGroupGUIDs<NodeIDType> implements Runnable
 				String userIPString = InetAddress.getByAddress(ipAddressBytes).getHostAddress();
 				int userPort = rs.getInt("userPort");
 				
-				//tableRow.put( "userQuery", rs.getString("userQuery") );
-//				tableRow.put( "groupGUID", groupGUIDString );
-//				tableRow.put( "userIP", userIPStirng );
-//				tableRow.put( "userPort", rs.getInt("userPort") );
 				GroupGUIDInfoClass groupGUIDInfo = new GroupGUIDInfoClass(
 						groupGUIDString, userIPString, userPort);
 				oldValGroupGUIDMap.put(groupGUIDString, groupGUIDInfo);

@@ -16,16 +16,12 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 
 public class DataSource<NodeIDType>
 {
-	//private final Connection dbConnection;
-	//private final NodeIDType myNodeID;
 	private final HashMap<NodeIDType, SQLNodeInfo> sqlNodeInfoMap;
 	
-    //private static DataSource     datasource;
     private ComboPooledDataSource cpds;
 
     public DataSource(NodeIDType myNodeID) throws IOException, SQLException, PropertyVetoException 
     {
-    	//this.myNodeID = myNodeID;
     	this.sqlNodeInfoMap = new HashMap<NodeIDType, SQLNodeInfo>();
     	readDBNodeSetup();
     	
@@ -154,8 +150,10 @@ public class DataSource<NodeIDType>
 		    String sql = "drop DATABASE "+sqlInfo.databaseName;
 		    stmt.executeUpdate(sql);
 		    
-    	   }catch(SQLException se){
-    	      se.printStackTrace();
+    	   }catch(SQLException se)
+    	   {
+    		  ContextServiceLogger.getLogger().info("Couldn't drop the database "+sqlInfo.databaseName);
+    	      //se.printStackTrace();
     	   }catch(Exception e)
     	{
     	      e.printStackTrace();
@@ -174,19 +172,6 @@ public class DataSource<NodeIDType>
     	       }//end finally try
     	    }//end try
     }
-
-    /*public static DataSource getInstance() throws IOException, SQLException, PropertyVetoException 
-    {
-        if (datasource == null)
-        {
-            datasource = new DataSource();
-            return datasource;
-        } else 
-        {
-            return datasource;
-        }
-    	this;
-    }*/
 
     public Connection getConnection() throws SQLException 
     {
@@ -248,7 +233,6 @@ public class DataSource<NodeIDType>
 		public String databaseName;
 		public String username;
 		public String password;
-		public String arguments;
-		
+		public String arguments;	
 	}
 }

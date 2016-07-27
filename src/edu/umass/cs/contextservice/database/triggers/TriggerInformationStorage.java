@@ -68,10 +68,6 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 				for(int i = 0; i<replicasOfSubspace.size(); i++)
 				{
 					SubspaceInfo<NodeIDType> subInfo = replicasOfSubspace.get(i);
-					
-					//int replicaNum = subInfo.getReplicaNum();
-					
-					//HashMap<String, AttributePartitionInfo> subspaceAttributes = subInfo.getAttributesOfSubspace();
 
 					// currently it is assumed that there are only conjunctive queries
 					// DNF form queries can be added by inserting its multiple conjunctive components.
@@ -146,56 +142,6 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 		
 		newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort), INDEX USING BTREE(expiryTime) )";
 		stmt.executeUpdate(newTableCommand);
-		
-		/*Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
-		while( attrIter.hasNext() )
-		{
-			String attrName = attrIter.next();
-			AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
-			AttributeMetaInfo attrMetaInfo = attrPartInfo.getAttrMetaInfo();
-			String dataType = attrMetaInfo.getDataType();
-			String defaultVal = attrMetaInfo.getDefaultValue();
-			String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
-			
-			// partition info storage info
-			//String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"Attr"+attrName+"TriggerPartitionInfo";
-			
-			//String newTableCommand = "create table "+tableName+" ( hashCode INTEGER PRIMARY KEY , "
-				      + "   respNodeID INTEGER ";
-			
-			//String lowerAttrName = "lower"+attrName;
-			//String upperAttrName = "upper"+attrName;
-			
-//			newTableCommand = newTableCommand + " , "+lowerAttrName+" "+mySQLDataType
-//					+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
-//					+ " , "+upperAttrName+" "+mySQLDataType+" DEFAULT "
-//					+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
-//					+ " , INDEX USING BTREE("+lowerAttrName+" , "+upperAttrName+")";
-			
-//			newTableCommand = newTableCommand +" )";
-//			//ContextServiceLogger.getLogger().fine("newTableCommand "+newTableCommand);
-//			stmt.executeUpdate(newTableCommand);
-			
-			// partition info table is created for every node,
-			// whether or not it is in replica, but data storage table
-			// are only created on data storing nodes.
-			// similar for trigger storage
-			if( !subInfo.checkIfSubspaceHasMyID(myNodeID) )
-			{
-				continue;
-			}
-			
-			// creating separate query storage tables;
-			// creating trigger guid storage
-			tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"Attr"+attrName+"TriggerDataInfo";
-			
-			newTableCommand = "create table "+tableName+" ( groupGUID BINARY(20) NOT NULL , "
-					+ "userIP Binary(4) NOT NULL ,  userPort INTEGER NOT NULL , expiryTime BIGINT NOT NULL ";
-			newTableCommand = getPartitionInfoStorageString(newTableCommand);
-			
-			newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort), INDEX USING BTREE(expiryTime) )";
-			stmt.executeUpdate(newTableCommand);
-		}*/
 	}
 	
 	private String getPartitionInfoStorageString(String newTableCommand)
@@ -216,12 +162,9 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 				AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
 				AttributeMetaInfo attrMetaInfo = attrPartInfo.getAttrMetaInfo();
 				String dataType = attrMetaInfo.getDataType();
-				//String defaultVal = attrPartInfo.getDefaultValue();
 				String minVal = attrMetaInfo.getMinValue();
 				String maxVal = attrMetaInfo.getMaxValue();
-				String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);
-//				newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
-//						+" , INDEX USING BTREE("+attrName+")";
+				String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);			
 				
 				String lowerAttrName = "lower"+attrName;
 				String upperAttrName = "upper"+attrName;
@@ -234,228 +177,11 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 						+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(minVal, dataType)
 						+ " , "+upperAttrName+" "+mySQLDataType+" DEFAULT "
 						+AttributeTypes.convertStringToDataTypeForMySQL(maxVal, dataType)
-						+ " , INDEX USING BTREE("+lowerAttrName+" , "+upperAttrName+")";
-				
+						+ " , INDEX USING BTREE("+lowerAttrName+" , "+upperAttrName+")";			
 			}
 		}
 		return newTableCommand;
 	}
-	
-	
-	/**
-	 * Returns a list of nodes that overlap with a query in a trigger 
-	 * partitions single subspaces
-	 * @param subspaceNum
-	 * @param qcomponents, takes matching attributes as input
-	 * @return
-	 */
-	/*public HashMap<Integer, OverlappingInfoClass> 
-		getOverlappingPartitionsInTriggers(int subspaceId, int replicaNum, String attrName, 
-				ProcessingQueryComponent matchingQueryComponent)
-	{
-		long t0 = System.currentTimeMillis();
-		HashMap<Integer, OverlappingInfoClass> answerList 
-						= new HashMap<Integer, OverlappingInfoClass>();
-		
-		String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"Attr"+attrName+"TriggerPartitionInfo";
-		
-		String selectTableSQL = "SELECT hashCode, respNodeID from "+tableName+" WHERE ";
-		
-		String lowerAttr = "lower"+attrName;
-		String upperAttr = "upper"+attrName;
-		
-		AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-		String dataType = attrMetaInfo.getDataType();
-		
-		if( AttributeTypes.compareTwoValues(matchingQueryComponent.getLowerBound(),
-				matchingQueryComponent.getUpperBound(), dataType) )
-		{
-			String queryMin  
-			=  AttributeTypes.convertStringToDataTypeForMySQL(matchingQueryComponent.getLowerBound(), dataType) + "";
-			String queryMax  
-			=  AttributeTypes.convertStringToDataTypeForMySQL(matchingQueryComponent.getUpperBound(), dataType) + "";
-			
-			// three cases to check, documentation
-			// trying to find if there is an overlap in the ranges, 
-			// the range specified by user and the range in database.
-			// overlap is there if queryMin lies between the range in database
-			// or queryMax lies between the range in database.
-			// So, we specify two or conditions.
-			// for right side value, it can't be equal to rangestart, 
-			// but it can be equal to rangeEnd, although even then it doesn't include
-			// rangeEnd.
-			// or the range lies in between the queryMin and queryMax
-			
-			// follwing the convention that the in (lowerVal, upperVal) range lowerVal is included in 
-			// range and upperVal is not included in range. This convnetion is for data storage in mysql
-			// queryMin and queryMax aare always both end points included.
-			// means a query >= queryMin and query <= queryMax, but never query > queryMin and query < queryMax
-			selectTableSQL = selectTableSQL +" ( "
-					+ "( "+lowerAttr+" <= "+queryMin +" AND "+upperAttr+" > "+queryMin+" ) OR "
-					+ "( "+lowerAttr+" <= "+queryMax +" AND "+upperAttr+" > "+queryMax+" ) OR "
-					+ "( "+lowerAttr+" >= "+queryMin +" AND "+upperAttr+" <= "+queryMax+" ) "+" ) ";
-		}
-		else // when lower value in query predicate is greater than upper value, meaning circular query, 
-			// it is done mostly for generating uniform workload for experiments
-		{
-			// first case from lower to max value
-			String queryMin  
-			=  AttributeTypes.convertStringToDataTypeForMySQL(matchingQueryComponent.getLowerBound(), dataType) + "";
-			String queryMax  
-			=  AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMaxValue(), dataType) + "";
-			
-			selectTableSQL = selectTableSQL +"( ( "
-					+ "( "+lowerAttr+" <= "+queryMin +" AND "+upperAttr+" > "+queryMin+" ) OR "
-					+ "( "+lowerAttr+" <= "+queryMax +" AND "+upperAttr+" > "+queryMax+" ) OR "
-					+ "( "+lowerAttr+" >= "+queryMin +" AND "+upperAttr+" <= "+queryMax+" ) "+" ) OR ";
-			
-			// second case from minvalue to upper val
-			queryMin  
-			=  AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMinValue(), dataType) + "";
-			queryMax  
-			=  AttributeTypes.convertStringToDataTypeForMySQL(matchingQueryComponent.getUpperBound(), dataType) + "";
-			
-			selectTableSQL = selectTableSQL +"( "
-					+ "( "+lowerAttr+" <= "+queryMin +" AND "+upperAttr+" > "+queryMin+" ) OR "
-					+ "( "+lowerAttr+" <= "+queryMax +" AND "+upperAttr+" > "+queryMax+" ) OR "
-					+ "( "+lowerAttr+" >= "+queryMin +" AND "+upperAttr+" <= "+queryMax+" ) "+" )  )";
-		}
-		
-		Statement stmt 		= null;
-		Connection myConn 	= null;
-		try
-		{
-			myConn = this.dataSource.getConnection();
-			stmt = myConn.createStatement();
-			ContextServiceLogger.getLogger().fine("selectTableSQL "+selectTableSQL);
-			ResultSet rs = stmt.executeQuery(selectTableSQL);
-		    while( rs.next() )
-		    {
-		    	//Retrieve by column name
-		    	int respNodeID  	 = rs.getInt("respNodeID");
-		    	//int hashCode		 = rs.getInt("hashCode");
-		    	OverlappingInfoClass overlapObj = new OverlappingInfoClass();
-		    	
-		    	overlapObj.respNodeId = respNodeID;
-		    	overlapObj.replyArray = null;
-		    	
-		    	answerList.put(respNodeID, overlapObj);
-		    	//MetadataTableInfo<Integer> metaobj = new MetadataTableInfo<Integer>(nodeID, partitionNum);
-		    	//answerList.add( metaobj );
-		    }
-		    rs.close();
-		} catch( SQLException sqlex )
-		{
-			sqlex.printStackTrace();
-		}
-		finally
-		{
-			try
-			{
-				if( stmt != null )
-					stmt.close();
-				
-				if( myConn != null )
-					myConn.close();
-			}
-			catch(SQLException sqlex)
-			{
-				sqlex.printStackTrace();
-			}
-		}
-		
-		if(ContextServiceConfig.DELAY_PROFILER_ON)
-		{
-			DelayProfiler.updateDelay("getOverlappingPartitionsInTriggers", t0);
-		}
-		return answerList;
-	}*/
-
-	
-	/**
-	 * Inserts a subspace region denoted by subspace vector, 
-	 * integer denotes partition num in partition info 
-	 * @param subspaceNum
-	 * @param subspaceVector
-	 */
-	/*public void insertIntoTriggerPartitionInfo(int subspaceId, int replicaNum, String attrName, 
-			int partitionNum, NodeIDType respNodeId)
-	{
-		long t0 			= System.currentTimeMillis();
-		Connection myConn   = null;
-		Statement stmt      = null;
-		
-		String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"Attr"+attrName+"TriggerPartitionInfo";
-		
-		SubspaceInfo<NodeIDType> currSubInfo = subspaceInfoMap.
-				get(subspaceId).get(replicaNum);
-	
-		
-		HashMap<String, AttributePartitionInfo> attrSubspaceInfo = currSubInfo.getAttributesOfSubspace();
-		
-		//String insertTableSQL = "SET unique_checks=0; INSERT INTO "+tableName 
-		String insertTableSQL = "INSERT INTO "+tableName 
-				+" ( hashCode, respNodeID ";
-		
-		String lowerAtt = "lower"+attrName;
-		String upperAtt = "upper"+attrName;
-		
-		insertTableSQL = insertTableSQL + ", "+lowerAtt+" , "+upperAtt;
-		
-		insertTableSQL = insertTableSQL + " ) VALUES ( "+partitionNum + 
-				" , "+respNodeId;
-		
-		AttributePartitionInfo attrPartInfo = attrSubspaceInfo.get(attrName);
-		DomainPartitionInfo domainPartInfo = attrPartInfo.getTriggerDomainPartitionInfo().get(partitionNum);
-		// if it is a String then single quotes needs to be added
-			
-		AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-		String dataType = attrMetaInfo.getDataType();
-			
-		String lowerBound  = AttributeTypes.convertStringToDataTypeForMySQL(domainPartInfo.lowerbound, dataType)+"";
-		String upperBound  = AttributeTypes.convertStringToDataTypeForMySQL(domainPartInfo.upperbound, dataType)+"";
-			
-		insertTableSQL = insertTableSQL + " , "+lowerBound+" , "+ 
-					upperBound;
-		
-		insertTableSQL = insertTableSQL + " ) ";
-		
-		try
-		{
-			myConn = this.dataSource.getConnection();
-			stmt = myConn.createStatement();
-
-			// execute insert SQL stetement
-			stmt.executeUpdate(insertTableSQL);
-			
-		} catch(SQLException sqlex)
-		{
-			sqlex.printStackTrace();
-		}
-		finally
-		{
-			try
-			{
-				if( myConn != null )
-				{
-					myConn.close();
-				}
-				if( stmt != null )
-				{
-					stmt.close();
-				}
-			} catch(SQLException sqex)
-			{
-				sqex.printStackTrace();
-			}
-		}
-		
-		if( ContextServiceConfig.DELAY_PROFILER_ON )
-		{
-			DelayProfiler.updateDelay("insertIntoTriggerPartitionInfo", t0);
-		}
-	}*/
-	
 	
 	/**
 	 * Inserts trigger info on a query into the table
@@ -581,8 +307,6 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 			(subspaceId, oldValJSON, newJSONToWrite, newUnsetAttrs, oldValGroupGUIDMap,
 					dataSource);
 			old.run();
-			// returnOldValueGroupGUIDs(subspaceId, replicaNum, attrName, 
-			// oldValJSON, oldValGroupGUIDMap);
 		}
 		else if( requestType == ValueUpdateToSubspaceRegionMessage.ADD_ENTRY )
 		{
@@ -607,8 +331,7 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 				(subspaceId, oldValJSON, newJSONToWrite, newUnsetAttrs, oldValGroupGUIDMap,
 						dataSource);
 				Thread st = new Thread(old);
-				st.start();			
-//				returnOldValueGroupGUIDs(subspaceId, replicaNum, attrName, oldValJSON, oldValGroupGUIDMap);
+				st.start();
 				returnAddedGroupGUIDs( subspaceId, oldValJSON, 
 						newJSONToWrite, newValGroupGUIDMap, newUnsetAttrs, firstTimeInsert );
 				st.join();
@@ -733,26 +456,6 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 				}
 			}
 			return selectQuery;
-//			myConn 	     = this.dataSource.getConnection();
-//			stmt   		 = myConn.createStatement();
-//			ResultSet rs = stmt.executeQuery(selectQuery);
-//			
-//			while( rs.next() )
-//			{
-//				JSONObject tableRow = new JSONObject();
-//				byte[] groupGUIDBytes = rs.getBytes("groupGUID");
-//				String groupGUIDString = Utils.bytArrayToHex(groupGUIDBytes);
-//				byte[] ipAddressBytes = rs.getBytes("userIP");
-//				String userIPStirng = InetAddress.getByAddress(ipAddressBytes).getHostAddress();
-//				//tableRow.put( "userQuery", rs.getString("userQuery") );
-//				tableRow.put( "groupGUID", groupGUIDString );
-//				tableRow.put( "userIP", userIPStirng );
-//				tableRow.put( "userPort", rs.getInt("userPort") );
-//				newValGroupGUIDMap.put(groupGUIDString, tableRow);
-//			}
-//			//ContextServiceLogger.getLogger().fine("NodeId "+this.myNodeID+" getGUIDRecordFromPrimarySubspace guid "
-//			//		+ ""+GUID+" oldValueJSON size "+oldValueJSON.length()+"oldValueJSON "+oldValueJSON);
-//			rs.close();
 		}
 		catch (JSONException e) 
 		{
@@ -822,12 +525,6 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 		
 		Connection myConn 			= null;
 		Statement stmt 				= null;
-		
-		// there is always at least one replica
-//		SubspaceInfo<NodeIDType> currSubInfo = subspaceInfoMap.get(subspaceId).get(0);
-//		
-//		HashMap<String, AttributePartitionInfo> attrSubspaceInfo 
-//												= currSubInfo.getAttributesOfSubspace();
 		// for groups associated with the new value
 		try
 		{
@@ -860,22 +557,15 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 			
 			while( rs.next() )
 			{
-				//JSONObject tableRow = new JSONObject();
 				byte[] groupGUIDBytes = rs.getBytes("groupGUID");
 				String groupGUIDString = Utils.bytArrayToHex(groupGUIDBytes);
 				byte[] ipAddressBytes = rs.getBytes("userIP");
 				String userIPString = InetAddress.getByAddress(ipAddressBytes).getHostAddress();
 				int userPort = rs.getInt("userPort");
-				//tableRow.put( "userQuery", rs.getString("userQuery") );
 				GroupGUIDInfoClass groupGUIDInfoClass = new GroupGUIDInfoClass(
 						groupGUIDString, userIPString, userPort);
-//				tableRow.put( "groupGUID", groupGUIDString );
-//				tableRow.put( "userIP", userIPStirng );
-//				tableRow.put( "userPort", rs.getInt("userPort") );
 				newValGroupGUIDMap.put(groupGUIDString, groupGUIDInfoClass);
 			}
-			//ContextServiceLogger.getLogger().fine("NodeId "+this.myNodeID+" getGUIDRecordFromPrimarySubspace guid "
-			//		+ ""+GUID+" oldValueJSON size "+oldValueJSON.length()+"oldValueJSON "+oldValueJSON);
 			rs.close();
 		} catch (SQLException e)
 		{

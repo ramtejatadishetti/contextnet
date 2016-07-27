@@ -25,8 +25,7 @@ import edu.umass.cs.gnsclient.client.GuidEntry;
 /**
  * This class implements hyperspace based anonymized ID creator.
  * It creates anonymized IDs over full set of attributes rather than
- * the subspace based creation. 
- * 
+ * the subspace based creation.
  * It is not used in the system, mainly used in experiments.
  * @author adipc
  *
@@ -137,21 +136,8 @@ public class HyperspaceBasedAnonymizedIDCreator
 			}	
 		}
 		return attrMap;
-	}
-	
-//	private JSONArray getAllAttrs(HashMap<String, List<ACLEntry>> aclMap)
-//	{
-//		JSONArray attrSet = new JSONArray();
-//		
-//		Iterator<String> attrIter = aclMap.keySet().iterator();
-//	
-//		while( attrIter.hasNext() )
-//		{
-//			String currAttrName = attrIter.next();
-//			attrSet.put(currAttrName);
-//		}
-//		return attrSet;
-//	}
+	}	
+
 	
 	/**
 	 * computes the guid to attributes map for each member fo ACL.

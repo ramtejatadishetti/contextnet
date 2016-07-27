@@ -90,11 +90,6 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 											(myNodeID, subspaceInfoMap , mysqlDataSource);
 		}
 		
-//		if( ContextServiceConfig.PRIVACY_ENABLED )
-//		{
-//			privacyInformationStorage = new PrivacyInformationStorage<NodeIDType>
-//										(subspaceInfoMap, mysqlDataSource);
-//		}
 		createTables();
 	}
 	
@@ -117,11 +112,6 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 			// DNF form queries can be added by inserting its multiple conjunctive components.			
 			triggerInformationStorage.createTables();
 		}
-		
-//		if( ContextServiceConfig.PRIVACY_ENABLED )
-//		{
-//			privacyInformationStorage.createTables();
-//		}
 	}
 	
 	/**
@@ -137,23 +127,6 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 		return this.guidAttributesStorage.getOverlappingRegionsInSubspace
 							(subspaceId, replicaNum, matchingQueryComponents);
 	}
-	
-	/**
-	 * Returns a list of nodes that overlap with a query in a trigger 
-	 * partitions single subspaces
-	 * @param subspaceNum
-	 * @param qcomponents, takes matching attributes as input
-	 * @return
-	 */
-//	public HashMap<Integer, OverlappingInfoClass> 
-//		getOverlappingPartitionsInTriggers( int subspaceId, int replicaNum, 
-//				String attrName, ProcessingQueryComponent matchingQueryComponent )
-//	{
-//		HashMap<Integer, OverlappingInfoClass> answerlist = 
-//				triggerInformationStorage.getOverlappingPartitionsInTriggers
-//				( subspaceId, replicaNum, attrName, matchingQueryComponent );
-//		return answerlist;
-//	}
 	
 	/**
 	 * This function is implemented here as it involves 
@@ -207,19 +180,6 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 				(subspaceId, replicaNum, subspaceVectorList, respNodeIdList);
 	}
 	
-	/**
-	 * Inserts a subspace region denoted by subspace vector, 
-	 * integer denotes partition num in partition info 
-	 * @param subspaceNum
-	 * @param subspaceVector
-	 */
-//	public void insertIntoTriggerPartitionInfo(int subspaceId, int replicaNum, 
-//			String attrName, int partitionNum, NodeIDType respNodeId)
-//	{
-//		this.triggerInformationStorage.insertIntoTriggerPartitionInfo
-//				(subspaceId, replicaNum, attrName, partitionNum, respNodeId);
-//	}
-	
 	public JSONObject getGUIDStoredInPrimarySubspace( String guid )
 	{
 		if(ContextServiceConfig.disableMySQLDB)
@@ -254,8 +214,7 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 			{
 				e.printStackTrace();
 			}
-		}
-		
+		}	
 		return jsonObj;
 	}
 	
@@ -374,12 +333,5 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 	{
 		return triggerInformationStorage.checkAndInsertSearchQueryRecordFromPrimaryTriggerSubspace
 				(groupGUID, userIP, userPort);
-	}
-
-	@Override
-	public void insertIntoSubspaceTriggerDataInfo(int subspaceId, int replicaNum, String attrName, String userQuery,
-			String groupGUID, String userIP, int userPort, long expiryTimeFromNow) {
-		// TODO Auto-generated method stub
-		
 	}
 }

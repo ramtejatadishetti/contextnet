@@ -58,23 +58,20 @@ import edu.umass.cs.protocoltask.ProtocolTask;
 public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 {
 	private  HyperspaceMySQLDB<NodeIDType> hyperspaceDB 								= null;
-	//TODO: make the trigger handling part in separate interfaces and classes.
-	// also the privacy stuff. 
-	// this files is getting very big.
 	private final ExecutorService nodeES;
 	
 	private HashMap<String, GUIDUpdateInfo<NodeIDType>> guidUpdateInfoMap				= null;
 	
 	private final AbstractSubspaceConfigurator<NodeIDType> subspaceConfigurator;
 	
-	private final CalculateOptimalNumAttrsInSubspace optimalHCalculator;
+	private CalculateOptimalNumAttrsInSubspace optimalHCalculator;
 	
 	private final GUIDAttrValueProcessingInterface<NodeIDType> guidAttrValProcessing;
 	private TriggerProcessingInterface<NodeIDType> triggerProcessing;
 	
 	private final Random defaultAttrValGenerator;
 	
-	private final ProfilerStatClass profStats;
+	private ProfilerStatClass profStats;
 	
 	public static final Logger log 														= ContextServiceLogger.getLogger();
 	
@@ -95,21 +92,38 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		guidUpdateInfoMap = new HashMap<String, GUIDUpdateInfo<NodeIDType>>();
 		
-
-		optimalHCalculator = new CalculateOptimalNumAttrsInSubspace(nc.getNodeIDs().size(),
-					AttributeTypes.attributeMap.size());
-		
-		if( optimalHCalculator.getBasicOrReplicated() )
+		if(!ContextServiceConfig.disableOptimizer)
 		{
-			subspaceConfigurator 
-				= new BasicSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), 
-						optimalHCalculator.getOptimalH() );
+			optimalHCalculator = new CalculateOptimalNumAttrsInSubspace(nc.getNodeIDs().size(),
+						AttributeTypes.attributeMap.size());
+			
+			if( optimalHCalculator.getBasicOrReplicated() )
+			{
+				subspaceConfigurator 
+					= new BasicSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), 
+							optimalHCalculator.getOptimalH() );
+			}
+			else
+			{
+				subspaceConfigurator 
+					= new ReplicatedSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), 
+							optimalHCalculator.getOptimalH() );
+			}
 		}
 		else
 		{
-			subspaceConfigurator 
+			if(ContextServiceConfig.basicConfig)
+			{
+				subspaceConfigurator 
+				= new BasicSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), 
+						(int)ContextServiceConfig.optimalH );
+			}
+			else
+			{
+				subspaceConfigurator 
 				= new ReplicatedSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), 
-						optimalHCalculator.getOptimalH() );
+						(int)ContextServiceConfig.optimalH );
+			}
 		}
 			
 		ContextServiceLogger.getLogger().fine("configure subspace started");
@@ -128,25 +142,16 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				this.getMyID(), subspaceConfigurator.getSubspaceInfoMap(), 
 				hyperspaceDB, messenger , nodeES ,
 				pendingQueryRequests , profStats);
-		
-//		if( ContextServiceConfig.PRIVACY_ENABLED )
-//		{
-//			privacyProcesing = new PrivacyProcessing<NodeIDType>( this.getMyID() , 
-//					hyperspaceDB ,  messenger );
-//		}
-		
+				
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
 			triggerProcessing = new TriggerProcessing<NodeIDType>(this.getMyID(), 
 				subspaceConfigurator.getSubspaceInfoMap(), hyperspaceDB, messenger);
 		}
-		//ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
-		//nodeES = Executors.newCachedThreadPool();
 		//new Thread(new ProfilerStatClass()).start();
 	}
 	
-	//TODO not sure what is the overhead of synchronizing executor service
-	// but as we are accessing same executor service from many threads, so may be good to synchronize
+	
 	@Override
 	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMsgFromUser(
 			ProtocolEvent<PacketType, String> event,
@@ -737,44 +742,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
-	
-//	private void processUpdateTriggerReply(
-//			UpdateTriggerReply<NodeIDType> updateTriggerReply)
-//	{
-//		long requestID              	= updateTriggerReply.getRequestId();
-//		UpdateInfo<NodeIDType> updInfo  = pendingUpdateRequests.get(requestID);
-//		boolean triggerCompl = updInfo.setUpdateTriggerReply(updateTriggerReply);
-//		
-//		if( triggerCompl )
-//		{
-//			try
-//			{
-//				this.triggerProcessing.sendOutAggregatedRefreshTrigger( updInfo);
-//			}
-//			catch(Exception ex)
-//			{
-//				ex.printStackTrace();
-//			}
-//			
-//			// removing here, because updInfo only gets removed 
-//			// when both trigger and update replies are recvd.
-//			boolean updateCompl = updInfo.checkAllUpdateReplyRecvd();
-//			UpdateInfo<NodeIDType> removedUpdate = null;
-//			
-//			if( updateCompl )
-//				removedUpdate = pendingUpdateRequests.remove(requestID);
-//			
-//			// starts the queues serialized updates for that guid
-//			// null is checked becuase it can also be remove on
-//			// update completion. So only one can start the new update
-//			if( removedUpdate != null )
-//			{
-//				startANewUpdate(removedUpdate, requestID);
-//			}
-//		}
-//	}
-	
-	
 	private void processGetMessage(GetMessage<NodeIDType> getMessage)
 	{
 		String GUID 			  = getMessage.getGUIDsToGet();
@@ -863,17 +830,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			
 			UpdateInfo<NodeIDType> removedUpdate 
 					=  pendingUpdateRequests.remove(requestID);;
-//			if( ContextServiceConfig.TRIGGER_ENABLED )
-//			{
-//				boolean triggerCompl = updInfo.checkAllTriggerRepRecvd();
-//				
-//				if( triggerCompl )
-//					removedUpdate = pendingUpdateRequests.remove(requestID);
-//			}
-//			else
-//			{
-//				removedUpdate = pendingUpdateRequests.remove(requestID);
-//			}
 			
 			// starts the queues serialized updates for that guid
 			if(removedUpdate != null)
@@ -1093,79 +1049,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
-	
-//	private void processACLUpdateToSubspaceRegionReplyMessage(
-//			ACLUpdateToSubspaceRegionReplyMessage<NodeIDType> 
-//						aclUpdateToSubspaceRegionReplyMessage )
-//	{
-//		long requestID  = aclUpdateToSubspaceRegionReplyMessage.getRequestID();
-//		int subspaceId  = aclUpdateToSubspaceRegionReplyMessage.getSubspaceNum();
-//		//int numReply 	= valueUpdateToSubspaceRegionReplyMessage.getNumReply();
-//		int replicaNum  = aclUpdateToSubspaceRegionReplyMessage.getReplicaNum();
-//		
-//		UpdateInfo<NodeIDType> updInfo 
-//						= pendingUpdateRequests.get(requestID);
-//		
-//		if( updInfo == null )
-//		{
-//			ContextServiceLogger.getLogger().severe( "updInfo null, update already removed from "
-//					+ " the pending queue before recv all replies requestID "+requestID
-//					+ "  valueUpdateToSubspaceRegionReplyMessage "
-//					+ aclUpdateToSubspaceRegionReplyMessage );
-//			assert(false);
-//		}
-//		boolean completion = updInfo.setUpdateReply(subspaceId, replicaNum, -1, 
-//							UpdateInfo.PRIVACY_UPDATE_REPLY);
-//		
-//		if( completion )
-//		{
-//			ValueUpdateFromGNSReply<NodeIDType> valueUpdateFromGNSReply 
-//				= new ValueUpdateFromGNSReply<NodeIDType>(this.getMyID(), 
-//					updInfo.getValueUpdateFromGNS().getVersionNum(), 
-//					updInfo.getValueUpdateFromGNS().getUserRequestID());
-//			
-//			ContextServiceLogger.getLogger().fine("reply IP Port "
-//					+ updInfo.getValueUpdateFromGNS().getSourceIP()
-//					+ ":"+updInfo.getValueUpdateFromGNS().getSourcePort()
-//					+ " ValueUpdateFromGNSReply for requestId "+requestID
-//					+ " "+valueUpdateFromGNSReply
-//					+ " ValueUpdateToSubspaceRegionReplyMessage "
-//					+ aclUpdateToSubspaceRegionReplyMessage);
-//			try
-//			{
-//				this.messenger.sendToAddress( new InetSocketAddress(
-//						updInfo.getValueUpdateFromGNS().getSourceIP()
-//						, updInfo.getValueUpdateFromGNS().getSourcePort() ), 
-//						valueUpdateFromGNSReply.toJSONObject() );
-//			} catch (IOException e)
-//			{
-//				e.printStackTrace();
-//			} catch (JSONException e)
-//			{
-//				e.printStackTrace();
-//			}
-//			
-//			UpdateInfo<NodeIDType> removedUpdate = null;
-//			if( ContextServiceConfig.TRIGGER_ENABLED )
-//			{
-//				boolean triggerCompl = updInfo.checkAllTriggerRepRecvd();
-//				
-//				if( triggerCompl )
-//					removedUpdate = pendingUpdateRequests.remove(requestID);
-//			}
-//			else
-//			{
-//				removedUpdate = pendingUpdateRequests.remove(requestID);
-//			}
-//			
-//			// starts the queues serialized updates for that guid
-//			if( removedUpdate != null )
-//			{
-//				startANewUpdate(removedUpdate, requestID);
-//			}
-//		}
-//	}
-	
 	/**
 	 * returns the replica num for a subspace
 	 * One nodeid should have just one replica num
@@ -1231,7 +1114,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						log.fine("CS"+getMyID()+" received " + event.getType() + ": " + event);
 						
 						processQueryMesgToSubspaceRegion(queryMesgToSubspaceRegion);
-						//processQueryMsgToMetadataNode(queryMsgToMetaNode);
 						
 						//DelayProfiler.updateDelay("handleQueryMsgToMetadataNode", t0);
 						break;
@@ -1261,8 +1143,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " + event.getType() + ": " + valUpdMsgFromGNS);
 						
 						processValueUpdateFromGNS(valUpdMsgFromGNS);
-						
-						//DelayProfiler.updateDelay("handleValueUpdateFromGNS", t0);
 						break;
 					}
 					case VALUEUPDATE_TO_SUBSPACE_REGION_MESSAGE:
@@ -1304,43 +1184,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						break;
 					}
 					
-//					case QUERY_TRIGGER_MESSAGE:
-//					{
-//						@SuppressWarnings("unchecked")
-//						QueryTriggerMessage<NodeIDType> queryTriggerMessage 
-//									= (QueryTriggerMessage<NodeIDType>)event;
-//						//log.fine("CS"+getMyID()+" received " + event.getType() + ": " + valueUpdateToSubspaceRegionMessage);
-//						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " + event.getType() + ": " 
-//								+ queryTriggerMessage);
-//						triggerProcessing.processQueryTriggerMessage(queryTriggerMessage);
-//						break;
-//					}
-					
-//					case UPDATE_TRIGGER_MESSAGE:
-//					{
-//						@SuppressWarnings("unchecked")
-//						UpdateTriggerMessage<NodeIDType> updateTriggerMessage 
-//									= (UpdateTriggerMessage<NodeIDType>)event;
-//						//log.fine("CS"+getMyID()+" received " + event.getType() + ": " + valueUpdateToSubspaceRegionMessage);
-//						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " + event.getType() + ": " 
-//								+ updateTriggerMessage);
-//						triggerProcessing.processUpdateTriggerMessage(updateTriggerMessage);
-//						break;
-//					}
-//					
-//					case UPDATE_TRIGGER_REPLY_MESSAGE:
-//					{
-//						@SuppressWarnings("unchecked")
-//						UpdateTriggerReply<NodeIDType> updateTriggerReply 
-//									= (UpdateTriggerReply<NodeIDType>)event;
-//						//log.fine("CS"+getMyID()+" received " + event.getType() + ": " + valueUpdateToSubspaceRegionMessage);
-//						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " + event.getType() + ": " 
-//								+ updateTriggerReply);
-//						processUpdateTriggerReply(updateTriggerReply);
-//						
-//						break;
-//					}
-					
 					case CONFIG_REQUEST:
 					{
 						@SuppressWarnings("unchecked")
@@ -1352,38 +1195,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						processClientConfigRequest(configRequest);
 						break;
 					}
-					
-//					case ACLUPDATE_TO_SUBSPACE_REGION_MESSAGE:
-//					{
-//						@SuppressWarnings("unchecked")
-//						ACLUpdateToSubspaceRegionMessage<NodeIDType> 
-//							aclUpdateToSubspaceRegionMessage = 
-//							(ACLUpdateToSubspaceRegionMessage<NodeIDType>)event;
-//						
-//						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " 
-//								+ event.getType() + ": " 
-//								+ aclUpdateToSubspaceRegionMessage);
-//						
-//						int subspaceId = aclUpdateToSubspaceRegionMessage.getSubspaceNum();
-//						
-//						privacyProcesing.processACLUpdateToSubspaceRegionMessage
-//									(aclUpdateToSubspaceRegionMessage, subspaceId);
-//						break;
-//					}
-//					case ACLUPDATE_TO_SUBSPACE_REGION_REPLY_MESSAGE:
-//					{
-//						ACLUpdateToSubspaceRegionReplyMessage<NodeIDType> 
-//								aclUpdateToSubspaceRegionReplyMessage = 
-//									(ACLUpdateToSubspaceRegionReplyMessage<NodeIDType>) event;
-//						
-//						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " 
-//								+ event.getType() + ": " 
-//								+ aclUpdateToSubspaceRegionReplyMessage);
-//						
-//						processACLUpdateToSubspaceRegionReplyMessage
-//										(aclUpdateToSubspaceRegionReplyMessage);
-//						break;
-//					}
 					default:
 					{
 						assert(false);
