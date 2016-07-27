@@ -7,8 +7,9 @@ Currently only running through source code is supported.
   git clone https://github.com/ayadavumass/GNS.git
 ```
 ## Compiling GNS code
-Go to the top level GNS directory where there is a build.xml file and issue ant
+Go to the top level GNS directory, denoted by \<TopLevelGNSDir\>, where there is a build.xml file and issue ant
 ```bash
+  cd <TopLevelGNSDir>
   ant
 ```
 Build should successfully complete creating binaries in jars folder.
