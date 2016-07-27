@@ -28,15 +28,10 @@ MySQL should be running before starting context service. Start context service a
 ```
 locationSingleNodeConf is the configuration name, currently only this configuration is supported. \<mysqlusername\> and \<mysqlpassword\> is the mysql username and password that the context service needs to connect to mysql database.
 
-The above python script starts 4 instances of context services on the local node. The context service start is complete when you see 
+The above python script starts 1 instance of context service on the local node. The context service start is complete when you see 
 ```bash
-############# StartContextServiceNode ID 2 completed. 4total. ############
-############# StartContextServiceNode ID 1 completed. 4total. ############
 ############# StartContextServiceNode ID 0 completed. 4total. ############
-############# StartContextServiceNode ID 3 completed. 4total. ############
 ```
-The above messages can be in any order.
-
 After starting context service start the GNS. 
 
 ## Running single node GNS
