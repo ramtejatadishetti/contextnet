@@ -1,5 +1,5 @@
 # Getting started
-Prerequisites: JRE1.8+, bash, mongodb, python, mysql, git
+Prerequisites: JRE1.8+, bash, mongodb, python, mysql, git, ant
 # Running context service and GNS together
 Currently only running through source code is supported.
 ## Obtaining source code
