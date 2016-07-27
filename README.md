@@ -30,7 +30,7 @@ locationSingleNodeConf is the configuration name, currently only this configurat
 
 The above python script starts 1 instance of context service on the local node. The context service start is complete when you see 
 ```bash
-############# StartContextServiceNode ID 0 completed. 4total. ############
+############# StartContextServiceNode ID 0 completed. 1total. ############
 ```
 After starting context service start the GNS. 
 
