@@ -53,3 +53,27 @@ The detailed instructions to run GNS are on [GNS wiki](https://github.com/Mobili
 ## Running an example
 A simple code to demonstrate the integration of GNS and CS is [here](https://github.com/ayadavumass/GNS/blob/master/src/edu/umass/cs/gnsclient/benchmarking/ContextServiceTriggerExample.java)
 
+The above code does the follwing steps
+* Creates an account GUID.
+* Issues a search query to context service, which specifies a geofence.
+* Updates the account GUID's location to fall within the geofence.
+* Receives a trigger from context service indicating that the GUID has moved into the geofence.
+* Updates the account GUID's location to fall outside the geofence.
+* Receives a trigger from context service indicating that the GUID has moved out of the geofence.
+
+Run the example code as follows.
+
+```bash
+  cd <TopLevelGNSDir>
+  bin/gpClient.sh -DgigapaxosConfig=conf/gnsclient.1localCS.properties edu.umass.cs.gnsclient.benchmarking.ContextServiceTriggerExample
+```
+The output of the code shows the steps described above.
+
+## Stopping GNS and context service
+Stop GNS and context service as follows.
+```bash
+  cd <TopLevelGNSDir>
+  bin/gpServer.sh -DgigapaxosConfig=conf/gnsserver.1localCS.properties stop all
+  python ./scripts/contextServiceScripts/StopContextService.py
+```
+
