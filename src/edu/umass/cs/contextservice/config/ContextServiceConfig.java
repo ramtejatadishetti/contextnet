@@ -93,12 +93,12 @@ public class ContextServiceConfig
 	//public static final boolean sendUpdateReplies					= true;
 	
 	// if true group update trigger is enabled, not enabled if false
-	public static boolean TRIGGER_ENABLED							= true;
+	public static boolean TRIGGER_ENABLED							= false;
 	
 	
 	// if set to true then there is a primary node for each groupGUID
 	// and search always gores through that and doesn't update trigger info if its is repeated.
-	public static boolean UniqueGroupGUIDEnabled					= true;
+	public static boolean UniqueGroupGUIDEnabled					= false;
 	
 	// disables most of the mysql db operations, apart from the reading of 
 	// subspace info. Just for throuhgput testing.
@@ -136,7 +136,7 @@ public class ContextServiceConfig
 	public static final int MAXIMUM_NUM_ATTRS_IN_SUBSPACE			= 10;
 	
 	
-	public static boolean PRIVACY_ENABLED							= true;
+	public static boolean PRIVACY_ENABLED							= false;
 	
 	
 	// if this is set to true then the context service client will do decryptions 
@@ -159,7 +159,7 @@ public class ContextServiceConfig
 	public static final boolean DEBUG_MODE							= false;
 	
 	
-	//  model paramters
+	//  model parameters
 	// search/(search+update) ratio
 	public static double modelRho									= 0.5;
 	// single node search throughput inverse
