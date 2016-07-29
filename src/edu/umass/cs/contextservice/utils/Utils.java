@@ -136,21 +136,35 @@ public class Utils
 	   */
 	  public static String getSHA1( String stringToHash )
 	  {
-		  MessageDigest md=null;
-		  try 
+		  if(false)
 		  {
-			  md = MessageDigest.getInstance("SHA-256");
-		  } catch (NoSuchAlgorithmException e) 
-		  {
-			  e.printStackTrace();
+			  MessageDigest md=null;
+			  try 
+			  {
+				  md = MessageDigest.getInstance("SHA-256");
+			  } catch (NoSuchAlgorithmException e) 
+			  {
+				  e.printStackTrace();
+			  }
+			  
+			  md.update(stringToHash.getBytes());
+			  
+			  byte[] byteData = md.digest();
+			  
+			  char[] byteRep = Hex.encodeHex(byteData);
+			  
+			  return new String(byteRep);
 		  }
-       
-		  md.update(stringToHash.getBytes());
- 
-		  byte[] byteData = md.digest();
-		  
-		  char[] byteRep = Hex.encodeHex(byteData);
-		  return new String(byteRep);
+		  else
+		  {
+			  Random rand = new Random(stringToHash.hashCode());
+			  byte[] guidByte = new byte[20];
+			  rand.nextBytes(guidByte);
+			  
+			  char[] byteRep = Hex.encodeHex(guidByte);
+			  
+			  return new String(byteRep);
+		  }
 	  }
 	
 	/**
@@ -403,9 +417,20 @@ public class Utils
 	//FIXME: test time taken by each method here
 	public static void main( String[] args ) throws JSONException, NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
 	{
+		String str = "abcdefghijklmnopqrstuvwxyz"; 
+		long start = System.currentTimeMillis();
+		byte[] newByte = new byte[20];
+		Random rand = new Random();
+		for(int i=0;i<1000; i++)
+		{
+			String hashVal = getSHA1( str );
+			//rand.nextBytes(newByte);
+		}
+		long end = System.currentTimeMillis();
+		System.out.println("Time for for SHA1 hash "+(end-start));
 		// json and byte[] hex conv check
 		int numGuids = 10000;
-		Random rand = new Random(0);
+		rand = new Random(0);
 		JSONArray resultJSON = new JSONArray();
 		
 		for(int i=0; i<numGuids; i++)
