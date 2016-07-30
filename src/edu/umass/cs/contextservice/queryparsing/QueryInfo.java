@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Vector;
 
-import org.json.JSONArray;
-
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
@@ -47,8 +45,6 @@ public class QueryInfo<NodeIDType>
 	// Hash map indexed by componentId, and Vector<String> stores 
 	// the GUIDs
 	public HashMap<Integer, LinkedList<String>> componentReplies;
-	
-	private JSONArray hyperdexResultArray;
 	
 	// for synch
 	private boolean requestCompl;
@@ -145,11 +141,6 @@ public class QueryInfo<NodeIDType>
 		this.requestId = requestId;
 	}
 	
-	public void setHyperdexResults(JSONArray hyperdexResults)
-	{
-		this.hyperdexResultArray = hyperdexResults;
-	}
-	
 	public void setRequestCompl()
 	{
 		this.requestCompl = true;
@@ -158,11 +149,6 @@ public class QueryInfo<NodeIDType>
 	public boolean getRequestCompl()
 	{
 		return this.requestCompl;
-	}
-	
-	public JSONArray getHyperdexResults()
-	{
-		return this.hyperdexResultArray;
 	}
 	
 	public long getExpiryTime()

@@ -96,6 +96,7 @@
 			<include name="edu/umass/cs/contextservice/logging/**" />
 			<include name="edu/umass/cs/contextservice/config/**" />
 			<include name="edu/umass/cs/contextservice/queryparsing/**" />
+			<include name="edu/umass/cs/contextservice/attributeInfo/**" />
 			<!--<exclude name="edu/umass/cs/msocket/watchdog/**" />-->
 		</fileset>
 	  
@@ -124,6 +125,7 @@
 				<include name="edu/umass/cs/contextservice/logging/**" />
 				<include name="edu/umass/cs/contextservice/config/**" />
 				<include name="edu/umass/cs/contextservice/queryparsing/**" />
+				<include name="edu/umass/cs/contextservice/attributeInfo/**" />
 				<!--<exclude name="edu/umass/cs/msocket/watchdog/**" />-->
 			</fileset>
 			<zipgroupfileset dir="${lib.dir}/" includes="guava-19.0.jar, commons-codec-1.10.jar"/>
@@ -138,5 +140,4 @@
 		  </manifest>
 		</jar>
 	</target>
-
 </project>
