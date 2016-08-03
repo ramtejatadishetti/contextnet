@@ -47,6 +47,12 @@ public class ContextServiceTests
 		ContextServiceConfig.configFileDirectory 
 			= "conf/testConf/contextServiceConf"; 
 		
+		// setting all config parameters for the test.
+		ContextServiceConfig.sendFullReplies 			= true;
+		ContextServiceConfig.TRIGGER_ENABLED 			= true;
+		ContextServiceConfig.UniqueGroupGUIDEnabled     = true;
+		ContextServiceConfig.PRIVACY_ENABLED			= true;
+		
 //		new Thread(new ClientConnectionTest()).start();
 //		
 //		Thread.sleep(20000);

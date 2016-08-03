@@ -26,6 +26,7 @@ import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorageIn
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
+import edu.umass.cs.contextservice.schemes.callbacks.MessageCallBack;
 
 
 public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>

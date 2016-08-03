@@ -50,7 +50,7 @@ public class TriggerProcessing<NodeIDType> implements
 		new Thread( new DeleteExpiredSearchesThread<NodeIDType>(subspaceInfoMap, myID, hyperspaceDB) ).start();
 	}
 	
-	public boolean processTriggerOnQueryMsgFromUser(QueryInfo<NodeIDType> currReq)
+	public boolean processTriggerOnQueryMsgFromUser( QueryInfo<NodeIDType> currReq)
 	{
 		String groupGUID = currReq.getGroupGUID();
 		String userIP = currReq.getUserIP();

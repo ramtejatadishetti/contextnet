@@ -56,8 +56,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	public void createTables() 
 	{
 		Connection myConn  = null;
-		Statement  stmt    = null;
-		
+		Statement  stmt    = null;	
 		try
 		{
 			myConn = dataSource.getConnection();

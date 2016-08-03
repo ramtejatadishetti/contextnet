@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
@@ -28,6 +29,7 @@ import edu.umass.cs.contextservice.configurator.BasicSubspaceConfigurator;
 import edu.umass.cs.contextservice.configurator.CalculateOptimalNumAttrsInSubspace;
 import edu.umass.cs.contextservice.configurator.ReplicatedSubspaceConfigurator;
 import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
+import edu.umass.cs.contextservice.database.mysqlpool.MySQLRequestStorage;
 import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
 import edu.umass.cs.contextservice.gns.GNSCalls;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
@@ -73,6 +75,11 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	
 	private ProfilerStatClass profStats;
 	
+	// this queue is used to store requests processed by mysql, for
+	// further code processing by context service.
+	// a request is added in this queue by mysql request callbacks.
+	private final ConcurrentLinkedQueue<MySQLRequestStorage> codeRequestsQueue;
+	
 	public static final Logger log 														= ContextServiceLogger.getLogger();
 	
 	public HyperspaceHashing(NodeConfig<NodeIDType> nc,
@@ -85,6 +92,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			profStats = new ProfilerStatClass();
 			new Thread(profStats).start();
 		}
+		codeRequestsQueue = new ConcurrentLinkedQueue<MySQLRequestStorage>();
 		
 		nodeES = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
 		
@@ -115,13 +123,13 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			if(ContextServiceConfig.basicConfig)
 			{
 				subspaceConfigurator 
-				= new BasicSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), 
+					= new BasicSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), 
 						(int)ContextServiceConfig.optimalH );
 			}
 			else
 			{
 				subspaceConfigurator 
-				= new ReplicatedSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), 
+					= new ReplicatedSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), 
 						(int)ContextServiceConfig.optimalH );
 			}
 		}
@@ -319,7 +327,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		// check for triggers, if those are enabled then forward the query to the node
 		// which consistently hashes the the query:userIp:userPort string
-		if( ContextServiceConfig.TRIGGER_ENABLED && ContextServiceConfig.UniqueGroupGUIDEnabled )
+		if( ContextServiceConfig.TRIGGER_ENABLED 
+				&& ContextServiceConfig.UniqueGroupGUIDEnabled )
 		{
 			String hashKey = query+":"+userIP+":"+userPort;
 			NodeIDType respNodeId = this.getConsistentHashingNodeID(hashKey, this.allNodeIDs);
@@ -347,9 +356,15 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			= new QueryInfo<NodeIDType>( query, this.getMyID(), grpGUID, userReqID, 
 					userIP, userPort, expiryTime );
 		
-		if( ContextServiceConfig.TRIGGER_ENABLED && ContextServiceConfig.UniqueGroupGUIDEnabled )
+//		MessageCallBack<NodeIDType> queryMesgFromUserCB 
+//			= new QueryMessageFromUserCallBack<NodeIDType>(queryMsgFromUser, 
+//				currReq );
+		
+		if( ContextServiceConfig.TRIGGER_ENABLED && 
+					ContextServiceConfig.UniqueGroupGUIDEnabled )
 	    {
-	    	boolean found = this.triggerProcessing.processTriggerOnQueryMsgFromUser(currReq);
+	    	boolean found 
+	    		= this.triggerProcessing.processTriggerOnQueryMsgFromUser(currReq);
 	    	// if inserted first time then in secondary subspaces trigger info is stored for this query.
 	    	storeQueryForTrigger = !found;
 	    }
@@ -954,11 +969,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	private void processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion<NodeIDType> 
 														queryMesgToSubspaceRegion)
 	{
-		String query 				 = queryMesgToSubspaceRegion.getQuery();
 		String groupGUID 			 = queryMesgToSubspaceRegion.getGroupGUID();
-		int subspaceId 				 = queryMesgToSubspaceRegion.getSubspaceNum();
-		String userIP				 = queryMesgToSubspaceRegion.getUserIP();
-		int userPort				 = queryMesgToSubspaceRegion.getUserPort();
 		boolean storeQueryForTrigger = queryMesgToSubspaceRegion.getStoreQueryForTrigger();
 		
 		JSONArray resultGUIDArray    = new JSONArray();
@@ -1072,6 +1083,46 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 		return replicaNum;
 	}
+	
+	private class TaskDispatcher implements Runnable
+	{	
+		@Override
+		public void run() 
+		{
+			while( true )
+			{
+				synchronized( codeRequestsQueue )
+				{
+					// not checking the size of the queue here, as size is not
+					// constant time operation here.
+					if( codeRequestsQueue.peek() == null )
+					{
+						try
+						{
+							codeRequestsQueue.wait();
+						}
+						catch ( InterruptedException e )
+						{
+							e.printStackTrace();
+						}
+					}
+				}
+				
+				// not checking the size of the queue here, as size is not
+				// constant time operation here.
+				while( codeRequestsQueue.peek() != null )
+				{
+					MySQLRequestStorage currReq = codeRequestsQueue.poll();
+					if(currReq != null)
+					{
+						
+					}
+				}
+				
+			}
+		}
+	}
+	
 	
 	private class HandleEventThread implements Runnable
 	{

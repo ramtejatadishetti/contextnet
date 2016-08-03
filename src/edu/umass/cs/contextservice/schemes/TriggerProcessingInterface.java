@@ -16,7 +16,7 @@ import edu.umass.cs.contextservice.queryparsing.QueryInfo;
  */
 public interface TriggerProcessingInterface<NodeIDType> 
 {
-	public boolean processTriggerOnQueryMsgFromUser(QueryInfo<NodeIDType> currReq);
+	public boolean processTriggerOnQueryMsgFromUser(QueryInfo<NodeIDType> currReq );
 	
 	public void processQuerySubspaceRegionMessageForTrigger
 		( QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion );

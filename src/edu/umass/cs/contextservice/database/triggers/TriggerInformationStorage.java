@@ -594,7 +594,8 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 	
 	
 	public boolean checkAndInsertSearchQueryRecordFromPrimaryTriggerSubspace(String groupGUID, 
-			String userIP, int userPort) throws UnknownHostException
+			String userIP, int userPort) 
+					throws UnknownHostException
 	{
 		long t0 = System.currentTimeMillis();
 		
@@ -609,6 +610,8 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 		
 		selectQuery 				= selectQuery + " FROM "+tableName+" WHERE groupGUID = X'"+groupGUID
 				+"'"+" AND userIP = X'"+ipInHex+"'"+" AND userPort = "+userPort;
+		
+		
 		
 		boolean found   = false;
 		

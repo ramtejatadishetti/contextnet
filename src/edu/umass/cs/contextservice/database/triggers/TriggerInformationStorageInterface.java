@@ -6,7 +6,6 @@ import java.util.HashMap;
 import org.json.JSONObject;
 
 /**
- * 
  * This interface defines the trigger information storage 
  * tables and its search and update calls.
  * @author adipc
@@ -22,16 +21,17 @@ public interface TriggerInformationStorageInterface<NodeIDType>
 			String userQuery, String groupGUID, String userIP, int userPort, 
 			long expiryTimeFromNow );
 	
-	public void getTriggerDataInfo(int subspaceId,  
+	public void getTriggerDataInfo( int subspaceId,  
 			JSONObject oldValJSON, JSONObject newUpdateVal, 
 			HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap, 
 			HashMap<String, GroupGUIDInfoClass> newValGroupGUIDMap, 
 			int requestType, JSONObject newUnsetAttrs,
-			boolean firstTimeInsert)
+			boolean firstTimeInsert )
 						throws InterruptedException;
 	
 	public int deleteExpiredSearchQueries( int subspaceId);
 	
-	public boolean checkAndInsertSearchQueryRecordFromPrimaryTriggerSubspace(String groupGUID, 
-			String userIP, int userPort) throws UnknownHostException;
+	public boolean checkAndInsertSearchQueryRecordFromPrimaryTriggerSubspace( String groupGUID, 
+			String userIP, int userPort )
+					throws UnknownHostException;
 }

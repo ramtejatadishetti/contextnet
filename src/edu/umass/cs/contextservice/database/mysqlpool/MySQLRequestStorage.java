@@ -1,24 +1,28 @@
 package edu.umass.cs.contextservice.database.mysqlpool;
 
+import java.util.List;
+
 import edu.umass.cs.contextservice.database.mysqlpool.callbacks.DatabaseCallBack;
 
-public class MySQLRequestStorage 
+public class MySQLRequestStorage
 {
-	private final String queryToExecute;
+	// sometimes one or two queries are executed in one database call,
+	// like check and insert, where first query is select and second is insert if needed.
+	private final List<String> queriesToExecute;
 	private final DatabaseRequestTypes requestType;
 	private final DatabaseCallBack databaseCallBack;
 	
-	public MySQLRequestStorage(String queryToExecute, 
-			DatabaseRequestTypes requestType, DatabaseCallBack databaseCallBack)
+	public MySQLRequestStorage( List<String> queriesToExecute, 
+			DatabaseRequestTypes requestType, DatabaseCallBack databaseCallBack )
 	{
-		this.queryToExecute = queryToExecute;
+		this.queriesToExecute = queriesToExecute;
 		this.requestType = requestType;
 		this.databaseCallBack = databaseCallBack;
 	}
 	
-	public String getQueryToExecute()
+	public List<String> getQueryToExecute()
 	{
-		return this.queryToExecute;
+		return this.queriesToExecute;
 	}
 	
 	public DatabaseRequestTypes getRequestType()

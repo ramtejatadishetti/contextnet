@@ -13,6 +13,7 @@ import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 
+
 public abstract class AbstractDB<NodeIDType>
 {
 	public abstract HashMap<Integer, OverlappingInfoClass> 
@@ -41,12 +42,10 @@ public abstract class AbstractDB<NodeIDType>
 			int requestType, JSONObject newUnsetAttrs, boolean firstTimeInsert) 
 					throws InterruptedException;
 	
-	
 	public abstract int deleteExpiredSearchQueries( int subspaceId );
 	
 	public abstract void storeGUIDInPrimarySubspace( String nodeGUID, 
     		JSONObject jsonToWrite, int updateOrInsert ) throws JSONException;
-	
 	
 	public abstract void storeGUIDInSecondarySubspace( String tableName, String nodeGUID, 
     		JSONObject jsonToWrite, int updateOrInsert 
@@ -55,6 +54,6 @@ public abstract class AbstractDB<NodeIDType>
 	public abstract void deleteGUIDFromSubspaceRegion(String tableName, String nodeGUID, 
 			int subspaceId);
 	
-	public abstract boolean checkAndInsertSearchQueryRecordFromPrimaryTriggerSubspace( String groupGUID, 
-			String userIP, int userPort ) throws UnknownHostException;
+	public abstract boolean checkAndInsertSearchQueryRecordFromPrimaryTriggerSubspace
+			( String groupGUID, String userIP, int userPort ) throws UnknownHostException;
 }
