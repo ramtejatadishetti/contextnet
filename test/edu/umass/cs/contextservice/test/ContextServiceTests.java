@@ -48,7 +48,8 @@ public class ContextServiceTests
 			= "conf/testConf/contextServiceConf"; 
 		
 		// setting all config parameters for the test.
-		ContextServiceConfig.sendFullReplies 			= true;
+		ContextServiceConfig.sendFullRepliesToClient 	= true;
+		ContextServiceConfig.sendFullRepliesWithinCS 	= true;
 		ContextServiceConfig.TRIGGER_ENABLED 			= true;
 		ContextServiceConfig.UniqueGroupGUIDEnabled     = true;
 		ContextServiceConfig.PRIVACY_ENABLED			= true;
@@ -111,7 +112,8 @@ public class ContextServiceTests
 	public void test_2_Input100GUIDs() throws JSONException 
 	{
 		// these tests require full search replies to be sent.
-		assert( ContextServiceConfig.sendFullReplies );
+		assert( ContextServiceConfig.sendFullRepliesToClient );
+		assert( ContextServiceConfig.sendFullRepliesWithinCS );
 		
 		for(int i=0; i<100; i++)
 		{
@@ -136,10 +138,11 @@ public class ContextServiceTests
 	
 	@Test
 	public void test_3_privacyTest() 
-			throws JSONException, NoSuchAlgorithmException 
+			throws JSONException, NoSuchAlgorithmException
 	{
 		// these tests require full search replies to be sent.
-		assert( ContextServiceConfig.sendFullReplies );
+		assert( ContextServiceConfig.sendFullRepliesToClient );
+		assert( ContextServiceConfig.sendFullRepliesWithinCS );
 		
 		assert(ContextServiceConfig.PRIVACY_ENABLED);
 		
@@ -341,8 +344,9 @@ public class ContextServiceTests
 	public void test_4_TriggerTest() throws JSONException
 	{
 		// these tests require full search replies to be sent.
-		assert( ContextServiceConfig.sendFullReplies );
-
+		assert( ContextServiceConfig.sendFullRepliesToClient );
+		assert( ContextServiceConfig.sendFullRepliesWithinCS );
+		
 		//Random rand = new Random();
 		String realAlias = memberAliasPrefix+10000;
 		String myGUID = getGUID(realAlias);

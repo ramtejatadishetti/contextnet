@@ -79,7 +79,10 @@ public class ContextServiceConfig
 	//control if full guids are sent in the search query
 	// reply, if false only sends the number of guids, not
 	// the actual guids
-	public static  boolean sendFullReplies							= true;
+	public static  boolean sendFullRepliesWithinCS					= true;
+	
+	// to check which one is bottleneck the client or CS in full replies. 
+	public static  boolean sendFullRepliesToClient					= false;
 	
 	// if this is set to true, then mysql table selects
 	// return results row by row. If set to false then

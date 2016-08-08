@@ -170,7 +170,7 @@ public class QueryInfo<NodeIDType>
 	{
 		synchronized(this.regionalRepliesLock)
 		{
-			if(ContextServiceConfig.sendFullReplies)
+			if(ContextServiceConfig.sendFullRepliesWithinCS)
 			{
 				OverlappingInfoClass overlapObj = this.regionalReplies.get(senderID);
 				overlapObj.replyArray = queryMesgToSubspaceRegionReply.getResultGUIDs();

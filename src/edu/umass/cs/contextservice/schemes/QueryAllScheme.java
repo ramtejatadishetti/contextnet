@@ -584,7 +584,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 
 			int totalNumReplies 							 = 0;
 
-			if( ContextServiceConfig.sendFullReplies )
+			if( ContextServiceConfig.sendFullRepliesWithinCS )
 			{
 				HashMap<Integer, OverlappingInfoClass> repliesHashMap 
 					= queryInfo.getRepliesHashMap();

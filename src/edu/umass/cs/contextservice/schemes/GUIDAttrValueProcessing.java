@@ -382,7 +382,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 
 			int totalNumReplies 							 = 0;
 
-			if( ContextServiceConfig.sendFullReplies )
+			if( ContextServiceConfig.sendFullRepliesToClient )
 			{
 				HashMap<Integer, OverlappingInfoClass> repliesHashMap 
 					= queryInfo.getRepliesHashMap();

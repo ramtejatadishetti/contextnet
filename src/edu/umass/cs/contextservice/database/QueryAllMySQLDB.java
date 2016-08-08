@@ -177,7 +177,7 @@ public class QueryAllMySQLDB<NodeIDType>
 					}
 					if(satisfies)
 					{
-						if(ContextServiceConfig.sendFullReplies)
+						if(ContextServiceConfig.sendFullRepliesWithinCS)
 						{
 							String nodeGUID = Utils.bytArrayToHex(nodeGUIDBytes);
 							resultArray.put(nodeGUID);
@@ -199,7 +199,7 @@ public class QueryAllMySQLDB<NodeIDType>
 					// byte[] realIDEncryptedArray = rs.getBytes(ACLattr);
 					// ValueTableInfo valobj = new ValueTableInfo(value, nodeGUID);
 					// answerList.add(valobj);
-					if(ContextServiceConfig.sendFullReplies)
+					if(ContextServiceConfig.sendFullRepliesWithinCS)
 					{
 						String nodeGUID = Utils.bytArrayToHex(nodeGUIDBytes);
 						

@@ -373,7 +373,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 					}
 					if(satisfies)
 					{
-						if(ContextServiceConfig.sendFullReplies)
+						if(ContextServiceConfig.sendFullRepliesWithinCS)
 						{
 							String nodeGUID = Utils.bytArrayToHex(nodeGUIDBytes);
 							resultArray.put(nodeGUID);
@@ -395,7 +395,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 					// byte[] realIDEncryptedArray = rs.getBytes(ACLattr);
 					// ValueTableInfo valobj = new ValueTableInfo(value, nodeGUID);
 					// answerList.add(valobj);
-					if(ContextServiceConfig.sendFullReplies)
+					if(ContextServiceConfig.sendFullRepliesWithinCS)
 					{
 						String nodeGUID = Utils.bytArrayToHex(nodeGUIDBytes);
 						
