@@ -1,7 +1,7 @@
 # script that is called by the contextnet java system/program.
 # it returns the optimal value of H, considering both the replicated 
 # and basic subspace configurations.
-# refer to contextnet modeling section and http://www14.in.tum.de/personen/raab/publ/balls.pdf 
+# refer to contextnet modeling section and http://www14.in.tum.de/personen/raab/publ/balls.pdf
 # for maximum balls and bins function
 
 import math
@@ -13,9 +13,10 @@ import sys
 #result = minimize(f, [1])
 #print(result.x)
 rho                             = 0.5
+predRat                         = 1.0
 #Yc                             = 1.0
-#N                               = math.pow(10.0,5)
-N                               = 15000.0
+#N                              = math.pow(10.0,5)
+N                               = 32.0
 # calculated by single node throughput, not very accurate estimation but let's go with that for now.
 # specially if result size increases then estimation error might increase.
 #CsByC                          = 0.005319149
@@ -150,7 +151,7 @@ def calculateExpectedNumNodesASearchGoesTo(numNodesForSubspace, currH, currM):
         
         #expectedNumNodes = calculateOverlapingNodesForSearch(numNodesForSubspace, currH)
         expectedNumNodes = \
-               calculateOverlapingNodesForSearchWithRatio(numNodesForSubspace, currH, 0.5)
+               calculateOverlapingNodesForSearchWithRatio(numNodesForSubspace, currH, predRat)
         
         expectedNumNodes = math.pow(expectedNumNodes, currM)
         mByH = (currM * 1.0)/(currH * 1.0)
