@@ -175,6 +175,7 @@ public class QueryInfo<NodeIDType>
 				OverlappingInfoClass overlapObj = this.regionalReplies.get(senderID);
 				overlapObj.replyArray = queryMesgToSubspaceRegionReply.getResultGUIDs();
 				this.regionalReplies.put(senderID, overlapObj);
+				this.regionalRepliesSize.put(senderID, queryMesgToSubspaceRegionReply.returnReplySize());
 			}
 			else
 			{
