@@ -72,7 +72,7 @@ import edu.umass.cs.gnscommon.exceptions.client.ClientException;
  * @param <NodeIDType>
  */
 public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClient<NodeIDType> 
-						implements ContextClientInterfaceWithPrivacy, ContextServiceClientInterfaceWithoutPrivacy
+				implements ContextClientInterfaceWithPrivacy, ContextServiceClientInterfaceWithoutPrivacy
 {
 	public static final int SUBSPACE_BASED_CS_TRANSFORM				= 1;
 	public static final int HYPERSPACE_BASED_CS_TRANSFORM			= 2;
@@ -103,6 +103,10 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	private long blockingReqID 										= 0;
 	private final Object blockingReqIDLock 							= new Object();
 	
+	// used to get stats for experiment.
+	private double sumNumAnonymizedIdsUpdated						= 0.0;
+	private long totalPrivacyUpdateReqs								= 0;
+	private Object printLocks										= new Object();
 	//private final ExecutorService execService;
 	
 	// indicates the transform type.
@@ -324,6 +328,19 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			
 			assert(transformedMesgList.size() > 0);
 			
+			
+			synchronized(printLocks)
+			{
+				// only measuring for updates, not inserts
+				if(attrValuePairs.length() == 1)
+				{
+					this.sumNumAnonymizedIdsUpdated 
+							= this.sumNumAnonymizedIdsUpdated + transformedMesgList.size();
+					this.totalPrivacyUpdateReqs++;
+				}
+			}
+			
+			
 			UpdateReplyInterface privacyUpdRep 
 					= new PrivacyUpdateReply( updReplyObj, callback, 
 							transformedMesgList.size() );
@@ -352,6 +369,12 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		{
 			jsoEx.printStackTrace();
 		}
+	}
+	
+	
+	public double getAvgAnonymizedIDUpdated()
+	{
+		return this.sumNumAnonymizedIdsUpdated/this.totalPrivacyUpdateReqs;
 	}
 	
 	public void sendSearchQuerySecureWithCallBack
