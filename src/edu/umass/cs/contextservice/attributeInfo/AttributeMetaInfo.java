@@ -23,7 +23,9 @@ public class AttributeMetaInfo
 		this.attributeName = attributeName;
 		this.minValue = minValue;
 		this.maxValue = maxValue;
-		this.defaultValue = minValue;
+		// FIXME: just for the experiments.
+		// need to take default values as inputs as we used to.
+		this.defaultValue = 0+"";
 		this.dataType = dataType;
 	}
 	
