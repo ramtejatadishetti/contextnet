@@ -401,6 +401,9 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 			
 			String dataType = attrMetaInfo.getDataType();
 			
+			String minVal = attrMetaInfo.getMinValue();
+			String maxVal = attrMetaInfo.getMaxValue();
+			
 			String attrValForMysql = "";
 			
 			if( oldUnsetAttrs.has(currAttrName) )
@@ -417,18 +420,32 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 			
 			String lowerValCol = "lower"+currAttrName;
 			String upperValCol = "upper"+currAttrName;
-			//FIXME: for circular queries, this won't work.
+			//FIXED: for circular queries, this won't work.
 			if( first )
 			{
 				// <= and >= both to handle the == case of the default value
-				selectQuery = selectQuery + " ( "+lowerValCol+" <= "+attrValForMysql
-						+" AND "+upperValCol+" >= "+attrValForMysql+" ) ";
+				selectQuery = selectQuery + " ( ( "+lowerValCol+" <= "+attrValForMysql
+						+" AND "+upperValCol+" >= "+attrValForMysql+" ) OR "
+								+ " ( ( "+lowerValCol+" > "+upperValCol+") AND "
+										+ " ( ( " +minVal+" <= "+attrValForMysql
+										+" AND "+upperValCol+" >= "+attrValForMysql+" ) "
+								+ "OR ( "+ lowerValCol+" <= "+attrValForMysql
+								+" AND "+maxVal+" >= "+attrValForMysql+" ) " + " ) "+ " ) )";
 				first = false;
 			}
 			else
 			{
-				selectQuery = selectQuery+" AND "+lowerValCol+" <= "+attrValForMysql
-						+" AND "+upperValCol+" >= "+attrValForMysql;
+				// old query without circular predicates
+//				selectQuery = selectQuery+" AND "+lowerValCol+" <= "+attrValForMysql
+//						+" AND "+upperValCol+" >= "+attrValForMysql;
+				
+				selectQuery = selectQuery + " AND ( ( "+lowerValCol+" <= "+attrValForMysql
+						+" AND "+upperValCol+" >= "+attrValForMysql+" ) OR "
+								+ " ( ( "+lowerValCol+" > "+upperValCol+") AND "
+										+ " ( ( " +minVal+" <= "+attrValForMysql
+										+" AND "+upperValCol+" >= "+attrValForMysql+" ) "
+								+ "OR ( "+ lowerValCol+" <= "+attrValForMysql
+								+" AND "+maxVal+" >= "+attrValForMysql+" ) " + " ) "+ " ) )";
 			}
 		}
 		return selectQuery;
@@ -451,6 +468,9 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 			{
 				String currAttrName = attrIter.next();
 				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(currAttrName);
+				
+				String minVal = attrMetaInfo.getMinValue();
+				String maxVal = attrMetaInfo.getMaxValue();
 				
 				String dataType = attrMetaInfo.getDataType();
 				
@@ -478,14 +498,30 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 				if( first )
 				{
 					// <= and >= both to handle the == case of the default value
-					selectQuery = selectQuery + lowerValCol+" <= "+attrValForMysql
-							+" AND "+upperValCol+" >= "+attrValForMysql;
+//					selectQuery = selectQuery + lowerValCol+" <= "+attrValForMysql
+//							+" AND "+upperValCol+" >= "+attrValForMysql;
+					
+					selectQuery = selectQuery + " ( ( "+lowerValCol+" <= "+attrValForMysql
+							+" AND "+upperValCol+" >= "+attrValForMysql+" ) OR "
+									+ " ( ( "+lowerValCol+" > "+upperValCol+") AND "
+											+ " ( ( " +minVal+" <= "+attrValForMysql
+											+" AND "+upperValCol+" >= "+attrValForMysql+" ) "
+									+ "OR ( "+ lowerValCol+" <= "+attrValForMysql
+									+" AND "+maxVal+" >= "+attrValForMysql+" ) " + " ) "+ " ) )";
+					
 					first = false;
 				}
 				else
 				{
-					selectQuery = selectQuery+" AND "+lowerValCol+" <= "+attrValForMysql
-							+" AND "+upperValCol+" >= "+attrValForMysql;
+//					selectQuery = selectQuery+" AND "+lowerValCol+" <= "+attrValForMysql
+//							+" AND "+upperValCol+" >= "+attrValForMysql;
+					selectQuery = selectQuery + " AND ( ( "+lowerValCol+" <= "+attrValForMysql
+							+" AND "+upperValCol+" >= "+attrValForMysql+" ) OR "
+									+ " ( ( "+lowerValCol+" > "+upperValCol+") AND "
+											+ " ( ( " +minVal+" <= "+attrValForMysql
+											+" AND "+upperValCol+" >= "+attrValForMysql+" ) "
+									+ "OR ( "+ lowerValCol+" <= "+attrValForMysql
+									+" AND "+maxVal+" >= "+attrValForMysql+" ) " + " ) "+ " ) )";
 				}
 			}
 			return selectQuery;

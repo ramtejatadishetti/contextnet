@@ -344,6 +344,7 @@ public class ContextServiceTests
 	@Test
 	public void test_4_TriggerTest() throws JSONException
 	{
+		//FIXME: need to add a circular query trigger test
 		// these tests require full search replies to be sent.
 		assert( ContextServiceConfig.sendFullRepliesToClient );
 		assert( ContextServiceConfig.sendFullRepliesWithinCS );
@@ -368,7 +369,7 @@ public class ContextServiceTests
 			+ "attr1 >= 2 AND attr1 <= 750 AND "
 			+ "attr2 >= 2 AND attr2 <= 750 AND "
 			+ "attr3 >= 2 AND attr3 <= 750 AND "
-			+ "attr4 >= 2 AND attr4 <= 750 AND "
+			+ "attr4 >= 1400 AND attr4 <= 600 AND "
 			+ "attr5 >= 2 AND attr5 <= 750";
 		
 		
