@@ -40,12 +40,12 @@ public class ContextServiceTests
 	private static String memberAliasPrefix = "clientGUID";
 	
 	@BeforeClass
-	public static void setUpBeforeClass() throws Exception 
+	public static void setUpBeforeClass() throws Exception
 	{
 		kpg = KeyPairGenerator.getInstance("RSA");
 		// context service config to use.
 		ContextServiceConfig.configFileDirectory 
-			= "conf/testConf/contextServiceConf"; 
+			= "conf/testConf/contextServiceConf";
 		
 		// setting all config parameters for the test.
 		ContextServiceConfig.sendFullRepliesToClient 	= true;
@@ -53,6 +53,7 @@ public class ContextServiceTests
 		ContextServiceConfig.TRIGGER_ENABLED 			= true;
 		ContextServiceConfig.UniqueGroupGUIDEnabled     = true;
 		ContextServiceConfig.PRIVACY_ENABLED			= true;
+		ContextServiceClient.EXPERIMENT_MODE            = false;
 		
 //		new Thread(new ClientConnectionTest()).start();
 //		

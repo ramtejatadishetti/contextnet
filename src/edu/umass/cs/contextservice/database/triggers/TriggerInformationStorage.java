@@ -146,6 +146,13 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 	
 	private String getPartitionInfoStorageString(String newTableCommand)
 	{
+		// query and default value mechanics
+		//Attr specified in query but not set in GUID                  Do Not return GUID
+		//Attr specified in query and  set in GUID                     Return GUID if possible
+
+		//Attr not specified in query but  set in GUID                 Return GUID if possible 
+		//Attr not specified in query and not set in GUID              Return GUID if possible as no privacy leak
+		
 		// creating for all attributes rather than just the attributes of the subspace for better mataching
 		Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
 		while(subapceIdIter.hasNext())
@@ -164,19 +171,45 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 				String dataType = attrMetaInfo.getDataType();
 				String minVal = attrMetaInfo.getMinValue();
 				String maxVal = attrMetaInfo.getMaxValue();
+				String defaultValue = attrMetaInfo.getDefaultValue();
+				
 				String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);			
 				
 				String lowerAttrName = "lower"+attrName;
 				String upperAttrName = "upper"+attrName;
 				
+				String queryMinDefault = minVal;
+				String queryMaxDefault = maxVal;
+				
+				// finding if default value is smaller or larger than min or max.
+				// so that the query satisfies this case
+				//Attr not specified in query and not set in GUID              Return GUID if possible as no privacy leak
+				if(AttributeTypes.compareTwoValues(defaultValue, minVal, dataType))
+				{
+					// default value smaller than min
+					queryMinDefault = defaultValue;
+					queryMaxDefault = maxVal;
+				}
+				else if(AttributeTypes.compareTwoValues(maxVal, defaultValue, dataType))
+				{
+					// maxVal is smaller than defaultValue
+					queryMinDefault = minVal;
+					queryMaxDefault = defaultValue;
+				}
+				else
+				{
+					// this should not happen
+					assert(false);
+				}
 				
 				// changed it to min max for lower and upper value instead of default 
 				// because we want a query to match for attributes that are not specified 
 				// in the query, as those basically are don't care.
 				newTableCommand = newTableCommand + " , "+lowerAttrName+" "+mySQLDataType
-						+" DEFAULT "+AttributeTypes.convertStringToDataTypeForMySQL(minVal, dataType)
+						+" DEFAULT "
+						+AttributeTypes.convertStringToDataTypeForMySQL(queryMinDefault, dataType)
 						+ " , "+upperAttrName+" "+mySQLDataType+" DEFAULT "
-						+AttributeTypes.convertStringToDataTypeForMySQL(maxVal, dataType)
+						+AttributeTypes.convertStringToDataTypeForMySQL(queryMaxDefault, dataType)
 						+ " , INDEX USING BTREE("+lowerAttrName+" , "+upperAttrName+")";			
 			}
 		}
@@ -388,8 +421,8 @@ public class TriggerInformationStorage<NodeIDType> implements TriggerInformation
 			if( first )
 			{
 				// <= and >= both to handle the == case of the default value
-				selectQuery = selectQuery + lowerValCol+" <= "+attrValForMysql
-						+" AND "+upperValCol+" >= "+attrValForMysql;
+				selectQuery = selectQuery + " ( "+lowerValCol+" <= "+attrValForMysql
+						+" AND "+upperValCol+" >= "+attrValForMysql+" ) ";
 				first = false;
 			}
 			else

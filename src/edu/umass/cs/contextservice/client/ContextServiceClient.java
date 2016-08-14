@@ -74,6 +74,9 @@ import edu.umass.cs.gnscommon.exceptions.client.ClientException;
 public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClient<NodeIDType> 
 				implements ContextClientInterfaceWithPrivacy, ContextServiceClientInterfaceWithoutPrivacy
 {
+	// if experiment mode is true then triggers are not stored in a queue.
+	public static boolean EXPERIMENT_MODE							= true;
+	
 	public static final int SUBSPACE_BASED_CS_TRANSFORM				= 1;
 	public static final int HYPERSPACE_BASED_CS_TRANSFORM			= 2;
 	public static final int GUID_BASED_CS_TRANSFORM					= 3;
@@ -107,6 +110,12 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	private double sumNumAnonymizedIdsUpdated						= 0.0;
 	private long totalPrivacyUpdateReqs								= 0;
 	private Object printLocks										= new Object();
+	
+	private double sumAddedGroupGUIDsOnUpdate						= 0.0;
+	private double sumRemovedGroupGUIDsOnUpdate						= 0.0;
+	private long numTriggers										= 1;
+	
+	
 	//private final ExecutorService execService;
 	
 	// indicates the transform type.
@@ -860,6 +869,17 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		} while(csNodeAddresses.size() == 0);
 	}
 	
+	public void printTriggerStats()
+	{
+		String str = "";
+		double avgAddTrigger     = this.sumAddedGroupGUIDsOnUpdate/this.numTriggers;
+		double avgRemovedTrigger = this.sumRemovedGroupGUIDsOnUpdate/this.numTriggers;
+		
+		System.out.println("avgAddTrigger "+avgAddTrigger
+						+" avgRemovedTrigger "+avgRemovedTrigger);
+	}
+	
+	
 	private class HandleMessageThread implements Runnable
 	{
 		private final JSONObject mesgJSON;
@@ -1017,7 +1037,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				replySearchObj.callback.searchCompletion(replySearchObj.searchRep);
 				
 				pendingSearches.remove(reqID);
-			} catch (JSONException e)
+			}
+			catch ( JSONException e )
 			{
 				e.printStackTrace();
 			}
@@ -1030,10 +1051,26 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				RefreshTrigger<NodeIDType> qmur 
 							= new RefreshTrigger<NodeIDType>(jso);
 				
-				synchronized(refreshTriggerClientWaitLock)
+				synchronized( refreshTriggerClientWaitLock )
 				{
-					refreshTriggerQueue.add(qmur.toJSONObject());
-					refreshTriggerClientWaitLock.notify();
+					if( ContextServiceClient.EXPERIMENT_MODE )
+					{
+//						private double sumAddedGroupGUIDsOnUpdate						= 0.0;
+//						private double sumRemovedGroupGUIDsOnUpdate						= 0.0;
+//						private long numTriggers										= 0;
+						
+						sumAddedGroupGUIDsOnUpdate = sumAddedGroupGUIDsOnUpdate
+											+ qmur.getToBeAddedGroupGUIDs().length();
+						
+						sumRemovedGroupGUIDsOnUpdate = sumRemovedGroupGUIDsOnUpdate 
+											+ qmur.getToBeRemovedGroupGUIDs().length();
+						numTriggers++;
+					}
+					else
+					{
+						refreshTriggerQueue.add(qmur.toJSONObject());
+						refreshTriggerClientWaitLock.notify();
+					}
 				}
 			} catch (JSONException e)
 			{
@@ -1084,11 +1121,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 //		byte[] publicKeyByteArray0 = publicKey0.getEncoded();
 //		byte[] privateKeyByteArray0 = privateKey0.getEncoded();
 //		String guid0 = GuidUtils.createGuidFromPublicKey(publicKeyByteArray0);
-//		GuidEntry myGUID = masterGuid;
-		
+//		GuidEntry myGUID = masterGuid;	
 		
 		Vector<GuidEntry> guidsVector = new Vector<GuidEntry>();
-		
 
 		
 		guidsVector.add(myGUID);
