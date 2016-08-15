@@ -7,7 +7,7 @@ import org.json.JSONObject;
 public class RefreshTrigger<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 {
 	private enum Keys {TO_BE_REMOVED, TO_BE_ADDED, 
-		VERSION_NUM, GUID, UPDATE_START_TIME};
+		VERSION_NUM, GUID, UPDATE_START_TIME, NUM_REMOVED, NUM_ADDED};
 	
 	//private final String query;  // original query sent by the user.
 	private final JSONArray toBeRemoved;
@@ -18,9 +18,13 @@ public class RefreshTrigger<NodeIDType> extends BasicContextServicePacket<NodeID
 	// indicates the update start time for this trigger, the udpate that caused this trigger. 
 	private final long updStartTime;
 	
-	public RefreshTrigger(NodeIDType initiator, JSONArray toBeRemoved, 
+	private final int numRemoved;
+	private final int numAdded;
+	
+	
+	public RefreshTrigger( NodeIDType initiator, JSONArray toBeRemoved, 
 			JSONArray toBeAdded, long versionNum,
-			String GUID, long updStartTime)
+			String GUID, long updStartTime, int numRemoved, int numAdded )
 	{
 		super(initiator, ContextServicePacket.PacketType.REFRESH_TRIGGER);
 		
@@ -30,6 +34,8 @@ public class RefreshTrigger<NodeIDType> extends BasicContextServicePacket<NodeID
 		this.versionNum = versionNum;
 		this.updateInGUID = GUID;
 		this.updStartTime = updStartTime;
+		this.numRemoved = numRemoved;
+		this.numAdded = numAdded;
 	}
 	
 	public RefreshTrigger(JSONObject json) throws JSONException
@@ -41,6 +47,8 @@ public class RefreshTrigger<NodeIDType> extends BasicContextServicePacket<NodeID
 		this.versionNum = json.getLong(Keys.VERSION_NUM.toString());
 		this.updateInGUID = json.getString(Keys.GUID.toString());
 		this.updStartTime = json.getLong(Keys.UPDATE_START_TIME.toString());
+		this.numRemoved = json.getInt(Keys.NUM_REMOVED.toString());
+		this.numAdded = json.getInt(Keys.NUM_ADDED.toString());
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException
@@ -51,6 +59,8 @@ public class RefreshTrigger<NodeIDType> extends BasicContextServicePacket<NodeID
 		json.put(Keys.VERSION_NUM.toString(), versionNum);
 		json.put(Keys.GUID.toString(), updateInGUID);
 		json.put(Keys.UPDATE_START_TIME.toString(), updStartTime);
+		json.put(Keys.NUM_REMOVED.toString(),  this.numRemoved);
+		json.put(Keys.NUM_ADDED.toString(),  this.numAdded);
 		return json;
 	}
 	
@@ -77,6 +87,16 @@ public class RefreshTrigger<NodeIDType> extends BasicContextServicePacket<NodeID
 	public long getUpdateStartTime()
 	{
 		return this.updStartTime;
+	}
+	
+	public int getNumRemoved()
+	{
+		return this.numRemoved;
+	}
+	
+	public int getNumAdded()
+	{
+		return this.numAdded;
 	}
 	
 	public static void main(String[] args)

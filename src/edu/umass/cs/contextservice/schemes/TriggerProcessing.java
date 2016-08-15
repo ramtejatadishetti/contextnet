@@ -174,11 +174,24 @@ public class TriggerProcessing<NodeIDType> implements
 			JSONArray toBeAddedGroupGUIDs = sameClientAddedTrigger.remove(ipPort);
 			
 			
-			RefreshTrigger<NodeIDType> refTrig 
-			= new RefreshTrigger<NodeIDType>
-			(myID, toBeRemovedGroupGUIDs, 
-					(toBeAddedGroupGUIDs!=null)?toBeAddedGroupGUIDs:new JSONArray(),
-					versionNum, updateGUID, updateStartTime);
+			RefreshTrigger<NodeIDType> refTrig = null;
+			
+			if(ContextServiceConfig.sendFullRepliesToClient)
+			{
+				refTrig = new RefreshTrigger<NodeIDType>
+					(myID, toBeRemovedGroupGUIDs, 
+						(toBeAddedGroupGUIDs!=null)?toBeAddedGroupGUIDs:new JSONArray(),
+						versionNum, updateGUID, updateStartTime, toBeRemovedGroupGUIDs.length(),
+						(toBeAddedGroupGUIDs!=null)?toBeAddedGroupGUIDs.length():0);
+			}
+			else
+			{
+				refTrig = new RefreshTrigger<NodeIDType>
+					(myID, new JSONArray(), new JSONArray(),
+								versionNum, updateGUID, updateStartTime, toBeRemovedGroupGUIDs.length(),
+								(toBeAddedGroupGUIDs!=null)?toBeAddedGroupGUIDs.length():0);
+			}
+			
 			
 			String[] parsed = ipPort.split(":");
 			
@@ -208,11 +221,25 @@ public class TriggerProcessing<NodeIDType> implements
 		{
 			String ipPort = sameClientIter.next();
 			
-			RefreshTrigger<NodeIDType> refTrig 
-			= new RefreshTrigger<NodeIDType>
-			(myID, new JSONArray(), 
-					sameClientAddedTrigger.get(ipPort),
-					versionNum, updateGUID, updateStartTime);			
+			RefreshTrigger<NodeIDType> refTrig = null;
+				
+			
+			if(ContextServiceConfig.sendFullRepliesToClient)
+			{
+				refTrig = new RefreshTrigger<NodeIDType>
+					(myID, new JSONArray(), 
+							sameClientAddedTrigger.get(ipPort),
+							versionNum, updateGUID, updateStartTime, 0, 
+							sameClientAddedTrigger.get(ipPort).length());
+			}
+			else
+			{
+				refTrig 
+					= new RefreshTrigger<NodeIDType>
+					(myID, new JSONArray(), 
+					new JSONArray(), versionNum, updateGUID, updateStartTime, 0, 
+					sameClientAddedTrigger.get(ipPort).length());
+			}
 
 			
 			String[] parsed = ipPort.split(":");

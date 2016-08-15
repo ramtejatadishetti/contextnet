@@ -1064,10 +1064,10 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 //						private long numTriggers										= 0;
 						
 						sumAddedGroupGUIDsOnUpdate = sumAddedGroupGUIDsOnUpdate
-											+ qmur.getToBeAddedGroupGUIDs().length();
+											+ qmur.getNumAdded();
 						
 						sumRemovedGroupGUIDsOnUpdate = sumRemovedGroupGUIDsOnUpdate 
-											+ qmur.getToBeRemovedGroupGUIDs().length();
+											+ qmur.getNumRemoved();
 						numTriggers++;
 						
 						long currTime = System.currentTimeMillis();
