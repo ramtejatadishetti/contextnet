@@ -28,12 +28,13 @@ import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.utils.DelayProfiler;
 
 /**
+ * 
  * Implements the trigger storage table creation
  * and search and update trigger storage.
  * @author adipc
- *
  */
-public class TriggerInformationStorage<NodeIDType> implements TriggerInformationStorageInterface<NodeIDType>
+public class TriggerInformationStorage<NodeIDType> implements 
+										TriggerInformationStorageInterface<NodeIDType>
 {
 	private final NodeIDType myNodeID;
 	private final HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;

@@ -802,13 +802,20 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	
 	
 	private void processValueUpdateToSubspaceRegionMessageReply
-		(ValueUpdateToSubspaceRegionReplyMessage<NodeIDType> 
-		valueUpdateToSubspaceRegionReplyMessage)
+		( ValueUpdateToSubspaceRegionReplyMessage<NodeIDType> 
+		valueUpdateToSubspaceRegionReplyMessage )
 	{
 		long requestID  = valueUpdateToSubspaceRegionReplyMessage.getRequestID();
 		int subspaceId  = valueUpdateToSubspaceRegionReplyMessage.getSubspaceNum();
 		int numReply 	= valueUpdateToSubspaceRegionReplyMessage.getNumReply();
 		int replicaNum  = valueUpdateToSubspaceRegionReplyMessage.getReplicaNum();
+		
+		JSONArray toBeRemovedGroups 
+						= valueUpdateToSubspaceRegionReplyMessage.getToBeRemovedGroups();
+		
+		JSONArray toBeAddedGroups 
+						= valueUpdateToSubspaceRegionReplyMessage.getToBeAddedGroups();
+		
 		
 		UpdateInfo<NodeIDType> updInfo = pendingUpdateRequests.get(requestID);
 		
@@ -820,7 +827,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					+ valueUpdateToSubspaceRegionReplyMessage );
 			assert(false);
 		}
-		boolean completion = updInfo.setUpdateReply(subspaceId, replicaNum, numReply);
+		boolean completion = updInfo.setUpdateReply(subspaceId, replicaNum, numReply, 
+				toBeRemovedGroups, toBeAddedGroups);
 		
 		if( completion )
 		{
@@ -842,6 +850,21 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			{
 				e.printStackTrace();
 			}
+			
+			if(ContextServiceConfig.TRIGGER_ENABLED)
+			{
+				try {
+					this.triggerProcessing.sendOutAggregatedRefreshTrigger
+						( updInfo.getToBeRemovedMap(), 
+						  updInfo.getToBeAddedMap(), updInfo.getValueUpdateFromGNS().getGUID(), 
+						  updInfo.getValueUpdateFromGNS().getVersionNum(), 
+						  updInfo.getValueUpdateFromGNS().getUpdateStartTime() );
+				} catch (JSONException e) 
+				{
+					e.printStackTrace();
+				}
+			}
+			
 			
 			UpdateInfo<NodeIDType> removedUpdate 
 					=  pendingUpdateRequests.remove(requestID);;
@@ -999,7 +1022,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		{
 			e.printStackTrace();
 		}
-
 		ContextServiceLogger.getLogger().info("Sending queryMesgToSubspaceRegionReply "
 				+ " mesg from " + this.getMyID() +" to node "
 				+queryMesgToSubspaceRegion.getSender());
@@ -1024,18 +1046,41 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		HashMap<String, GroupGUIDInfoClass> addedGroups 
 							= new HashMap<String, GroupGUIDInfoClass>();
 		
-		if(ContextServiceConfig.TRIGGER_ENABLED)
+		JSONArray toBeRemovedGroups = new JSONArray();
+		JSONArray toBeAddedGroups = new JSONArray();
+		
+		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
 			// sending triggers right here.
-			try {
+			try
+			{
 				this.triggerProcessing.processTriggerForValueUpdateToSubspaceRegion
-				(valueUpdateToSubspaceRegionMessage, removedGroups, addedGroups);
+							(valueUpdateToSubspaceRegionMessage, removedGroups, addedGroups);
 				
-				this.triggerProcessing.sendOutAggregatedRefreshTrigger
-					(removedGroups, addedGroups, updateGUID, versionNum, updateStartTime);
-			} catch (InterruptedException e1) {
+				Iterator<String> groupGUIDIter = removedGroups.keySet().iterator();
+				while( groupGUIDIter.hasNext() )
+				{
+					String groupGUID = groupGUIDIter.next();
+					GroupGUIDInfoClass groupGUIDInfo = removedGroups.get(groupGUID);
+					toBeRemovedGroups.put(groupGUIDInfo.toJSONObjectImpl());
+				}
+				
+				groupGUIDIter = addedGroups.keySet().iterator();
+				while( groupGUIDIter.hasNext() )
+				{
+					String groupGUID = groupGUIDIter.next();
+					GroupGUIDInfoClass groupGUIDInfo = addedGroups.get(groupGUID);
+					toBeAddedGroups.put(groupGUIDInfo.toJSONObjectImpl());
+				}
+				
+				
+				//this.triggerProcessing.sendOutAggregatedRefreshTrigger
+				//	(removedGroups, addedGroups, updateGUID, versionNum, updateStartTime);
+			} catch (InterruptedException e1)
+			{
 				e1.printStackTrace();
-			} catch (JSONException e) {
+			} catch (JSONException e)
+			{
 				e.printStackTrace();
 			}
 		}
@@ -1045,7 +1090,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		valueUpdateToSubspaceRegionReplyMessage 
 			= new ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>(this.getMyID(), 
 				valueUpdateToSubspaceRegionMessage.getVersionNum(), numRep, 
-				valueUpdateToSubspaceRegionMessage.getRequestID(), subspaceId, replicaNum);
+				valueUpdateToSubspaceRegionMessage.getRequestID(), subspaceId, replicaNum
+				, toBeRemovedGroups, toBeAddedGroups);
 	
 		try
 		{

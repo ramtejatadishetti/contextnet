@@ -22,12 +22,12 @@ public interface TriggerProcessingInterface<NodeIDType>
 		( QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion );
 	
 	public void processTriggerForValueUpdateToSubspaceRegion
-	(ValueUpdateToSubspaceRegionMessage<NodeIDType> 
-	valueUpdateToSubspaceRegionMessage, HashMap<String, GroupGUIDInfoClass> removedGroups, 
-	HashMap<String, GroupGUIDInfoClass> addedGroups ) throws InterruptedException;
+		( ValueUpdateToSubspaceRegionMessage<NodeIDType> 
+		valueUpdateToSubspaceRegionMessage, HashMap<String, GroupGUIDInfoClass> removedGroups, 
+		HashMap<String, GroupGUIDInfoClass> addedGroups ) throws InterruptedException;
 	
 	public void sendOutAggregatedRefreshTrigger
-	( HashMap<String, GroupGUIDInfoClass> removedGroups, 
+		( HashMap<String, GroupGUIDInfoClass> removedGroups, 
 			HashMap<String, GroupGUIDInfoClass> addedGroups, String updateGUID, 
 			long versionNum,
 			long updateStartTime) throws JSONException;

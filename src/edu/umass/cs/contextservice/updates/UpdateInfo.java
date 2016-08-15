@@ -4,6 +4,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+
+import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 
@@ -20,6 +25,10 @@ public class UpdateInfo<NodeIDType>
 	private HashMap<String, Integer> valueUpdateRepliesMap 						= null;
 	// counter over number of subspaces
 	private int valueUpdateRepliesCounter 										= 0;
+	
+	
+	private HashMap<String, GroupGUIDInfoClass> toBeRemovedMap;
+	private HashMap<String, GroupGUIDInfoClass> toBeAddedMap;
 	
 	
 	// string key is of the form subspaceId-replicaNum, value integer is 
@@ -63,6 +72,12 @@ public class UpdateInfo<NodeIDType>
 				}
 			}
 		}
+		
+		if( ContextServiceConfig.TRIGGER_ENABLED )
+		{
+			toBeRemovedMap = new HashMap<String, GroupGUIDInfoClass>();
+			toBeAddedMap = new HashMap<String, GroupGUIDInfoClass>();
+		}
 	}
 	
 	public long getRequestId()
@@ -85,15 +100,61 @@ public class UpdateInfo<NodeIDType>
 		this.updateReqCompl = true;
 	}
 	
-	private void initializeSubspaceEntry(int subspaceId, int replicaNum)
+	private void initializeSubspaceEntry( int subspaceId, int replicaNum )
 	{
 		valueUpdateRepliesMap.put(subspaceId+"-"+replicaNum, 0);
 	}
 	
-	public boolean setUpdateReply( int subspaceId, int replicaNum, int numRep)
+	public boolean setUpdateReply( int subspaceId, int replicaNum, int numRep,
+			JSONArray toBeRemovedGroups, JSONArray toBeAddedGroups )
 	{
+		assert( toBeRemovedGroups != null );
+		assert( toBeAddedGroups != null );
+		
 		synchronized( this.subspaceRepliesLock )
 		{
+			if( ContextServiceConfig.TRIGGER_ENABLED )
+			{
+				for( int i=0; i<toBeRemovedGroups.length(); i++ )
+				{
+					try 
+					{
+						GroupGUIDInfoClass groupGUIDInfo 
+								= new GroupGUIDInfoClass(toBeRemovedGroups.getJSONObject(i));
+						
+						String groupGUID = groupGUIDInfo.getGroupGUID();
+						
+						// doing duplicate elimination right here.
+						// as a query can span multiple nodes in a subspace.
+						toBeRemovedMap.put(groupGUID, groupGUIDInfo);
+					}
+					catch (JSONException e)
+					{
+						e.printStackTrace();
+					}
+				}
+				
+				
+				for( int i=0; i<toBeAddedGroups.length(); i++ )
+				{
+					GroupGUIDInfoClass groupGUIDInfo;
+					try 
+					{
+						groupGUIDInfo 
+							= new GroupGUIDInfoClass(toBeAddedGroups.getJSONObject(i));
+						
+						String groupGUID = groupGUIDInfo.getGroupGUID();
+						
+						// doing duplicate elimination right here.
+						// as a query can span multiple nodes in a subspace.
+						toBeAddedMap.put(groupGUID, groupGUIDInfo);
+					} catch (JSONException e) 
+					{
+						e.printStackTrace();
+					}
+				}
+			}
+			
 			String mapKey = subspaceId+"-"+replicaNum;
 			int repliesRecvdSoFar = this.valueUpdateRepliesMap.get(mapKey);
 			repliesRecvdSoFar++;
@@ -129,5 +190,15 @@ public class UpdateInfo<NodeIDType>
 				return false;
 			}
 		}
+	}
+	
+	public HashMap<String, GroupGUIDInfoClass> getToBeRemovedMap()
+	{
+		return this.toBeRemovedMap;
+	}
+	
+	public HashMap<String, GroupGUIDInfoClass> getToBeAddedMap()
+	{
+		return this.toBeAddedMap;
 	}
 }

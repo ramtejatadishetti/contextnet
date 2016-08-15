@@ -1,5 +1,6 @@
 package edu.umass.cs.contextservice.messages;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -15,12 +16,13 @@ public class ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>
 	private final long requestID;
 	private final int subspaceNum;
 	private final int replicaNum;
-//	private final JSONArray toBeRemovedGroups;
-//	private final JSONArray toBeAddedGroups;
+	private final JSONArray toBeRemovedGroups;
+	private final JSONArray toBeAddedGroups;
 	
 	
 	public ValueUpdateToSubspaceRegionReplyMessage( NodeIDType initiator, long versionNum, 
-			int numRep, long requestID, int subspaceNum, int replicaNum)
+			int numRep, long requestID, int subspaceNum, int replicaNum, 
+			JSONArray toBeRemovedGroups, JSONArray toBeAddedGroups )
 	{
 		super(initiator, 
 			ContextServicePacket.PacketType.VALUEUPDATE_TO_SUBSPACE_REGION_REPLY_MESSAGE);
@@ -29,8 +31,8 @@ public class ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>
 		this.requestID 	 = requestID;
 		this.subspaceNum = subspaceNum;
 		this.replicaNum  = replicaNum;
-//		this.toBeRemovedGroups = toBeRemovedGroups;
-//		this.toBeAddedGroups = toBeAddedGroups;
+		this.toBeRemovedGroups = toBeRemovedGroups;
+		this.toBeAddedGroups = toBeAddedGroups;
 	}
 	
 	public ValueUpdateToSubspaceRegionReplyMessage(JSONObject json) throws JSONException
@@ -43,8 +45,8 @@ public class ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>
 		this.requestID = json.getLong(Keys.REQUEST_ID.toString());
 		this.subspaceNum = json.getInt(Keys.SUBSPACE_NUM.toString());
 		this.replicaNum  = json.getInt(Keys.REPLICA_NUM.toString());
-//		this.toBeRemovedGroups = json.getJSONArray(Keys.TO_BE_REMOVED_GROUPS.toString());
-//		this.toBeAddedGroups = json.getJSONArray(Keys.TO_BE_ADDED_GROUPS.toString());
+		this.toBeRemovedGroups = json.getJSONArray(Keys.TO_BE_REMOVED_GROUPS.toString());
+		this.toBeAddedGroups = json.getJSONArray(Keys.TO_BE_ADDED_GROUPS.toString());
 		//ContextServiceLogger.getLogger().fine("\n\n ValueUpdateFromGNS constructor");
 	}
 	
@@ -56,8 +58,8 @@ public class ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>
 		json.put(Keys.REQUEST_ID.toString(), this.requestID);
 		json.put(Keys.SUBSPACE_NUM.toString(), this.subspaceNum);
 		json.put(Keys.REPLICA_NUM.toString(), this.replicaNum);
-//		json.put(Keys.TO_BE_REMOVED_GROUPS.toString(), this.toBeRemovedGroups);
-//		json.put(Keys.TO_BE_ADDED_GROUPS.toString(), this.toBeAddedGroups);
+		json.put(Keys.TO_BE_REMOVED_GROUPS.toString(), this.toBeRemovedGroups);
+		json.put(Keys.TO_BE_ADDED_GROUPS.toString(), this.toBeAddedGroups);
 		return json;
 	}
 	
@@ -86,15 +88,15 @@ public class ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>
 		return this.replicaNum;
 	}
 	
-//	public JSONArray getToBeRemovedGroups()
-//	{
-//		return this.toBeRemovedGroups;
-//	}
-//	
-//	public JSONArray getToBeAddedGroups()
-//	{
-//		return this.toBeAddedGroups;
-//	}
+	public JSONArray getToBeRemovedGroups()
+	{
+		return this.toBeRemovedGroups;
+	}
+	
+	public JSONArray getToBeAddedGroups()
+	{
+		return this.toBeAddedGroups;
+	}
 	
 	public static void main(String[] args)
 	{

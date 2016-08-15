@@ -115,6 +115,10 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	private double sumRemovedGroupGUIDsOnUpdate						= 0.0;
 	private long numTriggers										= 1;
 	
+	private long lastPrintTime;
+	
+	private final long startTime									= System.currentTimeMillis();
+	
 	
 	//private final ExecutorService execService;
 	
@@ -1065,6 +1069,21 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 						sumRemovedGroupGUIDsOnUpdate = sumRemovedGroupGUIDsOnUpdate 
 											+ qmur.getToBeRemovedGroupGUIDs().length();
 						numTriggers++;
+						
+						long currTime = System.currentTimeMillis();
+						if( (currTime -lastPrintTime) >= 10000 )
+						{
+							double avgAddTrigger     = sumAddedGroupGUIDsOnUpdate/numTriggers;
+							double avgRemovedTrigger = sumRemovedGroupGUIDsOnUpdate/numTriggers;
+							
+							System.out.println("Time "+(currTime-startTime)+" avgAddTrigger "+avgAddTrigger
+											+" avgRemovedTrigger "+avgRemovedTrigger);
+							
+							sumAddedGroupGUIDsOnUpdate = 0;
+							sumRemovedGroupGUIDsOnUpdate = 0;
+							numTriggers = 1;
+							lastPrintTime = currTime;
+						}
 					}
 					else
 					{
@@ -1078,6 +1097,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			}
 		}
 	}
+	
+	
 	
 	// testing secure client code
 	// TODO: test the scheme with the example given in the draft.
