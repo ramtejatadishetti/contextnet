@@ -107,6 +107,11 @@ public class ContextServiceConfig
 	// subspace info. Just for throuhgput testing.
 	public static boolean disableMySQLDB							= false;
 	
+	
+	// circular query triggers makes the select queries 
+	// very complicated, so there is an option to enable disable it.
+	public static boolean disableCircularQueryTrigger				= true;
+	
 	// if set to true basic subspace config is enabled.
 	//public static boolean basicSubspaceConfig						= false;
 	

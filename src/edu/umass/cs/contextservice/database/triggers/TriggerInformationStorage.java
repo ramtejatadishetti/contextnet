@@ -425,13 +425,22 @@ public class TriggerInformationStorage<NodeIDType> implements
 			if( first )
 			{
 				// <= and >= both to handle the == case of the default value
-				selectQuery = selectQuery + " ( ( "+lowerValCol+" <= "+attrValForMysql
-						+" AND "+upperValCol+" >= "+attrValForMysql+" ) OR "
-								+ " ( ( "+lowerValCol+" > "+upperValCol+") AND "
-										+ " ( ( " +minVal+" <= "+attrValForMysql
-										+" AND "+upperValCol+" >= "+attrValForMysql+" ) "
-								+ "OR ( "+ lowerValCol+" <= "+attrValForMysql
-								+" AND "+maxVal+" >= "+attrValForMysql+" ) " + " ) "+ " ) )";
+				if(ContextServiceConfig.disableCircularQueryTrigger)
+				{
+					selectQuery = selectQuery+lowerValCol+" <= "+attrValForMysql
+					+" AND "+upperValCol+" >= "+attrValForMysql;
+					
+				}
+				else
+				{
+					selectQuery = selectQuery + " ( ( "+lowerValCol+" <= "+attrValForMysql
+							+" AND "+upperValCol+" >= "+attrValForMysql+" ) OR "
+									+ " ( ( "+lowerValCol+" > "+upperValCol+") AND "
+											+ " ( ( " +minVal+" <= "+attrValForMysql
+											+" AND "+upperValCol+" >= "+attrValForMysql+" ) "
+									+ "OR ( "+ lowerValCol+" <= "+attrValForMysql
+									+" AND "+maxVal+" >= "+attrValForMysql+" ) " + " ) "+ " ) )";
+				}
 				first = false;
 			}
 			else
@@ -440,13 +449,21 @@ public class TriggerInformationStorage<NodeIDType> implements
 //				selectQuery = selectQuery+" AND "+lowerValCol+" <= "+attrValForMysql
 //						+" AND "+upperValCol+" >= "+attrValForMysql;
 				
-				selectQuery = selectQuery + " AND ( ( "+lowerValCol+" <= "+attrValForMysql
-						+" AND "+upperValCol+" >= "+attrValForMysql+" ) OR "
-								+ " ( ( "+lowerValCol+" > "+upperValCol+") AND "
-										+ " ( ( " +minVal+" <= "+attrValForMysql
-										+" AND "+upperValCol+" >= "+attrValForMysql+" ) "
-								+ "OR ( "+ lowerValCol+" <= "+attrValForMysql
-								+" AND "+maxVal+" >= "+attrValForMysql+" ) " + " ) "+ " ) )";
+				if(ContextServiceConfig.disableCircularQueryTrigger)
+				{
+					selectQuery = selectQuery+" AND "+lowerValCol+" <= "+attrValForMysql
+							+" AND "+upperValCol+" >= "+attrValForMysql;
+				}
+				else
+				{
+					selectQuery = selectQuery + " AND ( ( "+lowerValCol+" <= "+attrValForMysql
+							+" AND "+upperValCol+" >= "+attrValForMysql+" ) OR "
+									+ " ( ( "+lowerValCol+" > "+upperValCol+") AND "
+											+ " ( ( " +minVal+" <= "+attrValForMysql
+											+" AND "+upperValCol+" >= "+attrValForMysql+" ) "
+									+ "OR ( "+ lowerValCol+" <= "+attrValForMysql
+									+" AND "+maxVal+" >= "+attrValForMysql+" ) " + " ) "+ " ) )";
+				}
 			}
 		}
 		return selectQuery;
@@ -495,20 +512,28 @@ public class TriggerInformationStorage<NodeIDType> implements
 				
 				String lowerValCol = "lower"+currAttrName;
 				String upperValCol = "upper"+currAttrName;
-				//FIXME: will not work for cicular queries
+				//FIXED: will not work for cicular queries
 				if( first )
 				{
 					// <= and >= both to handle the == case of the default value
 //					selectQuery = selectQuery + lowerValCol+" <= "+attrValForMysql
 //							+" AND "+upperValCol+" >= "+attrValForMysql;
 					
-					selectQuery = selectQuery + " ( ( "+lowerValCol+" <= "+attrValForMysql
-							+" AND "+upperValCol+" >= "+attrValForMysql+" ) OR "
-									+ " ( ( "+lowerValCol+" > "+upperValCol+") AND "
-											+ " ( ( " +minVal+" <= "+attrValForMysql
-											+" AND "+upperValCol+" >= "+attrValForMysql+" ) "
-									+ "OR ( "+ lowerValCol+" <= "+attrValForMysql
-									+" AND "+maxVal+" >= "+attrValForMysql+" ) " + " ) "+ " ) )";
+					if(ContextServiceConfig.disableCircularQueryTrigger)
+					{
+						selectQuery = selectQuery + lowerValCol+" <= "+attrValForMysql
+								+" AND "+upperValCol+" >= "+attrValForMysql;
+					}
+					else
+					{
+						selectQuery = selectQuery + " ( ( "+lowerValCol+" <= "+attrValForMysql
+								+" AND "+upperValCol+" >= "+attrValForMysql+" ) OR "
+										+ " ( ( "+lowerValCol+" > "+upperValCol+") AND "
+												+ " ( ( " +minVal+" <= "+attrValForMysql
+												+" AND "+upperValCol+" >= "+attrValForMysql+" ) "
+										+ "OR ( "+ lowerValCol+" <= "+attrValForMysql
+										+" AND "+maxVal+" >= "+attrValForMysql+" ) " + " ) "+ " ) )";
+					}
 					
 					first = false;
 				}
@@ -516,13 +541,22 @@ public class TriggerInformationStorage<NodeIDType> implements
 				{
 //					selectQuery = selectQuery+" AND "+lowerValCol+" <= "+attrValForMysql
 //							+" AND "+upperValCol+" >= "+attrValForMysql;
-					selectQuery = selectQuery + " AND ( ( "+lowerValCol+" <= "+attrValForMysql
-							+" AND "+upperValCol+" >= "+attrValForMysql+" ) OR "
-									+ " ( ( "+lowerValCol+" > "+upperValCol+") AND "
-											+ " ( ( " +minVal+" <= "+attrValForMysql
-											+" AND "+upperValCol+" >= "+attrValForMysql+" ) "
-									+ "OR ( "+ lowerValCol+" <= "+attrValForMysql
-									+" AND "+maxVal+" >= "+attrValForMysql+" ) " + " ) "+ " ) )";
+					
+					if(ContextServiceConfig.disableCircularQueryTrigger)
+					{
+						selectQuery = selectQuery+" AND "+lowerValCol+" <= "+attrValForMysql
+								+" AND "+upperValCol+" >= "+attrValForMysql;
+					}
+					else
+					{
+						selectQuery = selectQuery + " AND ( ( "+lowerValCol+" <= "+attrValForMysql
+								+" AND "+upperValCol+" >= "+attrValForMysql+" ) OR "
+										+ " ( ( "+lowerValCol+" > "+upperValCol+") AND "
+												+ " ( ( " +minVal+" <= "+attrValForMysql
+												+" AND "+upperValCol+" >= "+attrValForMysql+" ) "
+										+ "OR ( "+ lowerValCol+" <= "+attrValForMysql
+										+" AND "+maxVal+" >= "+attrValForMysql+" ) " + " ) "+ " ) )";
+					}
 				}
 			}
 			return selectQuery;
