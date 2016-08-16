@@ -72,22 +72,33 @@ public class OldValueGroupGUIDs<NodeIDType> implements Runnable
 		
 		try
 		{
+			String queriesWithAttrs 
+				= TriggerInformationStorage.getQueriesThatContainAttrsInUpdate
+					(updateValJSON, subspaceId);
+			//String newTableName = "projTable";
+			
+			//String createTempTable = "CREATE TEMPORARY TABLE "+
+			//		newTableName+" AS ( "+queriesWithAttrs+" ) ";
+			
 			String oldGroupsQuery 
-				= TriggerInformationStorage.getQueryToGetOldValueGroups(oldValJSON, subspaceId);
+				= TriggerInformationStorage.getQueryToGetOldValueGroups
+					(oldValJSON, subspaceId);
 			
 			String newGroupsQuery = TriggerInformationStorage.getQueryToGetNewValueGroups
 					( oldValJSON, updateValJSON, 
 							newUnsetAttrs, subspaceId );
 			
-			String removedGroupQuery = "SELECT groupGUID, userIP, userPort FROM "
-					+ tableName+" WHERE "
-				    + " groupGUID IN ( "+oldGroupsQuery+" ) AND groupGUID NOT IN ( "
-					+ newGroupsQuery+" ) ";
+			String removedGroupQuery = "SELECT groupGUID, userIP, userPort FROM "+tableName
+					+ " WHERE "
+					+ " groupGUID IN ( "+queriesWithAttrs+" ) AND "
+ 				    + " groupGUID IN ( "+oldGroupsQuery+" ) AND "
+ 				    + " groupGUID NOT IN ( "+ newGroupsQuery+" ) ";
 			
 			ContextServiceLogger.getLogger().fine("returnOldValueGroupGUIDs getTriggerInfo "
 												+removedGroupQuery);
 			myConn 	     = dataSource.getConnection();
 			stmt   		 = myConn.createStatement();
+			
 			ResultSet rs = stmt.executeQuery(removedGroupQuery);
 			
 			while( rs.next() )

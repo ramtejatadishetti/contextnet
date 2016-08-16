@@ -17,6 +17,12 @@ public class AttributeMetaInfo
 	
 	private final String dataType;
 	
+	
+	// true if the default value is lower than the minimum 
+	// value. False if the default value is higher than the upper value.
+	// default value can never be in between the minimum and maximum value.
+	private boolean isLowerValDefault;
+	
 	public AttributeMetaInfo( String attributeName, String minValue, 
 			String maxValue, String dataType )
 	{
@@ -26,6 +32,7 @@ public class AttributeMetaInfo
 		// FIXME: just for the experiments.
 		// need to take default values as inputs as we used to.
 		this.defaultValue = 0+"";
+		this.isLowerValDefault = true;
 		this.dataType = dataType;
 	}
 	
@@ -52,6 +59,11 @@ public class AttributeMetaInfo
 	public String getDefaultValue()
 	{
 		return this.defaultValue;
+	}
+	
+	public boolean isLowerValDefault()
+	{
+		return this.isLowerValDefault;
 	}
 	
 	public String getARandomValue(Random randGenerator)

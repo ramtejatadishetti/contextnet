@@ -319,12 +319,12 @@ public class TriggerInformationStorage<NodeIDType> implements
 	 * @return
 	 * @throws InterruptedException 
 	 */
-	public void getTriggerDataInfo(int subspaceId,  
+	public void getTriggerDataInfo( int subspaceId,  
 		JSONObject oldValJSON, JSONObject newJSONToWrite, 
 		HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap, 
 		HashMap<String, GroupGUIDInfoClass> newValGroupGUIDMap, 
 		int requestType, JSONObject newUnsetAttrs,
-		boolean firstTimeInsert) 
+		boolean firstTimeInsert )
 					throws InterruptedException
 	{
 		assert(oldValGroupGUIDMap != null);
@@ -378,7 +378,62 @@ public class TriggerInformationStorage<NodeIDType> implements
 		}
 	}
 	
-	public static String getQueryToGetOldValueGroups(JSONObject oldValJSON, int subspaceId) throws JSONException
+	/**
+	 * Returns search queries that contain attributes of an update, 
+	 * as only those search queries can be affected.
+	 * This helps in reducing the size of the search queries that needs to be checked
+	 * further if the GUID in update satisfies that or not.
+	 * @param attrsInUpdate
+	 * @return
+	 */
+	public static String getQueriesThatContainAttrsInUpdate( JSONObject attrsInUpdate, 
+			int subspaceId )
+	{
+		String tableName 			= "subspaceId"+subspaceId+"TriggerDataInfo";
+		String selectQuery 			= "SELECT groupGUID FROM "+tableName+" WHERE ";
+		
+		Iterator<String> attrIter 	= attrsInUpdate.keys();
+		boolean first = true;
+		while( attrIter.hasNext() )
+		{
+			String attrName = attrIter.next();
+			AttributeMetaInfo attrMeta = AttributeTypes.attributeMap.get(attrName);
+			String defaultVal = attrMeta.getDefaultValue();
+			
+			if( first )
+			{
+				if( attrMeta.isLowerValDefault() )
+				{
+					String lowerAttrName = "lower"+attrName;
+					selectQuery = selectQuery + lowerAttrName +" != "+defaultVal;
+				}
+				else
+				{
+					String upperAttrName = "upper"+attrName;
+					selectQuery = selectQuery + upperAttrName +" != "+defaultVal;
+				}
+				first = false;
+			}
+			else
+			{
+				if( attrMeta.isLowerValDefault() )
+				{
+					String lowerAttrName = "lower"+attrName;
+					selectQuery = selectQuery +" AND "+ lowerAttrName +" != "+defaultVal;
+				}
+				else
+				{
+					String upperAttrName = "upper"+attrName;
+					selectQuery = selectQuery +" AND "+ upperAttrName +" != "+defaultVal;
+				}
+			}
+		}
+		return selectQuery;
+	}
+	
+	
+	public static String getQueryToGetOldValueGroups(JSONObject oldValJSON, int subspaceId) 
+			throws JSONException
 	{
 		String tableName 			= "subspaceId"+subspaceId+"TriggerDataInfo";
 		
@@ -471,7 +526,8 @@ public class TriggerInformationStorage<NodeIDType> implements
 	
 	public static String getQueryToGetNewValueGroups
 				( JSONObject oldValJSON, JSONObject newJSONToWrite, 
-						JSONObject newUnsetAttrs,int subspaceId ) throws JSONException
+						JSONObject newUnsetAttrs,int subspaceId ) 
+								throws JSONException
 	{
 		String tableName 			= "subspaceId"+subspaceId+"TriggerDataInfo";
 
@@ -512,7 +568,7 @@ public class TriggerInformationStorage<NodeIDType> implements
 				
 				String lowerValCol = "lower"+currAttrName;
 				String upperValCol = "upper"+currAttrName;
-				//FIXED: will not work for cicular queries
+				//FIXED: will not work for circular queries
 				if( first )
 				{
 					// <= and >= both to handle the == case of the default value
@@ -568,6 +624,8 @@ public class TriggerInformationStorage<NodeIDType> implements
 		assert(false);
 		return "";
 	}
+	
+	
 	
 	/**
 	 * this function runs independently on every node 
@@ -632,9 +690,15 @@ public class TriggerInformationStorage<NodeIDType> implements
 		// for groups associated with the new value
 		try
 		{
-			String selectQuery = "SELECT groupGUID, userIP, userPort FROM "+tableName+" WHERE ";
+			myConn 	     = this.dataSource.getConnection();
+			stmt   		 = myConn.createStatement();
+			
+			String selectQuery ="";
 			if( firstTimeInsert )
-			{
+			{	
+				selectQuery = "SELECT groupGUID, userIP, userPort FROM "
+						+tableName+" WHERE ";
+				
 				String newGroupsQuery = 
 						getQueryToGetNewValueGroups
 						( oldValJSON, newUpdateVal, 
@@ -643,20 +707,27 @@ public class TriggerInformationStorage<NodeIDType> implements
 			}
 			else
 			{
+				String queriesWithAttrs = TriggerInformationStorage.getQueriesThatContainAttrsInUpdate
+						(newUpdateVal, subspaceId);
+				
+				selectQuery = "SELECT groupGUID, userIP, userPort FROM "+tableName
+						+" WHERE ";
+				
 				String newGroupsQuery = 
 						getQueryToGetNewValueGroups
 						( oldValJSON, newUpdateVal, 
-								newUnsetAttrs, subspaceId );
+								newUnsetAttrs, subspaceId);
 				
 				String oldGroupsQuery 
 					= getQueryToGetOldValueGroups(oldValJSON, subspaceId);
 				
-				selectQuery = selectQuery + " groupGUID NOT IN ( "+oldGroupsQuery
-						+" ) AND groupGUID IN ( "+newGroupsQuery+" ) ";
+				selectQuery = selectQuery 
+						+ " groupGUID IN ( "+queriesWithAttrs+" ) AND "
+						+ " groupGUID NOT IN ( "+oldGroupsQuery+" ) AND "
+						+ " groupGUID IN ( "+newGroupsQuery+" ) ";
 			}
 		
-			myConn 	     = this.dataSource.getConnection();
-			stmt   		 = myConn.createStatement();
+			
 			ResultSet rs = stmt.executeQuery(selectQuery);
 			
 			while( rs.next() )
