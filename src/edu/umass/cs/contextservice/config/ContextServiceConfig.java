@@ -110,7 +110,7 @@ public class ContextServiceConfig
 	
 	// circular query triggers makes the select queries 
 	// very complicated, so there is an option to enable disable it.
-	public static boolean disableCircularQueryTrigger				= true;
+	public static boolean disableCircularQueryTrigger				= false;
 	
 	// if set to true basic subspace config is enabled.
 	//public static boolean basicSubspaceConfig						= false;
