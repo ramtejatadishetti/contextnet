@@ -364,11 +364,12 @@ public class TriggerInformationStorage<NodeIDType> implements
 				OldValueGroupGUIDs<NodeIDType> old = new OldValueGroupGUIDs<NodeIDType>
 				(subspaceId, oldValJSON, newJSONToWrite, newUnsetAttrs, oldValGroupGUIDMap,
 						dataSource);
-				Thread st = new Thread(old);
-				st.start();
+				old.run();
+//				Thread st = new Thread(old);
+//				st.start();
 				returnAddedGroupGUIDs( subspaceId, oldValJSON, 
 						newJSONToWrite, newValGroupGUIDMap, newUnsetAttrs, firstTimeInsert );
-				st.join();
+//				st.join();
 			}
 		}
 		
