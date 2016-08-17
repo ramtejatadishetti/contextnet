@@ -379,6 +379,21 @@ public class TriggerInformationStorage<NodeIDType> implements
 		}
 	}
 	
+	private void getOldValueSatisfyingGroups
+					(HashMap<String, GroupGUIDInfoClass> oldSatisfyingGroups)
+	{
+		
+		
+	}
+	
+	
+	private void getNewValueSatisfyingGroups
+						(HashMap<String, GroupGUIDInfoClass> oldSatisfyingGroups)
+	{
+		
+		
+	}
+	
 	/**
 	 * Returns search queries that contain attributes of an update, 
 	 * as only those search queries can be affected.
@@ -406,12 +421,12 @@ public class TriggerInformationStorage<NodeIDType> implements
 				if( attrMeta.isLowerValDefault() )
 				{
 					String lowerAttrName = "lower"+attrName;
-					selectQuery = selectQuery + lowerAttrName +" != "+defaultVal;
+					selectQuery = selectQuery + lowerAttrName +" > "+defaultVal;
 				}
 				else
 				{
 					String upperAttrName = "upper"+attrName;
-					selectQuery = selectQuery + upperAttrName +" != "+defaultVal;
+					selectQuery = selectQuery + upperAttrName +" < "+defaultVal;
 				}
 				first = false;
 			}
@@ -420,12 +435,12 @@ public class TriggerInformationStorage<NodeIDType> implements
 				if( attrMeta.isLowerValDefault() )
 				{
 					String lowerAttrName = "lower"+attrName;
-					selectQuery = selectQuery +" AND "+ lowerAttrName +" != "+defaultVal;
+					selectQuery = selectQuery +" AND "+ lowerAttrName +" > "+defaultVal;
 				}
 				else
 				{
 					String upperAttrName = "upper"+attrName;
-					selectQuery = selectQuery +" AND "+ upperAttrName +" != "+defaultVal;
+					selectQuery = selectQuery +" AND "+ upperAttrName +" < "+defaultVal;
 				}
 			}
 		}
