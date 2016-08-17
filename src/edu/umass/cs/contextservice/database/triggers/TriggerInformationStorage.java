@@ -141,7 +141,7 @@ public class TriggerInformationStorage<NodeIDType> implements
 				+ "userIP Binary(4) NOT NULL ,  userPort INTEGER NOT NULL , expiryTime BIGINT NOT NULL ";
 		newTableCommand = getPartitionInfoStorageString(newTableCommand);
 		
-		newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort), INDEX USING BTREE(expiryTime) )";
+		newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort), INDEX USING BTREE(expiryTime), INDEX USING HASH(groupGUID) )";
 		stmt.executeUpdate(newTableCommand);
 	}
 	
