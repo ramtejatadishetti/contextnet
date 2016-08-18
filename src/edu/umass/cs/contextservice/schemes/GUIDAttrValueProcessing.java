@@ -444,7 +444,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		{
 			processFirstTimeInsertIntoSecondarySubspace( 
 					attrsSubspaceInfo, subspaceId , replicaNum ,
-					GUID , requestID, updateStartTime, primarySubspaceJSON );
+					GUID , requestID, updateStartTime, primarySubspaceJSON,  updatedAttrValJSON);
 		}
 		else
 		{
@@ -459,7 +459,8 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo,
 			int subspaceId , int  replicaNum ,
 			String GUID , long requestID,
-			long updateStartTime, JSONObject primarySubspaceJSON ) throws JSONException
+			long updateStartTime, JSONObject primarySubspaceJSON, JSONObject updateAttrJSON) 
+					throws JSONException
 	{
 		ContextServiceLogger.getLogger().fine
 			("processFirstTimeInsertIntoSecondarySubspace "+primarySubspaceJSON);
@@ -564,7 +565,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 							-1, GUID, jsonToWrite, 
 							ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
 							subspaceId, requestID, true, updateStartTime, new JSONObject(),
-							unsetAttrsJSON);
+							unsetAttrsJSON, updateAttrJSON);
 		
 		try
 		{
@@ -677,7 +678,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 							-1, GUID, updatedAttrValJSON, 
 							ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
 							subspaceId, requestID, firstTimeInsert, updateStartTime, 
-							oldValueJSON, unsetAttrsJSON);
+							oldValueJSON, unsetAttrsJSON, updatedAttrValJSON);
 			
 			try
 			{
@@ -704,7 +705,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 							GUID, updatedAttrValJSON, 
 							ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY, 
 							subspaceId, requestID, firstTimeInsert, updateStartTime,
-							oldValueJSON, unsetAttrsJSON );
+							oldValueJSON, unsetAttrsJSON, updatedAttrValJSON );
 			
 			try
 			{
@@ -769,7 +770,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 								GUID, jsonToWrite,
 								ValueUpdateToSubspaceRegionMessage.ADD_ENTRY, 
 								subspaceId, requestID, false, updateStartTime,
-								oldValueJSON, unsetAttrsJSON);
+								oldValueJSON, unsetAttrsJSON, updatedAttrValJSON);
 			
 			try
 			{

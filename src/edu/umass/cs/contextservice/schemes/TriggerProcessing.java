@@ -91,20 +91,20 @@ public class TriggerProcessing<NodeIDType> implements
 	}
 	
 	public void processTriggerForValueUpdateToSubspaceRegion
-		(ValueUpdateToSubspaceRegionMessage<NodeIDType> 
+		( ValueUpdateToSubspaceRegionMessage<NodeIDType> 
 		valueUpdateToSubspaceRegionMessage, HashMap<String, GroupGUIDInfoClass> removedGroups, 
 		HashMap<String, GroupGUIDInfoClass> addedGroups ) throws InterruptedException
 	{
 		int subspaceId  = valueUpdateToSubspaceRegionMessage.getSubspaceNum();
 		JSONObject oldValJSON = valueUpdateToSubspaceRegionMessage.getOldValJSON();
-		JSONObject newJSONToWrite = valueUpdateToSubspaceRegionMessage.getJSONToWrite();
+		JSONObject updateAttrJSON = valueUpdateToSubspaceRegionMessage.getUpdateAttrValJSON();
 		int requestType = valueUpdateToSubspaceRegionMessage.getOperType();
 		JSONObject newUnsetAttr = valueUpdateToSubspaceRegionMessage.getNewUnsetAttrs();
 		boolean firstTimeInsert = valueUpdateToSubspaceRegionMessage.getFirstTimeInsert();
 		
 		
 		this.hyperspaceDB.getTriggerDataInfo(subspaceId, 
-				oldValJSON, newJSONToWrite, 
+				oldValJSON, updateAttrJSON, 
 				removedGroups, 
 				addedGroups, 
 				requestType, newUnsetAttr, firstTimeInsert); 

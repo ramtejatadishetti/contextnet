@@ -22,7 +22,7 @@ public interface TriggerInformationStorageInterface<NodeIDType>
 			long expiryTimeFromNow );
 	
 	public void getTriggerDataInfo( int subspaceId,  
-			JSONObject oldValJSON, JSONObject newUpdateVal, 
+			JSONObject oldValJSON, JSONObject updateAttrJSON, 
 			HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap, 
 			HashMap<String, GroupGUIDInfoClass> newValGroupGUIDMap, 
 			int requestType, JSONObject newUnsetAttrs,

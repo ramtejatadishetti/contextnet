@@ -20,7 +20,7 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 	private enum Keys { VERSION_NUM, GUID, JSON_TO_WRITE, 
 		OPER_TYPE, SUBSPACENUM, REQUEST_ID, FIRST_TIME_INSERT, UPDATE_START_TIME, 
 		OLD_VAL_JSON,
-		NEW_UNSET_ATTRS};
+		NEW_UNSET_ATTRS, UPDATE_ATTR_VAL};
 	
 	private final long versionNum;
 	//GUID of the update
@@ -33,6 +33,9 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 //	// which are needed in ADD_ENTRY case,
 //	// as when an entry is added to a subspace all the attributes are added.
 	private final JSONObject oldValJSON;
+	
+	//FIXME: need to optimize, as we are sending reducndant data here
+	private final JSONObject updateAttrValJSON;
 	
 	private final JSONObject newUnsetAttrs;
 	
@@ -53,7 +56,7 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 	public ValueUpdateToSubspaceRegionMessage( NodeIDType initiator, long versionNum, 
 			String GUID, JSONObject jsonToWrite, int operType, int subspaceNum, 
 			long requestID, boolean firstTimeInsert , long updateStartTime, 
-			JSONObject oldValJSON, JSONObject newUnsetAttrs )
+			JSONObject oldValJSON, JSONObject newUnsetAttrs, JSONObject updateAttrJSON )
 	{
 		super( initiator, 
 				ContextServicePacket.PacketType.VALUEUPDATE_TO_SUBSPACE_REGION_MESSAGE );
@@ -68,6 +71,7 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		this.newUnsetAttrs = newUnsetAttrs;
 //		this.anonymizedIDToGuidMapping = anonymizedIDToGuidMapping;
 		this.updateStartTime = updateStartTime;
+		this.updateAttrValJSON = updateAttrJSON;
 	}
 	
 	public ValueUpdateToSubspaceRegionMessage(JSONObject json) throws JSONException
@@ -93,6 +97,7 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 //			this.anonymizedIDToGuidMapping = null;
 //		}
 		this.updateStartTime = json.getLong(Keys.UPDATE_START_TIME.toString());
+		this.updateAttrValJSON = json.getJSONObject(Keys.UPDATE_ATTR_VAL.toString());
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException 
@@ -112,6 +117,7 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 //			json.put(Keys.ANONYMIZEDID_TO_GUID_MAPPING.toString(), this.anonymizedIDToGuidMapping);
 //		}
 		json.put(Keys.UPDATE_START_TIME.toString(), this.updateStartTime);
+		json.put(Keys.UPDATE_ATTR_VAL.toString(), this.updateAttrValJSON);
 		return json;
 	}
 	
@@ -168,6 +174,11 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 	public long getUpdateStartTime()
 	{
 		return this.updateStartTime;
+	}
+	
+	public JSONObject getUpdateAttrValJSON()
+	{
+		return this.updateAttrValJSON;
 	}
 	
 	public static void main(String[] args)

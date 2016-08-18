@@ -532,7 +532,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			// set it by reading from primarysubspace storage.
 			updateGUIDInSecondarySubspaces( oldValueJSON , 
 					firstTimeInsert , attrValuePairs , GUID , 
-					requestID, updateStartTime, jsonToWrite );
+					requestID, updateStartTime, jsonToWrite  );
 		}
 		catch ( JSONException e )
 		{

@@ -240,14 +240,14 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 	 * @throws InterruptedException 
 	 */
 	public void getTriggerDataInfo(int subspaceId, 
-		JSONObject oldValJSON, JSONObject newJSONToWrite, 
+		JSONObject oldValJSON, JSONObject updateAttrJSON, 
 		HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap, 
 		HashMap<String, GroupGUIDInfoClass> newValGroupGUIDMap, 
 		int requestType, JSONObject newUnsetAttrs, boolean firstTimeInsert) 
 				throws InterruptedException
 	{
 		this.triggerInformationStorage.getTriggerDataInfo
-			(subspaceId, oldValJSON, newJSONToWrite, oldValGroupGUIDMap, 
+			(subspaceId, oldValJSON, updateAttrJSON, oldValGroupGUIDMap, 
 				newValGroupGUIDMap, requestType, newUnsetAttrs, firstTimeInsert);
 	}
 	
