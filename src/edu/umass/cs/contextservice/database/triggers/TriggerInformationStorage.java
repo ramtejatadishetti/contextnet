@@ -320,15 +320,15 @@ public class TriggerInformationStorage<NodeIDType> implements
 	 * @throws InterruptedException 
 	 */
 	public void getTriggerDataInfo( int subspaceId,  
-		JSONObject oldValJSON, JSONObject newJSONToWrite, 
-		HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap, 
-		HashMap<String, GroupGUIDInfoClass> newValGroupGUIDMap, 
+		JSONObject oldValJSON, JSONObject onlyUpdateAttrValJSON, 
+		HashMap<String, GroupGUIDInfoClass> removedGroupGUIDMap, 
+		HashMap<String, GroupGUIDInfoClass> addedGroupGUIDMap, 
 		int requestType, JSONObject newUnsetAttrs,
 		boolean firstTimeInsert )
 					throws InterruptedException
 	{
-		assert(oldValGroupGUIDMap != null);
-		assert(newValGroupGUIDMap != null);
+		assert(removedGroupGUIDMap != null);
+		assert(addedGroupGUIDMap != null);
 		// oldValJSON should contain all attribtues.
 		// newUpdateVal contains only updated attr:val pairs
 		//assert(oldValJSON.length() == AttributeTypes.attributeMap.size());
@@ -338,14 +338,14 @@ public class TriggerInformationStorage<NodeIDType> implements
 		if( requestType == ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY )
 		{
 			OldValueGroupGUIDs<NodeIDType> old = new OldValueGroupGUIDs<NodeIDType>
-			(subspaceId, oldValJSON, newJSONToWrite, newUnsetAttrs, oldValGroupGUIDMap,
+			(subspaceId, oldValJSON, onlyUpdateAttrValJSON, newUnsetAttrs, removedGroupGUIDMap,
 					dataSource);
 			old.run();
 		}
 		else if( requestType == ValueUpdateToSubspaceRegionMessage.ADD_ENTRY )
 		{
 			returnAddedGroupGUIDs( subspaceId, oldValJSON, 
-					newJSONToWrite, newValGroupGUIDMap, newUnsetAttrs, firstTimeInsert);
+					onlyUpdateAttrValJSON, addedGroupGUIDMap, newUnsetAttrs, firstTimeInsert);
 		}
 		else if( requestType == ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY )
 		{
@@ -354,22 +354,63 @@ public class TriggerInformationStorage<NodeIDType> implements
 			if(firstTimeInsert)
 			{
 				returnAddedGroupGUIDs( subspaceId, oldValJSON, 
-						newJSONToWrite, newValGroupGUIDMap, newUnsetAttrs, firstTimeInsert );
+						onlyUpdateAttrValJSON, addedGroupGUIDMap, newUnsetAttrs, firstTimeInsert );
 			}
 			else
 			{
 				// both old and new value GUIDs stored at same nodes,
 				// makes it possible to find which groupGUIDs needs to be triggered.
 				// in parallel
-				OldValueGroupGUIDs<NodeIDType> old = new OldValueGroupGUIDs<NodeIDType>
-				(subspaceId, oldValJSON, newJSONToWrite, newUnsetAttrs, oldValGroupGUIDMap,
-						dataSource);
-				old.run();
-//				Thread st = new Thread(old);
-//				st.start();
-				returnAddedGroupGUIDs( subspaceId, oldValJSON, 
-						newJSONToWrite, newValGroupGUIDMap, newUnsetAttrs, firstTimeInsert );
-//				st.join();
+//				OldValueGroupGUIDs<NodeIDType> old = new OldValueGroupGUIDs<NodeIDType>
+//				(subspaceId, oldValJSON, onlyUpdateAttrValJSON, newUnsetAttrs, oldValGroupGUIDMap,
+//						dataSource);
+//				old.run();
+////				Thread st = new Thread(old);
+////				st.start();
+//				returnAddedGroupGUIDs( subspaceId, oldValJSON, 
+//						newJSONToWrite, newValGroupGUIDMap, newUnsetAttrs, firstTimeInsert );
+////				st.join();
+				
+				
+				HashMap<String, GroupGUIDInfoClass> oldSatisfyingGroups 
+												= new HashMap<String, GroupGUIDInfoClass>();
+				
+				HashMap<String, GroupGUIDInfoClass> newSatisfyingGroups 
+												= new HashMap<String, GroupGUIDInfoClass>();
+				getOldAndNewValueSatisfyingGroups
+					(oldValJSON, onlyUpdateAttrValJSON,  oldSatisfyingGroups, newSatisfyingGroups, 
+						subspaceId, newUnsetAttrs);
+				
+				// computing removed groups
+				Iterator<String> groupGUIDIter = oldSatisfyingGroups.keySet().iterator();
+				
+				while( groupGUIDIter.hasNext() )
+				{
+					String oldGrpGUID = groupGUIDIter.next();
+					
+					// if newSatisfying GUID don;t have old value group GUID 
+					// then it is a removedGUIDTrigger
+					if( !newSatisfyingGroups.containsKey(oldGrpGUID) )
+					{
+						removedGroupGUIDMap.put(oldGrpGUID, oldSatisfyingGroups.get(oldGrpGUID));				
+					}
+				}
+				
+				// for added trigger
+				groupGUIDIter = newSatisfyingGroups.keySet().iterator();
+				
+				while( groupGUIDIter.hasNext() )
+				{
+					String newGrpGUID = groupGUIDIter.next();
+					
+					// if oldSatisfyingGroups  don;t have new value group GUID 
+					// then it is a addedGUIDTrigger
+					if( !oldSatisfyingGroups.containsKey(newGrpGUID) )
+					{
+						addedGroupGUIDMap.put(newGrpGUID, newSatisfyingGroups.get(newGrpGUID));				
+					}
+				}
+				
 			}
 		}
 		
@@ -379,19 +420,135 @@ public class TriggerInformationStorage<NodeIDType> implements
 		}
 	}
 	
-	private void getOldValueSatisfyingGroups
-					(HashMap<String, GroupGUIDInfoClass> oldSatisfyingGroups)
+	private void getOldAndNewValueSatisfyingGroups
+					(JSONObject oldValJSON, JSONObject updateValJSON, 
+				HashMap<String, GroupGUIDInfoClass> oldSatisfyingGroups, 
+				HashMap<String, GroupGUIDInfoClass> newSatisfyingGroups, 
+				int subspaceId, JSONObject newUnsetAttrs)
 	{
+		String tableName 			= "subspaceId"+subspaceId+"TriggerDataInfo";
 		
+		assert(oldValJSON != null);
+		assert(oldValJSON.length() > 0);
+		JSONObject oldUnsetAttrs 	= HyperspaceHashing.getUnsetAttrJSON(oldValJSON);
 		
-	}
-	
-	
-	private void getNewValueSatisfyingGroups
-						(HashMap<String, GroupGUIDInfoClass> oldSatisfyingGroups)
-	{
+		// it can be empty but should not be null
+		assert( oldUnsetAttrs != null );
 		
+		Connection myConn 			= null;
+		Statement stmt 				= null;
 		
+		//FIXME: DONE: it could be changed to calculating tobe removed GUIDs right here.
+		// in one single mysql query once can check to old group guid and new group guids
+		// and return groupGUIDs which are in old value but no in new value.
+		// but usually complex queries have more cost, so not sure if it would help.
+		// but this optimization can be checked later on if number of group guids returned becomes 
+		// an issue later on. 
+		
+		try
+		{
+			String queriesWithAttrs 
+				= TriggerInformationStorage.getQueriesThatContainAttrsInUpdate
+					(updateValJSON, subspaceId);
+			//String newTableName = "projTable";
+			
+			//String createTempTable = "CREATE TEMPORARY TABLE "+
+			//		newTableName+" AS ( "+queriesWithAttrs+" ) ";
+			
+			String oldGroupsQuery 
+				= TriggerInformationStorage.getQueryToGetOldValueGroups
+					(oldValJSON, subspaceId);
+			
+			String oldGroupQuery = "SELECT groupGUID, userIP, userPort FROM "+tableName
+					+ " WHERE "
+					+ " groupGUID IN ( "+queriesWithAttrs+" ) AND "
+ 				    + " groupGUID IN ( "+oldGroupsQuery+" ) ";
+			
+			ContextServiceLogger.getLogger().fine("returnOldValueGroupGUIDs getTriggerInfo "
+												+oldGroupQuery);
+			myConn 	     = dataSource.getConnection();
+			stmt   		 = myConn.createStatement();
+			
+			ResultSet rs = stmt.executeQuery(oldGroupQuery);
+			
+			while( rs.next() )
+			{
+				// FIXME: need to replace these with macros
+				byte[] groupGUIDBytes = rs.getBytes("groupGUID");
+				String groupGUIDString = Utils.bytArrayToHex(groupGUIDBytes);
+				byte[] ipAddressBytes = rs.getBytes("userIP");
+				String userIPString = InetAddress.getByAddress(ipAddressBytes).getHostAddress();
+				int userPort = rs.getInt("userPort");
+				
+				GroupGUIDInfoClass groupGUIDInfo = new GroupGUIDInfoClass(
+						groupGUIDString, userIPString, userPort);
+				oldSatisfyingGroups.put(groupGUIDString, groupGUIDInfo);
+			}
+			rs.close();
+			
+			
+			// for new value
+			
+//			String queriesWithAttrs = TriggerInformationStorage.getQueriesThatContainAttrsInUpdate
+//					(newUpdateVal, subspaceId);
+			
+			String selectQuery = "SELECT groupGUID, userIP, userPort FROM "+tableName
+					+" WHERE ";
+			
+			String newGroupsQuery = 
+					getQueryToGetNewValueGroups
+					( oldValJSON, updateValJSON, 
+							newUnsetAttrs, subspaceId);
+			
+			selectQuery = selectQuery 
+					+ " groupGUID IN ( "+queriesWithAttrs+" ) AND "
+//					+ " groupGUID NOT IN ( "+oldGroupsQuery+" ) AND "
+					+ " groupGUID IN ( "+newGroupsQuery+" ) ";
+			
+			rs = stmt.executeQuery(selectQuery);
+			
+			while( rs.next() )
+			{
+				// FIXME: need to replace these with macros
+				byte[] groupGUIDBytes = rs.getBytes("groupGUID");
+				String groupGUIDString = Utils.bytArrayToHex(groupGUIDBytes);
+				byte[] ipAddressBytes = rs.getBytes("userIP");
+				String userIPString = InetAddress.getByAddress(ipAddressBytes).getHostAddress();
+				int userPort = rs.getInt("userPort");
+				
+				GroupGUIDInfoClass groupGUIDInfo = new GroupGUIDInfoClass(
+						groupGUIDString, userIPString, userPort);
+				newSatisfyingGroups.put(groupGUIDString, groupGUIDInfo);
+			}
+			rs.close();
+			
+		}
+		catch (SQLException e)
+		{
+			e.printStackTrace();
+		}
+		catch (JSONException e)
+		{
+			e.printStackTrace();
+		}
+		catch (UnknownHostException e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if (stmt != null)
+					stmt.close();
+				if (myConn != null)
+					myConn.close();
+			}
+			catch(SQLException e)
+			{
+				e.printStackTrace();
+			}
+		}	
 	}
 	
 	/**
