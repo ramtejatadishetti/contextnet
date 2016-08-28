@@ -19,7 +19,8 @@ import edu.umass.cs.nio.interfaces.NodeConfig;
  * subspaces and assigns each subspace to all available nodes.
  * @author adipc
  */
-public class BasicSubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurator<NodeIDType>
+public class BasicSubspaceConfigurator<NodeIDType> 
+					extends AbstractSubspaceConfigurator<NodeIDType>
 {
 	private final double optimalH;
 	

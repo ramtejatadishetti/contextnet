@@ -262,8 +262,8 @@ public class AttributeTypes
 		return null;
 	}
 	
-	public static Vector<DomainPartitionInfo> partitionDomain(int numPartitions, 
-			String minValue, String maxValue, String dataType)
+	public static Vector<DomainPartitionInfo> partitionDomain( int numPartitions, 
+			String minValue, String maxValue, String dataType )
 	{
 		ContextServiceLogger.getLogger().fine("partitionDomain numPartitions "+numPartitions );
 		
@@ -288,7 +288,8 @@ public class AttributeTypes
 					if( currUpper > maxValD )
 						currUpper = maxValD;
 					
-					DomainPartitionInfo partitionInfo = new DomainPartitionInfo(j, currLower+"", currUpper+"");
+					DomainPartitionInfo partitionInfo 
+							= new DomainPartitionInfo(j, currLower+"", currUpper+"");
 					domainParitionInfo.add(partitionInfo);
 				}
 				break;
@@ -311,7 +312,8 @@ public class AttributeTypes
 					if( currUpper > maxValI )
 						currUpper = maxValI;
 					
-					DomainPartitionInfo partitionInfo = new DomainPartitionInfo(j, currLower+"", currUpper+"");
+					DomainPartitionInfo partitionInfo 
+								= new DomainPartitionInfo(j, currLower+"", currUpper+"");
 					domainParitionInfo.add(partitionInfo);
 				}
 				break;
@@ -333,7 +335,8 @@ public class AttributeTypes
 					if( currUpper > maxValL )
 						currUpper = maxValL;
 					
-					DomainPartitionInfo partitionInfo = new DomainPartitionInfo(j, currLower+"", currUpper+"");
+					DomainPartitionInfo partitionInfo 
+								= new DomainPartitionInfo(j, currLower+"", currUpper+"");
 					domainParitionInfo.add(partitionInfo);
 				}
 				break;

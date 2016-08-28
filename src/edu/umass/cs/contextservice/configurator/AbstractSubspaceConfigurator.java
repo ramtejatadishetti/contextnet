@@ -18,7 +18,7 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 	// a replica of a subspace is defined over same attributes but different nodes
 	// this map is written only once, in one thread,  and read many times, by many threads, 
 	// so no need to make concurrent.
-	protected  HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;
+	//protected  HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;
 	
 	public AbstractSubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig)
 	{
@@ -70,17 +70,19 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 				int currSubspaceNumPartitions 
 					= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
 				
-				int currTriggerNumPartitions = (int)Math.ceil(((double)currSubspaceNumNodes)/(double)currSubspaceNumAttrs);
+				int currTriggerNumPartitions 
+					= (int)Math.ceil(((double)currSubspaceNumNodes)/(double)currSubspaceNumAttrs);
 				
 				ContextServiceLogger.getLogger().fine("currSubspaceNumPartitions "
-						+currSubspaceNumPartitions+" currTriggerNumPartitions "+currTriggerNumPartitions);
+						+currSubspaceNumPartitions+" currTriggerNumPartitions "
+						+currTriggerNumPartitions);
 				
 				assert(currTriggerNumPartitions > 0 );
 				currSubInfo.setNumPartitions(currSubspaceNumPartitions);
 				
 				Vector<String> sortedAttrNameVect = new Vector<String>();
 				Iterator<String> subspaceAttrIter
-									= currSubInfo.getAttributesOfSubspace().keySet().iterator();
+							= currSubInfo.getAttributesOfSubspace().keySet().iterator();
 				
 				while( subspaceAttrIter.hasNext() )
 				{
@@ -95,8 +97,9 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 					String attrName = sortedAttrNameVect.get(j);
 					
 					AttributePartitionInfo attrPartInfo 
-					= currSubInfo.getAttributesOfSubspace().get(attrName);
-					attrPartInfo.initializePartitionInfo(currSubspaceNumPartitions, currTriggerNumPartitions);
+						= currSubInfo.getAttributesOfSubspace().get(attrName);
+						  attrPartInfo.initializePartitionInfo(currSubspaceNumPartitions, 
+							currTriggerNumPartitions);
 //					currPartitionNum++;
 //					currPartitionNum= currPartitionNum%currSubspaceNumPartitions;
 				}

@@ -75,7 +75,8 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 					
 					int replicaNum = subInfo.getReplicaNum();
 					
-					HashMap<String, AttributePartitionInfo> subspaceAttributes = subInfo.getAttributesOfSubspace();
+					HashMap<String, AttributePartitionInfo> subspaceAttributes 
+															= subInfo.getAttributesOfSubspace();
 					
 					// partition info storage info
 					String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"PartitionInfo";
@@ -702,7 +703,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	}
 	
 	/**
-	 * bulk insert is needed when number of partitions are very large.
+	 * Bulk insert is needed when number of partitions are very large.
 	 * Not using prepstmt, multiple inserts in single insert is faster
 	 * @param subspaceId
 	 * @param replicaNum
@@ -780,7 +781,8 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				String attrName = attrIter.next();
 				AttributePartitionInfo attrPartInfo = attrSubspaceInfo.get(attrName);
 				int partitionNum = subspaceVector.get(counter);
-				DomainPartitionInfo domainPartInfo = attrPartInfo.getSubspaceDomainPartitionInfo().get(partitionNum);
+				DomainPartitionInfo domainPartInfo 
+					= attrPartInfo.getSubspaceDomainPartitionInfo().get(partitionNum);
 				// if it is a String then single quotes needs to be added
 				
 				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
