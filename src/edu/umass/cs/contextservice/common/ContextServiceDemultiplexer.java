@@ -3,6 +3,7 @@ package edu.umass.cs.contextservice.common;
 import org.json.JSONObject;
 
 import edu.umass.cs.nio.AbstractJSONPacketDemultiplexer;
+import edu.umass.cs.nio.nioutils.NIOHeader;
 
 
 /**
@@ -12,7 +13,7 @@ import edu.umass.cs.nio.AbstractJSONPacketDemultiplexer;
 public class ContextServiceDemultiplexer extends AbstractJSONPacketDemultiplexer
 {
 	@Override
-	public final boolean handleMessage(JSONObject jsonObject) 
+	public final boolean handleMessage(JSONObject jsonObject, NIOHeader nioHeader) 
 	{
 		return false; // must remain false;
 	}

@@ -59,8 +59,9 @@ import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
 import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.gnsclient.client.GNSClientCommands;
-import edu.umass.cs.gnsclient.client.GuidEntry;
+import edu.umass.cs.gnsclient.client.util.GuidEntry;
 import edu.umass.cs.gnscommon.exceptions.client.ClientException;
+import edu.umass.cs.nio.nioutils.NIOHeader;
 
 /**
  * ContextService client.
@@ -664,7 +665,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 	
 	@Override
-	public boolean handleMessage(JSONObject jsonObject)
+	public boolean handleMessage(JSONObject jsonObject, NIOHeader nioHeader)
 	{
 		(new HandleMessageThread(jsonObject)).run();
 		return true;

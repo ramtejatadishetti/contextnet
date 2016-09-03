@@ -18,7 +18,7 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 	// a replica of a subspace is defined over same attributes but different nodes
 	// this map is written only once, in one thread,  and read many times, by many threads, 
 	// so no need to make concurrent.
-	//protected  HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;
+	protected  HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;
 	
 	public AbstractSubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig)
 	{

@@ -5,7 +5,7 @@ import java.util.List;
 
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
-import edu.umass.cs.gnsclient.client.GuidEntry;
+import edu.umass.cs.gnsclient.client.util.GuidEntry;
 
 /**
  * Doesn't do anything. Returns each guid in the ACL as its anonymized ID.

@@ -22,7 +22,8 @@ import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.gnsclient.client.GuidEntry;
+import edu.umass.cs.gnsclient.client.util.GuidEntry;
+import edu.umass.cs.gnscommon.exceptions.client.EncryptionException;
 
 public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 {
@@ -34,8 +35,9 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 	}
 	
 	@Override
-	public List<CSUpdateTransformedMessage> transformUpdateForCSPrivacy( String targetGuid, 
-			JSONObject csAttrValPairs , HashMap<String, List<ACLEntry>> aclMap, 
+	public List<CSUpdateTransformedMessage> transformUpdateForCSPrivacy( 
+			String targetGuid, JSONObject csAttrValPairs , 
+			HashMap<String, List<ACLEntry>> aclMap, 
 			List<AnonymizedIDEntry> anonymizedIDList )
 	{
 		try
@@ -189,7 +191,7 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 	}
 	
 	// test this Class implementation
-	public static void main(String[] args) throws NoSuchAlgorithmException
+	public static void main(String[] args) throws NoSuchAlgorithmException, EncryptionException
 	{
 		// testing based on the example in the draft.
 		// more testing of each method in secure interface.

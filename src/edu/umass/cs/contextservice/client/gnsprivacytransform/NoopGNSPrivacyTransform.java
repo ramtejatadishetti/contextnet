@@ -6,7 +6,7 @@ import java.util.List;
 import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.client.common.ACLEntry;
-import edu.umass.cs.gnsclient.client.GuidEntry;
+import edu.umass.cs.gnsclient.client.util.GuidEntry;
 
 /**
  * No operation transform doesn't do anything 

@@ -3,7 +3,8 @@ package edu.umass.cs.contextservice.client;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import edu.umass.cs.gnsclient.client.GuidEntry;
+import edu.umass.cs.gnsclient.client.util.GuidEntry;
+
 
 /**
  * This interface defines context service calls without privacy

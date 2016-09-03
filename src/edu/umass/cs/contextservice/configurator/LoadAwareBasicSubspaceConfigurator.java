@@ -14,6 +14,7 @@ import org.paukov.combinatorics.ICombinatoricsVector;
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes.DomainPartitionInfo;
+import edu.umass.cs.contextservice.configurator.helperclasses.PartitionLoadReporting;
 import edu.umass.cs.contextservice.configurator.helperclasses.PartitionToNodeInfo;
 import edu.umass.cs.contextservice.configurator.helperclasses.RangeInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
@@ -25,15 +26,18 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 							extends AbstractSubspaceConfigurator<NodeIDType>
 {
 	// load map , key is nodeId, and value is number of requests/s
-	private HashMap<NodeIDType, Double> loadMap;
+	//private HashMap<NodeIDType, Double> loadMap;
 	private final double optimalH;
 	
 	private HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> oldSubspaceInfoMap;
-	private HashMap<String, PartitionToNodeInfo> partitionToNodeMap;
+	//private HashMap<String, PartitionToNodeInfo> partitionToNodeMap;
+	
+	// String key is the old subspaceId-replicaNum
+	private HashMap<String, List<PartitionLoadReporting<NodeIDType>>> partitionLoadMap;
 	
 	
 	public LoadAwareBasicSubspaceConfigurator( NodeConfig<NodeIDType> nodeConfig
-			, int optimalH, HashMap<NodeIDType, Double> loadMap )
+			, int optimalH, HashMap<String, List<PartitionLoadReporting<NodeIDType>>> partitionLoadMap )
 	{
 		super(nodeConfig);
 		
@@ -43,21 +47,21 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 		// every node load should be non zero. 
 		// so if the load is zero we make it to 1.
 		// load is measured in requests/s
-		Iterator<NodeIDType> nodeIter = loadMap.keySet().iterator();
+//		Iterator<NodeIDType> nodeIter = loadMap.keySet().iterator();
+//		
+//		while( nodeIter.hasNext() )
+//		{
+//			NodeIDType nodeId = nodeIter.next();
+//			double nodeLoad = loadMap.get(nodeId);
+//			if( nodeLoad == 0.0 )
+//			{
+//				loadMap.put(nodeId, 1.0);
+//			}
+//		}
 		
-		while( nodeIter.hasNext() )
-		{
-			NodeIDType nodeId = nodeIter.next();
-			double nodeLoad = loadMap.get(nodeId);
-			if( nodeLoad == 0.0 )
-			{
-				loadMap.put(nodeId, 1.0);
-			}
-		}
+		this.partitionLoadMap = partitionLoadMap;
 		
-		this.loadMap = loadMap;
-		
-		partitionToNodeMap = new HashMap<String, PartitionToNodeInfo>();
+		//partitionToNodeMap = new HashMap<String, PartitionToNodeInfo>();
 	}
 	
 	@Override
@@ -288,13 +292,13 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 	private double getTotalLoadOnSystem()
 	{
 		double totalLoad = 0.0;
-		Iterator<NodeIDType> nodeIter = loadMap.keySet().iterator();
-		while( nodeIter.hasNext() )
-		{
-			NodeIDType nodeId = nodeIter.next();
-			double nodeLoad = loadMap.get(nodeId);
-			totalLoad = totalLoad + nodeLoad;
-		}
+//		Iterator<NodeIDType> nodeIter = loadMap.keySet().iterator();
+//		while( nodeIter.hasNext() )
+//		{
+//			NodeIDType nodeId = nodeIter.next();
+//			double nodeLoad = loadMap.get(nodeId);
+//			totalLoad = totalLoad + nodeLoad;
+//		}
 		return totalLoad;
 	}
 	
@@ -319,7 +323,8 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 			for( int i=0; i<subspaceNodes.size(); i++ )
 			{
 				NodeIDType nodeId = subspaceNodes.get(i);
-				double nodeLoad = loadMap.get(nodeId);
+//				double nodeLoad = loadMap.get(nodeId);
+				double nodeLoad = 0.0;
 				totalSubspaceLoad = totalSubspaceLoad + nodeLoad;
 			}
 			
@@ -465,6 +470,17 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 		}
 	}
 	
+	private void loadAwareNodesAssignmentInASubspace()
+	{
+	}
+	
+//	private HashMap<Integer, Double> getLoadOfASubspace( 
+//				List<PartitionToNodeInfo<NodeIDType>> subspacePartitionList )
+//	{
+//		
+//		
+//	}
+	
 	/**
 	 * This function assigns nodes uniformly to subspaces
 	 * and stores them in the inherited subspaceInfoVector 
@@ -527,16 +543,7 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 		return nodesIdCounter;
 	}
 	
-	private void loadAwareNodesAssignmentInASubspace()
-	{
-		
-		
-	}
-	
-	private 
-	
 	public void main(String[] args)
 	{
-		//TODO: test this file as it is completely testable on its own.	
 	}
 }

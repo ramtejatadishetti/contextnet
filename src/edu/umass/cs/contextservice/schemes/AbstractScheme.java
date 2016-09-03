@@ -5,7 +5,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,6 +27,7 @@ import edu.umass.cs.nio.GenericMessagingTask;
 import edu.umass.cs.nio.JSONMessenger;
 import edu.umass.cs.nio.interfaces.NodeConfig;
 import edu.umass.cs.nio.interfaces.PacketDemultiplexer;
+import edu.umass.cs.nio.nioutils.NIOHeader;
 import edu.umass.cs.protocoltask.ProtocolEvent;
 import edu.umass.cs.protocoltask.ProtocolExecutor;
 import edu.umass.cs.protocoltask.ProtocolTask;
@@ -115,7 +115,7 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 	}
 	
 	@Override
-	public boolean handleMessage(JSONObject jsonObject) 
+	public boolean handleMessage(JSONObject jsonObject, NIOHeader nioHeader) 
 	{
 		BasicContextServicePacket<NodeIDType> csPacket = null;
 		try

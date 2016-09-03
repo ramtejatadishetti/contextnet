@@ -8,8 +8,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
+import edu.umass.cs.gnsclient.client.util.GuidEntry;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
-import edu.umass.cs.gnsclient.client.GuidEntry;
 
 public class NoopCSTransform implements CSPrivacyTransformInterface
 {

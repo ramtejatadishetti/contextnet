@@ -1,35 +1,6 @@
 package edu.umass.cs.contextservice.client.csprivacytransform;
 
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Vector;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-
-import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedAnonymizedIDCreator;
-import edu.umass.cs.contextservice.client.common.ACLEntry;
-import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
-import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
-import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.gnsclient.client.GuidEntry;
-import edu.umass.cs.gnsclient.client.util.GuidUtils;
 
 public class SubspaceBasedCSTransform
 {

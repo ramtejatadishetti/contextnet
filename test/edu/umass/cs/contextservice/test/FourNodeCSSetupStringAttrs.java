@@ -33,6 +33,7 @@ import edu.umass.cs.nio.JSONMessenger;
 import edu.umass.cs.nio.JSONNIOTransport;
 import edu.umass.cs.nio.interfaces.NodeConfig;
 import edu.umass.cs.nio.interfaces.PacketDemultiplexer;
+import edu.umass.cs.nio.nioutils.NIOHeader;
 
 public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 {
@@ -431,7 +432,7 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 		}
 		
 		@Override
-		public boolean handleMessage(JSONObject jsonObject)
+		public boolean handleMessage(JSONObject jsonObject, NIOHeader nioHeader)
 		{
 			try
 			{

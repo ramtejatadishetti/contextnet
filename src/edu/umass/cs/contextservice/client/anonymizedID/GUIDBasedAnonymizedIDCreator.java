@@ -20,7 +20,8 @@ import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.gnsclient.client.GuidEntry;
+import edu.umass.cs.gnsclient.client.util.GuidEntry;
+import edu.umass.cs.gnscommon.exceptions.client.EncryptionException;
 
 /**
  * This class creates anonymized IDs based on guids in the ACL.
@@ -264,7 +265,7 @@ public class GUIDBasedAnonymizedIDCreator
 	
 	
 	// testing the class.
-	public static void main(String[] args) throws NoSuchAlgorithmException, JSONException
+	public static void main(String[] args) throws NoSuchAlgorithmException, JSONException, EncryptionException
 	{
 		// testing based on the example in the draft.
 		// more testing of each method in secure interface.

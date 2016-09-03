@@ -57,10 +57,12 @@ public class GeojsonOverlapFunction extends AbstractFunction
 		coordVect = getCoordList(geoJSON);
 		geoJSONPolygon = new Path2D.Double();
 		
-		geoJSONPolygon.moveTo( coordVect.get(0).getLatitude(), coordVect.get(0).getLongitude() );
-		for(int i = 1; i < coordVect.size(); ++i) 
+		geoJSONPolygon.moveTo( coordVect.get(0).getLatitude(), 
+				coordVect.get(0).getLongitude() );
+		for(int i = 1; i < coordVect.size(); ++i)
 		{
-			geoJSONPolygon.lineTo(coordVect.get(i).getLatitude(), coordVect.get(i).getLongitude());
+			geoJSONPolygon.lineTo(coordVect.get(i).getLatitude(), 
+					coordVect.get(i).getLongitude());
 		}
 		geoJSONPolygon.closePath();
 		

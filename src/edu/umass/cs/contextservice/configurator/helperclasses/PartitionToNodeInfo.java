@@ -9,6 +9,7 @@ public class PartitionToNodeInfo<NodeIDType>
 	private final HashMap<String, RangeInfo> attrBound;
 	private final NodeIDType respNodeId;
 	
+	
 	public PartitionToNodeInfo( int subspaceId, int replicaNum, 
 			HashMap<String, RangeInfo> attrBound, NodeIDType respNodeId )
 	{

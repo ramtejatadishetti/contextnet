@@ -29,7 +29,9 @@ import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.nodeApp.StartContextServiceNode;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.gnsclient.client.GuidEntry;
+import edu.umass.cs.gnsclient.client.util.GuidEntry;
+import edu.umass.cs.gnscommon.exceptions.client.EncryptionException;
+
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ContextServiceTests 
@@ -139,7 +141,7 @@ public class ContextServiceTests
 	
 	@Test
 	public void test_3_privacyTest() 
-			throws JSONException, NoSuchAlgorithmException
+			throws JSONException, NoSuchAlgorithmException, EncryptionException
 	{
 		// these tests require full search replies to be sent.
 		assert( ContextServiceConfig.sendFullRepliesToClient );
@@ -473,7 +475,7 @@ public class ContextServiceTests
 	}
 	
 	private static GuidEntry getAGUIDEntry(String guidAlias) 
-											throws NoSuchAlgorithmException
+											throws NoSuchAlgorithmException, EncryptionException
 	{
 		KeyPair kp = kpg.genKeyPair();
 		PublicKey publicKey = kp.getPublic();
