@@ -214,10 +214,10 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	}
 	
 	private void processQueryMsgFromUser
-		(QueryMsgFromUser<NodeIDType> queryMsgFromUser)
+				(QueryMsgFromUser<NodeIDType> queryMsgFromUser)
 	{
 		String query;
-
+		
 		
 		query   = queryMsgFromUser.getQuery();
 		
@@ -229,12 +229,13 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		if( grpGUID.length() <= 0 )
 		{
 			ContextServiceLogger.getLogger().fine
-			("Query request failed at the recieving node "+queryMsgFromUser);
+				("Query request failed at the recieving node "+queryMsgFromUser);
 			return;
 		}
 		
 		guidProcessingOfQueryMsgFromUser(queryMsgFromUser);
 	}
+	
 	
 	private QueryInfo<NodeIDType> guidProcessingOfQueryMsgFromUser
 								(QueryMsgFromUser<NodeIDType> queryMsgFromUser)
@@ -296,7 +297,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		QueryInfo<NodeIDType> currReq  
 			= new QueryInfo<NodeIDType>( query, this.getMyID(), grpGUID, userReqID, 
-					userIP, userPort, queryMsgFromUser.getExpiryTime());
+					userIP, userPort, queryMsgFromUser.getExpiryTime() );
 		
 		Vector<NodeIDType> allNodeIDs = this.allNodeIDs;
 		
@@ -330,8 +331,8 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	    	
 	    	QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion = 
 					new QueryMesgToSubspaceRegion<NodeIDType>
-	    (this.getMyID(), currReq.getRequestId(), query, grpGUID, -1, userIP, userPort, 
-	    		false, queryMsgFromUser.getExpiryTime());
+	    			(this.getMyID(), currReq.getRequestId(), query, grpGUID, -1, userIP, userPort, 
+	    						false, queryMsgFromUser.getExpiryTime());
 	    	
 			try
 			{
@@ -421,7 +422,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	 */
 	private void processUpdateSerially(UpdateInfo<NodeIDType> updateReq)
 	{
-		assert(updateReq != null);
+		assert( updateReq != null );
 		try
 		{
 			ContextServiceLogger.getLogger().fine
