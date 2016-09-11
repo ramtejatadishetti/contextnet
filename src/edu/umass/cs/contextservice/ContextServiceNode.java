@@ -39,13 +39,13 @@ public abstract class ContextServiceNode<NodeIDType>
 		
 		ContextServiceLogger.getLogger().fine("Switch case started");
 		
-		switch(ContextServiceConfig.SCHEME_TYPE)
+		switch( ContextServiceConfig.SCHEME_TYPE )
 		{
 			case HYPERSPACE_HASHING:
 			{
 				ContextServiceLogger.getLogger().fine("HYPERSPACE_HASHING started");
-				//this.contextservice = new HyperspaceHashing<NodeIDType>(nc, messenger);
-				this.contextservice = new QueryAllScheme<NodeIDType>(nc, messenger);
+				this.contextservice = new HyperspaceHashing<NodeIDType>(nc, messenger);
+				//this.contextservice = new QueryAllScheme<NodeIDType>(nc, messenger);
 				ContextServiceLogger.getLogger().fine("HYPERSPACE_HASHING completed");
 				break;
 			}
