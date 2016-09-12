@@ -44,8 +44,16 @@ public abstract class ContextServiceNode<NodeIDType>
 			case HYPERSPACE_HASHING:
 			{
 				ContextServiceLogger.getLogger().fine("HYPERSPACE_HASHING started");
-				//this.contextservice = new HyperspaceHashing<NodeIDType>(nc, messenger);
-				this.contextservice = new QueryAllScheme<NodeIDType>(nc, messenger);
+				if(ContextServiceConfig.QUERY_ALL_ENABLED)
+				{
+					this.contextservice = new QueryAllScheme<NodeIDType>(nc, messenger);
+				}
+				else
+				{
+					this.contextservice = new HyperspaceHashing<NodeIDType>(nc, messenger);
+				}
+				//
+				
 				ContextServiceLogger.getLogger().fine("HYPERSPACE_HASHING completed");
 				break;
 			}

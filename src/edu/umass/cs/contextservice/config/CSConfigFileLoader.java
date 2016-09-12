@@ -101,6 +101,11 @@ public class CSConfigFileLoader
 	    		properties.getProperty(ContextServiceConfig.privacyEnabledString, 
 	    				ContextServiceConfig.PRIVACY_ENABLED+"") );
 	  
+	  ContextServiceConfig.QUERY_ALL_ENABLED = Boolean.parseBoolean(
+	    		properties.getProperty(ContextServiceConfig.queryAllEnabledString, 
+	    				ContextServiceConfig.QUERY_ALL_ENABLED+"") );
+	  
+	  
 	  ContextServiceLogger.getLogger().info("read props ContextServiceConfig.modelRho "+ContextServiceConfig.modelRho
     		+" ContextServiceConfig.modelCsByC "+ContextServiceConfig.modelCsByC
     		+" ContextServiceConfig.modelCuByC "+ContextServiceConfig.modelCuByC

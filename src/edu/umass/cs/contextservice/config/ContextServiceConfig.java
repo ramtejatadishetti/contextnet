@@ -23,6 +23,7 @@ public class ContextServiceConfig
 	public static final String basicConfigString					= "basicConfig";
 	public static final String optimalHString						= "optimalH";
 	public static final String privacyEnabledString					= "privacyEnabled";
+	public static final String queryAllEnabledString				= "queryAllEnabled";
 	
 	// path where all config files are stored, like node setup, attribute info, subspace info
 	public static String configFileDirectory;
@@ -145,6 +146,9 @@ public class ContextServiceConfig
 	
 	
 	public static boolean PRIVACY_ENABLED							= false;
+	
+	
+	public static boolean QUERY_ALL_ENABLED							= false;
 	
 	
 	// if this is set to true then the context service client will do decryptions 
