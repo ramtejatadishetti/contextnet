@@ -80,6 +80,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	// a request is added in this queue by mysql request callbacks.
 	private final ConcurrentLinkedQueue<MySQLRequestStorage> codeRequestsQueue;
 	
+	private HashMap<String, Boolean> groupGUIDSyncMap;
 	public static final Logger log 														= ContextServiceLogger.getLogger();
 	
 	public HyperspaceHashing(NodeConfig<NodeIDType> nc,
@@ -153,6 +154,10 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
+			if(ContextServiceConfig.UniqueGroupGUIDEnabled)
+			{
+				groupGUIDSyncMap = new HashMap<String, Boolean>();
+			}
 			triggerProcessing = new TriggerProcessing<NodeIDType>(this.getMyID(), 
 				subspaceConfigurator.getSubspaceInfoMap(), hyperspaceDB, messenger);
 		}
@@ -325,12 +330,13 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			return;
 		}
 		
+		String hashKey = grpGUID+":"+userIP+":"+userPort;
 		// check for triggers, if those are enabled then forward the query to the node
 		// which consistently hashes the the query:userIp:userPort string
 		if( ContextServiceConfig.TRIGGER_ENABLED 
 				&& ContextServiceConfig.UniqueGroupGUIDEnabled )
 		{
-			String hashKey = query+":"+userIP+":"+userPort;
+			
 			NodeIDType respNodeId = this.getConsistentHashingNodeID(hashKey, this.allNodeIDs);
 			
 			// just forward the request to the node that has 
@@ -363,10 +369,31 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		if( ContextServiceConfig.TRIGGER_ENABLED && 
 					ContextServiceConfig.UniqueGroupGUIDEnabled )
 	    {
+			synchronized(this.groupGUIDSyncMap)
+			{
+				while(groupGUIDSyncMap.get(hashKey) != null )
+				{
+					try {
+						groupGUIDSyncMap.wait();
+					} catch (InterruptedException e) 
+					{
+						e.printStackTrace();
+					}
+				}
+				groupGUIDSyncMap.put(hashKey, new Boolean(true));
+			}
+			
 	    	boolean found 
 	    		= this.triggerProcessing.processTriggerOnQueryMsgFromUser(currReq);
+	    	
+	    	synchronized(this.groupGUIDSyncMap)
+			{
+				groupGUIDSyncMap.remove(hashKey);
+				groupGUIDSyncMap.notify();
+			}
 	    	// if inserted first time then in secondary subspaces trigger info is stored for this query.
 	    	storeQueryForTrigger = !found;
+	    	
 	    }
 		else if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
