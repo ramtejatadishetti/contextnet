@@ -73,6 +73,7 @@ public class CSConfigFileLoader
     
 	  ContextServiceConfig.TRIGGER_ENABLED = Boolean.parseBoolean(
     		properties.getProperty(ContextServiceConfig.triggerEnableString, ContextServiceConfig.TRIGGER_ENABLED+"") );
+	  
     
 	  ContextServiceConfig.modelCtByC = Double.parseDouble(
     		properties.getProperty(ContextServiceConfig.modelCtByCString, ContextServiceConfig.modelCtByC+"") );

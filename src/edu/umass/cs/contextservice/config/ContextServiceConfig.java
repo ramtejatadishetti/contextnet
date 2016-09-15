@@ -102,7 +102,7 @@ public class ContextServiceConfig
 	
 	// if set to true then there is a primary node for each groupGUID
 	// and search always gores through that and doesn't update trigger info if its is repeated.
-	public static boolean UniqueGroupGUIDEnabled					= false;
+	public static boolean UniqueGroupGUIDEnabled					= true;
 	
 	// disables most of the mysql db operations, apart from the reading of 
 	// subspace info. Just for throuhgput testing.
