@@ -90,7 +90,7 @@ public class ContextServiceConfig
 	// default mysql select semantics is used which fetches all
 	// results in memory on a select, but on large result sizes can cause
 	// memory overflow.
-	public static final boolean rowByRowFetchingEnabled				= false;
+	public static final boolean rowByRowFetchingEnabled				= true;
 	
 	//if false, replies for any update messages will not be sent
 	// just for measuring update throughout and time in experiments
