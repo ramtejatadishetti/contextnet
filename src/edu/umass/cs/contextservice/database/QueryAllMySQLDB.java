@@ -343,7 +343,7 @@ public class QueryAllMySQLDB<NodeIDType>
 			{
 				if(ContextServiceConfig.onlyResultCountEnable)
 				{
-					mysqlQuery = "SELECT COUNT(nodeGUID) from "+tableName+" WHERE ( ";
+					mysqlQuery = "SELECT COUNT(nodeGUID) AS RESULT_SIZE from "+tableName+" WHERE ( ";
 				}
 				else
 				{
