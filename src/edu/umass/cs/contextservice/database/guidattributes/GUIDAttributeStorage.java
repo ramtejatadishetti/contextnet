@@ -218,7 +218,14 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 			}
 			else
 			{
-				mysqlQuery = "SELECT nodeGUID from "+tableName+" WHERE ( ";
+				if(ContextServiceConfig.onlyResultCountEnable)
+				{
+					mysqlQuery = "SELECT COUNT(nodeGUID) AS RESULT_SIZE from "+tableName+" WHERE ( ";
+				}
+				else
+				{
+					mysqlQuery = "SELECT nodeGUID from "+tableName+" WHERE ( ";
+				}
 			}
 		}
 		
@@ -455,7 +462,14 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 					}
 					else
 					{
-						resultSize++;
+						if(ContextServiceConfig.onlyResultCountEnable)
+						{
+							resultSize = rs.getInt("RESULT_SIZE");
+						}
+						else
+						{
+							resultSize++;
+						}
 					}
 				}
 			}

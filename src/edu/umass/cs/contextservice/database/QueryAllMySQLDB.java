@@ -258,7 +258,14 @@ public class QueryAllMySQLDB<NodeIDType>
 					}
 					else
 					{
-						resultSize++;
+						if(ContextServiceConfig.onlyResultCountEnable)
+						{
+							resultSize = rs.getInt("RESULT_SIZE");
+						}
+						else
+						{
+							resultSize++;
+						}
 					}
 				}
 			}
@@ -332,7 +339,14 @@ public class QueryAllMySQLDB<NodeIDType>
 			}
 			else
 			{
-				mysqlQuery = "SELECT nodeGUID from "+tableName+" WHERE ( ";
+				if(ContextServiceConfig.onlyResultCountEnable)
+				{
+					mysqlQuery = "SELECT COUNT(nodeGUID) from "+tableName+" WHERE ( ";
+				}
+				else
+				{
+					mysqlQuery = "SELECT nodeGUID from "+tableName+" WHERE ( ";
+				}
 			}
 		}
 		

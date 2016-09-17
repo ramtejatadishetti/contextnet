@@ -92,6 +92,12 @@ public class ContextServiceConfig
 	// memory overflow.
 	public static final boolean rowByRowFetchingEnabled				= true;
 	
+	
+	// fetches only count of the result, select query is count(GUID)
+	// used for debugging and also for results until we increse mysql default 
+	// buffers.
+	public static final boolean onlyResultCountEnable				= true;
+	
 	//if false, replies for any update messages will not be sent
 	// just for measuring update throughout and time in experiments
 	//public static final boolean sendUpdateReplies					= true;
