@@ -396,7 +396,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				else
 				{
 					// String nodeGUID = rs.getString("nodeGUID");
-					byte[] nodeGUIDBytes = rs.getBytes("nodeGUID");
+					
 					
 					// it is actually a JSONArray in hexformat byte array representation.
 					// reverse conversion is byte array to String and then string to JSONArray.
@@ -405,6 +405,8 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 					// answerList.add(valobj);
 					if(ContextServiceConfig.sendFullRepliesWithinCS)
 					{
+						byte[] nodeGUIDBytes = rs.getBytes("nodeGUID");
+						
 						String nodeGUID = Utils.bytArrayToHex(nodeGUIDBytes);
 						
 						String anonymizedIDToGUIDMapping = null;
