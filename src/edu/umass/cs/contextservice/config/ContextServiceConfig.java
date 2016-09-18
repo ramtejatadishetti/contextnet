@@ -80,7 +80,7 @@ public class ContextServiceConfig
 	//control if full guids are sent in the search query
 	// reply, if false only sends the number of guids, not
 	// the actual guids
-	public static  boolean sendFullRepliesWithinCS					= false;
+	public static  boolean sendFullRepliesWithinCS					= true;
 	
 	// to check which one is bottleneck the client or CS in full replies. 
 	public static  boolean sendFullRepliesToClient					= false;
