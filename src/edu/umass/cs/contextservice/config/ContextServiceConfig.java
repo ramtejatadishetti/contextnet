@@ -68,7 +68,7 @@ public class ContextServiceConfig
 	
 	public static boolean DATABASE_SIZE_PRINT						= false;
 	
-	public static final boolean PROFILER_THREAD						= false; 
+	public static final boolean PROFILER_THREAD						= true;
 	
 	// config files
 	public static String csConfigFileName							= "csConfigFile.txt";
@@ -80,7 +80,7 @@ public class ContextServiceConfig
 	//control if full guids are sent in the search query
 	// reply, if false only sends the number of guids, not
 	// the actual guids
-	public static  boolean sendFullRepliesWithinCS					= false;
+	public static  boolean sendFullRepliesWithinCS					= true;
 	
 	// to check which one is bottleneck the client or CS in full replies. 
 	public static  boolean sendFullRepliesToClient					= false;
@@ -96,7 +96,7 @@ public class ContextServiceConfig
 	// fetches only count of the result, select query is count(GUID)
 	// used for debugging and also for results until we increse mysql default 
 	// buffers.
-	public static final boolean onlyResultCountEnable				= true;
+	public static final boolean onlyResultCountEnable				= false;
 	
 	//if false, replies for any update messages will not be sent
 	// just for measuring update throughout and time in experiments
@@ -108,7 +108,7 @@ public class ContextServiceConfig
 	
 	// if set to true then there is a primary node for each groupGUID
 	// and search always gores through that and doesn't update trigger info if its is repeated.
-	public static boolean UniqueGroupGUIDEnabled					= true;
+	public static boolean UniqueGroupGUIDEnabled					= false;
 	
 	// disables most of the mysql db operations, apart from the reading of 
 	// subspace info. Just for throuhgput testing.

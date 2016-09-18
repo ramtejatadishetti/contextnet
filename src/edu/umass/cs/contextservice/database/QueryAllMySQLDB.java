@@ -191,8 +191,7 @@ public class QueryAllMySQLDB<NodeIDType>
 				}
 				else
 				{
-					// String nodeGUID = rs.getString("nodeGUID");
-					
+					// String nodeGUID = rs.getString("nodeGUID");	
 					
 					// it is actually a JSONArray in hexformat byte array representation.
 					// reverse conversion is byte array to String and then string to JSONArray.

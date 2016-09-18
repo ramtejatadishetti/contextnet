@@ -83,6 +83,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	private HashMap<String, Boolean> groupGUIDSyncMap;
 	public static final Logger log 														= ContextServiceLogger.getLogger();
 	
+	
+	
+	
 	public HyperspaceHashing(NodeConfig<NodeIDType> nc,
 			JSONMessenger<NodeIDType> m) throws Exception
 	{
