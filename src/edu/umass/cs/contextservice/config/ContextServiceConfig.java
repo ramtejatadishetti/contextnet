@@ -119,6 +119,10 @@ public class ContextServiceConfig
 	// very complicated, so there is an option to enable disable it.
 	public static boolean disableCircularQueryTrigger				= false;
 	
+	// GroupGUID, UserIP and UserPort are primaries keys if this option is set false.
+	// if set true then those are just hash index.
+	public static boolean disableUniqueQueryStorage					= true;
+	
 	// if set to true basic subspace config is enabled.
 	//public static boolean basicSubspaceConfig						= false;
 	
