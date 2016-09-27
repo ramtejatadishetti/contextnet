@@ -172,6 +172,8 @@ public class ContextServiceConfig
 	// only for testing.
 	public static boolean RAND_VAL_JSON								= false;
 	
+	public static boolean SUBSPACE_PRIVACY_ENABLED					= true;
+	
 	
 	public static final String AssymmetricEncAlgorithm				= "RSA";
 	public static final String SymmetricEncAlgorithm				= "DES";

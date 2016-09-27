@@ -13,7 +13,7 @@ import sys
 #result = minimize(f, [1])
 #print(result.x)
 rho                             = 0.5
-predRat                         = 1.0
+predRat                         = 0.25
 #Yc                             = 1.0
 #N                              = math.pow(10.0,5)
 N                               = 32.0
@@ -124,7 +124,10 @@ def calculateOverlapingNodesForSearchWithRatio(numNodesForSubspace, currH, yByDR
         expectedNumNodes = \
                 ( math.ceil(yByDRatio * math.pow(numNodesForSubspace, (1.0/currH)) ) )
         print "Overlap for a predicate numNodesForSubspace "+str(numNodesForSubspace)+" currH "+str(currH)+" expectedNumOverlapNodes "+str(expectedNumNodes) 
-        return expectedNumNodes
+        
+        #return expectedNumNodes
+        return 1.5
+        
     
     
     # calculates number fo ndoes for single subspace trigger

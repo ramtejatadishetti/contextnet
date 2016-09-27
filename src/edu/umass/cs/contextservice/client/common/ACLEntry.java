@@ -26,7 +26,6 @@ public class ACLEntry
 		this.publicKeyACLMember = publicKey.getEncoded();
 	}
 	
-	
 	public byte[] getACLMemberGUID()
 	{
 		return this.guidACLMember;

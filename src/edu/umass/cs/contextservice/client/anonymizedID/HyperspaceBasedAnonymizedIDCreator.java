@@ -448,7 +448,7 @@ public class HyperspaceBasedAnonymizedIDCreator
 		guidsVector.add(myGUID);
 		
 		// draft example has 7 guids
-		for(int i=1; i <= 7; i++)
+		for( int i=1; i <= 7; i++ )
 		{
 			KeyPair kp = kpg.genKeyPair();
 			PublicKey publicKey = kp.getPublic();
