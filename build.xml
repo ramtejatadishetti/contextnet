@@ -140,4 +140,7 @@
 		  </manifest>
 		</jar>
 	</target>
+
+	<target name="jar" depends="context-nodoc-jar , context-nodoc-jar-gns , context-client-jar , context-client-jar-gns" >
+	</target>
 </project>

@@ -76,14 +76,14 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				implements ContextClientInterfaceWithPrivacy, ContextServiceClientInterfaceWithoutPrivacy
 {
 	// if experiment mode is true then triggers are not stored in a queue.
-	public static boolean EXPERIMENT_MODE							= true;
+	public static boolean EXPERIMENT_MODE							= false;
 	
 	public static final int SUBSPACE_BASED_CS_TRANSFORM				= 1;
 	public static final int HYPERSPACE_BASED_CS_TRANSFORM			= 2;
 	public static final int GUID_BASED_CS_TRANSFORM					= 3;
 	
 	
-	public static final int NUM_THREADS								= 1000;
+	public static final int NUM_THREADS								= 10;
 	
 	private Queue<JSONObject> refreshTriggerQueue;
 	

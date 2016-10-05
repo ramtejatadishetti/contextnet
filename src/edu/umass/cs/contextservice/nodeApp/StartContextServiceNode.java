@@ -34,8 +34,6 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 	
 	private static CSNodeConfig<Integer> csNodeConfig					= null;
 	
-	private static StartContextServiceNode myObj						= null;
-	
 	public StartContextServiceNode(Integer id, NodeConfig<Integer> nc)
 			throws Exception
 	{
@@ -61,45 +59,11 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 		reader.close();
 	}
 	
-	private static class NumMessagesPerSec implements Runnable
-	{
-		private final StartContextServiceNode csObj;
-		
-		public NumMessagesPerSec(StartContextServiceNode csObj)
-		{
-			this.csObj = csObj;
-		}
-		
-		@Override
-		public void run() 
-		{
-			long lastNumMesgs = 0;
-			while(true)
-			{
-				try 
-				{
-					Thread.sleep(10000);
-				} catch (InterruptedException e) 
-				{
-					e.printStackTrace();
-				}
-				
-				long curr = csObj.contextservice.getNumMesgInSystem();
-				long number = (curr-lastNumMesgs);
-				lastNumMesgs = curr;
-				if(number!=0)
-				{
-					ContextServiceLogger.getLogger().fine("ID "+csObj.myID+" NUM MESSAGES PER SEC "+number/10+" ");
-				}
-				//this.csObj.contextservice.getContextServiceDB().getDatabaseSize();
-			}
-		}
-	}
-	
-	public static void main(String[] args) throws NumberFormatException, UnknownHostException, IOException, ParseException
+	public static void main(String[] args) throws NumberFormatException, 
+									UnknownHostException, IOException, ParseException
 	{
 		// we want to catch everything
-		// because things run through executir service don't print exceptions on terminals
+		// because things run through executor service don't print exceptions on terminals
 		try
 		{
 			CommandLine parser = initializeOptions(args);
@@ -123,20 +87,18 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 			
 			ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERSPACE_HASHING;
 			
-			CSConfigFileLoader configFileLoader = new CSConfigFileLoader(
+			new CSConfigFileLoader(
 					ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.csConfigFileName);
 			
 			readNodeInfo();
 			
-			ContextServiceLogger.getLogger().fine("Number of nodes in the system "+csNodeConfig.getNodeIDs().size());
+			ContextServiceLogger.getLogger().fine("Number of nodes in the system "
+														+csNodeConfig.getNodeIDs().size());
 			
-			//nodes = new StartContextServiceNode[csNodeConfig.getNodeIDs().size()];
 			
 			ContextServiceLogger.getLogger().fine("Starting context service");
-			//new Thread(new StartNode(myID)).start();
 			
-			myObj = new StartContextServiceNode(myID, csNodeConfig);
-			new Thread(new NumMessagesPerSec(myObj)).start();
+			new StartContextServiceNode(myID, csNodeConfig);
 			
 			System.out.println("############# StartContextServiceNode ID "+myID+" completed. "+
 					csNodeConfig.getNodes().size() +"total. ############");

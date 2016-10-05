@@ -209,6 +209,8 @@ public class TriggerInformationStorage<NodeIDType> implements
 				}
 				else
 				{
+					System.out.println("defaultValue "+defaultValue+" minVal "+minVal
+							+" maxVal "+maxVal);
 					// this should not happen
 					assert(false);
 				}

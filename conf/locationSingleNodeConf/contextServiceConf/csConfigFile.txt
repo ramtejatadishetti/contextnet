@@ -5,3 +5,4 @@ modelAavg=2.0
 disableOptimizer=true
 basicConfig=true
 optimalH=2.0
+triggerEnable=true

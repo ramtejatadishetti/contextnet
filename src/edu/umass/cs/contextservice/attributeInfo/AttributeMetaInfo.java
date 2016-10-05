@@ -144,7 +144,8 @@ public class AttributeMetaInfo
 			}
 			case AttributeTypes.DoubleType:
 			{
-				dataTypeMinVal = Double.MIN_VALUE+"";
+				// Double.MIN_VALUE is positive, so blogs say this is the min value of double.
+				dataTypeMinVal = -Double.MAX_VALUE+"";
 				break;
 			}
 			case AttributeTypes.StringType:
