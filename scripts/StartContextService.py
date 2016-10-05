@@ -52,10 +52,10 @@ def startCSNodes():
 #print "sys.argv[1] "+sys.argv[0]+" "+str(len(sys.argv))
 if(len(sys.argv) == 1):
     configName = 'locationSingleNodeConf'
-    print "using locationSingleNodeConf configuration and mysql username as password specified in locationSingleNodeConf/contextServiceConf/dbNodeSetup.txt"
+    print "using locationSingleNodeConf configuration and mysql username as password specified in conf/locationSingleNodeConf/contextServiceConf/dbNodeSetup.txt"
 elif(len(sys.argv) == 2):
     configName = sys.argv[1]
-    print "using default mysql username as password specified in "+configName+"/contextServiceConf/dbNodeSetup.txt"
+    print "using default mysql username as password specified in conf/"+configName+"/contextServiceConf/dbNodeSetup.txt"
 elif(len(sys.argv) == 3):
     print "Mysql username and password both are needed\n"
 
