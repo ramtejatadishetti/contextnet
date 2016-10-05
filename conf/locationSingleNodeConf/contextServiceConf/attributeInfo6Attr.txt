@@ -1,7 +1,0 @@
-#attrName, minValue, maxValue, datatype[Integer, Long, Double, String]
-attr1, 1.0, 1500.0, Double
-attr6, 1.0, 1500.0, Double
-attr3, 1.0, 1500.0, Double
-attr2, 1.0, 1500.0, Double
-attr5, 1.0, 1500.0, Double
-attr4, 1.0, 1500.0, Double

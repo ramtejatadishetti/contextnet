@@ -80,10 +80,10 @@ public class ContextServiceConfig
 	//control if full guids are sent in the search query
 	// reply, if false only sends the number of guids, not
 	// the actual guids
-	public static  boolean sendFullRepliesWithinCS					= false;
+	public static  boolean sendFullRepliesWithinCS					= true;
 	
 	// to check which one is bottleneck the client or CS in full replies. 
-	public static  boolean sendFullRepliesToClient					= false;
+	public static  boolean sendFullRepliesToClient					= true;
 	
 	// if this is set to true, then mysql table selects
 	// return results row by row. If set to false then
@@ -132,10 +132,10 @@ public class ContextServiceConfig
     // set in conjuction with that. and also the hyperpsace hashing thread pool
     // size should be set greater than that. These things affect system performance a lot.
 	// change back to 214 for experiments.
-	public static final int MYSQL_MAX_CONNECTIONS					= 214;
+	public static final int MYSQL_MAX_CONNECTIONS					= 10;
 	
 	// it is also important to set this at least the size of the database connection pool.
-	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 214;
+	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 10;
 	
 	//public static final int PRIVACY_THREAD_POOL_SIZE				= 214;
 	
@@ -172,7 +172,7 @@ public class ContextServiceConfig
 	// only for testing.
 	public static boolean RAND_VAL_JSON								= false;
 	
-	public static boolean SUBSPACE_PRIVACY_ENABLED					= true;
+	public static boolean SUBSPACE_PRIVACY_ENABLED					= false;
 	
 	
 	public static final String AssymmetricEncAlgorithm				= "RSA";

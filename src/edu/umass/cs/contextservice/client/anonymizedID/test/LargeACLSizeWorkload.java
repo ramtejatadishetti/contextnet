@@ -11,7 +11,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
+import org.json.JSONArray;
+
 import edu.umass.cs.contextservice.client.anonymizedID.HyperspaceBasedAnonymizedIDCreator;
+import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.utils.Utils;
@@ -129,7 +132,6 @@ public class LargeACLSizeWorkload
 		return circleIDMap;
 	}
 	
-	
 	public static void main( String[] args )
 					throws EncryptionException, NoSuchAlgorithmException
 	{
@@ -165,7 +167,32 @@ public class LargeACLSizeWorkload
 		List<AnonymizedIDEntry> anonymizedIDList = 
 					hyperspaceBasedIDCreator.computeAnonymizedIDs(currGUID, obj.aclMap);
 		
-		System.out.println("Number of anonymizedIDs created "+anonymizedIDList.size());
+		System.out.println("HyperspaceBasedAnonymizedIDCreator "
+				+ " number of anonymizedIDs created "+anonymizedIDList.size());
+		
+		
+		HashMap<Integer, JSONArray> subspaceInfo = new HashMap<Integer, JSONArray>();
+		int count=0;
+		for(int i=0; i<4; i++)
+		{
+			JSONArray jsonArr = new JSONArray();
+			for(int j=0; j<5; j++)
+			{
+				jsonArr.put("attr"+count);
+				count++;
+			}
+			subspaceInfo.put(i, jsonArr);
+		}
+		
+		SubspaceBasedAnonymizedIDCreator subspaceAnonID 
+									= new SubspaceBasedAnonymizedIDCreator(subspaceInfo);
+		
+		anonymizedIDList = 
+				subspaceAnonID.computeAnonymizedIDs(currGUID, obj.aclMap);
+		
+		System.out.println("SubspaceBasedAnonymizedIDCreator "
+				+ " number of anonymizedIDs created "+anonymizedIDList.size());
+		
 	}
 }
 

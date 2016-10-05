@@ -1722,7 +1722,7 @@ public class MercuryMySQL<NodeIDType> extends AbstractScheme<NodeIDType>
 					long t0 = System.currentTimeMillis();
 					@SuppressWarnings("unchecked")
 					ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS = (ValueUpdateFromGNS<NodeIDType>)event;
-					log.info("CS"+getMyID()+" received " + event.getType() + ": " + valUpdMsgFromGNS);
+					MSocketLogger.getLogger().fine("CS"+getMyID()+" received " + event.getType() + ": " + valUpdMsgFromGNS);
 					
 					processValueUpdateFromGNS(valUpdMsgFromGNS);
 					

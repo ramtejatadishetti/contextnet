@@ -59,7 +59,7 @@ public class GNSCallsOriginal
 				e.printStackTrace();
 			} catch (GnsException e)
 			{
-				log.info("GnsException no group exists");
+				MSocketLogger.getLogger().fine("GnsException no group exists");
 				//e.printStackTrace();
 			}
 			return grpMem;
@@ -149,7 +149,7 @@ public class GNSCallsOriginal
 			    	
 			    	//Put the IP address in the GNS
 			    	//String ipPort = saddr.getAddress().getHostAddress() + ":" + saddr.getPort();
-			    	//log.trace("Updating " + GnsConstants.SERVER_REG_ADDR + " GNSValue " + ipPort);
+			    	//MSocketLogger.getLogger().fine("Updating " + GnsConstants.SERVER_REG_ADDR + " GNSValue " + ipPort);
 			    	//gnsClient
 			    	//.fieldReplaceOrCreate(myGuid.getGuid(), GnsConstants.SERVER_REG_ADDR, 
 			    	//new JSONArray().put(ipPort), myGuid);
@@ -406,7 +406,7 @@ public class GNSCallsOriginal
 				e.printStackTrace();
 			} catch (GnsException e)
 			{
-				log.info("GnsException no group exists");
+				MSocketLogger.getLogger().fine("GnsException no group exists");
 				//e.printStackTrace();
 			}
 			return guidString;

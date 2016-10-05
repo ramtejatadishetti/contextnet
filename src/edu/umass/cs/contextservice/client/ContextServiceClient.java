@@ -1100,7 +1100,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 	
 	
-	
 	// testing secure client code
 	// TODO: test the scheme with the example given in the draft.
 	public static void main(String[] args) 

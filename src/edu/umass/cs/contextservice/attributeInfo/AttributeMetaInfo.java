@@ -29,11 +29,10 @@ public class AttributeMetaInfo
 		this.attributeName = attributeName;
 		this.minValue = minValue;
 		this.maxValue = maxValue;
-		// FIXME: just for the experiments.
-		// need to take default values as inputs as we used to.
-		this.defaultValue = 0+"";
-		this.isLowerValDefault = true;
 		this.dataType = dataType;
+		
+		this.defaultValue = getDataTypeMinimumValue();
+		this.isLowerValDefault = true;
 	}
 	
 	public String getAttrName()
@@ -65,6 +64,7 @@ public class AttributeMetaInfo
 	{
 		return this.isLowerValDefault;
 	}
+	
 	
 	public String getARandomValue(Random randGenerator)
 	{
@@ -124,5 +124,39 @@ public class AttributeMetaInfo
 		
 		assert(randVal.length() > 0);
 		return randVal;	
+	}
+	
+	private String getDataTypeMinimumValue()
+	{
+		String dataTypeMinVal = "";
+		
+		switch( dataType )
+		{
+			case AttributeTypes.IntType:
+			{
+				dataTypeMinVal = Integer.MIN_VALUE+"";
+				break;
+			}
+			case AttributeTypes.LongType:
+			{
+				dataTypeMinVal = Long.MIN_VALUE +"";
+				break;
+			}
+			case AttributeTypes.DoubleType:
+			{
+				dataTypeMinVal = Double.MIN_VALUE+"";
+				break;
+			}
+			case AttributeTypes.StringType:
+			{
+				//TODO: String datatype is not very well tested.
+				dataTypeMinVal = "";
+				break;
+			}
+			default:
+				assert(false);
+		}
+		
+		return dataTypeMinVal;
 	}
 }

@@ -1,5 +1,7 @@
 package edu.umass.cs.contextservice.profilers;
 
+import edu.umass.cs.contextservice.logging.ContextServiceLogger;
+
 public class ProfilerStatClass implements Runnable
 {
 	private long numNodesForSearchQuery 			= 0;
@@ -74,7 +76,7 @@ public class ProfilerStatClass implements Runnable
 				incomingSearchRate = 0;
 			}
 			
-			System.out.println("OutsearchDataThrouhgput "+OutsearchDataThrouhgput
+			ContextServiceLogger.getLogger().fine("OutsearchDataThrouhgput "+OutsearchDataThrouhgput
 					+ " OutsearchIndexThrouhgput "+OutsearchIndexThrouhgput
 					+ " InsearchDataThrouhgput "+InsearchDataThrouhgput
 					+ " InsearchIndexThrouhgput "+InsearchIndexThrouhgput

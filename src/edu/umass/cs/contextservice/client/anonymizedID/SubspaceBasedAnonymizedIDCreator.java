@@ -9,13 +9,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 import java.util.Vector;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import edu.umass.cs.contextservice.client.ContextClientInterfaceWithPrivacy;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
@@ -37,7 +35,7 @@ public class SubspaceBasedAnonymizedIDCreator
 									implements AnonymizedIDCreationInterface
 {
 	private final HashMap<Integer, JSONArray> subspaceAttrMap;
-	private final Random anonymizedIDRand					= new Random();
+	//private final Random anonymizedIDRand					= new Random();
 	
 	public SubspaceBasedAnonymizedIDCreator(HashMap<Integer, JSONArray> subspaceAttrMap)
 	{
@@ -68,11 +66,38 @@ public class SubspaceBasedAnonymizedIDCreator
 				
 				JSONArray attrArray = this.subspaceAttrMap.get(mapKey);
 				
+				HashMap<String , List<ACLEntry>> aclMapForSubspace 
+										= new HashMap<String , List<ACLEntry>>();
+				
+				for(int i=0; i<attrArray.length(); i++)
+				{
+					String attrName = attrArray.getString(i);
+					List<ACLEntry> aclList = aclMap.get(attrName);
+					assert(aclList != null);
+					aclMapForSubspace.put(attrName, aclList);
+				}
+				
+				HyperspaceBasedAnonymizedIDCreator subspaceAnonyObj 
+										= new HyperspaceBasedAnonymizedIDCreator();
+				
+				List<AnonymizedIDEntry> subspaceAnonIds 
+							= subspaceAnonyObj.computeAnonymizedIDs(myGuidEntry, aclMapForSubspace);
+				
+				
+				for(int i=0; i<subspaceAnonIds.size(); i++)
+				{
+					anonymizedIDList.add(subspaceAnonIds.get(i));
+				}
+				
+				
+				
+				
+				
 //				System.out.println("subspace attrs "+attrArray);
 				
 				// String is GUIDString
-				HashMap<String, List<String>> guidToAttributesMap 
-								= computeGuidToAttributesMap(attrArray, aclMap);
+//				HashMap<String, List<String>> guidToAttributesMap 
+//								= computeGuidToAttributesMap(attrArray, aclMap);
 				
 				//printGuidToAttributesMap( guidToAttributesMap );
 				
@@ -82,12 +107,13 @@ public class SubspaceBasedAnonymizedIDCreator
 				
 				// JSONArray of attributes is the String.
 				// JSONArray cannot be directly used.
-				HashMap<String, JSONArray> attributesToGuidsMap 
-						= computeAttributesToGuidsMap(guidToAttributesMap);
+//				HashMap<String, JSONArray> attributesToGuidsMap 
+//						= computeAttributesToGuidsMap(guidToAttributesMap);
 			
-				// apply minimization heursitic
-				HashMap<String, JSONArray> minimizedAttrSet = removeRedundantAnonymizedIDs
-				( attributesToGuidsMap );
+				// apply minimization heuristic
+				// this heuristic not useful, possibly wrong.
+//				HashMap<String, JSONArray> minimizedAttrSet = removeRedundantAnonymizedIDs
+//				( attributesToGuidsMap );
 				
 //				System.out.println("Reduction from minimization before "+
 //						attributesToGuidsMap.size()+" after "+minimizedAttrSet.size());
@@ -95,30 +121,30 @@ public class SubspaceBasedAnonymizedIDCreator
 				//HashMap<String, List<byte[]>> attributesToGuidsMap 
 				//	= new HashMap<String, List<byte[]>>();
 
-				Iterator<String> attrSetIter = minimizedAttrSet.keySet().iterator();
-				
-				while( attrSetIter.hasNext() )
-				{
-					// JSONArray in string format
-					String key = attrSetIter.next();
-					JSONArray attrSet = new JSONArray(key);
-					HashMap<String, Boolean> attrMap = convertJSONArrayToMap(attrSet);
-					JSONArray guidSet = minimizedAttrSet.get(key);
-					assert(attrSet != null);
-					assert(guidSet != null);
-					
-					byte[] anonymizedID 
-								= new byte[ContextClientInterfaceWithPrivacy.SIZE_OF_ANONYMIZED_ID];
-					
-					anonymizedIDRand.nextBytes(anonymizedID);
-					
-					AnonymizedIDEntry anonymizedIDObj 
-						= new AnonymizedIDEntry(Utils.bytArrayToHex(anonymizedID), attrMap, 
-								guidSet, null);
-					
-					
-					anonymizedIDList.add(anonymizedIDObj);
-				}
+//				Iterator<String> attrSetIter = attributesToGuidsMap.keySet().iterator();
+//				
+//				while( attrSetIter.hasNext() )
+//				{
+//					// JSONArray in string format
+//					String key = attrSetIter.next();
+//					JSONArray attrSet = new JSONArray(key);
+//					HashMap<String, Boolean> attrMap = convertJSONArrayToMap(attrSet);
+//					JSONArray guidSet = attributesToGuidsMap.get(key);
+//					assert(attrSet != null);
+//					assert(guidSet != null);
+//					
+//					byte[] anonymizedID 
+//								= new byte[ContextClientInterfaceWithPrivacy.SIZE_OF_ANONYMIZED_ID];
+//					
+//					anonymizedIDRand.nextBytes(anonymizedID);
+//					
+//					AnonymizedIDEntry anonymizedIDObj 
+//						= new AnonymizedIDEntry(Utils.bytArrayToHex(anonymizedID), attrMap, 
+//								guidSet, null);
+//					
+//					
+//					anonymizedIDList.add(anonymizedIDObj);
+//				}
 			}
 			return anonymizedIDList;
 		}
@@ -129,7 +155,7 @@ public class SubspaceBasedAnonymizedIDCreator
 		return null;
 	}
 	
-	private HashMap<String, Boolean> convertJSONArrayToMap(JSONArray attrSet)
+	/*private HashMap<String, Boolean> convertJSONArrayToMap(JSONArray attrSet)
 	{
 		HashMap<String, Boolean> attrMap = new HashMap<String, Boolean>();
 		
@@ -144,16 +170,16 @@ public class SubspaceBasedAnonymizedIDCreator
 			}	
 		}
 		return attrMap;
-	}
+	}*/
 	
 	/**
-	 * computes the guid to attributes map for each member fo ACL.
+	 * Computes the guid to attributes map for each member of ACL.
 	 * Key is the guid and value is the list of attributes that the guid is
 	 * allowed to read.
 	 * It is Gk:Buk map in the draft.
 	 * @throws JSONException 
 	 */
-	private HashMap<String, List<String>> 
+	/*private HashMap<String, List<String>> 
 			computeGuidToAttributesMap(JSONArray attrArray, 
 					HashMap<String, List<ACLEntry>> aclMap) throws JSONException
 	{
@@ -172,12 +198,11 @@ public class SubspaceBasedAnonymizedIDCreator
 			
 			for( int j=0; j<attrACL.size(); j++ )
 			{
-				//byte[] publicKeyByteArray = (byte[]) attrACL.get(j).getPublicKeyACLMember();
 				byte[] guidByteArray = attrACL.get(j).getACLMemberGUID();
 				String guidString = Utils.bytArrayToHex(guidByteArray);
 						
 				ContextServiceLogger.getLogger().fine
-				(" currAttr "+currAttr+" guid "+guidString);
+					(" currAttr "+currAttr+" guid "+guidString);
 				
 				List<String> attrListBuk = guidToAttributesMap.get(guidString);
 				
@@ -196,7 +221,7 @@ public class SubspaceBasedAnonymizedIDCreator
 		ContextServiceLogger.getLogger().fine( "Size of guidToAttributesMap "
 				+guidToAttributesMap.size() );
 		return guidToAttributesMap;
-	}
+	}*/
 	
 	
 	/**
@@ -209,12 +234,12 @@ public class SubspaceBasedAnonymizedIDCreator
 	 * This is the Bul:Gul map in the draft.
 	 * @return
 	 */
-	private HashMap<String, JSONArray> computeAttributesToGuidsMap(
-			HashMap<String, List<String>> guidToAttributesMap)
+	/*private HashMap<String, JSONArray> computeAttributesToGuidsMap( 
+			HashMap<String, List<String>> guidToAttributesMap )
 	{
 		HashMap<String, JSONArray> attributesToGuidsMap 
 									= new HashMap<String, JSONArray>();
-
+		
 		Iterator<String> guidIter = guidToAttributesMap.keySet().iterator();
 
 		while( guidIter.hasNext() )
@@ -261,7 +286,7 @@ public class SubspaceBasedAnonymizedIDCreator
 		ContextServiceLogger.getLogger().fine("Size of attributesToGuidsMap "
 							+attributesToGuidsMap.size() );	
 		return attributesToGuidsMap;
-	}
+	}*/
 	
 	
 	/**
@@ -272,7 +297,7 @@ public class SubspaceBasedAnonymizedIDCreator
 	 * @param attributesToGuidsMap
 	 * @return
 	 */
-	private HashMap<String, JSONArray> removeRedundantAnonymizedIDs
+	/*private HashMap<String, JSONArray> removeRedundantAnonymizedIDs
 									( HashMap<String, JSONArray> attributesToGuidsMap )
 	{
 		HashMap<String, JSONArray> afterRemoval = new HashMap<String, JSONArray>();
@@ -373,7 +398,7 @@ public class SubspaceBasedAnonymizedIDCreator
 			}
 		}
 		return afterRemoval;
-	}
+	}*/
 	
 	
 	/**
@@ -384,7 +409,7 @@ public class SubspaceBasedAnonymizedIDCreator
 	 * @param currSet
 	 * @return
 	 */
-	private List<JSONArray> getSuperSetsOfASet( HashMap<Integer, List<JSONArray>> lengthIndexedAttrSets , 
+	/*private List<JSONArray> getSuperSetsOfASet( HashMap<Integer, List<JSONArray>> lengthIndexedAttrSets , 
 								JSONArray currSet )
 	{
 		int setLength = currSet.length();
@@ -416,7 +441,7 @@ public class SubspaceBasedAnonymizedIDCreator
 			}
 		}
 		return superSetList;
-	}
+	}*/
 	
 	
 	/**
@@ -424,7 +449,7 @@ public class SubspaceBasedAnonymizedIDCreator
 	 * set. JSONArrays are the attribute strings
 	 * @return
 	 */
-	private boolean checkForSuperset(JSONArray subset, JSONArray superset)
+	/*private boolean checkForSuperset(JSONArray subset, JSONArray superset)
 	{
 		HashMap<String, Boolean> mapToCheck = new HashMap<String, Boolean>();
 		
@@ -460,7 +485,7 @@ public class SubspaceBasedAnonymizedIDCreator
 		}
 		
 		return isSubset;
-	}
+	}*/
 	
 	/**
 	 * Checks if the guid set of an attribute set is containied in the
@@ -468,7 +493,7 @@ public class SubspaceBasedAnonymizedIDCreator
 	 * gudset is in byte[] 
 	 * @return
 	 */
-	private boolean checkIfGuidSetContainedInUnion( JSONArray guidSet, 
+	/*private boolean checkIfGuidSetContainedInUnion( JSONArray guidSet, 
 			HashMap<String, JSONArray> attributesToGuidsMap , List<JSONArray> superSetList )
 	{
 		// denotes the union of of guid sets of all attribute sets in 
@@ -542,7 +567,7 @@ public class SubspaceBasedAnonymizedIDCreator
 			}
 //			System.out.println("printStr "+printStr);
 		}
-	}
+	}*/
 	
 	// testing the class.
 	public static void main(String[] args) throws NoSuchAlgorithmException, EncryptionException
