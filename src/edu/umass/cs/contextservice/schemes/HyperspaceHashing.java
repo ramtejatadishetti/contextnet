@@ -149,11 +149,12 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
 		
+		subspaceConfigurator.generateAndStoreSubspacePartitionsInDB
+					(nodeES, hyperspaceDB);
 		
 		guidAttrValProcessing = new GUIDAttrValueProcessing<NodeIDType>(
 				this.getMyID(), subspaceConfigurator.getSubspaceInfoMap(), 
-				hyperspaceDB, messenger , nodeES ,
-				pendingQueryRequests , profStats);
+				hyperspaceDB, messenger , pendingQueryRequests , profStats);
 				
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
@@ -166,7 +167,6 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 		//new Thread(new ProfilerStatClass()).start();
 	}
-	
 	
 	@Override
 	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMsgFromUser(

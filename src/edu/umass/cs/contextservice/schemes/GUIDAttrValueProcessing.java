@@ -4,19 +4,13 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.paukov.combinatorics.Factory;
-import org.paukov.combinatorics.Generator;
-import org.paukov.combinatorics.ICombinatoricsVector;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
@@ -50,14 +44,7 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 	
 	private final JSONMessenger<NodeIDType> messenger;
 	
-	private final Object subspacePartitionInsertLock									= new Object();
-	private final ExecutorService nodeES;
-	
 	private final ConcurrentHashMap<Long, QueryInfo<NodeIDType>> pendingQueryRequests;
-	
-	// this can be a huge number, it is exponential in numebr of attributes.
-	private long subspacePartitionInsertSent											= 0;
-	private long subspacePartitionInsertCompl											= 0;
 	
 	private final Object pendingQueryLock												= new Object();
 	
@@ -67,11 +54,10 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 	
 	public GUIDAttrValueProcessing( NodeIDType myID, HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> 
 		subspaceInfoMap , HyperspaceMySQLDB<NodeIDType> hyperspaceDB, 
-		JSONMessenger<NodeIDType> messenger , ExecutorService nodeES ,
+		JSONMessenger<NodeIDType> messenger , 
 		ConcurrentHashMap<Long, QueryInfo<NodeIDType>> pendingQueryRequests, 
 		ProfilerStatClass profStats )
 	{
-		this.nodeES = nodeES;
 		this.myID = myID;
 		this.messenger = messenger;
 		replicaChoosingRand = new Random(myID.hashCode());
@@ -82,134 +68,6 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 		this.profStats = profStats;
 		
 		this.pendingQueryRequests = pendingQueryRequests;
-		
-		generateSubspacePartitions();
-	}
-	
-	/**
-	 * recursive function to generate all the
-	 * subspace regions/partitions.
-	 */
-	public void generateSubspacePartitions()
-	{
-		ContextServiceLogger.getLogger().fine
-								(" generateSubspacePartitions() entering " );
-		
-		Iterator<Integer> subspaceIter = subspaceInfoMap.keySet().iterator();
-		
-		while( subspaceIter.hasNext() )
-		{
-			int subspaceId = subspaceIter.next();
-			Vector<SubspaceInfo<NodeIDType>> replicaVect 
-								= subspaceInfoMap.get(subspaceId);
-			
-			for( int i=0; i<replicaVect.size(); i++ )
-			{
-				SubspaceInfo<NodeIDType> subspaceInfo = replicaVect.get(i);
-				HashMap<String, AttributePartitionInfo> attrsOfSubspace 
-										= subspaceInfo.getAttributesOfSubspace();
-				
-				Vector<NodeIDType> nodesOfSubspace = subspaceInfo.getNodesOfSubspace();
-				
-				double numAttr  = attrsOfSubspace.size();
-				//double numNodes = nodesOfSubspace.size();
-				ContextServiceLogger.getLogger().fine(" NumPartitions "
-												+subspaceInfo.getNumPartitions() );
-				
-				Integer[] partitionNumArray = new Integer[subspaceInfo.getNumPartitions()];
-				for(int j = 0; j<partitionNumArray.length; j++)
-				{
-					partitionNumArray[j] = new Integer(j);
-					//ContextServiceLogger.getLogger().fine("partitionNumArray[j] "+j+" "+partitionNumArray[j]);
-				}
-				
-				// Create the initial vector of 2 elements (apple, orange)
-				ICombinatoricsVector<Integer> originalVector = Factory.createVector(partitionNumArray);
-				
-			    //ICombinatoricsVector<Integer> originalVector = Factory.createVector(new String[] { "apple", "orange" });
-
-				// Create the generator by calling the appropriate method in the Factory class. 
-				// Set the second parameter as 3, since we will generate 3-elemets permutations
-				Generator<Integer> gen = Factory.createPermutationWithRepetitionGenerator(originalVector, (int)numAttr);
-				
-				// Print the result
-				int nodeIdCounter = 0;
-				int sizeOfNumNodes = nodesOfSubspace.size();
-				List<List<Integer>> subspaceVectList = new LinkedList<List<Integer>>();
-				List<NodeIDType> respNodeIdList = new LinkedList<NodeIDType>();
-				long counter = 0;
-				for( ICombinatoricsVector<Integer> perm : gen )
-				{
-					NodeIDType respNodeId = nodesOfSubspace.get(nodeIdCounter%sizeOfNumNodes);
-					//ContextServiceLogger.getLogger().fine("perm.getVector() "+perm.getVector());
-					counter++;
-					
-					if(counter % ContextServiceConfig.SUBSPACE_PARTITION_INSERT_BATCH_SIZE == 0)
-					{
-						subspaceVectList.add(perm.getVector());
-						respNodeIdList.add(respNodeId);
-						
-						synchronized(this.subspacePartitionInsertLock)
-						{
-							this.subspacePartitionInsertSent++;
-						}
-						
-						DatabaseOperationClass dbOper = new DatabaseOperationClass(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
-								subspaceVectList, respNodeIdList);
-						//dbOper.run();
-						
-						nodeES.execute(dbOper);
-						
-						// repointing it to a new list, and the pointer to the old list is passed to the DatabaseOperation class
-						subspaceVectList = new LinkedList<List<Integer>>();
-						respNodeIdList = new LinkedList<NodeIDType>();
-						
-						
-						nodeIdCounter++;
-					}
-					else
-					{
-						subspaceVectList.add(perm.getVector());
-						respNodeIdList.add(respNodeId);
-						nodeIdCounter++;
-					}
-				}
-				// adding the remaning ones
-				if(subspaceVectList.size() > 0)
-				{
-					synchronized(this.subspacePartitionInsertLock)
-					{
-						this.subspacePartitionInsertSent++;
-					}
-					
-					DatabaseOperationClass dbOper = new DatabaseOperationClass(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
-							subspaceVectList, respNodeIdList);
-					
-					nodeES.execute(dbOper);
-					
-					// repointing it to a new list, and the pointer to the old list is passed to the DatabaseOperation class
-					subspaceVectList = new LinkedList<List<Integer>>();
-					respNodeIdList = new LinkedList<NodeIDType>();
-				}
-			}
-		}
-		
-		
-		synchronized(this.subspacePartitionInsertLock)
-		{
-			while(this.subspacePartitionInsertSent != this.subspacePartitionInsertCompl)
-			{
-				try 
-				{
-					this.subspacePartitionInsertLock.wait();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}
-		ContextServiceLogger.getLogger().fine
-							(" generateSubspacePartitions() completed " );
 	}
 	
 	public void processQueryMsgFromUser
@@ -939,49 +797,5 @@ public class GUIDAttrValueProcessing<NodeIDType> implements
 	{
 		public int subspaceId;
 		public Vector<ProcessingQueryComponent> currMatchingComponents;
-	}
-	
-	private class DatabaseOperationClass implements Runnable
-	{
-		private final int subspaceId;
-		private final int replicaNum;
-		private final List<List<Integer>> permVectorList;
-		private final List<NodeIDType> respNodeIdList;
-		
-		public DatabaseOperationClass(int subspaceId, int replicaNum, 
-				List<List<Integer>> permVectorList
-				, List<NodeIDType> respNodeIdList)
-		{
-			this.subspaceId = subspaceId;
-			this.replicaNum = replicaNum;
-			this.permVectorList = permVectorList;
-			this.respNodeIdList = respNodeIdList;
-		}
-		
-		@Override
-		public void run() 
-		{
-			try
-			{
-				hyperspaceDB.bulkInsertIntoSubspacePartitionInfo(subspaceId, replicaNum, 
-						permVectorList, respNodeIdList);
-				synchronized(subspacePartitionInsertLock)
-				{
-					subspacePartitionInsertCompl++;
-					if(subspacePartitionInsertCompl == subspacePartitionInsertSent)
-					{
-						subspacePartitionInsertLock.notify();
-					}
-				}
-			}
-			catch(Exception ex)
-			{
-				ex.printStackTrace();
-			}
-			catch(Error ex)
-			{
-				ex.printStackTrace();
-			}
-		}
 	}
 }
