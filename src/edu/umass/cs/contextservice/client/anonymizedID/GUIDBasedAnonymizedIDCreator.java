@@ -15,9 +15,9 @@ import java.util.Vector;
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import edu.umass.cs.contextservice.client.ContextClientInterfaceWithPrivacy;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
+import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.gnsclient.client.util.GuidEntry;
@@ -68,7 +68,7 @@ public class GUIDBasedAnonymizedIDCreator
 			}
 			
 			byte[] anonymizedID 
-						= new byte[ContextClientInterfaceWithPrivacy.SIZE_OF_ANONYMIZED_ID];
+						= new byte[ContextServiceConfig.SIZE_OF_ANONYMIZED_ID];
 			
 			rand.nextBytes(anonymizedID);
 			
@@ -80,7 +80,8 @@ public class GUIDBasedAnonymizedIDCreator
 					computeAnonymizedIDToGUIDMapping(myGuidEntry, guidSet, unionGuidsMap);
 			
 			AnonymizedIDEntry anonymizedIDEntry 
-						= new AnonymizedIDEntry(Utils.bytArrayToHex(anonymizedID) , anonmizedIDAttrMap, guidSet, anonymizedIDToGuidMapping);
+						= new AnonymizedIDEntry(Utils.byteArrayToHex(anonymizedID) , 
+								anonmizedIDAttrMap, guidSet, anonymizedIDToGuidMapping , null, null);
 			
 			anonymizedIDList.add(anonymizedIDEntry);
 		}
@@ -118,7 +119,7 @@ public class GUIDBasedAnonymizedIDCreator
 			{
 				//byte[] publicKeyByteArray = (byte[]) attrACL.get(j).getPublicKeyACLMember();
 				byte[] guidByteArray = attrACL.get(j).getACLMemberGUID();
-				String guidString = Utils.bytArrayToHex(guidByteArray);
+				String guidString = Utils.byteArrayToHex(guidByteArray);
 						
 				ContextServiceLogger.getLogger().fine
 				(" currAttr "+currAttr+" guid "+guidString);
@@ -159,7 +160,7 @@ public class GUIDBasedAnonymizedIDCreator
 			for(int i=0; i<aclList.size(); i++)
 			{
 				ACLEntry currACL = aclList.get(i);
-				String currGUID  = Utils.bytArrayToHex(currACL.getACLMemberGUID());
+				String currGUID  = Utils.byteArrayToHex(currACL.getACLMemberGUID());
 				unionACLMap.put(currGUID, currACL);
 			}
 			//= aclMap.get(key);
@@ -185,7 +186,7 @@ public class GUIDBasedAnonymizedIDCreator
 			try 
 			{
 				byte[] guidBytes = (byte[]) guidSet.get(i);
-				String guidString = Utils.bytArrayToHex(guidBytes);
+				String guidString = Utils.byteArrayToHex(guidBytes);
 				int index = Utils.consistentHashAString(guidString, guidSet.length());
 				
 				// place free insert now
@@ -194,7 +195,7 @@ public class GUIDBasedAnonymizedIDCreator
 					ACLEntry currACLEntry = unionGuidsMap.get(guidString);
 					byte[] encryptedInfo = Utils.doPublicKeyEncryption(currACLEntry.getPublicKeyACLMember(), userGuidBytes);
 					// store it in JSON
-					anonymizedIDToGuidMapping.put(index, Utils.bytArrayToHex(encryptedInfo));
+					anonymizedIDToGuidMapping.put(index, Utils.byteArrayToHex(encryptedInfo));
 				}
 				else
 				{
@@ -228,7 +229,7 @@ public class GUIDBasedAnonymizedIDCreator
 						(currACLEntry.getPublicKeyACLMember(), 
 						userGuidBytes);
 				// store it in JSON
-				anonymizedIDToGuidMapping.put(newIndex, Utils.bytArrayToHex(encryptedInfo));
+				anonymizedIDToGuidMapping.put(newIndex, Utils.byteArrayToHex(encryptedInfo));
 			}
 			catch(Exception ex)
 			{

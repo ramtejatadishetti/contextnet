@@ -111,14 +111,14 @@ public class EncryptionBasedGNSPrivacyTransform implements GNSPrivacyTransformIn
 			byte[] encryptedSymKey = Utils.doPublicKeyEncryption
 					(aclEntry.getPublicKeyACLMember(), symKey.getEncoded());
 			
-			String guidString = Utils.bytArrayToHex(aclEntry.getACLMemberGUID());
+			String guidString = Utils.byteArrayToHex(aclEntry.getACLMemberGUID());
 			
 			// NIP cannot send byte[]
-			decryptValueInfo.put(guidString, Utils.bytArrayToHex(encryptedSymKey));			
+			decryptValueInfo.put(guidString, Utils.byteArrayToHex(encryptedSymKey));			
 		}
 		
 		EncryptedValueJSON encryptJSON = new EncryptedValueJSON(
-				Utils.bytArrayToHex(encryptedValue), decryptValueInfo);
+				Utils.byteArrayToHex(encryptedValue), decryptValueInfo);
 		
 		return encryptJSON;
 	}

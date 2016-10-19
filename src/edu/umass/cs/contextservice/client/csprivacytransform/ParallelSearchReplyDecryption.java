@@ -116,7 +116,7 @@ public class ParallelSearchReplyDecryption
 				{
 					numFinished++;
 					totalDecryptionsOverall = totalDecryptionsOverall + totalDecryptionsThread;
-					replyArray.put( Utils.bytArrayToHex(plainTextBytes) );
+					replyArray.put( Utils.byteArrayToHex(plainTextBytes) );
 					if( numFinished == csTransformedList.size() )
 					{
 						lock.notify();
@@ -200,7 +200,7 @@ public class ParallelSearchReplyDecryption
 			if(plainText != null)
 			{
 				ContextServiceLogger.getLogger().fine("Anonymized ID "+seachReply.getID()
-										+ "realID "+Utils.bytArrayToHex(plainText) );
+										+ "realID "+Utils.byteArrayToHex(plainText) );
 			}
 			return plainText;
 		}

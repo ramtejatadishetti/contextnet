@@ -11,7 +11,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -29,9 +28,9 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 {
 	private final ExecutorService exectutorService;
 	
-	public HyperspaceBasedCSTransform()
+	public HyperspaceBasedCSTransform(ExecutorService execService)
 	{
-		this.exectutorService = Executors.newFixedThreadPool(200);
+		this.exectutorService = execService;
 	}
 	
 	@Override
@@ -68,7 +67,7 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 				
 					CSUpdateTransformedMessage transforMessage = new CSUpdateTransformedMessage
 						(anonymizedIDString, updateInfo.attrValPair, 
-									null);
+									null, updateInfo.anonymizedIDEntry.getAttrSet());
 					
 					transformedMesgList.add(transforMessage);
 				}
@@ -76,7 +75,8 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 				{
 					CSUpdateTransformedMessage transforMessage = new CSUpdateTransformedMessage
 							(anonymizedIDString, updateInfo.attrValPair, 
-								updateInfo.anonymizedIDEntry.getAnonymizedIDToGUIDMapping());
+								updateInfo.anonymizedIDEntry.getAnonymizedIDToGUIDMapping(),
+								updateInfo.anonymizedIDEntry.getAttrSet() );
 					
 					transformedMesgList.add(transforMessage);
 				}
@@ -106,6 +106,13 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 //				("Total decryptions "+parallelSearchDecryption.getTotalDecryptionsOverall()
 //				+" replyArray size "+replyArray.length());
 		}
+	}
+	
+	@Override
+	public void unTransformSearchReply(HashMap<String, byte[]> anonymizedIDToSecretKeyMap,
+			List<CSSearchReplyTransformedMessage> csTransformedList, JSONArray replyArray) 
+	{
+		// TODO Auto-generated method stub
 	}
 	
 	/**

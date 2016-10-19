@@ -2,13 +2,17 @@ package edu.umass.cs.contextservice.updates;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Vector;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
 import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
+import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 
@@ -40,7 +44,6 @@ public class UpdateInfo<NodeIDType>
 	// have a non-zero intersection with attribute set of the anonymized ID.
 	// But for now it is updated in every subspace.
 	//private int privacyRepliesCounter 											= 0;
-	
 	
 	private final Object subspaceRepliesLock 									= new Object();
 	
@@ -98,11 +101,6 @@ public class UpdateInfo<NodeIDType>
 	public void  setUpdCompl()
 	{
 		this.updateReqCompl = true;
-	}
-	
-	private void initializeSubspaceEntry( int subspaceId, int replicaNum )
-	{
-		valueUpdateRepliesMap.put(subspaceId+"-"+replicaNum, 0);
 	}
 	
 	public boolean setUpdateReply( int subspaceId, int replicaNum, int numRep,
@@ -176,7 +174,6 @@ public class UpdateInfo<NodeIDType>
 		}
 	}
 	
-	
 	public boolean checkAllUpdateReplyRecvd()
 	{
 		synchronized(this.subspaceRepliesLock)
@@ -200,5 +197,130 @@ public class UpdateInfo<NodeIDType>
 	public HashMap<String, GroupGUIDInfoClass> getToBeAddedMap()
 	{
 		return this.toBeAddedMap;
+	}
+	
+	private void initializeRepliesMap( ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS, 
+			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap )
+	{
+		int privacySchemeOrdinal = valUpdMsgFromGNS.getPrivacySchemeOrdinal();
+		
+		// initialize updates
+		if( subspaceInfoMap != null )
+		{
+			if( privacySchemeOrdinal == PrivacySchemes.NO_PRIVACY.ordinal() )
+			{
+				// In no privacy case an update goes to all replicas of all subspaces.
+				// So we initialize the map accordingly.
+				
+				Iterator<Integer> keyIter = subspaceInfoMap.keySet().iterator();
+				
+				while( keyIter.hasNext() )
+				{
+					int subspaceId = keyIter.next();
+					Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
+					
+					for( int i=0; i<replicaVector.size(); i++ )
+					{
+						SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(i);
+						this.initializeSubspaceEntry(subspaceId, currSubspaceReplica.getReplicaNum());
+					}
+				}
+				
+			}
+			else if( privacySchemeOrdinal == PrivacySchemes.HYPERSPACE_PRIVACY.ordinal() )
+			{
+				// In Hyperspace privacy scheme, an update for an anonymized ID goes to subspaces 
+				// whose attributes have a
+				// non-zero overlap with the attribute set of the anonymized ID.
+				
+				JSONArray anonymizedIDAttrSet = valUpdMsgFromGNS.getAttrSetArray();
+				
+				assert( anonymizedIDAttrSet != null );
+				assert( anonymizedIDAttrSet.length() > 0 );
+				
+				List<Integer> overlapSubspaceList = getOverlappingSubsapceIds
+						( subspaceInfoMap, anonymizedIDAttrSet );
+				
+				
+				for( int i=0; i < overlapSubspaceList.size(); i++ )
+				{
+					
+					int subspaceId = overlapSubspaceList.get(i);
+					
+					Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
+					
+					for( int j=0; j<replicaVector.size(); j++ )
+					{
+						SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(j);
+						this.initializeSubspaceEntry(subspaceId, currSubspaceReplica.getReplicaNum());
+					}
+				}
+				
+			}
+			else if( privacySchemeOrdinal == PrivacySchemes.SUBSPACE_PRIVACY.ordinal() )
+			{
+				
+				
+				
+			}
+		}
+		else
+		{
+			assert(false);
+		}
+	}
+	
+	private List<Integer> getOverlappingSubsapceIds( HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> 
+			subspaceInfoMap, JSONArray anonymizedIDAttrSet )
+	{
+		List<Integer> subspaceIdList = new LinkedList<Integer>();
+		
+		Iterator<Integer> keyIter = subspaceInfoMap.keySet().iterator();
+		
+		while( keyIter.hasNext() )
+		{
+			int subspaceId = keyIter.next();
+			Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
+			
+			SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(0);
+			
+			HashMap<String, AttributePartitionInfo> attrSubspace = 
+									currSubspaceReplica.getAttributesOfSubspace();
+			
+			boolean subspaceOverlaps = false;
+			
+			for( int i=0; i < anonymizedIDAttrSet.length(); i++ )
+			{
+				try 
+				{
+					String attrName = anonymizedIDAttrSet.getString(i);
+					
+					if( attrSubspace.containsKey(attrName) )
+					{
+						subspaceOverlaps = true;
+						break;
+					}
+				}
+				catch (JSONException e) 
+				{
+					e.printStackTrace();
+				}
+			}
+			
+			if( subspaceOverlaps )
+			{
+				subspaceIdList.add(subspaceId);
+			}
+		}
+		
+		assert(subspaceIdList.size() > 0);
+		
+		return subspaceIdList;
+	}
+	
+	
+	private void initializeSubspaceEntry( int subspaceId, int replicaNum )
+	{
+		valueUpdateRepliesMap.put(subspaceId+"-"+replicaNum, 0);
 	}
 }

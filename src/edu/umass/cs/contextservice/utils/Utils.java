@@ -345,6 +345,10 @@ public class Utils
 		SecretKey keyObj = new SecretKeySpec(symmetricKey, 0, symmetricKey.length, 
 				ContextServiceConfig.SymmetricEncAlgorithm);
 		
+		//TODO: need to check how much overhead is creating a cipher everytime.
+		// GNS has a list of pre created ciphers which are used in a mutually exclusive manner.
+		// If Cipher.getInstance has overhead than CNS code also needs to have a list of pre created 
+		// ciphers.
 		Cipher c = Cipher.getInstance(ContextServiceConfig.SymmetricEncAlgorithm);
 		c.init(Cipher.ENCRYPT_MODE, keyObj);
 		
@@ -394,7 +398,7 @@ public class Utils
 	 * @param a
 	 * @return
 	 */
-	public static String bytArrayToHex(byte[] a)
+	public static String byteArrayToHex(byte[] a)
 	{
 		char[] hexBytes = Hex.encodeHex(a);
 		return new String(hexBytes);
@@ -415,7 +419,9 @@ public class Utils
 	}
 	
 	//FIXME: test time taken by each method here
-	public static void main( String[] args ) throws JSONException, NoSuchAlgorithmException, InvalidKeyException, InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
+	public static void main( String[] args ) throws JSONException, NoSuchAlgorithmException, InvalidKeyException, 
+											InvalidKeySpecException, NoSuchPaddingException, 
+											IllegalBlockSizeException, BadPaddingException
 	{
 		String str = "abcdefghijklmnopqrstuvwxyz"; 
 		long start = System.currentTimeMillis();
@@ -474,12 +480,12 @@ public class Utils
 		System.out.println("Encryption time "+(e1-s1));
 		
 		s1 = System.currentTimeMillis();
-		String encString1 = Utils.bytArrayToHex(encrypted1);
+		String encString1 = Utils.byteArrayToHex(encrypted1);
 		e1 = System.currentTimeMillis();
 		System.out.println("Encryption to string time "+(e1-s1));
 		
 		s1 = System.currentTimeMillis();
-		String encString2 = Utils.bytArrayToHex(encrypted2);
+		String encString2 = Utils.byteArrayToHex(encrypted2);
 		e1 = System.currentTimeMillis();
 		
 		System.out.println("Encryption to string time "+(e1-s1));

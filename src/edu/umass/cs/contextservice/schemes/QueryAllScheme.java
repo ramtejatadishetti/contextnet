@@ -21,6 +21,7 @@ import com.google.common.hash.Hashing;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
 import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
 import edu.umass.cs.contextservice.database.QueryAllMySQLDB;
 import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
@@ -332,7 +333,8 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	    	QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion = 
 					new QueryMesgToSubspaceRegion<NodeIDType>
 	    			(this.getMyID(), currReq.getRequestId(), query, grpGUID, -1, userIP, userPort, 
-	    						false, queryMsgFromUser.getExpiryTime());
+	    						false, queryMsgFromUser.getExpiryTime(), 
+	    						PrivacySchemes.NO_PRIVACY.ordinal());
 	    	
 			try
 			{
@@ -686,7 +688,8 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply = 
 		new QueryMesgToSubspaceRegionReply<NodeIDType>( this.getMyID(), 
 				queryMesgToSubspaceRegion.getRequestId(), 
-						groupGUID, resultGUIDs, resultSize);
+						groupGUID, resultGUIDs, resultSize, 
+						PrivacySchemes.NO_PRIVACY.ordinal());
 		
 		try
 		{

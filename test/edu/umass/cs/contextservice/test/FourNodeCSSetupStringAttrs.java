@@ -19,6 +19,7 @@ import org.json.JSONObject;
 import edu.umass.cs.contextservice.ContextServiceNode;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
 import edu.umass.cs.contextservice.geodesy.GlobalCoordinate;
 import edu.umass.cs.contextservice.messages.ContextServicePacket;
 import edu.umass.cs.contextservice.messages.GetMessage;
@@ -299,7 +300,9 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 				ValueUpdateFromGNS<Integer> valUpdFromGNS = 
 					new ValueUpdateFromGNS<Integer>
 				(myID, currID, myGUID, attrValuePair,  currID, sourceIP, sourcePort, 
-						System.currentTimeMillis(), null);
+						System.currentTimeMillis(), null, 
+						PrivacySchemes.NO_PRIVACY.ordinal(), 
+						null);
 				
 				niot.sendToAddress(getRandomNodeSock(), valUpdFromGNS.toJSONObject());
 			} catch (JSONException e)
@@ -330,7 +333,8 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 			//currNumAttr  = currNumAttr + 2;
 			
 			QueryMsgFromUser<Integer> qmesgU 
-			= new QueryMsgFromUser<Integer>(myID, query, currID, 300000, sourceIP, sourcePort);
+			= new QueryMsgFromUser<Integer>(myID, query, currID, 
+					300000, sourceIP, sourcePort, PrivacySchemes.NO_PRIVACY.ordinal());
 			
 			InetSocketAddress sockAddr = getRandomNodeSock();
 			//ContextServiceLogger.getLogger().fine("Sending query to "+sockAddr);

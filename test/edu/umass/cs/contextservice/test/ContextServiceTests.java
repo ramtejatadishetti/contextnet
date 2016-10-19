@@ -27,9 +27,16 @@ import edu.umass.cs.contextservice.client.ContextServiceClient;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
 import edu.umass.cs.contextservice.nodeApp.StartContextServiceNode;
 import edu.umass.cs.contextservice.utils.Utils;
+import edu.umass.cs.gnsclient.client.GNSClient;
+import edu.umass.cs.gnsclient.client.GNSCommand;
 import edu.umass.cs.gnsclient.client.util.GuidEntry;
+import edu.umass.cs.gnsclient.client.util.GuidUtils;
+import edu.umass.cs.gnscommon.AclAccessType;
+import edu.umass.cs.gnscommon.GNSCommandProtocol;
+import edu.umass.cs.gnscommon.exceptions.client.DuplicateNameException;
 import edu.umass.cs.gnscommon.exceptions.client.EncryptionException;
 
 
@@ -37,9 +44,13 @@ import edu.umass.cs.gnscommon.exceptions.client.EncryptionException;
 public class ContextServiceTests 
 {
 	private static KeyPairGenerator kpg;
-	private static ContextServiceClient<Integer> csClient = null;
+	private static ContextServiceClient<Integer> csClient 	= null;
 	
-	private static String memberAliasPrefix = "clientGUID";
+	private static String memberAliasPrefix 				= "clientGUID";
+	
+	private static String csNodeIp 							= "127.0.0.1";
+	private static int csPort 								= 8000;
+	
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception
@@ -57,19 +68,14 @@ public class ContextServiceTests
 		ContextServiceConfig.PRIVACY_ENABLED			= true;
 		ContextServiceClient.EXPERIMENT_MODE            = false;
 		
-//		new Thread(new ClientConnectionTest()).start();
-//		
-//		Thread.sleep(20000);
 		
 		// start context service.
 		startFourNodeSetup();
 		
-		String csNodeIp = "127.0.0.1";
-		int csPort = 8000;
 		
 		// make a client connection
-		csClient = new ContextServiceClient<Integer>(csNodeIp, csPort, 
-				ContextServiceClient.HYPERSPACE_BASED_CS_TRANSFORM);
+		csClient = new ContextServiceClient<Integer>(csNodeIp, csPort, false,
+				PrivacySchemes.HYPERSPACE_PRIVACY);
 		
 		System.out.println("ContextServiceClient connected");
 	}
@@ -111,7 +117,7 @@ public class ContextServiceTests
 		assertEquals(0, replyArray.length());
 	}
 	
-	@Test
+	/*@Test
 	public void test_2_Input100GUIDs() throws JSONException 
 	{
 		// these tests require full search replies to be sent.
@@ -137,10 +143,10 @@ public class ContextServiceTests
 		
 		assertEquals(100, numRep);
 		assertEquals(100, replyArray.length());
-	}
+	}*/
 	
-	@Test
-	public void test_3_privacyTest() 
+	/*@Test
+	public void test_3_noGNSprivacyTest() 
 			throws JSONException, NoSuchAlgorithmException, EncryptionException
 	{
 		// these tests require full search replies to be sent.
@@ -341,10 +347,288 @@ public class ContextServiceTests
 			assert( numRep > 0 );
 			assert( replyArray.length() > 0 );
 		}
+	}*/
+	
+	
+	@Test
+	public void test_4_GNSprivacyTest() 
+			throws Exception
+	{
+		// these tests require full search replies to be sent.
+		assert( ContextServiceConfig.sendFullRepliesToClient );
+		assert( ContextServiceConfig.sendFullRepliesWithinCS );
+		
+		assert(ContextServiceConfig.PRIVACY_ENABLED);
+		
+		assert(ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED);
+		// if privacy not enabled then just return.
+		
+		ContextServiceClient<Integer> csClient 
+				= new ContextServiceClient<Integer>(csNodeIp, csPort, true,
+									PrivacySchemes.HYPERSPACE_PRIVACY);
+		
+		
+		GNSClient gnsClient = csClient.getGNSClient();
+		assert(gnsClient != null);
+		GuidEntry userGUID = GuidUtils.lookupOrCreateAccountGuid
+									(gnsClient, "userGuid1@gmail.com", "password");
+		
+		gnsClient.execute( GNSCommand.fieldReplaceOrCreateList
+				(userGUID, 
+				ContextServiceClient.SYMMETRIC_KEY_EXCHANGE_FIELD_NAME, 
+				new JSONArray()));
+		
+		System.out.println("User GUID "+ userGUID.getGuid());
+		
+		Vector<GuidEntry> aclMemberGuids = new Vector<GuidEntry>();
+		
+		for( int i=0; i<10; i++ )
+		{
+			String guidAlias = "acl4Member"+i+"@gmail.com";
+			
+			System.out.println("Creating "+guidAlias);
+			
+			GuidEntry aclMem = null;
+			try
+			{
+				aclMem = GuidUtils.lookupOrCreateAccountGuid
+						(gnsClient, guidAlias, "password");
+			} catch(Exception ex)
+			{
+				ex.printStackTrace();
+				continue;
+			}
+			
+//			try
+//			{
+//			GNSCommand commandRes = gnsClient.execute(
+//					GNSCommand.createGUID(gnsClient.getGNSProvider(), userGUID, guidAlias));
+//			}
+//			catch(DuplicateNameException dupNameEx)
+//			{
+//				System.out.println("Name "+guidAlias+" already in GNS");
+//			}
+//			
+//			GuidEntry aclMem = 
+//						GuidUtils.lookupGuidEntryFromDatabase(gnsClient.getGNSProvider(), guidAlias);
+			
+			
+			System.out.println("GUID for alias "+guidAlias+" "+aclMem.getGuid());
+			// clear any old keys in the field.
+			gnsClient.execute( GNSCommand.fieldReplaceOrCreateList
+					(aclMem, 
+					ContextServiceClient.SYMMETRIC_KEY_EXCHANGE_FIELD_NAME, 
+					new JSONArray()));
+			
+			System.out.println("Clear for alias "+guidAlias+" complete");
+			
+			// any GUID can append symmetric key information here.
+			gnsClient.execute( GNSCommand.aclAdd(AclAccessType.WRITE_WHITELIST, aclMem, 
+					ContextServiceClient.SYMMETRIC_KEY_EXCHANGE_FIELD_NAME, GNSCommandProtocol.ALL_GUIDS) );
+			
+			System.out.println("ACL write whitelist set for "+guidAlias+" complete");
+			//GuidEntry aclMem = getAGUIDEntry("aclMember"+i);
+			aclMemberGuids.add(aclMem);
+		}
+		
+		// create ACLs
+		// 6 is the number of attributes.
+		HashMap<String, List<ACLEntry>> aclMap 
+								= new HashMap<String, List<ACLEntry>>();
+		
+		for(int i=0; i<6; i++)
+		{
+			String attrName = "attr"+i;
+			List<ACLEntry> attrACL = new LinkedList<ACLEntry>();
+			// even are assign first five acl guids
+			if( (i % 2) == 0 )
+			{
+				for(int j=0; j<5; j++)
+				{
+					ACLEntry aclEntry 
+						= new ACLEntry(aclMemberGuids.get(j).getGuid(), 
+								aclMemberGuids.get(j).getPublicKey());
+					attrACL.add(aclEntry);
+					System.out.println("attrName "+attrName+" GUID "+
+							aclMemberGuids.get(j).getGuid());
+				}
+			}
+			// odd are assigned last five acl guids
+			else if( (i % 2) == 1 )
+			{
+				for(int j=5; j<10; j++)
+				{
+					ACLEntry aclEntry 
+						= new ACLEntry(aclMemberGuids.get(j).getGuid(), 
+							aclMemberGuids.get(j).getPublicKey());
+					attrACL.add(aclEntry);
+					
+					System.out.println("attrName "+attrName+" GUID "+
+							aclMemberGuids.get(j).getGuid());
+				}
+			}
+			
+			// adding self	
+			ACLEntry aclEntry 
+				= new ACLEntry(userGUID.getGuid(), 
+						userGUID.getPublicKey());
+			attrACL.add(aclEntry);
+			
+			aclMap.put(attrName, attrACL);
+		}
+		
+		System.out.println("Size of "+aclMap.size());
+		// compute anonymized IDs
+		List<AnonymizedIDEntry> anonymizedIDsList 
+					= csClient.computeAnonymizedIDs(userGUID, aclMap);
+		
+		for(int i=0; i< anonymizedIDsList.size(); i++)
+		{
+			System.out.println("anonymizedIDsList "+i+" "+anonymizedIDsList.get(i));
+		}
+		
+		System.out.println("Number of anonymized IDs created "
+											+anonymizedIDsList.size());
+		assertTrue(anonymizedIDsList!=null);
+		assertTrue(anonymizedIDsList.size() > 0);
+		
+		// number of anonymized IDs cannot be greater then total
+		// distinct ACL GUIDs.
+		assertTrue((aclMemberGuids.size()+1) >= anonymizedIDsList.size());
+		//assertEquals(101, numRep);
+		
+		
+		// do a secure update
+		JSONObject attrValJSON = getARandomAttrValSet();
+		
+		csClient.sendUpdateSecure
+			(userGUID.getGuid(), userGUID, attrValJSON, 
+					-1, aclMap, anonymizedIDsList);
+		
+		
+		for(int i=0; i<10; i++)
+		{
+			String selectQuery = 
+					"SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE "
+					+ "attr0 >= 2 AND attr0 <= 1500 AND "
+					+ "attr2 >= 2 AND attr2 <= 1500 AND "
+					+ "attr4 >= 2 AND attr4 <= 1500";
+				
+			JSONArray replyArray = new JSONArray();
+			long expiryTime = 300000; // 5 min
+			
+			
+			HashMap<String, byte[]> anonymizedIDToSecretKeyMap 
+						= csClient.getAnonymizedIDToSymmetricKeyMapFromGNS(aclMemberGuids.get(i));
+			
+			System.out.println(i+" anonymizedIDToSecretKeyMap size "
+										+anonymizedIDToSecretKeyMap.size());	
+			
+			int numRep = csClient.sendSearchQuerySecure
+					(selectQuery, replyArray, expiryTime, anonymizedIDToSecretKeyMap );
+			
+			
+			// querier is allowed to read
+			if(i<5)
+			{
+				if (ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED)
+				{
+					assertEquals(1, numRep);
+					assertEquals(1, replyArray.length());
+					assertTrue(userGUID.getGuid().compareToIgnoreCase
+							(replyArray.getString(0)) == 0  );
+				}
+				else
+				{
+					// as multiple anonymized IDs may be returned.
+					assert(numRep > 0);
+					assert(replyArray.length() > 0);
+				}
+			}
+			else
+			{
+				//assertTrue(replyArray.get(0).equals(userGUID.getGuid()));
+				if ( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+				{
+					assertEquals(0, numRep);
+					assertEquals(0, replyArray.length());
+				}
+				else
+				{
+					assert(numRep > 0);
+					assert(replyArray.length() > 0);
+				}
+			}
+		}
+		
+		// across two different sets
+		// nobody except from userGUID should be allowed to read.
+		for(int i=0; i<10; i++)
+		{
+			String selectQuery = 
+					"SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE "
+					+ "attr0 >= 2 AND attr0 <= 1500 AND "
+					+ "attr2 >= 2 AND attr2 <= 1500 AND "
+					+ "attr5 >= 2 AND attr5 <= 1500";
+			
+			JSONArray replyArray = new JSONArray();
+			long expiryTime = 300000; // 5 min
+			
+			HashMap<String, byte[]> anonymizedIDToSecretKeyMap 
+						= csClient.getAnonymizedIDToSymmetricKeyMapFromGNS(aclMemberGuids.get(i));
+			
+			int numRep = csClient.sendSearchQuerySecure
+					(selectQuery, replyArray, expiryTime, anonymizedIDToSecretKeyMap);
+			
+			// nobody except frm user allowed to read
+			//assertTrue(replyArray.get(0).equals(userGUID.getGuid()));
+			if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+			{
+				assertEquals(0, numRep);
+				assertEquals(0, replyArray.length());
+			}
+			else
+			{
+				// satisfying anonymzied IDs will be returned.
+				// so they should be greater than zero.
+				assert(numRep > 0);
+				assert(replyArray.length() > 0);
+			}
+		}
+		
+		// check with user
+		String selectQuery = 
+				"SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE "
+				+ "attr0 >= 2 AND attr0 <= 1500 AND "
+				+ "attr2 >= 2 AND attr2 <= 1500 AND "
+				+ "attr5 >= 2 AND attr5 <= 1500";
+			
+		JSONArray replyArray = new JSONArray();
+		long expiryTime = 300000; // 5 min
+		
+		HashMap<String, byte[]> anonymizedIDToSecretKeyMap 
+				= csClient.getAnonymizedIDToSymmetricKeyMapFromGNS(userGUID);
+		
+		int numRep = csClient.sendSearchQuerySecure
+				(selectQuery, replyArray, expiryTime, anonymizedIDToSecretKeyMap);
+		
+		if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+		{
+			// nobody except from user allowed to read
+			assertTrue
+			( userGUID.getGuid().compareToIgnoreCase(replyArray.getString(0)) == 0  );
+			assertEquals(1, numRep);
+			assertEquals(1, replyArray.length());
+		}
+		else
+		{
+			assert( numRep > 0 );
+			assert( replyArray.length() > 0 );
+		}
 	}
 	
 	@Test
-	public void test_4_TriggerTest() throws JSONException
+	public void test_5_TriggerTest() throws JSONException
 	{
 		//FIXME: need to add a circular query trigger test
 		// these tests require full search replies to be sent.

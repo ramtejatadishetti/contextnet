@@ -179,7 +179,7 @@ public class QueryAllMySQLDB<NodeIDType>
 					{
 						if(ContextServiceConfig.sendFullRepliesWithinCS)
 						{
-							String nodeGUID = Utils.bytArrayToHex(nodeGUIDBytes);
+							String nodeGUID = Utils.byteArrayToHex(nodeGUIDBytes);
 							resultArray.put(nodeGUID);
 							resultSize++;
 						}
@@ -202,7 +202,7 @@ public class QueryAllMySQLDB<NodeIDType>
 					{
 						byte[] nodeGUIDBytes = rs.getBytes("nodeGUID");
 						
-						String nodeGUID = Utils.bytArrayToHex(nodeGUIDBytes);
+						String nodeGUID = Utils.byteArrayToHex(nodeGUIDBytes);
 						
 						String anonymizedIDToGUIDMapping = null;
 						JSONArray anonymizedIDToGuidArray = null;

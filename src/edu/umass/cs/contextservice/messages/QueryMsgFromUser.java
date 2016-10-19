@@ -5,7 +5,8 @@ import org.json.JSONObject;
 
 public class QueryMsgFromUser<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 {
-	private enum Keys {QUERY, USER_REQ_NUM, EXPIRY_TIME, SOURCEIP, SOURCEPORT};
+	private enum Keys {QUERY, USER_REQ_NUM, EXPIRY_TIME, 
+							SOURCEIP, SOURCEPORT, PRIVACY_SCHEME};
 	
 	private final String query;
 	private final long userReqNum;
@@ -16,8 +17,11 @@ public class QueryMsgFromUser<NodeIDType> extends BasicContextServicePacket<Node
 	private final String sourceIP;
 	private final int sourcePort;
 	
-	public QueryMsgFromUser(NodeIDType initiator, String userQuery, long userReqNum, long expiryTime, 
-			String sourceIP, int sourcePort)
+	// this is privacy scheme ordinal defined in PrivacySchemes enum in contextservice config.
+	private final int privacyScheme;
+	
+	public QueryMsgFromUser(NodeIDType initiator, String userQuery, long userReqNum, 
+			long expiryTime, String sourceIP, int sourcePort, int privacyScheme)
 	{
 		super(initiator, ContextServicePacket.PacketType.QUERY_MSG_FROM_USER);
 		this.query = userQuery;
@@ -25,6 +29,7 @@ public class QueryMsgFromUser<NodeIDType> extends BasicContextServicePacket<Node
 		this.expiryTime = expiryTime;
 		this.sourceIP = sourceIP;
 		this.sourcePort = sourcePort;
+		this.privacyScheme = privacyScheme;
 	}
 	
 	public QueryMsgFromUser(JSONObject json) throws JSONException
@@ -35,6 +40,8 @@ public class QueryMsgFromUser<NodeIDType> extends BasicContextServicePacket<Node
 		this.expiryTime = json.getLong(Keys.EXPIRY_TIME.toString());
 		this.sourceIP = json.getString(Keys.SOURCEIP.toString());
 		this.sourcePort = json.getInt(Keys.SOURCEPORT.toString());
+		
+		this.privacyScheme = json.getInt(Keys.PRIVACY_SCHEME.toString());
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException
@@ -45,6 +52,7 @@ public class QueryMsgFromUser<NodeIDType> extends BasicContextServicePacket<Node
 		json.put(Keys.EXPIRY_TIME.toString(), expiryTime);
 		json.put(Keys.SOURCEIP.toString(), sourceIP);
 		json.put(Keys.SOURCEPORT.toString(), this.sourcePort);
+		json.put(Keys.PRIVACY_SCHEME.toString(), this.privacyScheme);
 		return json;
 	}
 	
@@ -71,6 +79,11 @@ public class QueryMsgFromUser<NodeIDType> extends BasicContextServicePacket<Node
 	public int getSourcePort()
 	{
 		return this.sourcePort;
+	}
+	
+	public int getPrivacySchemeOrdinal()
+	{
+		return this.privacyScheme;
 	}
 	
 	public static void main(String[] args)

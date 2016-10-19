@@ -12,7 +12,8 @@ import org.json.JSONObject;
 public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 {
 	private enum Keys {VERSION_NUM, GUID, ATTR_VALUE_PAIR, USER_REQUESTID, 
-		SOURCEIP, SOURCEPORT, UPDATE_START_TIME, ANONYMIZEDID_TO_GUID_MAPPING};
+		SOURCEIP, SOURCEPORT, UPDATE_START_TIME, ANONYMIZEDID_TO_GUID_MAPPING, 
+		PRIVACY_SCHEME, ATTR_SET};
 	
 	private final long versionNum;
 	private final String GUID;
@@ -23,9 +24,22 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 	private final long updStartTime;
 	private final JSONArray anonymizedIDToGuidMapping;
 	
+	// using the ordinal of the privacy scheme here.
+	private final int privacySchemeOrdinal;
+	
+	// attribute set for the anonymzied ID.
+	// This is only used in privacy schemes.
+	// In NO_PRIVACY scheme it is assumed that a GUID will have 
+	// all attributes.
+	// In privacy schemes this field is used in deciding in which
+	// subspaces an anonymized should be stored.
+	// In NO_PRIVACY scheme this array can be set to empty or null.
+	private final JSONArray attrSetArray;
+	
 	public ValueUpdateFromGNS( NodeIDType initiator, long versionNum, String GUID, 
 			JSONObject attrValuePair, long userRequestID, String sourceIP, int sourcePort, 
-			long updStartTime, JSONArray anonymizedIDToGuidMapping )
+			long updStartTime, JSONArray anonymizedIDToGuidMapping, 
+			int privacySchemeOrdinal, JSONArray attrSetArray )
 	{
 		super(initiator, ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS);
 		this.versionNum = versionNum;
@@ -36,6 +50,8 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 		this.sourcePort = sourcePort;
 		this.updStartTime = updStartTime;
 		this.anonymizedIDToGuidMapping = anonymizedIDToGuidMapping;
+		this.privacySchemeOrdinal = privacySchemeOrdinal;
+		this.attrSetArray = attrSetArray;
 	}
 	
 	public ValueUpdateFromGNS(JSONObject json) throws JSONException
@@ -58,6 +74,17 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 		{
 			this.anonymizedIDToGuidMapping = null;
 		}
+		
+		this.privacySchemeOrdinal = json.getInt(Keys.PRIVACY_SCHEME.toString());
+		
+		if( json.has( Keys.ATTR_SET.toString() ) )
+		{
+			this.attrSetArray = json.getJSONArray(Keys.ATTR_SET.toString());
+		}
+		else
+		{
+			this.attrSetArray = null;
+		}
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException
@@ -70,10 +97,20 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 		json.put(Keys.SOURCEIP.toString(), this.sourceIP);
 		json.put(Keys.SOURCEPORT.toString(), this.sourcePort);
 		json.put(Keys.UPDATE_START_TIME.toString(), this.updStartTime);
-		if(this.anonymizedIDToGuidMapping != null)
+		
+		if( this.anonymizedIDToGuidMapping != null )
 		{
-			json.put(Keys.ANONYMIZEDID_TO_GUID_MAPPING.toString(), this.anonymizedIDToGuidMapping);
+			json.put(Keys.ANONYMIZEDID_TO_GUID_MAPPING.toString(), 
+					this.anonymizedIDToGuidMapping);
 		}
+		
+		json.put(Keys.PRIVACY_SCHEME.toString(), this.privacySchemeOrdinal);
+		
+		if( this.attrSetArray != null )
+		{
+			json.put(Keys.ATTR_SET.toString(), this.attrSetArray);
+		}
+		
 		return json;
 	}
 	
@@ -115,6 +152,16 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 	public JSONArray getAnonymizedIDToGuidMapping()
 	{
 		return this.anonymizedIDToGuidMapping;
+	}
+	
+	public int getPrivacySchemeOrdinal()
+	{
+		return this.privacySchemeOrdinal;
+	}
+	
+	public JSONArray getAttrSetArray()
+	{
+		return this.attrSetArray;
 	}
 	
 	public static void main( String[] args )

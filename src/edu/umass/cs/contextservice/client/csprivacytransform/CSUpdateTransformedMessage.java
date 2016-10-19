@@ -9,19 +9,23 @@ import org.json.JSONObject;
  * associated to this anonymized ID.
  * @author adipc
  */
-public class CSUpdateTransformedMessage 
+public class CSUpdateTransformedMessage
 {
-	private final String anonymizedIDString; 
+	private final String anonymizedIDString;
 	private final JSONObject csAttrValPairs;
-
+	
 	private final JSONArray anonymizedIDToGuidMapping;
 	
+	private final JSONArray anonymizedIDAttrSet;
+	
 	public CSUpdateTransformedMessage( String anonymizedIDString, 
-			JSONObject csAttrValPairs, JSONArray anonymizedIDToGuidMapping )
+			JSONObject csAttrValPairs, JSONArray anonymizedIDToGuidMapping,
+			JSONArray anonymizedIDAttrSet )
 	{
 		this.anonymizedIDString = anonymizedIDString;
 		this.csAttrValPairs = csAttrValPairs;
 		this.anonymizedIDToGuidMapping = anonymizedIDToGuidMapping;
+		this.anonymizedIDAttrSet = anonymizedIDAttrSet;
 	}
 	
 	public String getAnonymizedIDString()
@@ -39,6 +43,11 @@ public class CSUpdateTransformedMessage
 		return anonymizedIDToGuidMapping;
 	}
 	
+	public JSONArray getAnonymizedIDAttrSet()
+	{
+		return anonymizedIDAttrSet;
+	}
+	
 	public String toString()
 	{
 		String str="anonymized ID "+anonymizedIDString+" csAttrValPairs "
@@ -46,7 +55,8 @@ public class CSUpdateTransformedMessage
 		
 		if( anonymizedIDToGuidMapping != null )
 		{
-			str = str+ "anonymizedIDToGuidMapping "+anonymizedIDToGuidMapping.toString();
+			str = str+ "anonymizedIDToGuidMapping "
+						+ anonymizedIDToGuidMapping.toString();
 		}
 		return str;
 	}

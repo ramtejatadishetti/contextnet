@@ -250,7 +250,7 @@ public class TriggerInformationStorage<NodeIDType> implements
 		String hexIP;
 		try
 		{
-			hexIP = Utils.bytArrayToHex(InetAddress.getByName(userIP).getAddress());	
+			hexIP = Utils.byteArrayToHex(InetAddress.getByName(userIP).getAddress());	
 			
 			String insertTableSQL = " INSERT INTO "+tableName 
 					+" ( groupGUID, userIP, userPort , expiryTime ";
@@ -487,7 +487,7 @@ public class TriggerInformationStorage<NodeIDType> implements
 			{
 				// FIXME: need to replace these with macros
 				byte[] groupGUIDBytes = rs.getBytes("groupGUID");
-				String groupGUIDString = Utils.bytArrayToHex(groupGUIDBytes);
+				String groupGUIDString = Utils.byteArrayToHex(groupGUIDBytes);
 				byte[] ipAddressBytes = rs.getBytes("userIP");
 				String userIPString = InetAddress.getByAddress(ipAddressBytes).getHostAddress();
 				int userPort = rs.getInt("userPort");
@@ -523,7 +523,7 @@ public class TriggerInformationStorage<NodeIDType> implements
 			{
 				// FIXME: need to replace these with macros
 				byte[] groupGUIDBytes = rs.getBytes("groupGUID");
-				String groupGUIDString = Utils.bytArrayToHex(groupGUIDBytes);
+				String groupGUIDString = Utils.byteArrayToHex(groupGUIDBytes);
 				byte[] ipAddressBytes = rs.getBytes("userIP");
 				String userIPString = InetAddress.getByAddress(ipAddressBytes).getHostAddress();
 				int userPort = rs.getInt("userPort");
@@ -918,7 +918,7 @@ public class TriggerInformationStorage<NodeIDType> implements
 			while( rs.next() )
 			{
 				byte[] groupGUIDBytes = rs.getBytes("groupGUID");
-				String groupGUIDString = Utils.bytArrayToHex(groupGUIDBytes);
+				String groupGUIDString = Utils.byteArrayToHex(groupGUIDBytes);
 				byte[] ipAddressBytes = rs.getBytes("userIP");
 				String userIPString = InetAddress.getByAddress(ipAddressBytes).getHostAddress();
 				int userPort = rs.getInt("userPort");
@@ -966,7 +966,7 @@ public class TriggerInformationStorage<NodeIDType> implements
 		
 		String selectQuery 			= "SELECT * ";
 		
-		String ipInHex = Utils.bytArrayToHex(InetAddress.getByName(userIP).getAddress());
+		String ipInHex = Utils.byteArrayToHex(InetAddress.getByName(userIP).getAddress());
 		
 		selectQuery 				= selectQuery + " FROM "+tableName+" WHERE groupGUID = X'"+groupGUID
 				+"'"+" AND userIP = X'"+ipInHex+"'"+" AND userPort = "+userPort;

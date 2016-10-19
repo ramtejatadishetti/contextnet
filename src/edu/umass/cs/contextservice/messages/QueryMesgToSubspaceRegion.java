@@ -6,8 +6,8 @@ import org.json.JSONObject;
 public class QueryMesgToSubspaceRegion<NodeIDType> 
 								extends BasicContextServicePacket<NodeIDType>
 {
-	private enum Keys {QUERY, REQUESTID, GROUP_GUID, SUBSPACENUM, USER_IP, USER_PORT
-						, STORE_QUERY_FOR_TRIGGER, EXPIRY_TIME};
+	private enum Keys { QUERY, REQUESTID, GROUP_GUID, SUBSPACENUM, USER_IP, USER_PORT
+						, STORE_QUERY_FOR_TRIGGER, EXPIRY_TIME, PRIVACY_SCHEME };
 	
 	//private final NodeIDType sourceNodeId;
 	private final long requestID;
@@ -28,17 +28,18 @@ public class QueryMesgToSubspaceRegion<NodeIDType>
 	private final boolean storeQueryForTrigger;
 	private final long expiryTime;
 	
+	private final int privacySchemeOrdinal;
+	
 	/*
 	 * sourceID will be the ID of the node that 
 	 * recvd query from the user.
 	 */
 	public QueryMesgToSubspaceRegion( NodeIDType initiator, long requestId, String query, 
 			String groupGUID, int subspaceNum, String userIP, int userPort, 
-			boolean storeQueryForTrigger, long expiryTime )
+			boolean storeQueryForTrigger, long expiryTime,  int privacyScheme )
 	{
 		super(initiator, ContextServicePacket.PacketType.QUERY_MESG_TO_SUBSPACE_REGION);
-		//this.predicate = predicate;
-		//this.sourceNodeId = sourceID;
+		
 		this.requestID = requestId;
 		this.query = query;
 		this.groupGUID = groupGUID;
@@ -48,13 +49,12 @@ public class QueryMesgToSubspaceRegion<NodeIDType>
 		this.userPort = userPort;
 		this.storeQueryForTrigger = storeQueryForTrigger;
 		this.expiryTime = expiryTime;
+		this.privacySchemeOrdinal = privacyScheme;
 	}
 	
 	public QueryMesgToSubspaceRegion(JSONObject json) throws JSONException
 	{
 		super(json);
-		//this.predicate = QueryComponent.getQueryComponent(json.getJSONObject(Keys.PREDICATE.toString()));
-		//this.sourceNodeId = (NodeIDType)json.get(Keys.SOURCE_ID.toString());
 		this.requestID = json.getLong(Keys.REQUESTID.toString());
 		this.query = json.getString(Keys.QUERY.toString());
 		this.groupGUID = json.getString(Keys.GROUP_GUID.toString());
@@ -63,13 +63,12 @@ public class QueryMesgToSubspaceRegion<NodeIDType>
 		this.userPort = json.getInt(Keys.USER_PORT.toString());
 		this.storeQueryForTrigger = json.getBoolean(Keys.STORE_QUERY_FOR_TRIGGER.toString());
 		this.expiryTime = json.getLong(Keys.EXPIRY_TIME.toString());
+		this.privacySchemeOrdinal = json.getInt(Keys.PRIVACY_SCHEME.toString());	
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException
 	{
 		JSONObject json = super.toJSONObjectImpl();
-		//json.put(Keys.PREDICATE.toString(), predicate.getJSONObject());
-		//json.put(Keys.SOURCE_ID.toString(), sourceNodeId);
 		json.put(Keys.REQUESTID.toString(), requestID);
 		json.put(Keys.QUERY.toString(), this.query);
 		json.put(Keys.GROUP_GUID.toString(), this.groupGUID);
@@ -78,6 +77,7 @@ public class QueryMesgToSubspaceRegion<NodeIDType>
 		json.put(Keys.USER_PORT.toString(), userPort);
 		json.put(Keys.STORE_QUERY_FOR_TRIGGER.toString(), this.storeQueryForTrigger);
 		json.put(Keys.EXPIRY_TIME.toString(), this.expiryTime);
+		json.put(Keys.PRIVACY_SCHEME.toString(), this.privacySchemeOrdinal);
 		return json;
 	}
 	
@@ -121,16 +121,12 @@ public class QueryMesgToSubspaceRegion<NodeIDType>
 		return this.expiryTime;
 	}
 	
+	public int getPrivacyOrdinal()
+	{
+		return this.privacySchemeOrdinal;
+	}
+	
 	public static void main(String[] args)
 	{
 	}
-	
-	/*public QueryComponent getQueryComponent()
-	{
-		return predicate;
-	}
-	/*public NodeIDType getSourceId()
-	{
-		return sourceNodeId;
-	}*/
 }

@@ -14,7 +14,7 @@ import edu.umass.cs.contextservice.client.common.ACLEntry;
  * Defines the interface for CS privacy transform
  * @author adipc
  */
-public interface CSPrivacyTransformInterface 
+public interface CSPrivacyTransformInterface
 {
 	/**
 	 * This function transforms an update into privacy preserving updates to CS.
@@ -54,4 +54,15 @@ public interface CSPrivacyTransformInterface
 	public void unTransformSearchReply(GuidEntry myGuid, 
 			List<CSSearchReplyTransformedMessage> csTransformedList, 
 			JSONArray replyArray);
+	
+	
+	/**
+	 * untransforms the search reply using the symmetric keys.
+	 * @param myGuid
+	 * @param csTransformedList
+	 * @param replyArray
+	 */
+	public void unTransformSearchReply( HashMap<String, byte[]> anonymizedIDToSecretKeyMap, 
+			List<CSSearchReplyTransformedMessage> csTransformedList, 
+			JSONArray replyArray );
 }

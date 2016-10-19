@@ -11,16 +11,11 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 	public static final int ADD_ENTRY				= 1;
 	public static final int REMOVE_ENTRY			= 2;
 	public static final int UPDATE_ENTRY			= 3;
-	
-//	private enum Keys { VERSION_NUM, GUID, UPDATE_ATTR_VAL_PAIRS, 
-//		OPER_TYPE, SUBSPACENUM, REQUEST_ID, OLD_ATTR_VAL_PAIRS, 
-//		FIRST_TIME_INSERT , ANONYMIZEDID_TO_GUID_MAPPING, UPDATE_START_TIME };
 		
 		
 	private enum Keys { VERSION_NUM, GUID, JSON_TO_WRITE, 
 		OPER_TYPE, SUBSPACENUM, REQUEST_ID, FIRST_TIME_INSERT, UPDATE_START_TIME, 
-		OLD_VAL_JSON,
-		NEW_UNSET_ATTRS, UPDATE_ATTR_VAL};
+		OLD_VAL_JSON, NEW_UNSET_ATTRS, UPDATE_ATTR_VAL, PRIVACY_SCHEME };
 	
 	private final long versionNum;
 	//GUID of the update
@@ -49,14 +44,16 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 	// even when both old and new val fall on one node.
 	private final boolean firstTimeInsert;
 	
-//	private final JSONArray anonymizedIDToGuidMapping;
-	
 	private final long updateStartTime;
+	
+	private final int privacySchemeOrdinal;
+	
 	
 	public ValueUpdateToSubspaceRegionMessage( NodeIDType initiator, long versionNum, 
 			String GUID, JSONObject jsonToWrite, int operType, int subspaceNum, 
 			long requestID, boolean firstTimeInsert , long updateStartTime, 
-			JSONObject oldValJSON, JSONObject newUnsetAttrs, JSONObject updateAttrJSON )
+			JSONObject oldValJSON, JSONObject newUnsetAttrs, JSONObject updateAttrJSON, 
+			int privacySchemeOrdinal )
 	{
 		super( initiator, 
 				ContextServicePacket.PacketType.VALUEUPDATE_TO_SUBSPACE_REGION_MESSAGE );
@@ -69,9 +66,9 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		this.oldValJSON = oldValJSON;
 		this.firstTimeInsert = firstTimeInsert;
 		this.newUnsetAttrs = newUnsetAttrs;
-//		this.anonymizedIDToGuidMapping = anonymizedIDToGuidMapping;
 		this.updateStartTime = updateStartTime;
 		this.updateAttrValJSON = updateAttrJSON;
+		this.privacySchemeOrdinal = privacySchemeOrdinal;
 	}
 	
 	public ValueUpdateToSubspaceRegionMessage(JSONObject json) throws JSONException
@@ -87,17 +84,10 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		this.firstTimeInsert = json.getBoolean(Keys.FIRST_TIME_INSERT.toString());
 		this.newUnsetAttrs = json.getJSONObject(Keys.NEW_UNSET_ATTRS.toString());
 		
-//		if( json.has(Keys.ANONYMIZEDID_TO_GUID_MAPPING.toString()) )
-//		{
-//			this.anonymizedIDToGuidMapping 
-//						= json.getJSONArray(Keys.ANONYMIZEDID_TO_GUID_MAPPING.toString());
-//		}
-//		else
-//		{
-//			this.anonymizedIDToGuidMapping = null;
-//		}
+
 		this.updateStartTime = json.getLong(Keys.UPDATE_START_TIME.toString());
 		this.updateAttrValJSON = json.getJSONObject(Keys.UPDATE_ATTR_VAL.toString());
+		this.privacySchemeOrdinal = json.getInt(Keys.PRIVACY_SCHEME.toString());
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException 
@@ -112,12 +102,11 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		json.put(Keys.OLD_VAL_JSON.toString(), this.oldValJSON);
 		json.put(Keys.FIRST_TIME_INSERT.toString(), this.firstTimeInsert);
 		json.put(Keys.NEW_UNSET_ATTRS.toString(), this.newUnsetAttrs);
-//		if( this.anonymizedIDToGuidMapping != null )
-//		{
-//			json.put(Keys.ANONYMIZEDID_TO_GUID_MAPPING.toString(), this.anonymizedIDToGuidMapping);
-//		}
+
 		json.put(Keys.UPDATE_START_TIME.toString(), this.updateStartTime);
 		json.put(Keys.UPDATE_ATTR_VAL.toString(), this.updateAttrValJSON);
+		json.put(Keys.PRIVACY_SCHEME.toString(), this.privacySchemeOrdinal);
+		
 		return json;
 	}
 	
@@ -166,11 +155,6 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 		return this.firstTimeInsert;
 	}
 	
-//	public JSONArray getAnonymizedIDToGuidMapping()
-//	{
-//		return this.anonymizedIDToGuidMapping;
-//	}
-	
 	public long getUpdateStartTime()
 	{
 		return this.updateStartTime;
@@ -179,6 +163,11 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 	public JSONObject getUpdateAttrValJSON()
 	{
 		return this.updateAttrValJSON;
+	}
+	
+	public int getPrivacySchemeOrdinal()
+	{
+		return this.privacySchemeOrdinal;
 	}
 	
 	public static void main(String[] args)

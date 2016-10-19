@@ -18,6 +18,7 @@ import org.json.JSONException;
 import edu.umass.cs.contextservice.client.ContextClientInterfaceWithPrivacy;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
+import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.gnsclient.client.util.GuidEntry;
@@ -98,16 +99,18 @@ public class HyperspaceBasedAnonymizedIDCreator
 				assert(guidSet != null);
 				
 				byte[] anonymizedID 
-							= new byte[ContextClientInterfaceWithPrivacy.SIZE_OF_ANONYMIZED_ID];
+							= new byte[ContextServiceConfig.SIZE_OF_ANONYMIZED_ID];
 				
 				anonymizedIDRand.nextBytes(anonymizedID);
 				
 				JSONArray anonymizedIDToGuidMapping = 
-							computeAnonymizedIDToGUIDMapping(myGuidEntry, guidSet, unionGuidsMap);
+							computeAnonymizedIDToGUIDMapping(myGuidEntry, guidSet, 
+									unionGuidsMap);
 				
 				AnonymizedIDEntry anonymizedIDObj 
-					= new AnonymizedIDEntry(Utils.bytArrayToHex(anonymizedID), attrMap, guidSet, 
-							anonymizedIDToGuidMapping);
+					= new AnonymizedIDEntry(Utils.byteArrayToHex(anonymizedID), 
+							attrMap, guidSet, anonymizedIDToGuidMapping, null, null);
+				
 					
 				anonymizedIDList.add(anonymizedIDObj);
 			}
@@ -137,8 +140,8 @@ public class HyperspaceBasedAnonymizedIDCreator
 			}	
 		}
 		return attrMap;
-	}	
-
+	}
+	
 	
 	/**
 	 * computes the guid to attributes map for each member fo ACL.
@@ -172,7 +175,7 @@ public class HyperspaceBasedAnonymizedIDCreator
 			{
 				//byte[] publicKeyByteArray = (byte[]) attrACL.get(j).getPublicKeyACLMember();
 				byte[] guidByteArray = attrACL.get(j).getACLMemberGUID();
-				String guidString = Utils.bytArrayToHex(guidByteArray);
+				String guidString = Utils.byteArrayToHex(guidByteArray);
 						
 				ContextServiceLogger.getLogger().fine
 				(" currAttr "+currAttr+" guid "+guidString);
@@ -282,7 +285,7 @@ public class HyperspaceBasedAnonymizedIDCreator
 			for(int i=0; i<aclList.size(); i++)
 			{
 				ACLEntry currACL = aclList.get(i);
-				String currGUID  = Utils.bytArrayToHex(currACL.getACLMemberGUID());
+				String currGUID  = Utils.byteArrayToHex(currACL.getACLMemberGUID());
 				unionACLMap.put(currGUID, currACL);
 			}
 			//= aclMap.get(key);
@@ -343,16 +346,17 @@ public class HyperspaceBasedAnonymizedIDCreator
 			try 
 			{
 				byte[] guidBytes = (byte[]) guidSet.get(i);
-				String guidString = Utils.bytArrayToHex(guidBytes);
+				String guidString = Utils.byteArrayToHex(guidBytes);
 				int index = Utils.consistentHashAString(guidString, guidSet.length());
 				
 				// place free insert now
 				if(anonymizedIDToGuidMapping.isNull(index))
 				{
 					ACLEntry currACLEntry = unionGuidsMap.get(guidString);
-					byte[] encryptedInfo = Utils.doPublicKeyEncryption(currACLEntry.getPublicKeyACLMember(), userGuidBytes);
+					byte[] encryptedInfo = Utils.doPublicKeyEncryption(
+							currACLEntry.getPublicKeyACLMember(), userGuidBytes);
 					// store it in JSON
-					anonymizedIDToGuidMapping.put(index, Utils.bytArrayToHex(encryptedInfo));
+					anonymizedIDToGuidMapping.put(index, Utils.byteArrayToHex(encryptedInfo));
 				}
 				else
 				{
@@ -386,7 +390,7 @@ public class HyperspaceBasedAnonymizedIDCreator
 						(currACLEntry.getPublicKeyACLMember(), 
 						userGuidBytes);
 				// store it in JSON
-				anonymizedIDToGuidMapping.put(newIndex, Utils.bytArrayToHex(encryptedInfo));
+				anonymizedIDToGuidMapping.put(newIndex, Utils.byteArrayToHex(encryptedInfo));
 			}
 			catch(Exception ex)
 			{

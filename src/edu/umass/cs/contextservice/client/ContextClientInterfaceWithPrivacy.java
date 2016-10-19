@@ -22,8 +22,6 @@ import edu.umass.cs.gnsclient.client.util.GuidEntry;
  */
 public interface ContextClientInterfaceWithPrivacy
 {
-	// 20 bytes
-	public static final int SIZE_OF_ANONYMIZED_ID			= 20;
 	/**
 	 * @param myGUIDInfo contains a user's GUID, public key, and private key
 	 * @param ACLInfo Each element is JSONObject, each JSON contains attrName, ACL member's GUID and public key

@@ -2,11 +2,13 @@ package edu.umass.cs.contextservice.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -14,6 +16,12 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -22,6 +30,7 @@ import org.json.JSONObject;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.anonymizedID.AnonymizedIDCreationInterface;
 import edu.umass.cs.contextservice.client.anonymizedID.HyperspaceBasedAnonymizedIDCreator;
+import edu.umass.cs.contextservice.client.anonymizedID.HyperspaceBasedAnonymizedIDCreatorSymmetricKey;
 import edu.umass.cs.contextservice.client.callback.implementations.BlockingCallBack;
 import edu.umass.cs.contextservice.client.callback.implementations.BlockingSearchReply;
 import edu.umass.cs.contextservice.client.callback.implementations.BlockingUpdateReply;
@@ -38,6 +47,7 @@ import edu.umass.cs.contextservice.client.csprivacytransform.CSPrivacyTransformI
 import edu.umass.cs.contextservice.client.csprivacytransform.CSSearchReplyTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSUpdateTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.HyperspaceBasedCSTransform;
+import edu.umass.cs.contextservice.client.csprivacytransform.HyperspaceSymmetricKeyBasedCSTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.EncryptionBasedGNSPrivacyTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSPrivacyTransformInterface;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSTransformedMessage;
@@ -45,6 +55,7 @@ import edu.umass.cs.contextservice.client.storage.GetStorage;
 import edu.umass.cs.contextservice.client.storage.SearchQueryStorage;
 import edu.umass.cs.contextservice.client.storage.UpdateStorage;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ClientConfigReply;
 import edu.umass.cs.contextservice.messages.ClientConfigRequest;
@@ -58,7 +69,9 @@ import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
 import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.utils.Utils;
+import edu.umass.cs.gnsclient.client.GNSClient;
 import edu.umass.cs.gnsclient.client.GNSClientCommands;
+import edu.umass.cs.gnsclient.client.GNSCommand;
 import edu.umass.cs.gnsclient.client.util.GuidEntry;
 import edu.umass.cs.gnscommon.exceptions.client.ClientException;
 import edu.umass.cs.nio.nioutils.NIOHeader;
@@ -76,20 +89,17 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				implements ContextClientInterfaceWithPrivacy, ContextServiceClientInterfaceWithoutPrivacy
 {
 	// if experiment mode is true then triggers are not stored in a queue.
-	public static boolean EXPERIMENT_MODE							= false;
-	
-	public static final int SUBSPACE_BASED_CS_TRANSFORM				= 1;
-	public static final int HYPERSPACE_BASED_CS_TRANSFORM			= 2;
-	public static final int GUID_BASED_CS_TRANSFORM					= 3;
+	public static boolean EXPERIMENT_MODE								= false;
 	
 	
-	public static final int NUM_THREADS								= 10;
+	public static final String SYMMETRIC_KEY_EXCHANGE_FIELD_NAME		= "SYMMETRIC_KEY_EXCHANGE_FIELD";
+	
 	
 	private Queue<JSONObject> refreshTriggerQueue;
 	
-	private final Object refreshTriggerClientWaitLock 				= new Object();
+	private final Object refreshTriggerClientWaitLock 					= new Object();
 	
-	private final GNSClientCommands gnsClient;
+	private GNSClient gnsClient;
 	
 	// for anonymized ID
 	private AnonymizedIDCreationInterface anonymizedIDCreation;
@@ -104,27 +114,28 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	
 	private BlockingCallBack blockingCallBack;
 	
-	private long blockingReqID 										= 0;
-	private final Object blockingReqIDLock 							= new Object();
+	private long blockingReqID 											= 0;
+	private final Object blockingReqIDLock 								= new Object();
 	
 	// used to get stats for experiment.
-	private double sumNumAnonymizedIdsUpdated						= 0.0;
-	private long totalPrivacyUpdateReqs								= 0;
-	private Object printLocks										= new Object();
+	private double sumNumAnonymizedIdsUpdated							= 0.0;
+	private long totalPrivacyUpdateReqs									= 0;
+	private Object printLocks											= new Object();
 	
-	private double sumAddedGroupGUIDsOnUpdate						= 0.0;
-	private double sumRemovedGroupGUIDsOnUpdate						= 0.0;
-	private long numTriggers										= 1;
+	private double sumAddedGroupGUIDsOnUpdate							= 0.0;
+	private double sumRemovedGroupGUIDsOnUpdate							= 0.0;
+	private long numTriggers											= 1;
 	
 	private long lastPrintTime;
 	
-	private final long startTime									= System.currentTimeMillis();
+	private final long startTime										= System.currentTimeMillis();
+	
+	private final ExecutorService execService;
+	
+	// PrivacySchemes is defined in context service config.
+	private final PrivacySchemes privacyScheme;
 	
 	
-	//private final ExecutorService execService;
-	
-	// indicates the transform type.
-	private final int transformType;
 	/**
 	 * Use this constructor if you want to directly communicate with CS, bypassing GNS.
 	 * @param csHostName
@@ -132,64 +143,50 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	 * @throws IOException
 	 * @throws NoSuchAlgorithmException 
 	 */
-	public ContextServiceClient(String csHostName, int csPortNum, int transformType)
+	public ContextServiceClient(String csHostName, int csPortNum, boolean useGNS,
+			PrivacySchemes privacyScheme)
 			throws IOException, NoSuchAlgorithmException
 	{
 		super( csHostName, csPortNum );
-		this.transformType = transformType;
-		gnsClient = null;
+		this.privacyScheme = privacyScheme;
+		
+		if(useGNS)
+		{
+			this.initializeGNSClient();
+		}
+		else
+		{
+			gnsClient = null;
+		}
+		
 		privacyCallBack = new PrivacyCallBack();
 		blockingCallBack = new BlockingCallBack();
-		//execService = Executors.newFixedThreadPool(NUM_THREADS);
+		execService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		initializeClient();
 	}
 	
-	public ContextServiceClient(String csHostName, int csPortNum)
+	public ContextServiceClient(String csHostName, int csPortNum, boolean useGNS)
 			throws IOException, NoSuchAlgorithmException
 	{
 		super( csHostName, csPortNum );
-		this.transformType = HYPERSPACE_BASED_CS_TRANSFORM;
-		gnsClient = null;
+		this.privacyScheme = PrivacySchemes.HYPERSPACE_PRIVACY;
+		
+		if(useGNS)
+		{
+			initializeGNSClient();
+		}
+		else
+		{
+			gnsClient = null;
+		}
+		
 		privacyCallBack = new PrivacyCallBack();
 		blockingCallBack = new BlockingCallBack();
-		//execService = Executors.newFixedThreadPool(NUM_THREADS);
+		execService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+		
 		initializeClient();
 	}
 	
-	/**
-	 * Use this constructor when CS and GNS are used.
-	 * @param csHostName
-	 * @param csPortNum
-	 * @param gnsHostName
-	 * @param gnsPort
-	 * @throws IOException
-	 * @throws NoSuchAlgorithmException 
-	 */
-	public ContextServiceClient( String csHostName, int csPortNum, 
-			String gnsHostName, int gnsPort, int transformType ) 
-			throws IOException, NoSuchAlgorithmException
-	{
-		super( csHostName, csPortNum );
-		
-		// just setting some gns properties.
-		Properties props = System.getProperties();
-		props.setProperty("gigapaxosConfig", "conf/gnsClientConf/gigapaxos.client.local.properties");
-		props.setProperty("javax.net.ssl.trustStorePassword", "qwerty");
-		props.setProperty("javax.net.ssl.trustStore", "conf/gnsClientConf/trustStore/node100.jks");
-		props.setProperty("javax.net.ssl.keyStorePassword", "qwerty");
-		props.setProperty("javax.net.ssl.keyStore", "conf/gnsClientConf/keyStore/node100.jks");
-		
-		//execService = Executors.newFixedThreadPool(NUM_THREADS);
-		
-		privacyCallBack = new PrivacyCallBack();
-		blockingCallBack = new BlockingCallBack();
-		
-		this.transformType = transformType;
-		
-		gnsClient = new GNSClientCommands();
-		
-		initializeClient();
-	}
 	
 	public void sendUpdateWithCallBack
 		( String GUID, GuidEntry myGuidEntry, JSONObject gnsAttrValuePairs, 
@@ -215,7 +212,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				return;
 			}
 			sendUpdateToCS(GUID, 
-					csAttrValuePairs, null, versionNum, updReplyObj, callback );
+					csAttrValuePairs, null, versionNum, updReplyObj, callback, 
+					PrivacySchemes.NO_PRIVACY.ordinal()
+					, null);
 		}
 		catch ( Exception | Error e )
 		{
@@ -228,7 +227,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			long expiryTime, SearchReplyInterface searchRep, CallBackInterface callback)
 	{
 		sendSearchQueryToCS(searchQuery, expiryTime, 
-				searchRep, callback);
+				searchRep, callback, PrivacySchemes.NO_PRIVACY.ordinal());
 	}
 	
 	public JSONObject sendGetRequest(String GUID)
@@ -366,7 +365,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				
 				sendUpdateToCS( csTransformedMessage.getAnonymizedIDString(), csTransformedMessage.getAttrValJSON(), 
 						csTransformedMessage.getAnonymizedIDToGuidMapping(), 
-						versionNum, privacyUpdRep, privacyCallBack );
+						versionNum, privacyUpdRep, privacyCallBack, privacyScheme.ordinal() ,
+						csTransformedMessage.getAnonymizedIDAttrSet() );
 			}
 			
 			
@@ -396,7 +396,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			long expiryTime, GuidEntry myGUIDInfo, 
 			SearchReplyInterface searchRep, CallBackInterface callback )
 	{
-		sendSearchQueryToCS(searchQuery, expiryTime, searchRep, callback);
+		sendSearchQueryToCS(searchQuery, expiryTime, searchRep, callback, privacyScheme.ordinal());
 	}
 	
 	
@@ -405,7 +405,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		// fetch it form GNS
 		if(gnsClient != null)
 		{
-			JSONObject encryptedJSON = gnsClient.read(GUID, myGUIDInfo);
+			GNSCommand commandRes = gnsClient.execute(GNSCommand.read(GUID, myGUIDInfo));
+			JSONObject encryptedJSON = commandRes.getResultJSONObject();
 			GNSTransformedMessage gnsTransformedMesg 
 							= new GNSTransformedMessage(encryptedJSON);
 			
@@ -421,8 +422,17 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	public List<AnonymizedIDEntry> computeAnonymizedIDs( GuidEntry myGuidEntry,
 			HashMap<String, List<ACLEntry>> aclMap ) throws JSONException
 	{
-		return this.anonymizedIDCreation.computeAnonymizedIDs(myGuidEntry, aclMap);
+		List<AnonymizedIDEntry> anonymizedIDList 
+					= this.anonymizedIDCreation.computeAnonymizedIDs(myGuidEntry, aclMap);
+		
+		
+		if( this.privacyScheme == PrivacySchemes.HYPERSPACE_PRIVACY )
+		{
+			shareSymmetricKeyWithACLMembers(myGuidEntry, anonymizedIDList);
+		}
+		return anonymizedIDList;
 	}
+	
 	
 	@Override
 	public void sendUpdate(String GUID, GuidEntry myGuidEntry, 
@@ -457,7 +467,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			
 			BlockingUpdateReply blockingUpd = new BlockingUpdateReply(currReqId);
 			sendUpdateToCS(GUID, 
-					csAttrValuePairs, null, versionNum, blockingUpd, blockingCallBack );
+					csAttrValuePairs, null, versionNum, blockingUpd, blockingCallBack, 
+					PrivacySchemes.NO_PRIVACY.ordinal(), null );
 			
 			blockingUpd.waitForCompletion();
 		}
@@ -486,7 +497,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		BlockingSearchReply blockingSearch = new BlockingSearchReply(currBlockingId);	
 		
 		sendSearchQueryToCS(searchQuery, expiryTime, 
-				blockingSearch, this.blockingCallBack);
+				blockingSearch, this.blockingCallBack, PrivacySchemes.NO_PRIVACY.ordinal() );
 		
 		blockingSearch.waitForCompletion();
 		
@@ -564,7 +575,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				sendUpdateToCS( csTransformedMessage.getAnonymizedIDString(), 
 						csTransformedMessage.getAttrValJSON(), 
 						csTransformedMessage.getAnonymizedIDToGuidMapping(), 
-						versionNum, privacyUpdRep, privacyCallBack );
+						versionNum, privacyUpdRep, privacyCallBack,
+						privacyScheme.ordinal(), csTransformedMessage.getAnonymizedIDAttrSet());
 			}
 			
 			if( transformedMesgList.size() > 0 )
@@ -603,7 +615,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 		BlockingSearchReply blockingSearch = new BlockingSearchReply(currBlockingId);
 		
-		sendSearchQueryToCS(searchQuery, expiryTime, blockingSearch, blockingCallBack);
+		sendSearchQueryToCS(searchQuery, expiryTime, blockingSearch, blockingCallBack, 
+				privacyScheme.ordinal());
 		
 		blockingSearch.waitForCompletion();
 		
@@ -664,6 +677,92 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 	}
 	
+	
+	public int sendSearchQuerySecure(String searchQuery, JSONArray replyArray, 
+				long expiryTime, HashMap<String, byte[]> anonymizedIDToSecretKeyMap)
+	{
+		if( replyArray == null )
+		{
+			ContextServiceLogger.getLogger().warning("null passsed "
+					+ "as replyArray in sendSearchQuery");
+			return -1;
+		}
+		
+		long currBlockingId;
+		synchronized( this.blockingReqIDLock )
+		{
+			currBlockingId = this.blockingReqID++;
+		}
+		
+		BlockingSearchReply blockingSearch = new BlockingSearchReply(currBlockingId);
+		
+		sendSearchQueryToCS(searchQuery, expiryTime, blockingSearch, blockingCallBack, 
+				privacyScheme.ordinal());
+		
+		blockingSearch.waitForCompletion();
+		
+		List<CSSearchReplyTransformedMessage> searchRepTransformList 
+						= new LinkedList<CSSearchReplyTransformedMessage>();
+		
+		for(int i=0; i<blockingSearch.getSearchReplyArray().length(); i++)
+		{
+			try
+			{
+				JSONArray jsoArr1 = blockingSearch.getSearchReplyArray().getJSONArray(i);
+				for( int j=0; j<jsoArr1.length(); j++ )
+				{
+					JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
+
+					if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+					{
+						SearchReplyGUIDRepresentationJSON searchRepObj 
+						= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
+						CSSearchReplyTransformedMessage csSearchRepTransform 
+										= new CSSearchReplyTransformedMessage(searchRepObj);
+						searchRepTransformList.add(csSearchRepTransform);
+					}
+					else
+					{
+						// just adding the whole JSON here for the user to decrypt later on.
+						replyArray.put(searchRepJSON);
+					}
+				}
+			} 
+			catch ( JSONException e )
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		
+		if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+		{
+			this.csPrivacyTransform.unTransformSearchReply( anonymizedIDToSecretKeyMap,
+				searchRepTransformList, replyArray );
+//			long end2 = System.currentTimeMillis();
+			
+//			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
+//						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
+//						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
+			
+			return replyArray.length();
+		}
+		else
+		{
+//			long end2 = System.currentTimeMillis();		
+//			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
+//						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
+//						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
+			
+			return blockingSearch.getReplySize();
+		}
+	}
+	
+	
+	
+	
+	
+	
 	@Override
 	public boolean handleMessage(JSONObject jsonObject, NIOHeader nioHeader)
 	{
@@ -672,13 +771,169 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	}
 	
 	/**
+	 * Returns GNSClient if Context service client was created
+	 * by setting useGNS to true.
+	 * @return
+	 */
+	public GNSClient getGNSClient()
+	{
+		return this.gnsClient;
+	}
+	
+	
+	
+	/**
+	 * Reads the SYMMETRIC_KEY_EXCHANGE_FIELD_NAME from GNS 
+	 * from the provided GuidEntry.
+	 * Decrypts the field using the private key and 
+	 * returns a map of anonymized ID and the corresponding symmetric key to use.
+	 * Symmetric key is in byte[] format.
+	 * @param guidEntry
+	 */
+	public HashMap<String, byte[]> getAnonymizedIDToSymmetricKeyMapFromGNS(GuidEntry guidEntry)
+	{
+		HashMap<String, byte[]> anonymizedIDToSecretKeyMap 
+										= new HashMap<String, byte[]>();
+										
+		try
+		{
+			GNSCommand commandRes = gnsClient.execute
+					( GNSCommand.fieldReadArray(guidEntry.getGuid(), 
+							SYMMETRIC_KEY_EXCHANGE_FIELD_NAME, guidEntry) );
+			
+			System.out.println("commandRes "+commandRes.getResult());
+			JSONArray resultArray = commandRes.getResultJSONObject().getJSONArray(SYMMETRIC_KEY_EXCHANGE_FIELD_NAME);
+			
+			for( int i=0; i < resultArray.length(); i++ )
+			{
+				try
+				{
+					String encryptedValString = resultArray.getString(i);
+					byte[] encryptedByteArray = Utils.hexStringToByteArray(encryptedValString);
+					byte[] plainText = Utils.doPrivateKeyDecryption( guidEntry.getPrivateKey().getEncoded(), 
+							encryptedByteArray );
+					
+					assert(plainText != null);
+					
+					// first ContextServiceConfig.SIZE_OF_ANONYMIZED_ID bytes are anonymized 
+					// ID.
+					assert(plainText.length > ContextServiceConfig.SIZE_OF_ANONYMIZED_ID);
+					
+					
+					// in plain text, first 20 bytes are the anonymized ID.
+					// rest of the byte[] is the symmetric key.
+					byte[] anonymizedID = new byte[ContextServiceConfig.SIZE_OF_ANONYMIZED_ID]; 
+					System.arraycopy(plainText, 0, anonymizedID, 0, 
+										ContextServiceConfig.SIZE_OF_ANONYMIZED_ID);
+					
+					int symmetricKeyLength = plainText.length 
+											- ContextServiceConfig.SIZE_OF_ANONYMIZED_ID;
+					
+					assert(symmetricKeyLength > 0);
+					
+					byte[] symmetricKey = new byte[symmetricKeyLength];
+					
+					System.arraycopy(plainText, ContextServiceConfig.SIZE_OF_ANONYMIZED_ID,
+							symmetricKey, 0, symmetricKeyLength);
+					
+					String anoymizedIDString = Utils.byteArrayToHex(anonymizedID);
+					
+					if( anonymizedIDToSecretKeyMap.containsKey(anoymizedIDString) )
+					{
+						// not sure what to do here, if there are multiple
+						// entries for an anonymized iD.
+						// So failing the assertion.
+						assert(false);
+					}
+					else
+					{
+						anonymizedIDToSecretKeyMap.put(anoymizedIDString, symmetricKey);
+					}
+				}
+				catch (JSONException | InvalidKeyException | NoSuchAlgorithmException | 
+						InvalidKeySpecException | NoSuchPaddingException | 
+						IllegalBlockSizeException | BadPaddingException e) 
+				{
+					e.printStackTrace();
+				}
+			}
+		} catch (ClientException | IOException | JSONException e) 
+		{
+			e.printStackTrace();
+		}
+		// map could very well be empty if this GUID is
+		// not in any ACL
+		return anonymizedIDToSecretKeyMap;
+	}
+	
+	
+	private void initializeGNSClient()
+	{
+		// just setting some gns properties.
+		Properties props = System.getProperties();
+		props.setProperty("gigapaxosConfig", "conf/gnsClientConf/gnsclient.local.properties");
+		props.setProperty("javax.net.ssl.trustStorePassword", "qwerty");
+		props.setProperty("javax.net.ssl.trustStore", "conf/gnsClientConf/trustStore.jks");
+		props.setProperty("javax.net.ssl.keyStorePassword", "qwerty");
+		props.setProperty("javax.net.ssl.keyStore", "conf/gnsClientConf/keyStore.jks");
+		
+		try 
+		{
+			gnsClient = new GNSClientCommands();
+		}
+		catch (IOException e) 
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Shares symmetric keys with ACL members of a GUID. 
+	 * @param anonymizedIDList
+	 */
+	private void shareSymmetricKeyWithACLMembers(GuidEntry myGuidEntry, 
+			List<AnonymizedIDEntry> anonymizedIDList)
+	{
+		for( int i=0; i<anonymizedIDList.size(); i++ )
+		{
+			AnonymizedIDEntry anonymizedIDEntry = anonymizedIDList.get(i);
+			
+			// key is GUID in string, value is the enc(anonymizedID||encrypted symmetric key) in String 
+			HashMap<String, String> secretKeySharingMap = anonymizedIDEntry.getSecretKeySharingMap();
+			
+			Iterator<String> guidIter = secretKeySharingMap.keySet().iterator();
+			
+			while( guidIter.hasNext() )
+			{
+				String guidString = guidIter.next();
+				String encryptedSecretKey = secretKeySharingMap.get(guidString);
+				
+				try 
+				{
+					guidString = guidString.toUpperCase();
+					System.out.println("guidString "+guidString);
+					
+					gnsClient.execute(GNSCommand.fieldAppend( guidString, SYMMETRIC_KEY_EXCHANGE_FIELD_NAME, 
+							encryptedSecretKey, myGuidEntry ));
+				} catch (ClientException | IOException e) 
+				{
+					e.printStackTrace();
+				}
+			}
+			
+		}
+	}
+	
+	/**
 	 * Sends update to CS in both privacy and non privacy case.
 	 * filtering of CS attributes has already happened before this function call.
 	 * It assumes all attributes in csAttrValMap are CS attributes.
+	 * anonymizedIDAttrSet can be empty or null for non privacy updates.
 	 */
 	private void sendUpdateToCS( String GUID, 
 			JSONObject csAttrValPair, JSONArray anonymizedIDToGuidMappingArray, 
-			long versionNum, UpdateReplyInterface updReplyObj, CallBackInterface callback )
+			long versionNum, UpdateReplyInterface updReplyObj, CallBackInterface callback, 
+			int privacyScheme, JSONArray anonymizedIDAttrSet )
 	{
 		try
 		{
@@ -693,7 +948,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = new
 					ValueUpdateFromGNS<NodeIDType>( null, versionNum, GUID, 
 							csAttrValPair, requestID, sourceIP, sourcePort, 
-							System.currentTimeMillis(), anonymizedIDToGuidMappingArray );
+							System.currentTimeMillis(), anonymizedIDToGuidMappingArray, privacyScheme,
+							anonymizedIDAttrSet );
 			
 			UpdateStorage<NodeIDType> updateQ = new UpdateStorage<NodeIDType>();
 			updateQ.requestID = currId;
@@ -725,7 +981,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		{
 			try 
 			{
-				gnsClient.update(writingGuid, attrValuePair);
+				gnsClient.execute(GNSCommand.update(writingGuid, attrValuePair));
 			} catch (IOException e) 
 			{
 				e.printStackTrace();
@@ -739,7 +995,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	
 	private void sendSearchQueryToCS(String searchQuery, 
 			long expiryTime, SearchReplyInterface searchRep, 
-			CallBackInterface callback)
+			CallBackInterface callback, int privacySchemeOrdinal )
 	{
 		long currId;
 		synchronized( this.searchIdLock )
@@ -749,7 +1005,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 		QueryMsgFromUser<NodeIDType> qmesgU 
 			= new QueryMsgFromUser<NodeIDType>(this.nodeid, searchQuery, 
-					currId, expiryTime, sourceIP, sourcePort);
+					currId, expiryTime, sourceIP, sourcePort, privacySchemeOrdinal);
 		
 		SearchQueryStorage<NodeIDType> searchQ = new SearchQueryStorage<NodeIDType>();
 		searchQ.requestID = currId;
@@ -805,30 +1061,33 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		// FIXME: add a timeout mechanism here.
 		sendConfigRequest();
 		
-		// for anonymized ID
-		if( this.transformType == SUBSPACE_BASED_CS_TRANSFORM )
+		switch( privacyScheme )
 		{
-//			anonymizedIDCreation 
-//				= new SubspaceBasedAnonymizedIDCreator(subspaceAttrMap);
-//			
-//			// for cs transform
-//			csPrivacyTransform = new SubspaceBasedCSTransform(executorService);
+			case NO_PRIVACY:
+			{
+				break;
+			}
+			
+			case HYPERSPACE_PRIVACY:
+			{
+				//anonymizedIDCreation = new HyperspaceBasedAnonymizedIDCreator();
+				// for cs transform
+				//csPrivacyTransform = new HyperspaceBasedCSTransform(execService);
+				
+				anonymizedIDCreation = new HyperspaceBasedAnonymizedIDCreatorSymmetricKey();
+				
+				// for cs transform
+				csPrivacyTransform = new HyperspaceSymmetricKeyBasedCSTransform(execService);
+				
+				break;
+			}
+			
+			case SUBSPACE_PRIVACY:
+			{	
+				break;
+			}
 		}
 		
-		else if( this.transformType == HYPERSPACE_BASED_CS_TRANSFORM )
-		{
-			anonymizedIDCreation = new HyperspaceBasedAnonymizedIDCreator();
-			
-			// for cs transform
-			csPrivacyTransform = new HyperspaceBasedCSTransform();
-			//csPrivacyTransform = new NoopCSTransform();
-		}
-		else if( this.transformType == GUID_BASED_CS_TRANSFORM )
-		{
-//			anonymizedIDCreation = new GUIDBasedAnonymizedIDCreator();
-//			// for cs transform
-//			csPrivacyTransform = new HyperspaceBasedCSTransform();
-		}
 		
 		// for gnsTransform
 		gnsPrivacyTransform = new EncryptionBasedGNSPrivacyTransform();
@@ -1099,9 +1358,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 	}
 	
-	
 	// testing secure client code
-	// TODO: test the scheme with the example given in the draft.
 	public static void main(String[] args) 
 			throws Exception
 	{
@@ -1210,8 +1467,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		aclMap.put("attr6", acl5);
 		
 		
-		ContextServiceClient<Integer> csClient = new ContextServiceClient<Integer>("127.0.0.1", 8000, 
-				ContextServiceClient.SUBSPACE_BASED_CS_TRANSFORM);
+		ContextServiceClient<Integer> csClient = new ContextServiceClient<Integer>("127.0.0.1", 8000, false,
+				PrivacySchemes.SUBSPACE_PRIVACY);
 		
 		CallBackInterface callback = new NoopCallBack();
 		

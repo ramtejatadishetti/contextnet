@@ -30,6 +30,8 @@ public class ContextServiceConfig
 	
 	public static enum SchemeTypes {HYPERSPACE_HASHING};
 	
+	public static enum PrivacySchemes {NO_PRIVACY, HYPERSPACE_PRIVACY, SUBSPACE_PRIVACY};
+	
 	public static SchemeTypes SCHEME_TYPE							= SchemeTypes.HYPERSPACE_HASHING;
 	
 	// prints experiment print statements
@@ -135,7 +137,7 @@ public class ContextServiceConfig
 	public static final int MYSQL_MAX_CONNECTIONS					= 10;
 	
 	// it is also important to set this at least the size of the database connection pool.
-	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 10;
+	public static final int HYPERSPACE_THREAD_POOL_SIZE				= Runtime.getRuntime().availableProcessors();
 	
 	//public static final int PRIVACY_THREAD_POOL_SIZE				= 214;
 	
@@ -158,6 +160,7 @@ public class ContextServiceConfig
 	public static boolean PRIVACY_ENABLED							= false;
 	
 	
+	
 	public static boolean QUERY_ALL_ENABLED							= false;
 	
 	
@@ -172,7 +175,12 @@ public class ContextServiceConfig
 	// only for testing.
 	public static boolean RAND_VAL_JSON								= false;
 	
-	public static boolean SUBSPACE_PRIVACY_ENABLED					= false;
+	
+	// 20 bytes
+	public static final int SIZE_OF_ANONYMIZED_ID					= 20;
+	
+	
+	public static PrivacySchemes privacyScheme						= PrivacySchemes.HYPERSPACE_PRIVACY;
 	
 	
 	public static final String AssymmetricEncAlgorithm				= "RSA";

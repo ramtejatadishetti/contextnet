@@ -20,7 +20,7 @@ public class NoopCSTransform implements CSPrivacyTransformInterface
 	{
 		CSUpdateTransformedMessage csTransformedMessage 
 			= new CSUpdateTransformedMessage(targetGuid, 
-					attrValuePairs, null);
+					attrValuePairs, null, null);
 		List<CSUpdateTransformedMessage> returnList 
 						= new LinkedList<CSUpdateTransformedMessage>();
 		returnList.add(csTransformedMessage);
@@ -36,5 +36,11 @@ public class NoopCSTransform implements CSPrivacyTransformInterface
 		{
 			replyArray.put(csTransformedList.get(i).getSearchGUIDObj().getID());
 		}
+	}
+
+	@Override
+	public void unTransformSearchReply(HashMap<String, byte[]> anonymizedIDToSecretKeyMap,
+			List<CSSearchReplyTransformedMessage> csTransformedList, JSONArray replyArray) 
+	{	
 	}
 }

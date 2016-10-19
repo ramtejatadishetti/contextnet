@@ -105,7 +105,7 @@ public class OldValueGroupGUIDs<NodeIDType> implements Runnable
 			{
 				// FIXME: need to replace these with macros
 				byte[] groupGUIDBytes = rs.getBytes("groupGUID");
-				String groupGUIDString = Utils.bytArrayToHex(groupGUIDBytes);
+				String groupGUIDString = Utils.byteArrayToHex(groupGUIDBytes);
 				byte[] ipAddressBytes = rs.getBytes("userIP");
 				String userIPString = InetAddress.getByAddress(ipAddressBytes).getHostAddress();
 				int userPort = rs.getInt("userPort");
