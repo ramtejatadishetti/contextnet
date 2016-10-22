@@ -12,8 +12,7 @@ import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.gnsclient.client.util.GuidEntry;
 
 /**
- * 
- * implements the method to be used in secure 
+ * Implements the method to be used in secure 
  * context service client, which implements the privacy scheme.
  * One thing to note: everything guid, public key and private key is represented as byt[]
  * to half the space requirements. Keys are of 100s of bytes so storing them as string 
@@ -42,7 +41,8 @@ public interface ContextClientInterfaceWithPrivacy
 	 * @throws JSONException 
 	 */
 	public List<AnonymizedIDEntry> computeAnonymizedIDs(
-			GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap) throws JSONException;
+			GuidEntry myGuidEntry, HashMap<String, List<ACLEntry>> aclMap, 
+			boolean useSymmetricKeys) throws JSONException;
 	
 	//FIXME: semantics needs to be decided, after secure update/insert is implemented
 	public int sendSearchQuerySecure(String searchQuery, JSONArray replyArray, 

@@ -24,7 +24,6 @@ import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
 import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
 import edu.umass.cs.contextservice.database.QueryAllMySQLDB;
-import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.gns.GNSCalls;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ClientConfigReply;
@@ -39,6 +38,8 @@ import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
+import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
+import edu.umass.cs.contextservice.schemes.helperclasses.SubspaceSearchReplyInfo;
 import edu.umass.cs.contextservice.updates.GUIDUpdateInfo;
 import edu.umass.cs.contextservice.updates.UpdateInfo;
 import edu.umass.cs.nio.GenericMessagingTask;
@@ -302,17 +303,17 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		Vector<NodeIDType> allNodeIDs = this.allNodeIDs;
 		
-		HashMap<Integer, OverlappingInfoClass> respNodeIdMap 
-							= new HashMap<Integer, OverlappingInfoClass>();
+		HashMap<Integer, RegionInfoClass> overlapInfoMap
+							= new HashMap<Integer, RegionInfoClass>();
 		for(int i=0; i<allNodeIDs.size(); i++)
 		{
 			int respNodeId = Integer.parseInt(allNodeIDs.get(i).toString());
-			OverlappingInfoClass overlapObj = new OverlappingInfoClass();
+			RegionInfoClass overlapObj = new RegionInfoClass();
 	    	
 	    	//overlapObj.hashCode = hashCode;
 	    	overlapObj.respNodeId = respNodeId;
 	    	overlapObj.replyArray = null;
-	    	respNodeIdMap.put(respNodeId, overlapObj);
+	    	overlapInfoMap.put(respNodeId, overlapObj);
 		}
 		
 		synchronized(this.pendingQueryLock)
@@ -320,11 +321,19 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 			currReq.setQueryRequestID(queryIdCounter++);
 		}
 		
+		
 		pendingQueryRequests.put(currReq.getRequestId(), currReq);
 		
-	    currReq.initializeRegionalReplies(respNodeIdMap);
+		HashMap<Integer, SubspaceSearchReplyInfo> searchQueryReplyInfo 
+															= new HashMap<Integer, SubspaceSearchReplyInfo>();
 		
-	    Iterator<Integer> respNodeIdIter = respNodeIdMap.keySet().iterator();
+		SubspaceSearchReplyInfo subspaceSearchInfo = new SubspaceSearchReplyInfo();
+		subspaceSearchInfo.overlappingRegionsMap = overlapInfoMap;
+		searchQueryReplyInfo.put(0, subspaceSearchInfo);
+		
+	    currReq.initializeSearchQueryReplyInfo(searchQueryReplyInfo);
+		
+	    Iterator<Integer> respNodeIdIter = overlapInfoMap.keySet().iterator();
 	    
 	    while( respNodeIdIter.hasNext() )
 	    {
@@ -571,7 +580,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	}
 	
 	public void processQueryMesgToSubspaceRegionReply
-		(QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply)
+		( QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply )
 	{
 		NodeIDType senderID = queryMesgToSubspaceRegionReply.getSender();
 		long requestId = queryMesgToSubspaceRegionReply.getRequestId();
@@ -579,45 +588,48 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		QueryInfo<NodeIDType> queryInfo = pendingQueryRequests.get(requestId);
 
 		boolean allRepRecvd = 
-				queryInfo.setRegionalReply((Integer)senderID, queryMesgToSubspaceRegionReply);
+				queryInfo.addReplyFromARegionOfASubspace(0,(Integer)senderID, queryMesgToSubspaceRegionReply);
 
 		if( allRepRecvd )
 		{
 			JSONArray concatResult 							 = new JSONArray();
-
+			
 			int totalNumReplies 							 = 0;
-
+			
 			if( ContextServiceConfig.sendFullRepliesWithinCS )
 			{
-				HashMap<Integer, OverlappingInfoClass> repliesHashMap 
-					= queryInfo.getRepliesHashMap();
+				HashMap<Integer, RegionInfoClass> repliesHashMap 
+					= queryInfo.getSearchReplyMap().get(0).overlappingRegionsMap;
 
 				Iterator<Integer> nodeIdIter 				 = repliesHashMap.keySet().iterator();
 
 				while( nodeIdIter.hasNext() )
 				{
-					OverlappingInfoClass currArray 			 = repliesHashMap.get(nodeIdIter.next());
-					concatResult.put(currArray.replyArray);
-					totalNumReplies = totalNumReplies + currArray.replyArray.length();
+					RegionInfoClass regInfo = repliesHashMap.get(nodeIdIter.next());
+					concatResult.put(regInfo.replyArray);
+					totalNumReplies = totalNumReplies + regInfo.replyArray.length();
 				}
 			}
 			else
 			{
-				HashMap<Integer, Integer> repliesSizeHashMap = queryInfo.getRepliesSizeHashMap();
-				Iterator<Integer> nodeIdIter = repliesSizeHashMap.keySet().iterator();
+				HashMap<Integer, RegionInfoClass> repliesHashMap  
+								= queryInfo.getSearchReplyMap().get(0).overlappingRegionsMap;
+				Iterator<Integer> nodeIdIter = repliesHashMap.keySet().iterator();
 
 				while( nodeIdIter.hasNext() )
 				{
-					int currRepSize = repliesSizeHashMap.get( nodeIdIter.next() );
+					RegionInfoClass regInfo = repliesHashMap.get(nodeIdIter.next());
+					int currRepSize = regInfo.numReplies;
 					totalNumReplies = totalNumReplies + currRepSize;
 					//concatResult.put(currArray);
 				}
 			}
-
+			
+			
 			QueryMsgFromUserReply<NodeIDType> queryMsgFromUserReply 
 				= new QueryMsgFromUserReply<NodeIDType>(this.getMyID(), 
 						queryInfo.getQuery(), queryInfo.getGroupGUID(), concatResult, 
-						queryInfo.getUserReqID(), totalNumReplies);
+						queryInfo.getUserReqID(), totalNumReplies, PrivacySchemes.NO_PRIVACY.ordinal());
 			try
 			{
 				this.messenger.sendToAddress(new InetSocketAddress(queryInfo.getUserIP(), 
@@ -689,7 +701,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		new QueryMesgToSubspaceRegionReply<NodeIDType>( this.getMyID(), 
 				queryMesgToSubspaceRegion.getRequestId(), 
 						groupGUID, resultGUIDs, resultSize, 
-						PrivacySchemes.NO_PRIVACY.ordinal());
+						PrivacySchemes.NO_PRIVACY.ordinal(), 0);
 		
 		try
 		{

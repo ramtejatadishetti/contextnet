@@ -13,8 +13,8 @@ import java.util.Random;
 
 import org.json.JSONArray;
 
-import edu.umass.cs.contextservice.client.anonymizedID.HyperspaceBasedAnonymizedIDCreator;
-import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedAnonymizedIDCreator;
+import edu.umass.cs.contextservice.client.anonymizedID.HyperspaceBasedASymmetricKeyAnonymizedIDCreator;
+import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedASymmetricKeyAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.utils.Utils;
@@ -161,8 +161,8 @@ public class LargeACLSizeWorkload
 				publicKey, privateKey);
 		
 		
-		HyperspaceBasedAnonymizedIDCreator hyperspaceBasedIDCreator = 
-				new HyperspaceBasedAnonymizedIDCreator();
+		HyperspaceBasedASymmetricKeyAnonymizedIDCreator hyperspaceBasedIDCreator = 
+				new HyperspaceBasedASymmetricKeyAnonymizedIDCreator();
 		
 		List<AnonymizedIDEntry> anonymizedIDList = 
 					hyperspaceBasedIDCreator.computeAnonymizedIDs(currGUID, obj.aclMap);
@@ -184,8 +184,8 @@ public class LargeACLSizeWorkload
 			subspaceInfo.put(i, jsonArr);
 		}
 		
-		SubspaceBasedAnonymizedIDCreator subspaceAnonID 
-									= new SubspaceBasedAnonymizedIDCreator(subspaceInfo);
+		SubspaceBasedASymmetricKeyAnonymizedIDCreator subspaceAnonID 
+									= new SubspaceBasedASymmetricKeyAnonymizedIDCreator(subspaceInfo);
 		
 		anonymizedIDList = 
 				subspaceAnonID.computeAnonymizedIDs(currGUID, obj.aclMap);

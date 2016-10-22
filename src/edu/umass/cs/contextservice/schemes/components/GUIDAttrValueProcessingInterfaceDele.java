@@ -15,7 +15,7 @@ import edu.umass.cs.contextservice.updates.UpdateInfo;
  * @author adipc
  *
  */
-public interface GUIDAttrValueProcessingInterface<NodeIDType>
+public interface GUIDAttrValueProcessingInterfaceDele<NodeIDType>
 {
 	public void processQueryMsgFromUser
 		(QueryInfo<NodeIDType> queryInfo, boolean storeQueryForTrigger);

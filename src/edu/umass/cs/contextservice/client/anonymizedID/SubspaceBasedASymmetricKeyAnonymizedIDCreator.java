@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.Vector;
 
 import org.json.JSONArray;
@@ -31,12 +32,12 @@ import edu.umass.cs.gnscommon.exceptions.client.EncryptionException;
  * HyperspaceBasedAnonymizedIDCreator is used.
  * @author adipc
  */
-public class SubspaceBasedAnonymizedIDCreator 
+public class SubspaceBasedASymmetricKeyAnonymizedIDCreator 
 									implements AnonymizedIDCreationInterface
 {
 	private final HashMap<Integer, JSONArray> subspaceAttrMap;
 	
-	public SubspaceBasedAnonymizedIDCreator(HashMap<Integer, JSONArray> subspaceAttrMap)
+	public SubspaceBasedASymmetricKeyAnonymizedIDCreator(HashMap<Integer, JSONArray> subspaceAttrMap)
 	{
 		this.subspaceAttrMap = subspaceAttrMap;
 	}
@@ -76,8 +77,8 @@ public class SubspaceBasedAnonymizedIDCreator
 					aclMapForSubspace.put(attrName, aclList);
 				}
 				
-				HyperspaceBasedAnonymizedIDCreator subspaceAnonyObj 
-										= new HyperspaceBasedAnonymizedIDCreator();
+				HyperspaceBasedASymmetricKeyAnonymizedIDCreator subspaceAnonyObj 
+										= new HyperspaceBasedASymmetricKeyAnonymizedIDCreator();
 				
 				List<AnonymizedIDEntry> subspaceAnonIds 
 							= subspaceAnonyObj.computeAnonymizedIDs(myGuidEntry, aclMapForSubspace);
@@ -87,62 +88,9 @@ public class SubspaceBasedAnonymizedIDCreator
 				{
 					anonymizedIDList.add(subspaceAnonIds.get(i));
 				}
-				
-				
-				
-//				System.out.println("subspace attrs "+attrArray);
-				
-				// String is GUIDString
-//				HashMap<String, List<String>> guidToAttributesMap 
-//								= computeGuidToAttributesMap(attrArray, aclMap);
-				
-				//printGuidToAttributesMap( guidToAttributesMap );
-				
-				// guidToAttributesMap computed now compute anonymized IDs
-				// we sort the list of attributes, so that different permutations of same set 
-				// becomes same and then just add them to hashmap for finding distinct sets.
-				
-				// JSONArray of attributes is the String.
-				// JSONArray cannot be directly used.
-//				HashMap<String, JSONArray> attributesToGuidsMap 
-//						= computeAttributesToGuidsMap(guidToAttributesMap);
-			
-				// apply minimization heuristic
-				// this heuristic not useful, possibly wrong.
-//				HashMap<String, JSONArray> minimizedAttrSet = removeRedundantAnonymizedIDs
-//				( attributesToGuidsMap );
-				
-//				System.out.println("Reduction from minimization before "+
-//						attributesToGuidsMap.size()+" after "+minimizedAttrSet.size());
-				// now assign anonymized ID
-				//HashMap<String, List<byte[]>> attributesToGuidsMap 
-				//	= new HashMap<String, List<byte[]>>();
-
-//				Iterator<String> attrSetIter = attributesToGuidsMap.keySet().iterator();
-//				
-//				while( attrSetIter.hasNext() )
-//				{
-//					// JSONArray in string format
-//					String key = attrSetIter.next();
-//					JSONArray attrSet = new JSONArray(key);
-//					HashMap<String, Boolean> attrMap = convertJSONArrayToMap(attrSet);
-//					JSONArray guidSet = attributesToGuidsMap.get(key);
-//					assert(attrSet != null);
-//					assert(guidSet != null);
-//					
-//					byte[] anonymizedID 
-//								= new byte[ContextClientInterfaceWithPrivacy.SIZE_OF_ANONYMIZED_ID];
-//					
-//					anonymizedIDRand.nextBytes(anonymizedID);
-//					
-//					AnonymizedIDEntry anonymizedIDObj 
-//						= new AnonymizedIDEntry(Utils.bytArrayToHex(anonymizedID), attrMap, 
-//								guidSet, null);
-//					
-//					
-//					anonymizedIDList.add(anonymizedIDObj);
-//				}
 			}
+			// FIXME: check if anonymized IDs across 
+			// subspaces and even within a subspace are distinct.
 			return anonymizedIDList;
 		}
 		catch( JSONException jsoEx )
@@ -212,8 +160,8 @@ public class SubspaceBasedAnonymizedIDCreator
 		subspaceAttrMap.put(1, attrArr2);
 		
 		
-		SubspaceBasedAnonymizedIDCreator anonymizedIDCreator 
-						= new SubspaceBasedAnonymizedIDCreator(subspaceAttrMap);
+		SubspaceBasedASymmetricKeyAnonymizedIDCreator anonymizedIDCreator 
+						= new SubspaceBasedASymmetricKeyAnonymizedIDCreator(subspaceAttrMap);
 		
 		HashMap<String, List<ACLEntry>> aclMap = new HashMap<String, List<ACLEntry>>();
 		

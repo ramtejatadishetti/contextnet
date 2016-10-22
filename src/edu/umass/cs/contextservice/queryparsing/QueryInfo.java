@@ -1,15 +1,16 @@
 package edu.umass.cs.contextservice.queryparsing;
 
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.Iterator;
 import java.util.Vector;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegionReply;
+import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
+import edu.umass.cs.contextservice.schemes.helperclasses.SubspaceSearchReplyInfo;
 
 /**
  * Class to store the query related information, 
@@ -37,24 +38,27 @@ public class QueryInfo<NodeIDType>
 	
 	
 	// stores the parsed query components
-	public Vector<QueryComponent> queryComponents;
+	private Vector<QueryComponent> queryComponents;
 	
 	// indexed by attrName
-	public HashMap<String, ProcessingQueryComponent> processingQueryComponents;
-	// stores the replies recvd from the value nodes for the query
-	// Hash map indexed by componentId, and Vector<String> stores 
-	// the GUIDs
-	public HashMap<Integer, LinkedList<String>> componentReplies;
+	private HashMap<String, ProcessingQueryComponent> processingQueryComponents;
 	
 	// for synch
 	private boolean requestCompl;
 	
+	// for hyperspace privacy and no privacy case.
 	// to store replies of each region of subspace
-	public HashMap<Integer, OverlappingInfoClass> regionalReplies;
-	public HashMap<Integer, Integer> regionalRepliesSize;
-	private final Object regionalRepliesLock = new Object();
-	private int regionalRepliesCounter 		 = 0;
+	//private HashMap<Integer, OverlappingInfoClass> regionalReplies;
+	//private HashMap<Integer, Integer> regionalRepliesSize;
 	
+	// For no privacy and hyperspace privacy this map has only
+	// one entry, as in these schemes a search query only goes to one 
+	// subspace. For subsapce privacy scheme this map can have multiple 
+	// entries.
+	// key is subspace ID, 
+	private HashMap<Integer, SubspaceSearchReplyInfo> searchReplyMap;
+	
+	private final Object addReplyLock = new Object();
 	
 	public QueryInfo( String query, 
 			NodeIDType sourceNodeId, String grpGUID, long userReqID, 
@@ -64,14 +68,13 @@ public class QueryInfo<NodeIDType>
 		this.sourceNodeId = sourceNodeId;
 		this.groupGUID = grpGUID;
 		
-		this.componentReplies = new HashMap<Integer, LinkedList<String>>();
 		this.userReqID = userReqID;
 		this.userIP = userIP;
 		this.userPort = userPort;
 		this.expiryTime = expiryTime;
 		
-		regionalReplies = new HashMap<Integer, OverlappingInfoClass>();
-		regionalRepliesSize = new HashMap<Integer, Integer>();
+		searchReplyMap = new HashMap<Integer, SubspaceSearchReplyInfo>();
+		
 		
 		requestCompl = false;
 		
@@ -97,9 +100,10 @@ public class QueryInfo<NodeIDType>
 		// do second processing to get ProcessingQueryComponents
 		processingQueryComponents = new HashMap<String, ProcessingQueryComponent>();
 		initializeProcessingQueryComponents();
-		ContextServiceLogger.getLogger().fine("QueryInfo(String searchQuery) cons initializing processing qc complete");
+		ContextServiceLogger.getLogger().fine("QueryInfo(String searchQuery) "
+				+ "cons initializing processing qc complete");	
 	}
-
+	
 	
 	public String getQuery()
 	{
@@ -156,36 +160,44 @@ public class QueryInfo<NodeIDType>
 		return this.expiryTime;
 	}
 	
+	public HashMap<Integer, SubspaceSearchReplyInfo> getSearchReplyMap()
+	{
+		return this.searchReplyMap;
+	}
+	
 	/**
 	 * Initialize regional replies with number of regions 
 	 * contacted for the search query.
 	 */
-	public void initializeRegionalReplies(HashMap<Integer, OverlappingInfoClass> regionalReplies)
+	public void initializeSearchQueryReplyInfo
+						(HashMap<Integer, SubspaceSearchReplyInfo> searchQueryReplyInfo)
 	{
-		this.regionalReplies = regionalReplies;
+		this.searchReplyMap = searchQueryReplyInfo;
 	}
 	
-	public boolean setRegionalReply(Integer senderID, 
+	public boolean addReplyFromARegionOfASubspace(int subspaceId, int senderID, 
 			QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply)
 	{
-		synchronized(this.regionalRepliesLock)
+		synchronized(this.addReplyLock)
 		{
-			if(ContextServiceConfig.sendFullRepliesWithinCS)
+			SubspaceSearchReplyInfo subspaceSearchReply = searchReplyMap.get(subspaceId);
+			
+			RegionInfoClass regionInfoClass = subspaceSearchReply.overlappingRegionsMap.get(senderID);
+			
+			if( ContextServiceConfig.sendFullRepliesWithinCS )
 			{
-				OverlappingInfoClass overlapObj = this.regionalReplies.get(senderID);
-				overlapObj.replyArray = queryMesgToSubspaceRegionReply.getResultGUIDs();
-				this.regionalReplies.put(senderID, overlapObj);
-				this.regionalRepliesSize.put(senderID, queryMesgToSubspaceRegionReply.returnReplySize());
+				regionInfoClass.replyArray = queryMesgToSubspaceRegionReply.getResultGUIDs();
+				regionInfoClass.numReplies = queryMesgToSubspaceRegionReply.returnReplySize();
 			}
 			else
 			{
-				this.regionalRepliesSize.put(senderID, queryMesgToSubspaceRegionReply.returnReplySize());
+				regionInfoClass.numReplies = queryMesgToSubspaceRegionReply.returnReplySize();
 			}
 			
-			regionalRepliesCounter++;
+			subspaceSearchReply.regionRepliesCounter++;
 			
-			// replies from all regions revd.
-			if(regionalRepliesCounter == this.regionalReplies.size())
+			
+			if( checkForRequestCompletion() )
 			{
 				return true;
 			}
@@ -196,14 +208,28 @@ public class QueryInfo<NodeIDType>
 		}
 	}
 	
-	public HashMap<Integer, OverlappingInfoClass> getRepliesHashMap()
+	/**
+	 * This method requires synchronzied execution.
+	 * Or atleast it is assumed right now.
+	 * @return
+	 */
+	private boolean checkForRequestCompletion()
 	{
-		return this.regionalReplies;
-	}
-	
-	public HashMap<Integer, Integer> getRepliesSizeHashMap()
-	{
-		return this.regionalRepliesSize;
+		boolean completion = true;
+		Iterator<Integer> subspaceIter = searchReplyMap.keySet().iterator();
+		
+		while( subspaceIter.hasNext() )
+		{
+			int subsapceId = subspaceIter.next();
+			SubspaceSearchReplyInfo subspaceSearchInfo = searchReplyMap.get(subsapceId);
+			
+			if(subspaceSearchInfo.regionRepliesCounter != subspaceSearchInfo.overlappingRegionsMap.size())
+			{
+				completion = false;
+				break;
+			}
+		}
+		return completion;
 	}
 	
 	private void initializeProcessingQueryComponents()

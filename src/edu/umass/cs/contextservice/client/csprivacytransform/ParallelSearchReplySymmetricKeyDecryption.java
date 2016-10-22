@@ -17,7 +17,7 @@ import edu.umass.cs.gnsclient.client.util.GuidEntry;
  * symmetric key.
  * @author ayadav
  */
-public class ParallelSearchReplySymmetricDecryption
+public class ParallelSearchReplySymmetricKeyDecryption
 {
 	private final GuidEntry myGuid;
 	private final List<CSSearchReplyTransformedMessage> csTransformedList;
@@ -29,7 +29,7 @@ public class ParallelSearchReplySymmetricDecryption
 	
 	private int totalDecryptionsOverall		= 0;
 	
-	public ParallelSearchReplySymmetricDecryption( GuidEntry myGuid , 
+	public ParallelSearchReplySymmetricKeyDecryption( GuidEntry myGuid , 
 			List<CSSearchReplyTransformedMessage> csTransformedList
 			, JSONArray replyArray, ExecutorService execService )
 	{

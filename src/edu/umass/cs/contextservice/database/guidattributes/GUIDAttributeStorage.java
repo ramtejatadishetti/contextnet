@@ -20,14 +20,12 @@ import edu.umass.cs.contextservice.attributeInfo.AttributeTypes.DomainPartitionI
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.DataSource;
 import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
-import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
-import edu.umass.cs.contextservice.queryparsing.QueryComponent;
-import edu.umass.cs.contextservice.queryparsing.QueryInfo;
+import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
 import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.utils.DelayProfiler;
 
@@ -189,55 +187,42 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	 * @return
 	 */
 	public String getMySQLQueryForProcessSearchQueryInSubspaceRegion
-										(int subspaceId, String query)
-	{
-		QueryInfo<NodeIDType> qinfo = new QueryInfo<NodeIDType>(query);
-		
-		HashMap<String, ProcessingQueryComponent> pqComponents = qinfo.getProcessingQC();
-		Vector<QueryComponent> qcomponents = qinfo.getQueryComponents();
-		
-		boolean isFun = ifQueryHasFunctions(qcomponents);
-		
+										(int subspaceId, 
+												HashMap<String, ProcessingQueryComponent> queryComponents)
+	{		
 		String tableName = "subspaceId"+subspaceId+"DataStorage";
 		String mysqlQuery = "";
 		
-		if( isFun )
+		
+		// if privacy is enabled then we also fetch 
+		// anonymizedIDToGuidMapping set.
+		if(ContextServiceConfig.PRIVACY_ENABLED)
 		{
-			// get all fields as function might need to check them
-			// for post processing
-			mysqlQuery = "SELECT * from "+tableName+" WHERE ( ";
+			mysqlQuery = "SELECT nodeGUID , "+HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName
+					+" from "+tableName+" WHERE ( ";
 		}
 		else
 		{
-			// if privacy is enabled then we also fetch 
-			// anonymizedIDToGuidMapping set.
-			if(ContextServiceConfig.PRIVACY_ENABLED)
+			if(ContextServiceConfig.onlyResultCountEnable)
 			{
-				mysqlQuery = "SELECT nodeGUID , "+HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName
-						+" from "+tableName+" WHERE ( ";
+				mysqlQuery = "SELECT COUNT(nodeGUID) AS RESULT_SIZE from "+tableName+" WHERE ( ";
 			}
 			else
 			{
-				if(ContextServiceConfig.onlyResultCountEnable)
-				{
-					mysqlQuery = "SELECT COUNT(nodeGUID) AS RESULT_SIZE from "+tableName+" WHERE ( ";
-				}
-				else
-				{
-					mysqlQuery = "SELECT nodeGUID from "+tableName+" WHERE ( ";
-				}
+				mysqlQuery = "SELECT nodeGUID from "+tableName+" WHERE ( ";
 			}
 		}
 		
 		
-		Iterator<String> attrIter = pqComponents.keySet().iterator();
+		
+		Iterator<String> attrIter = queryComponents.keySet().iterator();
 		int counter = 0;
 		try
 		{
 			while(attrIter.hasNext())
 			{
 				String attrName = attrIter.next();
-				ProcessingQueryComponent pqc = pqComponents.get(attrName);
+				ProcessingQueryComponent pqc = queryComponents.get(attrName);
 				 
 				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
 				
@@ -247,15 +232,17 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				
 				ContextServiceLogger.getLogger().fine("attrName "+attrName+" dataType "+dataType+
 						" pqc.getLowerBound() "+pqc.getLowerBound()+" pqc.getUpperBound() "+pqc.getUpperBound()+
-						" pqComponents "+pqComponents.size());
+						" pqComponents "+queryComponents.size());
 				
 				// normal case of lower value being lesser than the upper value
 				if(AttributeTypes.compareTwoValues(pqc.getLowerBound(), pqc.getUpperBound(), dataType))
 				{
-					String queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getLowerBound(), dataType)+"";
-					String queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getUpperBound(), dataType)+"";
+					String queryMin  
+					= AttributeTypes.convertStringToDataTypeForMySQL(pqc.getLowerBound(), dataType)+"";
+					String queryMax  
+					= AttributeTypes.convertStringToDataTypeForMySQL(pqc.getUpperBound(), dataType)+"";
 					
-					if( counter == (pqComponents.size()-1) )
+					if( counter == (queryComponents.size()-1) )
 					{
 						// it is assumed that the strings in query(pqc.getLowerBound() or pqc.getUpperBound()) 
 						// will have single or double quotes in them so we don't need to them separately in mysql query
@@ -270,7 +257,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 				}
 				else
 				{
-					if(counter == (pqComponents.size()-1) )
+					if(counter == (queryComponents.size()-1) )
 					{
 						String queryMin  = AttributeTypes.convertStringToDataTypeForMySQL(attrMetaInfo.getMinValue(), dataType)+"";
 						String queryMax  = AttributeTypes.convertStringToDataTypeForMySQL(pqc.getUpperBound(), dataType)+"";
@@ -313,26 +300,20 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		return null;
 	}
 	
-	public int processSearchQueryInSubspaceRegion(int subspaceId, String query, 
+	public int processSearchQueryInSubspaceRegion(int subspaceId, 
+			HashMap<String, ProcessingQueryComponent> queryComponents, 
 			JSONArray resultArray)
 	{
 		long t0 = System.currentTimeMillis();
 		
 		String mysqlQuery = getMySQLQueryForProcessSearchQueryInSubspaceRegion
-				(subspaceId, query);
-		
-		//should not be expensive operation to be performed twice.
-		QueryInfo<NodeIDType> qinfo = new QueryInfo<NodeIDType>(query);
-		
-		Vector<QueryComponent> qcomponents = qinfo.getQueryComponents();
-		
-		boolean isFun = ifQueryHasFunctions(qcomponents);
+				(subspaceId, queryComponents);
 		
 		assert(mysqlQuery != null);
 		
 		Connection myConn  = null;
 		Statement stmt     = null;
-		//JSONArray jsoArray = new JSONArray();
+		
 		int resultSize = 0;
 		try
 		{
@@ -357,93 +338,53 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 			
 			ResultSet rs = stmt.executeQuery(mysqlQuery);
 			while( rs.next() )
-			{
-				//Retrieve by column name
-				//double value  	 = rs.getDouble("value");
-				if(isFun)
+			{	
+				// it is actually a JSONArray in hexformat byte array representation.
+				// reverse conversion is byte array to String and then string to JSONArray.
+				// byte[] realIDEncryptedArray = rs.getBytes(ACLattr);
+				// ValueTableInfo valobj = new ValueTableInfo(value, nodeGUID);
+				// answerList.add(valobj);
+				if(ContextServiceConfig.sendFullRepliesWithinCS)
 				{
-					//String nodeGUID = rs.getString("nodeGUID");
 					byte[] nodeGUIDBytes = rs.getBytes("nodeGUID");
-					boolean satisfies = true;
-					// checks against all such functions
-					for(int i=0; i<qcomponents.size(); i++)
+					
+					String nodeGUID = Utils.byteArrayToHex(nodeGUIDBytes);
+					
+					String anonymizedIDToGUIDMapping = null;
+					JSONArray anonymizedIDToGuidArray = null;
+					if( ContextServiceConfig.PRIVACY_ENABLED )
 					{
-						QueryComponent qc = qcomponents.get(i);
+						anonymizedIDToGUIDMapping 
+							= rs.getString(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName);
 						
-						if( qc.getComponentType() == QueryComponent.FUNCTION_PREDICATE )
+						if(anonymizedIDToGUIDMapping != null)
 						{
-							satisfies = qc.getFunction().checkDBRecordAgaistFunction(rs);
-							if(!satisfies)
+							if(anonymizedIDToGUIDMapping.length() > 0)
 							{
-								break;
+								anonymizedIDToGuidArray 
+									= new JSONArray(anonymizedIDToGUIDMapping);
 							}
 						}
 					}
-					if(satisfies)
+					
+					if(anonymizedIDToGuidArray != null)
 					{
-						if(ContextServiceConfig.sendFullRepliesWithinCS)
-						{
-							String nodeGUID = Utils.byteArrayToHex(nodeGUIDBytes);
-							resultArray.put(nodeGUID);
-							resultSize++;
-						}
-						else
-						{
-							resultSize++;
-						}
+						SearchReplyGUIDRepresentationJSON searchReplyRep 
+							= new SearchReplyGUIDRepresentationJSON(nodeGUID, 
+									anonymizedIDToGuidArray);
+					
+						resultArray.put(searchReplyRep.toJSONObject());
 					}
-				}
-				else
-				{
-					// String nodeGUID = rs.getString("nodeGUID");
-					
-					
-					// it is actually a JSONArray in hexformat byte array representation.
-					// reverse conversion is byte array to String and then string to JSONArray.
-					// byte[] realIDEncryptedArray = rs.getBytes(ACLattr);
-					// ValueTableInfo valobj = new ValueTableInfo(value, nodeGUID);
-					// answerList.add(valobj);
-					if(ContextServiceConfig.sendFullRepliesWithinCS)
+					else
 					{
-						byte[] nodeGUIDBytes = rs.getBytes("nodeGUID");
-						
-						String nodeGUID = Utils.byteArrayToHex(nodeGUIDBytes);
-						
-						String anonymizedIDToGUIDMapping = null;
-						JSONArray anonymizedIDToGuidArray = null;
-						if( ContextServiceConfig.PRIVACY_ENABLED )
-						{
-							anonymizedIDToGUIDMapping 
-								= rs.getString(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName);
-							
-							if(anonymizedIDToGUIDMapping != null)
-							{
-								if(anonymizedIDToGUIDMapping.length() > 0)
-								{
-									anonymizedIDToGuidArray 
-										= new JSONArray(anonymizedIDToGUIDMapping);
-								}
-							}
-						}
-						
-						if(anonymizedIDToGuidArray != null)
-						{
-							SearchReplyGUIDRepresentationJSON searchReplyRep 
-								= new SearchReplyGUIDRepresentationJSON(nodeGUID, 
-										anonymizedIDToGuidArray);
-						
-							resultArray.put(searchReplyRep.toJSONObject());
-						}
-						else
-						{
-							SearchReplyGUIDRepresentationJSON searchReplyRep 
-								= new SearchReplyGUIDRepresentationJSON(nodeGUID);
+						SearchReplyGUIDRepresentationJSON searchReplyRep 
+							= new SearchReplyGUIDRepresentationJSON(nodeGUID);
+				
+						resultArray.put(searchReplyRep.toJSONObject());
+					}
 					
-							resultArray.put(searchReplyRep.toJSONObject());
-						}
-						
-						//TODO: this conversion may be removed and byte[] sent
-						//FIXME: fix this string encoding.
+					//TODO: this conversion may be removed and byte[] sent
+					//FIXME: fix this string encoding.
 //						if(realIDEncryptedArray != null)
 //						{
 //							String jsonArrayString = new String(realIDEncryptedArray);
@@ -459,19 +400,18 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 //							= new SearchReplyGUIDRepresentationJSON(nodeGUID);
 //							resultArray.put(searchReplyRep.toJSONObject());
 //						}
-						
-						resultSize++;
+					
+					resultSize++;
+				}
+				else
+				{
+					if(ContextServiceConfig.onlyResultCountEnable)
+					{
+						resultSize = rs.getInt("RESULT_SIZE");
 					}
 					else
 					{
-						if(ContextServiceConfig.onlyResultCountEnable)
-						{
-							resultSize = rs.getInt("RESULT_SIZE");
-						}
-						else
-						{
-							resultSize++;
-						}
+						resultSize++;
 					}
 				}
 			}
@@ -980,21 +920,22 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	 * @param qcomponents, takes matching attributes as input
 	 * @return
 	 */
-	public HashMap<Integer, OverlappingInfoClass> 
+	public HashMap<Integer, RegionInfoClass> 
 		getOverlappingRegionsInSubspace( int subspaceId, int replicaNum, 
-				Vector<ProcessingQueryComponent> matchingQueryComponents )
+				HashMap<String, ProcessingQueryComponent> matchingQueryComponents )
 	{
 		long t0 = System.currentTimeMillis();
-		HashMap<Integer, OverlappingInfoClass> answerList 
-						= new HashMap<Integer, OverlappingInfoClass>();
+		HashMap<Integer, RegionInfoClass> answerList 
+						= new HashMap<Integer, RegionInfoClass>();
 		
 		String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"PartitionInfo";
 		
 		String selectTableSQL = "SELECT hashCode, respNodeID from "+tableName+" WHERE ";
-		
-		for( int i=0; i<matchingQueryComponents.size(); i++ )
+		Iterator<String> attrIter = matchingQueryComponents.keySet().iterator();
+		int count = 0;
+		while(attrIter.hasNext())
 		{
-			ProcessingQueryComponent qcomponent = matchingQueryComponents.get(i);
+			ProcessingQueryComponent qcomponent = matchingQueryComponents.get(attrIter.next());
 			String attrName = qcomponent.getAttributeName();
 			
 			String lowerAttr = "lower"+attrName;
@@ -1050,10 +991,11 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 						+ "( "+lowerAttr+" >= "+queryMin +" AND "+upperAttr+" <= "+queryMax+" ) "+" )  )";
 			}
 			
-			if( i != (matchingQueryComponents.size()-1) )
+			if( count != (matchingQueryComponents.size()-1) )
 			{
 				selectTableSQL = selectTableSQL + " AND ";
 			}
+			count++;
 		}
 		
 		Statement stmt 		= null;
@@ -1077,7 +1019,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		    	//Retrieve by column name
 		    	int respNodeID  	 = rs.getInt("respNodeID");
 		    	//int hashCode		 = rs.getInt("hashCode");
-		    	OverlappingInfoClass overlapObj = new OverlappingInfoClass();
+		    	RegionInfoClass overlapObj = new RegionInfoClass();
 		    	
 		    	//overlapObj.hashCode = hashCode;
 		    	overlapObj.respNodeId = respNodeID;
@@ -1658,18 +1600,18 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	 * is processed by bounding rectangle
 	 * @return
 	 */
-	private boolean ifQueryHasFunctions(Vector<QueryComponent> qcomponents)
-	{
-		boolean isFun = false;
-		for(int i=0;i<qcomponents.size();i++)
-		{
-			QueryComponent qc = qcomponents.get(i);
-			if(qc.getComponentType() == QueryComponent.FUNCTION_PREDICATE)
-			{
-				isFun = true;
-				break;
-			}
-		}
-		return isFun;
-	}
+//	private boolean ifQueryHasFunctions(Vector<QueryComponent> qcomponents)
+//	{
+//		boolean isFun = false;
+//		for(int i=0;i<qcomponents.size();i++)
+//		{
+//			QueryComponent qc = qcomponents.get(i);
+//			if(qc.getComponentType() == QueryComponent.FUNCTION_PREDICATE)
+//			{
+//				isFun = true;
+//				break;
+//			}
+//		}
+//		return isFun;
+//	}
 }

@@ -58,23 +58,25 @@ public class UpdateInfo<NodeIDType>
 		
 		valueUpdateRepliesMap = new HashMap<String, Integer>();
 		
-		// initialize updates
-		if(subspaceInfoMap != null)
-		{
-			Iterator<Integer> keyIter = subspaceInfoMap.keySet().iterator();
-			
-			while( keyIter.hasNext() )
-			{
-				int subspaceId = keyIter.next();
-				Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
-				
-				for( int i=0; i<replicaVector.size(); i++ )
-				{
-					SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(i);
-					this.initializeSubspaceEntry(subspaceId, currSubspaceReplica.getReplicaNum());
-				}
-			}
-		}
+		initializeRepliesMap( valUpdMsgFromGNS, subspaceInfoMap );
+		
+//		// initialize updates
+//		if(subspaceInfoMap != null)
+//		{
+//			Iterator<Integer> keyIter = subspaceInfoMap.keySet().iterator();
+//			
+//			while( keyIter.hasNext() )
+//			{
+//				int subspaceId = keyIter.next();
+//				Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
+//				
+//				for( int i=0; i<replicaVector.size(); i++ )
+//				{
+//					SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(i);
+//					this.initializeSubspaceEntry(subspaceId, currSubspaceReplica.getReplicaNum());
+//				}
+//			}
+//		}
 		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
@@ -243,8 +245,7 @@ public class UpdateInfo<NodeIDType>
 				
 				
 				for( int i=0; i < overlapSubspaceList.size(); i++ )
-				{
-					
+				{	
 					int subspaceId = overlapSubspaceList.get(i);
 					
 					Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
@@ -259,8 +260,34 @@ public class UpdateInfo<NodeIDType>
 			}
 			else if( privacySchemeOrdinal == PrivacySchemes.SUBSPACE_PRIVACY.ordinal() )
 			{
+				JSONArray anonymizedIDAttrSet = valUpdMsgFromGNS.getAttrSetArray();
+				
+				assert( anonymizedIDAttrSet != null );
+				assert( anonymizedIDAttrSet.length() > 0 );
+				
+				List<Integer> overlapSubspaceList = getOverlappingSubsapceIds
+						( subspaceInfoMap, anonymizedIDAttrSet );
+				
+				// if update consists of 1 attribute then the anonymized ID's attribute
+				// set should definitely be in one subsapce.
+				if(valUpdMsgFromGNS.getAttrValuePairs().length() == 1)
+				{
+					assert(overlapSubspaceList.size() == 1);
+				}
 				
 				
+				for( int i=0; i < overlapSubspaceList.size(); i++ )
+				{	
+					int subspaceId = overlapSubspaceList.get(i);
+					
+					Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
+					
+					for( int j=0; j<replicaVector.size(); j++ )
+					{
+						SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(j);
+						this.initializeSubspaceEntry(subspaceId, currSubspaceReplica.getReplicaNum());
+					}
+				}
 				
 			}
 		}

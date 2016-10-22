@@ -16,7 +16,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedAnonymizedIDCreator;
+import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedASymmetricKeyAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
@@ -24,11 +24,11 @@ import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.gnsclient.client.util.GuidEntry;
 import edu.umass.cs.gnscommon.exceptions.client.EncryptionException;
 
-public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
+public class HyperspaceBasedASymmetricKeyCSTransform implements CSPrivacyTransformInterface
 {
 	private final ExecutorService exectutorService;
 	
-	public HyperspaceBasedCSTransform(ExecutorService execService)
+	public HyperspaceBasedASymmetricKeyCSTransform(ExecutorService execService)
 	{
 		this.exectutorService = execService;
 	}
@@ -95,8 +95,8 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 			List<CSSearchReplyTransformedMessage> csTransformedList
 			, JSONArray replyArray)
 	{	
-		ParallelSearchReplyDecryption parallelSearchDecryption =
-				new ParallelSearchReplyDecryption(myGuid , csTransformedList
+		ParallelSearchReplyASymmetricKeyDecryption parallelSearchDecryption =
+				new ParallelSearchReplyASymmetricKeyDecryption(myGuid , csTransformedList
 						, replyArray, exectutorService);
 		parallelSearchDecryption.doDecryption();
 		
@@ -112,7 +112,6 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 	public void unTransformSearchReply(HashMap<String, byte[]> anonymizedIDToSecretKeyMap,
 			List<CSSearchReplyTransformedMessage> csTransformedList, JSONArray replyArray) 
 	{
-		// TODO Auto-generated method stub
 	}
 	
 	/**
@@ -256,8 +255,8 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 		subspaceAttrMap.put(1, attrArr2);
 		
 		
-		SubspaceBasedAnonymizedIDCreator anonymizedIDCreator 
-						= new SubspaceBasedAnonymizedIDCreator(subspaceAttrMap);
+		SubspaceBasedASymmetricKeyAnonymizedIDCreator anonymizedIDCreator 
+						= new SubspaceBasedASymmetricKeyAnonymizedIDCreator(subspaceAttrMap);
 		
 		HashMap<String, List<ACLEntry>> aclMap = new HashMap<String, List<ACLEntry>>();
 		
@@ -371,5 +370,19 @@ public class HyperspaceBasedCSTransform implements CSPrivacyTransformInterface
 //		
 //		System.out.println("Query GUID "+ queryingGuid.getGuid()+
 //				" Real GUID "+guid0+" reply Arr "+replyArray);
+	}
+
+	@Override
+	public void unTransformSearchReply(GuidEntry myGuid, List<CSSearchReplyTransformedMessage> csTransformedList,
+			HashMap<String, Boolean> replyMap) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void unTransformSearchReply(HashMap<String, byte[]> anonymizedIDToSecretKeyMap,
+			List<CSSearchReplyTransformedMessage> csTransformedList, HashMap<String, Boolean> replyMap) {
+		// TODO Auto-generated method stub
+		
 	}
 }

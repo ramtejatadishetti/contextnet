@@ -32,15 +32,15 @@ import edu.umass.cs.gnscommon.exceptions.client.EncryptionException;
  * @author adipc
  *
  */
-public class HyperspaceBasedAnonymizedIDCreator 
+public class HyperspaceBasedASymmetricKeyAnonymizedIDCreator 
 							implements AnonymizedIDCreationInterface
 {
 	private final Random anonymizedIDRand;
 	
-	public HyperspaceBasedAnonymizedIDCreator()
+	public HyperspaceBasedASymmetricKeyAnonymizedIDCreator()
 	{
 		anonymizedIDRand				
-			= new Random(Utils.getActiveInterfaceInetAddresses().get(0).getHostAddress().hashCode());
+			= new Random(System.currentTimeMillis());
 	}
 	
 	@Override
@@ -468,8 +468,8 @@ public class HyperspaceBasedAnonymizedIDCreator
 			guidsVector.add(currGUID);
 		}
 		
-		HyperspaceBasedAnonymizedIDCreator anonymizedIDCreator 
-						= new HyperspaceBasedAnonymizedIDCreator();
+		HyperspaceBasedASymmetricKeyAnonymizedIDCreator anonymizedIDCreator 
+						= new HyperspaceBasedASymmetricKeyAnonymizedIDCreator();
 		
 		HashMap<String, List<ACLEntry>> aclMap 
 						= new HashMap<String, List<ACLEntry>>();

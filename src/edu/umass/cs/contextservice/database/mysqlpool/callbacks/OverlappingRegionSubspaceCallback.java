@@ -4,15 +4,15 @@ import java.util.HashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import edu.umass.cs.contextservice.database.mysqlpool.MySQLRequestStorage;
-import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
+import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
 
 public class OverlappingRegionSubspaceCallback extends DatabaseCallBack
 {
-	private final HashMap<Integer, OverlappingInfoClass> answerObj;
+	private final HashMap<Integer, RegionInfoClass> answerObj;
 	
 	public OverlappingRegionSubspaceCallback
 		( ConcurrentLinkedQueue<MySQLRequestStorage> codeRequestsQueue, 
-				HashMap<Integer, OverlappingInfoClass> answerObj, 
+				HashMap<Integer, RegionInfoClass> answerObj, 
 				MySQLRequestStorage currMySQLRequest )
 	{
 		super(codeRequestsQueue, currMySQLRequest);
@@ -31,7 +31,7 @@ public class OverlappingRegionSubspaceCallback extends DatabaseCallBack
 		}
 	}
 	
-	public HashMap<Integer, OverlappingInfoClass> 
+	public HashMap<Integer, RegionInfoClass> 
 												getAnswerObject()
 	{
 		return answerObj;

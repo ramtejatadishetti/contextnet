@@ -3,24 +3,24 @@ package edu.umass.cs.contextservice.database;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Vector;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
+import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
 
 
 public abstract class AbstractDB<NodeIDType>
 {
-	public abstract HashMap<Integer, OverlappingInfoClass> 
+	public abstract HashMap<Integer, RegionInfoClass> 
 			getOverlappingRegionsInSubspace(int subspaceId, int replicaNum, 
-				Vector<ProcessingQueryComponent> matchingQueryComponents);
+				HashMap<String, ProcessingQueryComponent> matchingQueryComponents);
 	
-	public abstract int processSearchQueryInSubspaceRegion(int subspaceId, String query, 
+	public abstract int processSearchQueryInSubspaceRegion(int subspaceId, 
+			HashMap<String, ProcessingQueryComponent> queryComponents, 
 			JSONArray resultArray);
 	
 	public abstract void insertIntoSubspacePartitionInfo(int subspaceId, int replicaNum,

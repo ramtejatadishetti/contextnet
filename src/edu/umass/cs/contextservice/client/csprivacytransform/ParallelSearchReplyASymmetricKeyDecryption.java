@@ -3,6 +3,7 @@ package edu.umass.cs.contextservice.client.csprivacytransform;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
@@ -22,7 +23,7 @@ import edu.umass.cs.gnsclient.client.util.GuidEntry;
  * @author adipc
  *
  */
-public class ParallelSearchReplyDecryption 
+public class ParallelSearchReplyASymmetricKeyDecryption 
 {
 	private final GuidEntry myGuid;
 	private final List<CSSearchReplyTransformedMessage> csTransformedList;
@@ -32,9 +33,11 @@ public class ParallelSearchReplyDecryption
 	private long numFinished 				= 0;
 	private final Object lock 				= new Object();
 	
+	private final HashMap<String, Boolean> replyMap;
+	
 	private int totalDecryptionsOverall		= 0;
 	
-	public ParallelSearchReplyDecryption(GuidEntry myGuid , 
+	public ParallelSearchReplyASymmetricKeyDecryption(GuidEntry myGuid , 
 			List<CSSearchReplyTransformedMessage> csTransformedList
 			, JSONArray replyArray, ExecutorService execService)
 	{
@@ -42,6 +45,18 @@ public class ParallelSearchReplyDecryption
 		this.csTransformedList = csTransformedList;
 		this.replyArray = replyArray;
 		this.execService = execService;
+		replyMap = null;
+	}
+	
+	public ParallelSearchReplyASymmetricKeyDecryption(GuidEntry myGuid , 
+			List<CSSearchReplyTransformedMessage> csTransformedList
+			, HashMap<String, Boolean> replyMap, ExecutorService execService)
+	{
+		this.myGuid = myGuid;
+		this.csTransformedList = csTransformedList;
+		this.replyArray = null;
+		this.execService = execService;
+		this.replyMap = replyMap;
 	}
 	
 	/**
@@ -56,15 +71,41 @@ public class ParallelSearchReplyDecryption
 			CSSearchReplyTransformedMessage csSearchRepMessage 
 											= csTransformedList.get(i);
 			
-			SearchReplyDecryptionThread searchRepThread = new SearchReplyDecryptionThread
-					( myGuid, csSearchRepMessage.getSearchGUIDObj() );
+			SearchReplyGUIDRepresentationJSON searchReplyJSON 
+								= csSearchRepMessage.getSearchGUIDObj();
 			
-			// just doing it sequentially, then we can check how much time it takes. 
-			// as we know the decryption time , and number of decryptions.
-			// times should match here.
-			searchRepThread.run();
-//			execService.execute( new SearchReplyDecryptionThread
-//					( myGuid, csSearchRepMessage.getSearchGUIDObj() ) );
+			if(searchReplyJSON.getAnonymizedIDToGuidMapping() != null)
+			{
+				SearchReplyDecryptionThread searchRepThread = new SearchReplyDecryptionThread
+						( myGuid, csSearchRepMessage.getSearchGUIDObj() );
+				
+				// just doing it sequentially, then we can check how much time it takes. 
+				// as we know the decryption time , and number of decryptions.
+				// times should match here.
+				searchRepThread.run();
+//				execService.execute( new SearchReplyDecryptionThread
+//						( myGuid, csSearchRepMessage.getSearchGUIDObj() ) );
+				
+			}
+			else
+			{
+				synchronized(lock)
+				{
+					// no privacy case. GUID is the ID here.
+					numFinished++;
+					if(replyArray != null)
+						replyArray.put( searchReplyJSON.getID() );
+					else if(replyMap != null)
+					{
+						replyMap.put(searchReplyJSON.getID(), true);
+					}
+					
+					if( numFinished == csTransformedList.size() )
+					{
+						lock.notify();
+					}
+				}
+			}
 		}
 		
 		synchronized( lock )
@@ -116,7 +157,16 @@ public class ParallelSearchReplyDecryption
 				{
 					numFinished++;
 					totalDecryptionsOverall = totalDecryptionsOverall + totalDecryptionsThread;
-					replyArray.put( Utils.byteArrayToHex(plainTextBytes) );
+					if( replyArray != null )
+					{
+						replyArray.put( Utils.byteArrayToHex(plainTextBytes) );
+					}
+					else if( replyMap != null )
+					{
+						replyMap.put(Utils.byteArrayToHex(plainTextBytes), true);
+					}
+						
+						
 					if( numFinished == csTransformedList.size() )
 					{
 						lock.notify();

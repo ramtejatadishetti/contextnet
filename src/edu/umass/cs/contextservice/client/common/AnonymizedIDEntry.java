@@ -59,8 +59,16 @@ public class AnonymizedIDEntry
 		assert(anonymizedIDToGUIDMapping != null);
 		assert(attributeMap.size() > 0);
 		assert(guidSet.length() > 0);
-		assert(anonymizedIDToGUIDMapping.length() == guidSet.length());
-		assert(anonymizedIDSecreyKey != null);
+		
+		if( anonymizedIDSecreyKey == null)
+		{
+			assert( anonymizedIDToGUIDMapping.length() == guidSet.length() );
+		}
+		else 
+		{
+			assert( anonymizedIDToGUIDMapping.length() == 1 );
+		}
+		  
 		
 		this.anonymizedIDString = anonymizedIDString;
 		this.attributeMap = attributeMap;

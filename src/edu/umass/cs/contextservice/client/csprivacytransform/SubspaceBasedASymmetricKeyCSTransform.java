@@ -1,6 +1,5 @@
 package edu.umass.cs.contextservice.client.csprivacytransform;
 
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -13,34 +12,23 @@ import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedAnonymizedIDCreator;
+import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedASymmetricKeyAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.gnsclient.client.util.GuidEntry;
 import edu.umass.cs.gnscommon.exceptions.client.EncryptionException;
 
-/**
- * This is the symmetric key based transform. Anonymized ID creation happens over all attrbutes.
- * But symmetric keys are used, which are shared with ACL members using GNS.
- * @author ayadav
- *
- */
-public class HyperspaceSymmetricKeyBasedCSTransform implements CSPrivacyTransformInterface
-{	
+public class SubspaceBasedASymmetricKeyCSTransform implements CSPrivacyTransformInterface
+{
 	private final ExecutorService exectutorService;
 	
-	public HyperspaceSymmetricKeyBasedCSTransform(ExecutorService execService)
+	public SubspaceBasedASymmetricKeyCSTransform( ExecutorService execService )
 	{
 		this.exectutorService = execService;
 	}
@@ -53,10 +41,10 @@ public class HyperspaceSymmetricKeyBasedCSTransform implements CSPrivacyTransfor
 	{
 		try
 		{
-			List<CSUpdateTransformedMessage> transformedMesgList 
+			 List<CSUpdateTransformedMessage> transformedMesgList 
 			 						= new LinkedList<CSUpdateTransformedMessage>();
 			
-			HashMap<String, AnonymizedIDUpdateInfo> anonymizedIdToBeUpdateMap =
+			 HashMap<String, AnonymizedIDUpdateInfo> anonymizedIdToBeUpdateMap =
 				computeAnonymizedIDsToBeUpdated( csAttrValPairs 
 						, anonymizedIDList );
 			 
@@ -79,7 +67,7 @@ public class HyperspaceSymmetricKeyBasedCSTransform implements CSPrivacyTransfor
 				
 					CSUpdateTransformedMessage transforMessage = new CSUpdateTransformedMessage
 						(anonymizedIDString, updateInfo.attrValPair, 
-									null, updateInfo.anonymizedIDEntry.getAttrSet() );
+									null, updateInfo.anonymizedIDEntry.getAttrSet());
 					
 					transformedMesgList.add(transforMessage);
 				}
@@ -87,13 +75,13 @@ public class HyperspaceSymmetricKeyBasedCSTransform implements CSPrivacyTransfor
 				{
 					CSUpdateTransformedMessage transforMessage = new CSUpdateTransformedMessage
 							(anonymizedIDString, updateInfo.attrValPair, 
-								updateInfo.anonymizedIDEntry.getAnonymizedIDToGUIDMapping(), 
+								updateInfo.anonymizedIDEntry.getAnonymizedIDToGUIDMapping(),
 								updateInfo.anonymizedIDEntry.getAttrSet() );
 					
 					transformedMesgList.add(transforMessage);
 				}
 			}
-			return transformedMesgList;
+			return transformedMesgList;	
 		}
 		catch(Exception | Error ex)
 		{
@@ -102,16 +90,14 @@ public class HyperspaceSymmetricKeyBasedCSTransform implements CSPrivacyTransfor
 		return null;
 	}
 	
-	
 	@Override
-	public void unTransformSearchReply( GuidEntry myGuid, 
+	public void unTransformSearchReply(GuidEntry myGuid, 
 			List<CSSearchReplyTransformedMessage> csTransformedList
-			, JSONArray replyArray )
-	{
-		ParallelSearchReplySymmetricDecryption parallelSearchDecryption =
-				new ParallelSearchReplySymmetricDecryption(myGuid , csTransformedList
+			, JSONArray replyArray)
+	{	
+		ParallelSearchReplyASymmetricKeyDecryption parallelSearchDecryption =
+				new ParallelSearchReplyASymmetricKeyDecryption(myGuid , csTransformedList
 						, replyArray, exectutorService);
-		
 		parallelSearchDecryption.doDecryption();
 	}
 	
@@ -119,47 +105,18 @@ public class HyperspaceSymmetricKeyBasedCSTransform implements CSPrivacyTransfor
 	public void unTransformSearchReply(HashMap<String, byte[]> anonymizedIDToSecretKeyMap,
 			List<CSSearchReplyTransformedMessage> csTransformedList, JSONArray replyArray) 
 	{
-		if(replyArray == null)
-		{
-			throw new NullPointerException("replyArray is  null");
-		}
+	}
+	
+	@Override
+	public void unTransformSearchReply(GuidEntry myGuid, 
+			List<CSSearchReplyTransformedMessage> csTransformedList,
+			HashMap<String, Boolean> replyMap) 
+	{
+		ParallelSearchReplyASymmetricKeyDecryption parallelSearchDecryption =
+				new ParallelSearchReplyASymmetricKeyDecryption(myGuid , csTransformedList
+						, replyMap, exectutorService);
+		parallelSearchDecryption.doDecryption();
 		
-		for( int i=0; i<csTransformedList.size(); i++ )
-		{
-			CSSearchReplyTransformedMessage csSearchTransformMesg = csTransformedList.get(i);
-			SearchReplyGUIDRepresentationJSON replyObj = csSearchTransformMesg.getSearchGUIDObj();
-			
-			String anonymizedID = replyObj.getID();
-			JSONArray anonymizedIDToGUIDMapping = replyObj.getAnonymizedIDToGuidMapping();
-			
-			// In symmetric key case, size of array should be one.
-			// The only element should be the GUID encrypted with the secret key.
-			assert(anonymizedIDToGUIDMapping.length() == 1);
-			
-			if( anonymizedIDToSecretKeyMap.containsKey(anonymizedID) )
-			{
-				byte[] symmetricKey = anonymizedIDToSecretKeyMap.get(anonymizedID);
-				
-				try
-				{
-					byte[] guidBytes = Utils.doSymmetricDecryption( symmetricKey, 
-							Utils.hexStringToByteArray(anonymizedIDToGUIDMapping.getString(0)) );
-					
-					assert(guidBytes != null);
-					
-					replyArray.put(Utils.byteArrayToHex(guidBytes));
-				}
-				catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException
-						| IllegalBlockSizeException | BadPaddingException | JSONException e) 
-				{
-					e.printStackTrace();
-				}
-			}
-			else
-			{
-				// this GUID is not authorized to map this anonymized ID to GUID.
-			}
-		}
 	}
 	
 	/**
@@ -180,7 +137,7 @@ public class HyperspaceSymmetricKeyBasedCSTransform implements CSPrivacyTransfor
 			= new HashMap<String, AnonymizedIDUpdateInfo>();
 		
 		Iterator<String> attrIter = attrValuePairs.keys();
-		
+
 		while( attrIter.hasNext() )
 		{
 			String updAttr = attrIter.next();
@@ -303,8 +260,8 @@ public class HyperspaceSymmetricKeyBasedCSTransform implements CSPrivacyTransfor
 		subspaceAttrMap.put(1, attrArr2);
 		
 		
-		SubspaceBasedAnonymizedIDCreator anonymizedIDCreator 
-						= new SubspaceBasedAnonymizedIDCreator(subspaceAttrMap);
+		SubspaceBasedASymmetricKeyAnonymizedIDCreator anonymizedIDCreator 
+						= new SubspaceBasedASymmetricKeyAnonymizedIDCreator(subspaceAttrMap);
 		
 		HashMap<String, List<ACLEntry>> aclMap = new HashMap<String, List<ACLEntry>>();
 		
@@ -418,5 +375,12 @@ public class HyperspaceSymmetricKeyBasedCSTransform implements CSPrivacyTransfor
 //		
 //		System.out.println("Query GUID "+ queryingGuid.getGuid()+
 //				" Real GUID "+guid0+" reply Arr "+replyArray);
+	}
+
+	@Override
+	public void unTransformSearchReply(HashMap<String, byte[]> anonymizedIDToSecretKeyMap,
+			List<CSSearchReplyTransformedMessage> csTransformedList, HashMap<String, Boolean> replyMap) {
+		// TODO Auto-generated method stub
+		
 	}
 }

@@ -36,7 +36,6 @@ import edu.umass.cs.gnsclient.client.util.GuidEntry;
 import edu.umass.cs.gnsclient.client.util.GuidUtils;
 import edu.umass.cs.gnscommon.AclAccessType;
 import edu.umass.cs.gnscommon.GNSCommandProtocol;
-import edu.umass.cs.gnscommon.exceptions.client.DuplicateNameException;
 import edu.umass.cs.gnscommon.exceptions.client.EncryptionException;
 
 
@@ -51,6 +50,7 @@ public class ContextServiceTests
 	private static String csNodeIp 							= "127.0.0.1";
 	private static int csPort 								= 8000;
 	
+	private static PrivacySchemes privacyScheme				= PrivacySchemes.HYPERSPACE_PRIVACY;
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception
@@ -75,30 +75,10 @@ public class ContextServiceTests
 		
 		// make a client connection
 		csClient = new ContextServiceClient<Integer>(csNodeIp, csPort, false,
-				PrivacySchemes.HYPERSPACE_PRIVACY);
+				privacyScheme);
 		
 		System.out.println("ContextServiceClient connected");
 	}
-	
-//	public static class ClientConnectionTest implements Runnable
-//	{
-//		@Override
-//		public void run() {
-//			// TODO Auto-generated method stub
-//			// make a client connection
-//			String csNodeIp = "127.0.0.1";
-//			int csPort = 8000;
-//			
-//			try {
-//				csClient = new ContextServiceClient<Integer>(csNodeIp, csPort, 
-//						ContextServiceClient.HYPERSPACE_BASED_CS_TRANSFORM);
-//			} catch (NoSuchAlgorithmException | IOException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
-//		}
-//		
-//	}
 	
 	@Test
 	public void test_1_emptyQueryTest() 
@@ -117,7 +97,7 @@ public class ContextServiceTests
 		assertEquals(0, replyArray.length());
 	}
 	
-	/*@Test
+	@Test
 	public void test_2_Input100GUIDs() throws JSONException 
 	{
 		// these tests require full search replies to be sent.
@@ -143,10 +123,10 @@ public class ContextServiceTests
 		
 		assertEquals(100, numRep);
 		assertEquals(100, replyArray.length());
-	}*/
+	}
 	
-	/*@Test
-	public void test_3_noGNSprivacyTest() 
+	@Test
+	public void test_4_noGNSprivacyTest() 
 			throws JSONException, NoSuchAlgorithmException, EncryptionException
 	{
 		// these tests require full search replies to be sent.
@@ -173,7 +153,7 @@ public class ContextServiceTests
 		HashMap<String, List<ACLEntry>> aclMap 
 								= new HashMap<String, List<ACLEntry>>();
 		
-		for(int i=0; i<6; i++)
+		for( int i=0; i<6; i++ )
 		{
 			String attrName = "attr"+i;
 			List<ACLEntry> attrACL = new LinkedList<ACLEntry>();
@@ -186,8 +166,8 @@ public class ContextServiceTests
 						= new ACLEntry(aclMemberGuids.get(j).getGuid(), 
 								aclMemberGuids.get(j).getPublicKey());
 					attrACL.add(aclEntry);
-					System.out.println("attrName "+attrName+" GUID "+
-							aclMemberGuids.get(j).getGuid());
+					//System.out.println("attrName "+attrName+" GUID "+
+					//		aclMemberGuids.get(j).getGuid());
 				}
 			}
 			// odd are assigned last five acl guids
@@ -200,8 +180,8 @@ public class ContextServiceTests
 							aclMemberGuids.get(j).getPublicKey());
 					attrACL.add(aclEntry);
 					
-					System.out.println("attrName "+attrName+" GUID "+
-							aclMemberGuids.get(j).getGuid());
+					//System.out.println("attrName "+attrName+" GUID "+
+					//		aclMemberGuids.get(j).getGuid());
 				}
 			}
 			
@@ -217,7 +197,7 @@ public class ContextServiceTests
 		System.out.println("Size of "+aclMap.size());
 		// compute anonymized IDs
 		List<AnonymizedIDEntry> anonymizedIDsList 
-					= csClient.computeAnonymizedIDs(userGUID, aclMap);
+					= csClient.computeAnonymizedIDs(userGUID, aclMap, false);
 		
 		for(int i=0; i< anonymizedIDsList.size(); i++)
 		{
@@ -262,9 +242,15 @@ public class ContextServiceTests
 			{
 				if (ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED)
 				{
-					assertTrue(userGUID.getGuid().compareToIgnoreCase(replyArray.getString(0)) == 0  );
-					assertEquals(1, numRep);
-					assertEquals(1, replyArray.length());
+					//assertEquals(1, numRep);
+					//assertEquals(1, replyArray.length());
+					//assertTrue(userGUID.getGuid().compareToIgnoreCase
+					//		(replyArray.getString(0)) == 0  );
+					
+					boolean found = checkAGuidInReplyArray( userGUID.getGuid(), 
+							replyArray );
+					
+					assert(found);
 				}
 				else
 				{
@@ -278,8 +264,12 @@ public class ContextServiceTests
 				//assertTrue(replyArray.get(0).equals(userGUID.getGuid()));
 				if ( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
 				{
-					assertEquals(0, numRep);
-					assertEquals(0, replyArray.length());
+					//assertEquals(0, numRep);
+					//assertEquals(0, replyArray.length());
+					boolean found = checkAGuidInReplyArray( userGUID.getGuid(), 
+							replyArray );
+					
+					assert(!found);
 				}
 				else
 				{
@@ -309,8 +299,12 @@ public class ContextServiceTests
 			//assertTrue(replyArray.get(0).equals(userGUID.getGuid()));
 			if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
 			{
-				assertEquals(0, numRep);
-				assertEquals(0, replyArray.length());
+				//assertEquals(0, numRep);
+				//assertEquals(0, replyArray.length());
+				boolean found = checkAGuidInReplyArray( userGUID.getGuid(), 
+						replyArray );
+				
+				assert(!found);
 			}
 			else
 			{
@@ -337,21 +331,26 @@ public class ContextServiceTests
 		if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
 		{
 			// nobody except from user allowed to read
-			assertTrue
-			( userGUID.getGuid().compareToIgnoreCase(replyArray.getString(0)) == 0  );
-			assertEquals(1, numRep);
-			assertEquals(1, replyArray.length());
+			//assertTrue
+			//( userGUID.getGuid().compareToIgnoreCase(replyArray.getString(0)) == 0  );
+			//assertEquals(1, numRep);
+			//assertEquals(1, replyArray.length());
+			
+			boolean found = checkAGuidInReplyArray( userGUID.getGuid(), 
+					replyArray );
+			
+			assert(found);
 		}
 		else
 		{
 			assert( numRep > 0 );
 			assert( replyArray.length() > 0 );
 		}
-	}*/
+	}
 	
 	
 	@Test
-	public void test_4_GNSprivacyTest() 
+	public void test_3_GNSprivacyTest() 
 			throws Exception
 	{
 		// these tests require full search replies to be sent.
@@ -365,7 +364,7 @@ public class ContextServiceTests
 		
 		ContextServiceClient<Integer> csClient 
 				= new ContextServiceClient<Integer>(csNodeIp, csPort, true,
-									PrivacySchemes.HYPERSPACE_PRIVACY);
+						privacyScheme);
 		
 		
 		GNSClient gnsClient = csClient.getGNSClient();
@@ -398,19 +397,6 @@ public class ContextServiceTests
 				ex.printStackTrace();
 				continue;
 			}
-			
-//			try
-//			{
-//			GNSCommand commandRes = gnsClient.execute(
-//					GNSCommand.createGUID(gnsClient.getGNSProvider(), userGUID, guidAlias));
-//			}
-//			catch(DuplicateNameException dupNameEx)
-//			{
-//				System.out.println("Name "+guidAlias+" already in GNS");
-//			}
-//			
-//			GuidEntry aclMem = 
-//						GuidUtils.lookupGuidEntryFromDatabase(gnsClient.getGNSProvider(), guidAlias);
 			
 			
 			System.out.println("GUID for alias "+guidAlias+" "+aclMem.getGuid());
@@ -480,7 +466,7 @@ public class ContextServiceTests
 		System.out.println("Size of "+aclMap.size());
 		// compute anonymized IDs
 		List<AnonymizedIDEntry> anonymizedIDsList 
-					= csClient.computeAnonymizedIDs(userGUID, aclMap);
+					= csClient.computeAnonymizedIDs(userGUID, aclMap, true);
 		
 		for(int i=0; i< anonymizedIDsList.size(); i++)
 		{
@@ -531,18 +517,18 @@ public class ContextServiceTests
 			// querier is allowed to read
 			if(i<5)
 			{
-				if (ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED)
+				if ( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
 				{
-					assertEquals(1, numRep);
-					assertEquals(1, replyArray.length());
-					assertTrue(userGUID.getGuid().compareToIgnoreCase
-							(replyArray.getString(0)) == 0  );
+					boolean found = checkAGuidInReplyArray( userGUID.getGuid(), 
+							replyArray );
+					
+					assert(found);
 				}
 				else
 				{
 					// as multiple anonymized IDs may be returned.
-					assert(numRep > 0);
-					assert(replyArray.length() > 0);
+					assert(numRep >= 1);
+					assert(replyArray.length() >= 1);
 				}
 			}
 			else
@@ -550,8 +536,10 @@ public class ContextServiceTests
 				//assertTrue(replyArray.get(0).equals(userGUID.getGuid()));
 				if ( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
 				{
-					assertEquals(0, numRep);
-					assertEquals(0, replyArray.length());
+					boolean found = checkAGuidInReplyArray( userGUID.getGuid(), 
+							replyArray );
+					
+					assert(!found);
 				}
 				else
 				{
@@ -563,7 +551,7 @@ public class ContextServiceTests
 		
 		// across two different sets
 		// nobody except from userGUID should be allowed to read.
-		for(int i=0; i<10; i++)
+		for( int i=0; i<10; i++ )
 		{
 			String selectQuery = 
 					"SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE "
@@ -584,8 +572,12 @@ public class ContextServiceTests
 			//assertTrue(replyArray.get(0).equals(userGUID.getGuid()));
 			if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
 			{
-				assertEquals(0, numRep);
-				assertEquals(0, replyArray.length());
+				//assertEquals(0, numRep);
+				//assertEquals(0, replyArray.length());
+				boolean found = checkAGuidInReplyArray( userGUID.getGuid(), 
+						replyArray );
+				
+				assert(!found);
 			}
 			else
 			{
@@ -615,10 +607,15 @@ public class ContextServiceTests
 		if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
 		{
 			// nobody except from user allowed to read
-			assertTrue
-			( userGUID.getGuid().compareToIgnoreCase(replyArray.getString(0)) == 0  );
-			assertEquals(1, numRep);
-			assertEquals(1, replyArray.length());
+			//assertTrue
+			//( userGUID.getGuid().compareToIgnoreCase(replyArray.getString(0)) == 0  );
+			//assertEquals(1, numRep);
+			//assertEquals(1, replyArray.length());
+			
+			boolean found = checkAGuidInReplyArray( userGUID.getGuid(), 
+					replyArray );
+			
+			assert(found);
 		}
 		else
 		{
@@ -770,5 +767,28 @@ public class ContextServiceTests
 		GuidEntry guidEntry = new GuidEntry(guidAlias, guid, publicKey, privateKey);
 		
 		return guidEntry;
+	}
+	
+	private static boolean checkAGuidInReplyArray( String guidToCheck, 
+													JSONArray replyArray )
+	{
+		boolean found = false;
+		
+		for( int j=0; j<replyArray.length(); j++ )
+		{
+			try 
+			{
+				if( guidToCheck.compareToIgnoreCase
+						(replyArray.getString(j)) == 0 )
+				{
+					found = true;
+					break;
+				}
+			} catch (JSONException e) 
+			{
+				e.printStackTrace();
+			}
+		}
+		return found;
 	}
 }

@@ -38,16 +38,16 @@ import edu.umass.cs.gnscommon.exceptions.client.EncryptionException;
  * It is not used in the system, mainly used in experiments.
  * @author adipc
  */
-public class HyperspaceBasedAnonymizedIDCreatorSymmetricKey 
+public class HyperspaceBasedSymmetricKeyAnonymizedIDCreator 
 							implements AnonymizedIDCreationInterface
 {
 	private final Random anonymizedIDRand;
 	private final KeyGenerator symmKeyGen;
 	
-	public HyperspaceBasedAnonymizedIDCreatorSymmetricKey() throws NoSuchAlgorithmException
+	public HyperspaceBasedSymmetricKeyAnonymizedIDCreator() throws NoSuchAlgorithmException
 	{
 		anonymizedIDRand				
-			= new Random(Utils.getActiveInterfaceInetAddresses().get(0).getHostAddress().hashCode());
+			= new Random(System.currentTimeMillis());
 		
 		symmKeyGen = KeyGenerator.getInstance(ContextServiceConfig.SymmetricEncAlgorithm);
 	}
@@ -470,8 +470,8 @@ public class HyperspaceBasedAnonymizedIDCreatorSymmetricKey
 			guidsVector.add(currGUID);
 		}
 		
-		HyperspaceBasedAnonymizedIDCreatorSymmetricKey anonymizedIDCreator 
-						= new HyperspaceBasedAnonymizedIDCreatorSymmetricKey();
+		HyperspaceBasedSymmetricKeyAnonymizedIDCreator anonymizedIDCreator 
+						= new HyperspaceBasedSymmetricKeyAnonymizedIDCreator();
 		
 		HashMap<String, List<ACLEntry>> aclMap 
 						= new HashMap<String, List<ACLEntry>>();

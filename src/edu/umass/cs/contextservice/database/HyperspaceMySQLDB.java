@@ -19,13 +19,13 @@ import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.guidattributes.GUIDAttributeStorage;
 import edu.umass.cs.contextservice.database.guidattributes.GUIDAttributeStorageInterface;
-import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
 import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorage;
 import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorageInterface;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
+import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
 
 
 public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
@@ -120,9 +120,9 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 	 * @param qcomponents, takes matching attributes as input
 	 * @return
 	 */
-	public HashMap<Integer, OverlappingInfoClass> 
+	public HashMap<Integer, RegionInfoClass> 
 		getOverlappingRegionsInSubspace(int subspaceId, int replicaNum, 
-				Vector<ProcessingQueryComponent> matchingQueryComponents)
+				HashMap<String, ProcessingQueryComponent> matchingQueryComponents)
 	{
 		return this.guidAttributesStorage.getOverlappingRegionsInSubspace
 							(subspaceId, replicaNum, matchingQueryComponents);
@@ -136,7 +136,8 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 	 * @param resultArray
 	 * @return
 	 */
-	public int processSearchQueryInSubspaceRegion(int subspaceId, String query, 
+	public int processSearchQueryInSubspaceRegion(int subspaceId, 
+			HashMap<String, ProcessingQueryComponent> queryComponents, 
 			JSONArray resultArray)
 	{
 		if(ContextServiceConfig.disableMySQLDB)
@@ -148,7 +149,7 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 			long start = System.currentTimeMillis();
 			int resultSize 
 				= this.guidAttributesStorage.processSearchQueryInSubspaceRegion
-				(subspaceId, query, resultArray);
+				(subspaceId, queryComponents, resultArray);
 			long end = System.currentTimeMillis();
 			
 			if( ContextServiceConfig.DEBUG_MODE )

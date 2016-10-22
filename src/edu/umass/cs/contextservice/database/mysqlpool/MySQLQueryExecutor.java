@@ -8,8 +8,8 @@ import java.util.HashMap;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.mysqlpool.callbacks.OverlappingRegionSubspaceCallback;
-import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
+import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
 
 
 public class MySQLQueryExecutor implements Runnable
@@ -104,7 +104,7 @@ public class MySQLQueryExecutor implements Runnable
 		
 		String selectTableSQL 		= requestToExecute.getQueryToExecute().get(0);
 		
-		HashMap<Integer, OverlappingInfoClass> answerList 
+		HashMap<Integer, RegionInfoClass> answerList 
 					= dbCallBack.getAnswerObject();
 		
 		try
@@ -126,7 +126,7 @@ public class MySQLQueryExecutor implements Runnable
 		    	//Retrieve by column name
 		    	int respNodeID  	 = rs.getInt("respNodeID");
 		    	//int hashCode		 = rs.getInt("hashCode");
-		    	OverlappingInfoClass overlapObj = new OverlappingInfoClass();
+		    	RegionInfoClass overlapObj = new RegionInfoClass();
 		    	
 		    	//overlapObj.hashCode = hashCode;
 		    	overlapObj.respNodeId = respNodeID;

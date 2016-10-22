@@ -57,6 +57,17 @@ public interface CSPrivacyTransformInterface
 	
 	
 	/**
+	 * Same method as above but takes a replyMap to return result.
+	 * @param myGuid
+	 * @param csTransformedList
+	 * @param replyMap
+	 */
+	public void unTransformSearchReply(GuidEntry myGuid, 
+			List<CSSearchReplyTransformedMessage> csTransformedList, 
+			HashMap<String, Boolean> replyMap);
+	
+	
+	/**
 	 * untransforms the search reply using the symmetric keys.
 	 * @param myGuid
 	 * @param csTransformedList
@@ -65,4 +76,14 @@ public interface CSPrivacyTransformInterface
 	public void unTransformSearchReply( HashMap<String, byte[]> anonymizedIDToSecretKeyMap, 
 			List<CSSearchReplyTransformedMessage> csTransformedList, 
 			JSONArray replyArray );
+	
+	/**
+	 * untransforms the search reply using the symmetric keys.
+	 * @param myGuid
+	 * @param csTransformedList
+	 * @param replyArray
+	 */
+	public void unTransformSearchReply( HashMap<String, byte[]> anonymizedIDToSecretKeyMap, 
+			List<CSSearchReplyTransformedMessage> csTransformedList, 
+			HashMap<String, Boolean> replyMap );
 }

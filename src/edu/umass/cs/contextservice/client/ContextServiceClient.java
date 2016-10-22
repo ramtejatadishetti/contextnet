@@ -29,8 +29,10 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.anonymizedID.AnonymizedIDCreationInterface;
-import edu.umass.cs.contextservice.client.anonymizedID.HyperspaceBasedAnonymizedIDCreator;
-import edu.umass.cs.contextservice.client.anonymizedID.HyperspaceBasedAnonymizedIDCreatorSymmetricKey;
+import edu.umass.cs.contextservice.client.anonymizedID.HyperspaceBasedASymmetricKeyAnonymizedIDCreator;
+import edu.umass.cs.contextservice.client.anonymizedID.HyperspaceBasedSymmetricKeyAnonymizedIDCreator;
+import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedASymmetricKeyAnonymizedIDCreator;
+import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedSymmetricKeyAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.callback.implementations.BlockingCallBack;
 import edu.umass.cs.contextservice.client.callback.implementations.BlockingSearchReply;
 import edu.umass.cs.contextservice.client.callback.implementations.BlockingUpdateReply;
@@ -46,8 +48,10 @@ import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSPrivacyTransformInterface;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSSearchReplyTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.CSUpdateTransformedMessage;
-import edu.umass.cs.contextservice.client.csprivacytransform.HyperspaceBasedCSTransform;
-import edu.umass.cs.contextservice.client.csprivacytransform.HyperspaceSymmetricKeyBasedCSTransform;
+import edu.umass.cs.contextservice.client.csprivacytransform.HyperspaceBasedASymmetricKeyCSTransform;
+import edu.umass.cs.contextservice.client.csprivacytransform.HyperspaceBasedSymmetricKeyCSTransform;
+import edu.umass.cs.contextservice.client.csprivacytransform.SubspaceBasedASymmetricKeyCSTransform;
+import edu.umass.cs.contextservice.client.csprivacytransform.SubspaceBasedSymmetricKeyCSTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.EncryptionBasedGNSPrivacyTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSPrivacyTransformInterface;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSTransformedMessage;
@@ -86,7 +90,8 @@ import edu.umass.cs.nio.nioutils.NIOHeader;
  * @param <NodeIDType>
  */
 public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClient<NodeIDType> 
-				implements ContextClientInterfaceWithPrivacy, ContextServiceClientInterfaceWithoutPrivacy
+				implements ContextClientInterfaceWithPrivacy, 
+				ContextServiceClientInterfaceWithoutPrivacy
 {
 	// if experiment mode is true then triggers are not stored in a queue.
 	public static boolean EXPERIMENT_MODE								= false;
@@ -101,14 +106,22 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	
 	private GNSClient gnsClient;
 	
-	// for anonymized ID
-	private AnonymizedIDCreationInterface anonymizedIDCreation;
+	// asymmetric key id creation.
+	private AnonymizedIDCreationInterface asymmetricAnonymizedIDCreation;
+	
+	// symmetric key id creation.
+	private AnonymizedIDCreationInterface symmetricAnonymizedIDCreation;
 	
 	//gns transform
 	private GNSPrivacyTransformInterface gnsPrivacyTransform;
 	
-	// for cs transform
-	private CSPrivacyTransformInterface csPrivacyTransform;
+	// asymmetric key privacy transform
+	private CSPrivacyTransformInterface asymmetricCSPrivacyTransform;
+	
+	// symmetric key privacy transform.
+	private CSPrivacyTransformInterface symmetricCSPrivacyTransform;
+	
+	
 	
 	private PrivacyCallBack privacyCallBack;
 	
@@ -134,7 +147,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	
 	// PrivacySchemes is defined in context service config.
 	private final PrivacySchemes privacyScheme;
-	
 	
 	/**
 	 * Use this constructor if you want to directly communicate with CS, bypassing GNS.
@@ -164,29 +176,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		execService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		initializeClient();
 	}
-	
-	public ContextServiceClient(String csHostName, int csPortNum, boolean useGNS)
-			throws IOException, NoSuchAlgorithmException
-	{
-		super( csHostName, csPortNum );
-		this.privacyScheme = PrivacySchemes.HYPERSPACE_PRIVACY;
-		
-		if(useGNS)
-		{
-			initializeGNSClient();
-		}
-		else
-		{
-			gnsClient = null;
-		}
-		
-		privacyCallBack = new PrivacyCallBack();
-		blockingCallBack = new BlockingCallBack();
-		execService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-		
-		initializeClient();
-	}
-	
 	
 	public void sendUpdateWithCallBack
 		( String GUID, GuidEntry myGuidEntry, JSONObject gnsAttrValuePairs, 
@@ -336,7 +325,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			}
 			
 			List<CSUpdateTransformedMessage> transformedMesgList 
-				= this.csPrivacyTransform.transformUpdateForCSPrivacy
+				= this.asymmetricCSPrivacyTransform.transformUpdateForCSPrivacy
 				(myGUIDInfo.getGuid(), attrValuePairs, aclmap, anonymizedIDList);
 			
 			assert(transformedMesgList.size() > 0);
@@ -417,16 +406,29 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	
 	/**
 	 * assumption is that ACL always fits in memory.
+	 * If useSymmetricKeys is true then symmetric keys are used.
+	 * If useSymmetricKeys is false then asymmetric keys are used.
+	 * 
 	 * @throws JSONException 
 	 */
 	public List<AnonymizedIDEntry> computeAnonymizedIDs( GuidEntry myGuidEntry,
-			HashMap<String, List<ACLEntry>> aclMap ) throws JSONException
+			HashMap<String, List<ACLEntry>> aclMap, boolean useSymmetricKeys ) throws JSONException
 	{
-		List<AnonymizedIDEntry> anonymizedIDList 
-					= this.anonymizedIDCreation.computeAnonymizedIDs(myGuidEntry, aclMap);
+		List<AnonymizedIDEntry> anonymizedIDList = null;
 		
+		if(useSymmetricKeys)
+		{
+			anonymizedIDList 
+					= this.symmetricAnonymizedIDCreation.computeAnonymizedIDs
+							(myGuidEntry, aclMap);
+		}
+		else
+		{
+			anonymizedIDList = this.asymmetricAnonymizedIDCreation.computeAnonymizedIDs
+											(myGuidEntry, aclMap);
+		}
 		
-		if( this.privacyScheme == PrivacySchemes.HYPERSPACE_PRIVACY )
+		if( useSymmetricKeys )
 		{
 			shareSymmetricKeyWithACLMembers(myGuidEntry, anonymizedIDList);
 		}
@@ -547,8 +549,11 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			}
 			
 			List<CSUpdateTransformedMessage> transformedMesgList 
-				= this.csPrivacyTransform.transformUpdateForCSPrivacy
+				= this.asymmetricCSPrivacyTransform.transformUpdateForCSPrivacy
 				(myGUIDInfo.getGuid(), attrValuePairs, aclmap, anonymizedIDList);
+			
+//			System.out.println(" Size of anonymized ID list for an update "
+//												+anonymizedIDList.size()+" "+attrValuePairs);
 			
 			assert(transformedMesgList.size() > 0);
 			
@@ -596,6 +601,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 	}
 	
+	
 	@Override
 	public int sendSearchQuerySecure(String searchQuery, JSONArray replyArray, 
 				long expiryTime, GuidEntry myGUIDInfo)
@@ -620,64 +626,45 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 		blockingSearch.waitForCompletion();
 		
-		List<CSSearchReplyTransformedMessage> searchRepTransformList 
-						= new LinkedList<CSSearchReplyTransformedMessage>();
-		
-		for(int i=0; i<blockingSearch.getSearchReplyArray().length(); i++)
+		if( this.privacyScheme == PrivacySchemes.HYPERSPACE_PRIVACY )
 		{
-			try
+			List<CSSearchReplyTransformedMessage> searchRepTransformList =  
+					computeListForUnTransformFromSearchReply( blockingSearch.getSearchReplyArray() );
+			
+			if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
 			{
-				JSONArray jsoArr1 = blockingSearch.getSearchReplyArray().getJSONArray(i);
-				for( int j=0; j<jsoArr1.length(); j++ )
-				{
-					JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
-
-					if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
-					{
-						SearchReplyGUIDRepresentationJSON searchRepObj 
-						= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
-						CSSearchReplyTransformedMessage csSearchRepTransform 
-										= new CSSearchReplyTransformedMessage(searchRepObj);
-						searchRepTransformList.add(csSearchRepTransform);
-					}
-					else
-					{
-						// just adding the whole JSON here for the user to decrypt later on.
-						replyArray.put(searchRepJSON);
-					}
-				}
-			} 
-			catch ( JSONException e )
+				this.asymmetricCSPrivacyTransform.unTransformSearchReply( myGUIDInfo,
+					searchRepTransformList, replyArray );
+				
+				return replyArray.length();
+			}
+			else
 			{
-				e.printStackTrace();
+				return blockingSearch.getReplySize();
 			}
 		}
-		
-		
-		if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+		else if( this.privacyScheme == PrivacySchemes.SUBSPACE_PRIVACY )
 		{
-			this.csPrivacyTransform.unTransformSearchReply( myGUIDInfo,
-				searchRepTransformList, replyArray );
-//			long end2 = System.currentTimeMillis();
+			processSearchReplyInSubspacePrivacyFromCNS(blockingSearch.getSearchReplyArray(), 
+					replyArray, myGUIDInfo, null);
 			
-//			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
-//						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
-//						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
-			
-			return replyArray.length();
+			if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+			{
+				return replyArray.length();
+			}
+			else
+			{
+				return blockingSearch.getReplySize();
+			}
 		}
 		else
 		{
-//			long end2 = System.currentTimeMillis();		
-//			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
-//						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
-//						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
-			
-			return blockingSearch.getReplySize();
+			assert(false);
+			return -1;
 		}
 	}
 	
-	
+	// FIXME: more cleanup needed. a lot of code duplication
 	public int sendSearchQuerySecure(String searchQuery, JSONArray replyArray, 
 				long expiryTime, HashMap<String, byte[]> anonymizedIDToSecretKeyMap)
 	{
@@ -701,67 +688,178 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 		blockingSearch.waitForCompletion();
 		
-		List<CSSearchReplyTransformedMessage> searchRepTransformList 
-						= new LinkedList<CSSearchReplyTransformedMessage>();
-		
-		for(int i=0; i<blockingSearch.getSearchReplyArray().length(); i++)
+		if( this.privacyScheme == PrivacySchemes.HYPERSPACE_PRIVACY )
 		{
-			try
+			List<CSSearchReplyTransformedMessage> searchRepTransformList 
+							= new LinkedList<CSSearchReplyTransformedMessage>();
+			
+			for(int i=0; i<blockingSearch.getSearchReplyArray().length(); i++)
 			{
-				JSONArray jsoArr1 = blockingSearch.getSearchReplyArray().getJSONArray(i);
-				for( int j=0; j<jsoArr1.length(); j++ )
+				try
 				{
-					JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
-
-					if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+					JSONArray jsoArr1 = blockingSearch.getSearchReplyArray().getJSONArray(i);
+					for( int j=0; j<jsoArr1.length(); j++ )
 					{
-						SearchReplyGUIDRepresentationJSON searchRepObj 
-						= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
-						CSSearchReplyTransformedMessage csSearchRepTransform 
-										= new CSSearchReplyTransformedMessage(searchRepObj);
-						searchRepTransformList.add(csSearchRepTransform);
+						JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
+	
+						if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+						{
+							SearchReplyGUIDRepresentationJSON searchRepObj 
+							= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
+							CSSearchReplyTransformedMessage csSearchRepTransform 
+											= new CSSearchReplyTransformedMessage(searchRepObj);
+							searchRepTransformList.add(csSearchRepTransform);
+						}
+						else
+						{
+							// just adding the whole JSON here for the user to decrypt later on.
+							replyArray.put(searchRepJSON);
+						}
+					}
+				} 
+				catch ( JSONException e )
+				{
+					e.printStackTrace();
+				}
+			}
+			
+			
+			if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+			{
+				this.symmetricCSPrivacyTransform.unTransformSearchReply
+					( anonymizedIDToSecretKeyMap, searchRepTransformList, replyArray );
+	//			long end2 = System.currentTimeMillis();
+				
+	//			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
+	//						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
+	//						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
+				
+				return replyArray.length();
+			}
+			else
+			{
+	//			long end2 = System.currentTimeMillis();		
+	//			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
+	//						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
+	//						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
+				
+				return blockingSearch.getReplySize();
+			}
+		}
+		else if( this.privacyScheme == PrivacySchemes.SUBSPACE_PRIVACY  )
+		{
+			processSearchReplyInSubspacePrivacyFromCNS(blockingSearch.getSearchReplyArray(), 
+					replyArray, null, anonymizedIDToSecretKeyMap);
+			
+			if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+			{
+				return replyArray.length();
+			}
+			else
+			{
+				return blockingSearch.getReplySize();
+			}
+		}
+		else
+		{
+			assert(false);
+			return -1;
+		}
+	}
+	
+	
+	private void processSearchReplyInSubspacePrivacyFromCNS(JSONArray replyFromCNS, 
+			JSONArray userReplyArray, GuidEntry guidEntry, 
+			HashMap<String, byte[]> anonymizedIDToSecretKeyMap)
+	{
+		// in subspace privacy scheme. JSONArray is a JSONArray of replies for each subspace.
+		// So we decrypt each JSONArray corresponding to a subspace one by one.
+		
+		int totalReplies = 0;
+		HashMap<String, Boolean> resultMap = null;
+		
+		for( int i=0; i < replyFromCNS.length(); i++ )
+		{
+			try 
+			{
+				JSONArray subspaceReplyArray 
+						= replyFromCNS.getJSONArray(i);
+				
+				List<CSSearchReplyTransformedMessage> searchRepTransformList =  
+						computeListForUnTransformFromSearchReply( subspaceReplyArray );
+				
+				
+				if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+				{
+					HashMap<String, Boolean> subspaceReplyMap = new HashMap<String, Boolean>();
+					
+					if(guidEntry != null)
+					{
+						this.asymmetricCSPrivacyTransform.unTransformSearchReply( guidEntry,
+								searchRepTransformList, subspaceReplyMap );
+					}
+					else if(anonymizedIDToSecretKeyMap != null)
+					{
+						this.symmetricCSPrivacyTransform.unTransformSearchReply( 
+								anonymizedIDToSecretKeyMap,
+								searchRepTransformList, subspaceReplyMap );
+					}
+						
+					
+					assert(subspaceReplyMap != null);
+					
+					
+					// simple impl for conjunction. 
+					// as result size increases we might need to switch to bloom filter or 
+					// or some bit array approach.
+					if(i == 0)
+					{
+						resultMap = subspaceReplyMap;
 					}
 					else
 					{
-						// just adding the whole JSON here for the user to decrypt later on.
-						replyArray.put(searchRepJSON);
+						HashMap<String, Boolean> conjuncMap = new HashMap<String, Boolean>();
+						
+						Iterator<String> resultSoFarIter = resultMap.keySet().iterator();
+						
+						while( resultSoFarIter.hasNext() )
+						{
+							String guidToCheck = resultSoFarIter.next();
+							
+							// GUID from result so far should also be in the reply from  current subspace.
+							if( subspaceReplyMap.containsKey(guidToCheck) )
+							{
+								conjuncMap.put(guidToCheck, true);
+							}
+						}
+						resultMap = conjuncMap;
+					}
+					
+					if(resultMap.size() == 0)
+					{
+						// conjunction so far has led to empty result.
+						// no need to continue in loop result will be empty.
+						break;
 					}
 				}
-			} 
-			catch ( JSONException e )
+			}
+			catch (JSONException e) 
 			{
 				e.printStackTrace();
 			}
 		}
 		
+		assert(resultMap != null);
 		
 		if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
 		{
-			this.csPrivacyTransform.unTransformSearchReply( anonymizedIDToSecretKeyMap,
-				searchRepTransformList, replyArray );
-//			long end2 = System.currentTimeMillis();
-			
-//			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
-//						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
-//						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
-			
-			return replyArray.length();
-		}
-		else
-		{
-//			long end2 = System.currentTimeMillis();		
-//			System.out.println("SendSearchQuerySecure search reply from CS time "+ 
-//						(end1-start)+" reply decryption time "+(end2-end1)+" fromCS reply size "
-//						+ searchRepTransformList.size()+" final reply size "+replyArray.length() );
-			
-			return blockingSearch.getReplySize();
+			Iterator<String> guidIter = resultMap.keySet().iterator();
+			while( guidIter.hasNext() )
+			{
+				userReplyArray.put(guidIter.next());
+			}
 		}
 	}
-	
-	
-	
-	
-	
 	
 	@Override
 	public boolean handleMessage(JSONObject jsonObject, NIOHeader nioHeader)
@@ -779,7 +877,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	{
 		return this.gnsClient;
 	}
-	
 	
 	
 	/**
@@ -864,6 +961,47 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		// map could very well be empty if this GUID is
 		// not in any ACL
 		return anonymizedIDToSecretKeyMap;
+	}
+	
+	
+	private List<CSSearchReplyTransformedMessage> 
+				computeListForUnTransformFromSearchReply( JSONArray replyArray )
+	{
+		List<CSSearchReplyTransformedMessage> searchRepTransformList 
+							= new LinkedList<CSSearchReplyTransformedMessage>();
+		
+		for( int i=0; i<replyArray.length(); i++ )
+		{
+			try
+			{
+				JSONArray jsoArr1 = replyArray.getJSONArray(i);
+				for( int j=0; j<jsoArr1.length(); j++ )
+				{
+					JSONObject searchRepJSON = jsoArr1.getJSONObject(j);
+				
+					if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+					{
+						SearchReplyGUIDRepresentationJSON searchRepObj 
+								= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
+						CSSearchReplyTransformedMessage csSearchRepTransform 
+								= new CSSearchReplyTransformedMessage(searchRepObj);
+						
+						searchRepTransformList.add(csSearchRepTransform);
+					}
+					else
+					{
+						// just adding the whole JSON here for the user to decrypt later on.
+						replyArray.put(searchRepJSON);
+					}
+				}
+			}
+			catch ( JSONException e )
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		return searchRepTransformList;
 	}
 	
 	
@@ -1070,20 +1208,41 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			
 			case HYPERSPACE_PRIVACY:
 			{
-				//anonymizedIDCreation = new HyperspaceBasedAnonymizedIDCreator();
-				// for cs transform
-				//csPrivacyTransform = new HyperspaceBasedCSTransform(execService);
+				this.asymmetricAnonymizedIDCreation 
+								= new HyperspaceBasedASymmetricKeyAnonymizedIDCreator();
 				
-				anonymizedIDCreation = new HyperspaceBasedAnonymizedIDCreatorSymmetricKey();
 				
-				// for cs transform
-				csPrivacyTransform = new HyperspaceSymmetricKeyBasedCSTransform(execService);
+				this.asymmetricCSPrivacyTransform 
+								= new HyperspaceBasedASymmetricKeyCSTransform(execService);
+				
+				
+				this.symmetricAnonymizedIDCreation 
+							= new HyperspaceBasedSymmetricKeyAnonymizedIDCreator();
+				
+				
+				this.symmetricCSPrivacyTransform 
+							= new HyperspaceBasedSymmetricKeyCSTransform(execService);
 				
 				break;
 			}
 			
 			case SUBSPACE_PRIVACY:
 			{	
+				this.asymmetricAnonymizedIDCreation 
+						= new SubspaceBasedASymmetricKeyAnonymizedIDCreator(this.subspaceAttrMap);
+
+
+				this.asymmetricCSPrivacyTransform 
+						= new SubspaceBasedASymmetricKeyCSTransform(execService);
+
+
+				this.symmetricAnonymizedIDCreation 
+						= new SubspaceBasedSymmetricKeyAnonymizedIDCreator(subspaceAttrMap);
+
+
+				this.symmetricCSPrivacyTransform 
+						= new SubspaceBasedSymmetricKeyCSTransform(execService);
+				
 				break;
 			}
 		}
@@ -1358,6 +1517,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		}
 	}
 	
+	
 	// testing secure client code
 	public static void main(String[] args) 
 			throws Exception
@@ -1467,14 +1627,15 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		aclMap.put("attr6", acl5);
 		
 		
-		ContextServiceClient<Integer> csClient = new ContextServiceClient<Integer>("127.0.0.1", 8000, false,
-				PrivacySchemes.SUBSPACE_PRIVACY);
+		ContextServiceClient<Integer> csClient = new ContextServiceClient<Integer>
+			("127.0.0.1", 8000, false, PrivacySchemes.SUBSPACE_PRIVACY);
 		
 		CallBackInterface callback = new NoopCallBack();
 		
 		
 		List<AnonymizedIDEntry> anonymizedIdList = csClient.computeAnonymizedIDs
-					(myGUID, aclMap);
+					(myGUID, aclMap, true);
+		
 		JSONObject attrValPair = new JSONObject();
 		attrValPair.put("attr1", 10+"");
 		
@@ -1487,8 +1648,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 		Thread.sleep(2000);
 		
-		String searchQuery = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE attr1 >= 5 AND attr1 <= 15";
-		JSONArray replyArray = new JSONArray();
+		String searchQuery = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE "
+				+ "attr1 >= 5 AND attr1 <= 15";
+		
 		GuidEntry queryingGuid = guidsVector.get(3);
 		
 		SearchReplyInterface searchRep = new NoopSearchReply(2);
@@ -1498,23 +1660,16 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 //		System.out.println("Query for attr1 querying GUID "+ queryingGuid.getGuid()+
 //				" Real GUID "+guid0+" reply Arr "+replyArray);
-		
+
 		
 		searchQuery = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE attr1 >= 5 AND attr1 <= 15"
 				+ " AND attr2 >= 10 AND attr2 <= 20";
-		replyArray = new JSONArray();
+		
 		queryingGuid = guidsVector.get(1);
 		
 		searchRep = new NoopSearchReply(3);
 		
 		csClient.sendSearchQuerySecureWithCallBack(searchQuery, 300000, queryingGuid,
 				searchRep, callback);
-		
-//		System.out.println("Query for att1 and attr4 querying GUID "+ queryingGuid.getGuid()+
-//				" Real GUID "+guid0+" reply Arr "+replyArray);
-		
-//		queryingGuid = guidsVector.get(1);
-//		JSONObject getObj = csClient.sendGetRequestSecure(guid0, queryingGuid);
-//		System.out.println("recvd Obj "+getObj);
 	}
 }

@@ -43,4 +43,18 @@ public class NoopCSTransform implements CSPrivacyTransformInterface
 			List<CSSearchReplyTransformedMessage> csTransformedList, JSONArray replyArray) 
 	{	
 	}
+
+	@Override
+	public void unTransformSearchReply(GuidEntry myGuid, List<CSSearchReplyTransformedMessage> csTransformedList,
+			HashMap<String, Boolean> replyMap) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void unTransformSearchReply(HashMap<String, byte[]> anonymizedIDToSecretKeyMap,
+			List<CSSearchReplyTransformedMessage> csTransformedList, HashMap<String, Boolean> replyMap) {
+		// TODO Auto-generated method stub
+		
+	}
 }

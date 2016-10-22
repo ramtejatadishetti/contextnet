@@ -8,11 +8,12 @@ import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresenta
  * @author adipc
  *
  */
-public class CSSearchReplyTransformedMessage 
-{	
+public class CSSearchReplyTransformedMessageOld 
+{
+	
 	private final SearchReplyGUIDRepresentationJSON searchGUIDObj;
 	
-	public CSSearchReplyTransformedMessage(SearchReplyGUIDRepresentationJSON searchGUIDObj)
+	public CSSearchReplyTransformedMessageOld(SearchReplyGUIDRepresentationJSON searchGUIDObj)
 	{
 		this.searchGUIDObj = searchGUIDObj;
 	}

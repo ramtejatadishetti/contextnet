@@ -8,8 +8,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import edu.umass.cs.contextservice.database.records.OverlappingInfoClass;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
+import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
 
 /**
  * This interface defines the attributes and guid storage 
@@ -23,7 +23,8 @@ public interface GUIDAttributeStorageInterface<NodeIDType>
 	public void createTables();
 	
 	public int processSearchQueryInSubspaceRegion
-							(int subspaceId, String query, JSONArray resultArray);
+							(int subspaceId, HashMap<String, ProcessingQueryComponent> queryComponents, 
+									JSONArray resultArray);
 	
 	public JSONObject getGUIDStoredInPrimarySubspace( String guid );
 	
@@ -42,10 +43,10 @@ public interface GUIDAttributeStorageInterface<NodeIDType>
 	
 	public void deleteGUIDFromSubspaceRegion(String tableName, String nodeGUID);
 	
-	public HashMap<Integer, OverlappingInfoClass> 
+	public HashMap<Integer, RegionInfoClass> 
 		getOverlappingRegionsInSubspace(int subspaceId, int replicaNum, 
-			Vector<ProcessingQueryComponent> matchingQueryComponents);
+			HashMap<String, ProcessingQueryComponent> matchingQueryComponents);
 	
 	public String getMySQLQueryForProcessSearchQueryInSubspaceRegion
-								(int subspaceId, String query);
+								(int subspaceId, HashMap<String, ProcessingQueryComponent> queryComponents);
 }
