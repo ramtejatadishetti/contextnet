@@ -99,6 +99,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	
 	public static final String SYMMETRIC_KEY_EXCHANGE_FIELD_NAME		= "SYMMETRIC_KEY_EXCHANGE_FIELD";
 	
+	public static final String GNSCLIENT_CONF_FILE_NAME					= "gnsclient.contextservice.properties";
+	
+	
 	
 	private Queue<JSONObject> refreshTriggerQueue;
 	
@@ -120,7 +123,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	
 	// symmetric key privacy transform.
 	private CSPrivacyTransformInterface symmetricCSPrivacyTransform;
-	
 	
 	
 	private PrivacyCallBack privacyCallBack;
@@ -155,8 +157,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	 * @throws IOException
 	 * @throws NoSuchAlgorithmException 
 	 */
-	public ContextServiceClient(String csHostName, int csPortNum, boolean useGNS,
-			PrivacySchemes privacyScheme)
+	public ContextServiceClient( String csHostName, int csPortNum, 
+			boolean useGNS, PrivacySchemes privacyScheme )
 			throws IOException, NoSuchAlgorithmException
 	{
 		super( csHostName, csPortNum );
@@ -385,7 +387,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			long expiryTime, GuidEntry myGUIDInfo, 
 			SearchReplyInterface searchRep, CallBackInterface callback )
 	{
-		sendSearchQueryToCS(searchQuery, expiryTime, searchRep, callback, privacyScheme.ordinal());
+		sendSearchQueryToCS(searchQuery, expiryTime, searchRep, callback, 
+				privacyScheme.ordinal());
 	}
 	
 	
@@ -412,7 +415,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	 * @throws JSONException 
 	 */
 	public List<AnonymizedIDEntry> computeAnonymizedIDs( GuidEntry myGuidEntry,
-			HashMap<String, List<ACLEntry>> aclMap, boolean useSymmetricKeys ) throws JSONException
+			HashMap<String, List<ACLEntry>> aclMap, boolean useSymmetricKeys ) 
+					throws JSONException
 	{
 		List<AnonymizedIDEntry> anonymizedIDList = null;
 		
@@ -428,9 +432,12 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 											(myGuidEntry, aclMap);
 		}
 		
-		if( useSymmetricKeys )
+		if(gnsClient != null)
 		{
-			shareSymmetricKeyWithACLMembers(myGuidEntry, anonymizedIDList);
+			if( useSymmetricKeys )
+			{
+				shareSymmetricKeyWithACLMembers(myGuidEntry, anonymizedIDList);
+			}
 		}
 		return anonymizedIDList;
 	}
@@ -1007,6 +1014,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	
 	private void initializeGNSClient()
 	{
+		// FIXME: so that we don't have to hard code values here.
 		// just setting some gns properties.
 		Properties props = System.getProperties();
 		props.setProperty("gigapaxosConfig", "conf/gnsClientConf/gnsclient.local.properties");
@@ -1454,6 +1462,9 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 				JSONArray result = qmur.getResultGUIDs();
 				int resultSize = qmur.getReplySize();
 				
+				// FIXME: in privacy case the client must do decryption and conjunction here.
+				// But if we are measuring server capacity and have limited clients to send 
+				// requests then we can skip that. 
 				replySearchObj.searchRep.setSearchReplyArray(result);
 				replySearchObj.searchRep.setReplySize(resultSize);
 				

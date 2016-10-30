@@ -197,7 +197,7 @@ public class GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType>
 					= queryInfo.getSearchReplyMap();
 			
 			if( ContextServiceConfig.sendFullRepliesToClient )
-			{	
+			{
 				Iterator<Integer> subspaceIter = searchReplyMap.keySet().iterator();
 				
 				while( subspaceIter.hasNext() )
@@ -223,8 +223,7 @@ public class GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType>
 					// adding reply of all subspaces.
 					// cns client will do conjunction.
 					concatResult.put(subspaceReplyArray);
-				}
-				
+				}	
 			}
 			else
 			{	
@@ -248,7 +247,7 @@ public class GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType>
 					}
 				}
 			}
-
+			
 			QueryMsgFromUserReply<NodeIDType> queryMsgFromUserReply 
 				= new QueryMsgFromUserReply<NodeIDType>( myID, 
 						queryInfo.getQuery(), queryInfo.getGroupGUID(), concatResult, 

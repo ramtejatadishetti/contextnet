@@ -849,8 +849,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
         		ContextServiceLogger.getLogger().fine
         		("FINISHED storeGUIDInSecondarySubspace Insert "+nodeGUID
         				+" time "+(end-start));
-        	}
-    		
+        	}	
     	}
     	else if( updateOrInsert == HyperspaceMySQLDB.UPDATE_REC )
     	{

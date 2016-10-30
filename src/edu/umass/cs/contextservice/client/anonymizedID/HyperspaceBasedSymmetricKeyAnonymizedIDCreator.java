@@ -47,7 +47,15 @@ public class HyperspaceBasedSymmetricKeyAnonymizedIDCreator
 	public HyperspaceBasedSymmetricKeyAnonymizedIDCreator() throws NoSuchAlgorithmException
 	{
 		anonymizedIDRand				
-			= new Random(System.currentTimeMillis());
+			= new Random(Utils.getActiveInterfaceInetAddresses().get(0).hashCode());
+		
+		symmKeyGen = KeyGenerator.getInstance(ContextServiceConfig.SymmetricEncAlgorithm);
+	}
+	
+	
+	public HyperspaceBasedSymmetricKeyAnonymizedIDCreator(Random randGenerator) throws NoSuchAlgorithmException
+	{
+		anonymizedIDRand = randGenerator;
 		
 		symmKeyGen = KeyGenerator.getInstance(ContextServiceConfig.SymmetricEncAlgorithm);
 	}
@@ -413,7 +421,7 @@ public class HyperspaceBasedSymmetricKeyAnonymizedIDCreator
 			byte[] encryptedUserGuid = Utils.doSymmetricEncryption(symmKey.getEncoded(), 
 					userGuidBytes);
 			
-			System.out.println("computeAnonymizedIDToGUIDMapping encryption size "+encryptedUserGuid.length);
+			//System.out.println("computeAnonymizedIDToGUIDMapping encryption size "+encryptedUserGuid.length);
 			anonymizedIDToGuidMapping.put(Utils.byteArrayToHex(encryptedUserGuid));
 			
 		} 

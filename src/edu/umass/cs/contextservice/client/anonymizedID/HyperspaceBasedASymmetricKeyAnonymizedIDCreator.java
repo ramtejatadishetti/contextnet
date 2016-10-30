@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 
+import javax.crypto.KeyGenerator;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -40,7 +42,12 @@ public class HyperspaceBasedASymmetricKeyAnonymizedIDCreator
 	public HyperspaceBasedASymmetricKeyAnonymizedIDCreator()
 	{
 		anonymizedIDRand				
-			= new Random(System.currentTimeMillis());
+			= new Random(Utils.getActiveInterfaceInetAddresses().get(0).hashCode());
+	}
+	
+	public HyperspaceBasedASymmetricKeyAnonymizedIDCreator(Random randGenerator)
+	{
+		anonymizedIDRand = randGenerator;
 	}
 	
 	@Override

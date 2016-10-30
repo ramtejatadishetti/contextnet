@@ -36,9 +36,13 @@ public class SubspaceBasedASymmetricKeyAnonymizedIDCreator
 									implements AnonymizedIDCreationInterface
 {
 	private final HashMap<Integer, JSONArray> subspaceAttrMap;
+	private final Random anonymizedIDRand;
 	
-	public SubspaceBasedASymmetricKeyAnonymizedIDCreator(HashMap<Integer, JSONArray> subspaceAttrMap)
+	public SubspaceBasedASymmetricKeyAnonymizedIDCreator(
+						HashMap<Integer, JSONArray> subspaceAttrMap)
 	{
+		anonymizedIDRand				
+			= new Random(Utils.getActiveInterfaceInetAddresses().get(0).hashCode());
 		this.subspaceAttrMap = subspaceAttrMap;
 	}
 	
@@ -78,7 +82,7 @@ public class SubspaceBasedASymmetricKeyAnonymizedIDCreator
 				}
 				
 				HyperspaceBasedASymmetricKeyAnonymizedIDCreator subspaceAnonyObj 
-										= new HyperspaceBasedASymmetricKeyAnonymizedIDCreator();
+								= new HyperspaceBasedASymmetricKeyAnonymizedIDCreator(anonymizedIDRand);
 				
 				List<AnonymizedIDEntry> subspaceAnonIds 
 							= subspaceAnonyObj.computeAnonymizedIDs(myGuidEntry, aclMapForSubspace);

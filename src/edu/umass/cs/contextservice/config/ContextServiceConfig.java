@@ -30,6 +30,7 @@ public class ContextServiceConfig
 	
 	public static enum SchemeTypes {HYPERSPACE_HASHING};
 	
+	// NO_PRIVACY 0 ordinal, HYPERSPACE_PRIVACY 1 ordinal, SUBSPACE_PRIVACY 2 ordinal
 	public static enum PrivacySchemes {NO_PRIVACY, HYPERSPACE_PRIVACY, SUBSPACE_PRIVACY};
 	
 	public static SchemeTypes SCHEME_TYPE							= SchemeTypes.HYPERSPACE_HASHING;
@@ -82,10 +83,10 @@ public class ContextServiceConfig
 	//control if full guids are sent in the search query
 	// reply, if false only sends the number of guids, not
 	// the actual guids
-	public static  boolean sendFullRepliesWithinCS					= true;
+	public static  boolean sendFullRepliesWithinCS					= false;
 	
 	// to check which one is bottleneck the client or CS in full replies. 
-	public static  boolean sendFullRepliesToClient					= true;
+	public static  boolean sendFullRepliesToClient					= false;
 	
 	// if this is set to true, then mysql table selects
 	// return results row by row. If set to false then
@@ -134,10 +135,10 @@ public class ContextServiceConfig
     // set in conjuction with that. and also the hyperpsace hashing thread pool
     // size should be set greater than that. These things affect system performance a lot.
 	// change back to 214 for experiments.
-	public static final int MYSQL_MAX_CONNECTIONS					= 10;
+	public static final int MYSQL_MAX_CONNECTIONS					= 214;
 	
 	// it is also important to set this at least the size of the database connection pool.
-	public static final int HYPERSPACE_THREAD_POOL_SIZE				= Runtime.getRuntime().availableProcessors();
+	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 214;
 	
 	//public static final int PRIVACY_THREAD_POOL_SIZE				= 214;
 	
@@ -166,7 +167,7 @@ public class ContextServiceConfig
 	
 	// if this is set to true then the context service client will do decryptions 
 	// on receiving the search reply.
-	public static boolean DECRYPTIONS_ON_SEARCH_REPLY_ENABLED		= true;
+	public static boolean DECRYPTIONS_ON_SEARCH_REPLY_ENABLED		= false;
 	
 	// if true, no encryption happens. cipher text and plain text are same.
 	public static boolean NO_ENCRYPTION								= false;

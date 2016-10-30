@@ -50,7 +50,7 @@ public class ContextServiceTests
 	private static String csNodeIp 							= "127.0.0.1";
 	private static int csPort 								= 8000;
 	
-	private static PrivacySchemes privacyScheme				= PrivacySchemes.HYPERSPACE_PRIVACY;
+	private static PrivacySchemes privacyScheme				= PrivacySchemes.SUBSPACE_PRIVACY;
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception
@@ -77,7 +77,8 @@ public class ContextServiceTests
 		csClient = new ContextServiceClient<Integer>(csNodeIp, csPort, false,
 				privacyScheme);
 		
-		System.out.println("ContextServiceClient connected");
+		System.out.println("ContextServiceClient connected using privacy scheme ordinal "
+							+privacyScheme.ordinal());
 	}
 	
 	@Test

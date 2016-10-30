@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.Vector;
 
 import org.json.JSONArray;
@@ -35,10 +36,14 @@ public class SubspaceBasedSymmetricKeyAnonymizedIDCreator
 									implements AnonymizedIDCreationInterface
 {
 	private final HashMap<Integer, JSONArray> subspaceAttrMap;
+	private final Random anonymizedIDRand;
 	
-	public SubspaceBasedSymmetricKeyAnonymizedIDCreator(HashMap<Integer, JSONArray> subspaceAttrMap)
+	public SubspaceBasedSymmetricKeyAnonymizedIDCreator(
+			HashMap<Integer, JSONArray> subspaceAttrMap)
 	{
 		this.subspaceAttrMap = subspaceAttrMap;
+		anonymizedIDRand				
+				= new Random(Utils.getActiveInterfaceInetAddresses().get(0).hashCode());
 	}
 	
 	@Override
@@ -77,7 +82,7 @@ public class SubspaceBasedSymmetricKeyAnonymizedIDCreator
 				}
 				
 				HyperspaceBasedSymmetricKeyAnonymizedIDCreator subspaceAnonyObj 
-										= new HyperspaceBasedSymmetricKeyAnonymizedIDCreator();
+						= new HyperspaceBasedSymmetricKeyAnonymizedIDCreator(anonymizedIDRand);
 				
 				List<AnonymizedIDEntry> subspaceAnonIds 
 							= subspaceAnonyObj.computeAnonymizedIDs(myGuidEntry, aclMapForSubspace);
