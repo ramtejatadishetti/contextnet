@@ -156,8 +156,7 @@ public class AttributeMetaInfo
 			}
 			default:
 				assert(false);
-		}
-		
+		}		
 		return dataTypeMinVal;
 	}
 }
