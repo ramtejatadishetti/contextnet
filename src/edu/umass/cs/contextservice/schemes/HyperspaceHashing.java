@@ -78,7 +78,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	
 	private TriggerProcessingInterface<NodeIDType> triggerProcessing;
 	
-	private ProfilerStatClass profStats;
+	private ProfilerStatClass<NodeIDType> profStats;
 	
 	private HashMap<String, Boolean> groupGUIDSyncMap;
 	public static final Logger log 														= ContextServiceLogger.getLogger();
@@ -91,9 +91,11 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		if(ContextServiceConfig.PROFILER_THREAD)
 		{
-			profStats = new ProfilerStatClass();
+			profStats = new ProfilerStatClass<NodeIDType>();
 			new Thread(profStats).start();
+			profStats.monitorUpdateRequestsQueue(pendingUpdateRequests);
 		}
+		
 		
 		nodeES = Executors.newFixedThreadPool(
 				ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);

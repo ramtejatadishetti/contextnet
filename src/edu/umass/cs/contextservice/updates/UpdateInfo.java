@@ -334,4 +334,18 @@ public class UpdateInfo<NodeIDType>
 	{
 		valueUpdateRepliesMap.put(subspaceId+"-"+replicaNum, 0);
 	}
+	
+	
+	public String toStringValueUpdateReplyMap()
+	{
+		Iterator<String> strIter = valueUpdateRepliesMap.keySet().iterator();
+		String printStr = "";
+		while(strIter.hasNext())
+		{
+			String key = strIter.next();
+			Integer numRep = valueUpdateRepliesMap.get(key);
+			printStr = printStr +" "+key+":"+numRep;
+		}
+		return printStr;
+	}
 }

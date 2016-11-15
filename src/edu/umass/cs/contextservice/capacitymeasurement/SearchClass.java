@@ -14,7 +14,7 @@ public class SearchClass extends AbstractRequestSendingClass
 	private final Random queryRand;
 	private double sumResultSize = 0.0;
 	private double sumTime = 0.0;
-	private final double requestsps;
+	private double requestsps;
 	
 	private final double predicateLength;
 	
@@ -28,7 +28,6 @@ public class SearchClass extends AbstractRequestSendingClass
 		this.requestsps = requestsps;
 		this.predicateLength = predicateLength;
 	}
-	
 	
 	@Override
 	public void run()
@@ -77,12 +76,23 @@ public class SearchClass extends AbstractRequestSendingClass
 	}
 	
 	@Override
-	public double startSendingRequests(double requestSendingRate) 
+	public double startSendingRequests(double requestSendingRate)
 	{
+		this.requestsps = requestSendingRate;
+		try
+		{
+			this.startExpTime();
+			searchQueryRateControlledRequestSender();
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		
 		return 0;
 	}
 	
-	private void searchQueryRateControlledRequestSender() throws Exception
+	private double searchQueryRateControlledRequestSender() throws Exception
 	{
 		// as it is per ms
 		double reqspms = requestsps/1000.0;
@@ -132,6 +142,7 @@ public class SearchClass extends AbstractRequestSendingClass
 		double sysThrput= (numRecvd * 1000.0)/(endTimeReplyRecvd - expStartTime);
 		
 		System.out.println("Search result:Goodput "+sysThrput);
+		return sysThrput;
 	}
 	
 	

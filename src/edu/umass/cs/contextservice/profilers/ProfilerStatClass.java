@@ -1,8 +1,12 @@
 package edu.umass.cs.contextservice.profilers;
 
-import edu.umass.cs.contextservice.logging.ContextServiceLogger;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class ProfilerStatClass implements Runnable
+import edu.umass.cs.contextservice.logging.ContextServiceLogger;
+import edu.umass.cs.contextservice.updates.UpdateInfo;
+
+public class ProfilerStatClass<NodeIDType> implements Runnable
 {
 	private long numNodesForSearchQuery 			= 0;
 	private long numSearchReqs 						= 0;
@@ -24,6 +28,8 @@ public class ProfilerStatClass implements Runnable
 	
 	
 	private final Object lock 						= new Object();
+	
+	private ConcurrentHashMap<Long, UpdateInfo<NodeIDType>> pendingUpdateRequests;
 	
 	@Override
 	public void run()
@@ -81,6 +87,20 @@ public class ProfilerStatClass implements Runnable
 					+ " InsearchDataThrouhgput "+InsearchDataThrouhgput
 					+ " InsearchIndexThrouhgput "+InsearchIndexThrouhgput
 					+ " incomingSRate "+incomingSRate);
+			
+			if(pendingUpdateRequests != null)
+			{
+				System.out.println("pendingUpdateRequests "+pendingUpdateRequests.size());
+				if(pendingUpdateRequests.size() > 0)
+				{
+					Iterator<Long> reqIter = pendingUpdateRequests.keySet().iterator();
+					
+					UpdateInfo<NodeIDType> updInfo = pendingUpdateRequests.get(reqIter.next());
+					
+					System.out.println(" value update map string "+updInfo.toStringValueUpdateReplyMap());
+				}
+			}
+			
 			//ContextServiceLogger.getLogger().fine("QueryFromUserRate "+diff1+" QueryFromUserDepart "+diff2+" QuerySubspaceRegion "+diff3+
 			//		" QuerySubspaceRegionReply "+diff4+
 			//		" DelayProfiler stats "+DelayProfiler.getStats());
@@ -135,5 +155,12 @@ public class ProfilerStatClass implements Runnable
 		{
 			incomingSearchRate++;
 		}
+	}
+	
+	
+	public void monitorUpdateRequestsQueue(
+			ConcurrentHashMap<Long, UpdateInfo<NodeIDType>> pendingUpdateRequests)
+	{
+		this.pendingUpdateRequests = pendingUpdateRequests;
 	}
 }

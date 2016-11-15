@@ -17,7 +17,7 @@ public class UpdateClass extends AbstractRequestSendingClass
 	
 	private double sumUpdTime = 0;
 	
-	private final double requestsps;
+	private double requestsps;
 	private final int numGuids;
 	
 	public UpdateClass(int nodeId, int poolSize, double lossTolerance, 
@@ -41,6 +41,25 @@ public class UpdateClass extends AbstractRequestSendingClass
 			e.printStackTrace();
 		}
 	}
+	
+	
+	@Override
+	public double startSendingRequests(double requestSendingRate)
+	{
+		requestsps = requestSendingRate;
+		
+		try
+		{
+			this.startExpTime();
+			updRateControlledRequestSender();
+		} 
+		catch (Exception e) 
+		{
+			e.printStackTrace();
+		}
+		return 0;
+	}
+	
 	
 	private void updRateControlledRequestSender() throws Exception
 	{
@@ -133,11 +152,5 @@ public class UpdateClass extends AbstractRequestSendingClass
 	@Override
 	public void incrementSearchNumRecvd(int resultSize, long timeTaken) 
 	{
-	}
-
-	@Override
-	public double startSendingRequests(double requestSendingRate) 
-	{
-		return 0;
 	}
 }
