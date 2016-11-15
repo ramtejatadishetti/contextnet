@@ -60,24 +60,6 @@ public class UpdateInfo<NodeIDType>
 		
 		initializeRepliesMap( valUpdMsgFromGNS, subspaceInfoMap );
 		
-//		// initialize updates
-//		if(subspaceInfoMap != null)
-//		{
-//			Iterator<Integer> keyIter = subspaceInfoMap.keySet().iterator();
-//			
-//			while( keyIter.hasNext() )
-//			{
-//				int subspaceId = keyIter.next();
-//				Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
-//				
-//				for( int i=0; i<replicaVector.size(); i++ )
-//				{
-//					SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(i);
-//					this.initializeSubspaceEntry(subspaceId, currSubspaceReplica.getReplicaNum());
-//				}
-//			}
-//		}
-		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
 			toBeRemovedMap = new HashMap<String, GroupGUIDInfoClass>();
@@ -156,6 +138,8 @@ public class UpdateInfo<NodeIDType>
 			}
 			
 			String mapKey = subspaceId+"-"+replicaNum;
+			System.out.println("mapKey "+mapKey+" "+this.valueUpdateRepliesMap.size());
+			
 			int repliesRecvdSoFar = this.valueUpdateRepliesMap.get(mapKey);
 			repliesRecvdSoFar++;
 			this.valueUpdateRepliesMap.put(mapKey, repliesRecvdSoFar);
