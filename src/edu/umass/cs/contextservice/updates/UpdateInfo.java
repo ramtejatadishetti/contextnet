@@ -138,7 +138,7 @@ public class UpdateInfo<NodeIDType>
 			}
 			
 			String mapKey = subspaceId+"-"+replicaNum;
-			System.out.println("mapKey "+mapKey+" "+this.valueUpdateRepliesMap.size());
+			//System.out.println("mapKey "+mapKey+" "+this.valueUpdateRepliesMap.size());
 			
 			int repliesRecvdSoFar = this.valueUpdateRepliesMap.get(mapKey);
 			repliesRecvdSoFar++;
