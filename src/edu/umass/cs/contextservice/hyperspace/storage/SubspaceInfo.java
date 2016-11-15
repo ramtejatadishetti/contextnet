@@ -91,7 +91,7 @@ public class SubspaceInfo<NodeIDType>
 		for(int i=0;i<nodesOfSubspace.size();i++)
 		{
 			NodeIDType currID = nodesOfSubspace.get(i);
-			if(currID == idToCheck)
+			if(Integer.parseInt(currID+"") == Integer.parseInt(idToCheck+""))
 			{
 				return true;
 			}

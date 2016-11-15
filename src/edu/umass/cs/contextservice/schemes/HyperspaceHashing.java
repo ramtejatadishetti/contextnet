@@ -1050,6 +1050,11 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				break;
 			}
 		}
+		
+		if(replicaNum == -1)
+		{
+			assert(false);
+		}
 		return replicaNum;
 	}
 	
