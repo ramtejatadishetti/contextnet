@@ -87,9 +87,9 @@ import edu.umass.cs.nio.nioutils.NIOHeader;
  * It is thread safe, means same client can be used by multiple threads without any 
  * synchronization problems.
  * @author adipc
- * @param <NodeIDType>
+ * @param <Integer>
  */
-public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClient<NodeIDType> 
+public class ContextServiceClient extends AbstractContextServiceClient 
 				implements ContextClientInterfaceWithPrivacy, 
 				ContextServiceClientInterfaceWithoutPrivacy
 {
@@ -229,10 +229,10 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			currId = this.getReqId++;
 		}
 		
-		GetMessage<NodeIDType> getmesgU 
-			= new GetMessage<NodeIDType>(this.nodeid, currId, GUID, sourceIP, sourcePort);
+		GetMessage getmesgU 
+			= new GetMessage(this.nodeid, currId, GUID, sourceIP, sourcePort);
 		
-		GetStorage<NodeIDType> getQ = new GetStorage<NodeIDType>();
+		GetStorage getQ = new GetStorage();
 		getQ.requestID = currId;
 		getQ.getMessage = getmesgU;
 		getQ.getReplyMessage = null;
@@ -782,7 +782,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		// in subspace privacy scheme. JSONArray is a JSONArray of replies for each subspace.
 		// So we decrypt each JSONArray corresponding to a subspace one by one.
 		
-		int totalReplies = 0;
 		HashMap<String, Boolean> resultMap = null;
 		
 		for( int i=0; i < replyFromCNS.length(); i++ )
@@ -1091,13 +1090,13 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			}
 			long requestID = currId;
 			
-			ValueUpdateFromGNS<NodeIDType> valUpdFromGNS = new
-					ValueUpdateFromGNS<NodeIDType>( null, versionNum, GUID, 
+			ValueUpdateFromGNS valUpdFromGNS = new
+					ValueUpdateFromGNS( null, versionNum, GUID, 
 							csAttrValPair, requestID, sourceIP, sourcePort, 
 							System.currentTimeMillis(), anonymizedIDToGuidMappingArray, privacyScheme,
 							anonymizedIDAttrSet );
 			
-			UpdateStorage<NodeIDType> updateQ = new UpdateStorage<NodeIDType>();
+			UpdateStorage updateQ = new UpdateStorage();
 			updateQ.requestID = currId;
 			updateQ.valUpdFromGNS = valUpdFromGNS;
 			updateQ.valUpdFromGNSReply = null;
@@ -1149,11 +1148,11 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			currId = this.searchReqId++;
 		}
 		
-		QueryMsgFromUser<NodeIDType> qmesgU 
-			= new QueryMsgFromUser<NodeIDType>(this.nodeid, searchQuery, 
+		QueryMsgFromUser qmesgU 
+			= new QueryMsgFromUser(this.nodeid, searchQuery, 
 					currId, expiryTime, sourceIP, sourcePort, privacySchemeOrdinal);
 		
-		SearchQueryStorage<NodeIDType> searchQ = new SearchQueryStorage<NodeIDType>();
+		SearchQueryStorage searchQ = new SearchQueryStorage();
 		searchQ.requestID = currId;
 		searchQ.queryMsgFromUser = qmesgU;
 		searchQ.queryMsgFromUserReply = null; 
@@ -1264,8 +1263,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	{	
 		do
 		{
-			ClientConfigRequest<NodeIDType> clientConfigReq 
-				= new ClientConfigRequest<NodeIDType>(nodeid, sourceIP, sourcePort);
+			ClientConfigRequest clientConfigReq 
+				= new ClientConfigRequest(nodeid, sourceIP, sourcePort);
 			
 			InetSocketAddress sockAddr = new InetSocketAddress(configHost, configPort);
 			
@@ -1302,7 +1301,6 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 	
 	public void printTriggerStats()
 	{
-		String str = "";
 		double avgAddTrigger     = this.sumAddedGroupGUIDsOnUpdate/this.numTriggers;
 		double avgRemovedTrigger = this.sumRemovedGroupGUIDsOnUpdate/this.numTriggers;
 		
@@ -1353,10 +1351,10 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		
 		private void handleUpdateReply(JSONObject jso)
 		{
-			ValueUpdateFromGNSReply<NodeIDType> vur = null;
+			ValueUpdateFromGNSReply vur = null;
 			try
 			{
-				vur = new ValueUpdateFromGNSReply<NodeIDType>(jso);
+				vur = new ValueUpdateFromGNSReply(jso);
 			}
 			catch(Exception ex)
 			{
@@ -1364,7 +1362,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			}
 			long currReqID = vur.getUserReqNum();
 			ContextServiceLogger.getLogger().fine("Update reply recvd "+currReqID);
-			UpdateStorage<NodeIDType> replyUpdObj = pendingUpdate.get(currReqID);
+			UpdateStorage replyUpdObj = pendingUpdate.get(currReqID);
 			
 			if( replyUpdObj != null )
 			{
@@ -1385,11 +1383,11 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		{
 			try
 			{
-				GetReplyMessage<NodeIDType> getReply;
-				getReply = new GetReplyMessage<NodeIDType>(jso);
+				GetReplyMessage getReply;
+				getReply = new GetReplyMessage(jso);
 				
 				long reqID = getReply.getReqID();
-				GetStorage<NodeIDType> replyGetObj = pendingGet.get(reqID);
+				GetStorage replyGetObj = pendingGet.get(reqID);
 				replyGetObj.getReplyMessage = getReply;
 				
 				synchronized(replyGetObj)
@@ -1408,8 +1406,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 			{
 				synchronized( configLock )
 				{
-					ClientConfigReply<NodeIDType> configReply
-											= new ClientConfigReply<NodeIDType>(jso);
+					ClientConfigReply configReply
+											= new ClientConfigReply(jso);
 					if(csNodeAddresses.size() > 0)
 					{
 						configLock.notify();
@@ -1451,11 +1449,11 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		{
 			try
 			{
-				QueryMsgFromUserReply<NodeIDType> qmur;
-				qmur = new QueryMsgFromUserReply<NodeIDType>(jso);
+				QueryMsgFromUserReply qmur;
+				qmur = new QueryMsgFromUserReply(jso);
 				
 				long reqID = qmur.getUserReqNum();
-				SearchQueryStorage<NodeIDType> replySearchObj 
+				SearchQueryStorage replySearchObj 
 										= pendingSearches.get(reqID);
 				replySearchObj.queryMsgFromUserReply = qmur;
 				
@@ -1482,8 +1480,8 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		{
 			try
 			{
-				RefreshTrigger<NodeIDType> qmur 
-							= new RefreshTrigger<NodeIDType>(jso);
+				RefreshTrigger qmur 
+							= new RefreshTrigger(jso);
 				
 				synchronized( refreshTriggerClientWaitLock )
 				{
@@ -1638,7 +1636,7 @@ public class ContextServiceClient<NodeIDType> extends AbstractContextServiceClie
 		aclMap.put("attr6", acl5);
 		
 		
-		ContextServiceClient<Integer> csClient = new ContextServiceClient<Integer>
+		ContextServiceClient csClient = new ContextServiceClient
 			("127.0.0.1", 8000, false, PrivacySchemes.SUBSPACE_PRIVACY);
 		
 		CallBackInterface callback = new NoopCallBack();

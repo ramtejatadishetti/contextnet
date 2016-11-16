@@ -3,8 +3,8 @@ package edu.umass.cs.contextservice.messages;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class ACLUpdateToSubspaceRegionMessage<NodeIDType> 
-							extends BasicContextServicePacket<NodeIDType>
+public class ACLUpdateToSubspaceRegionMessage 
+							extends BasicContextServicePacket
 {
 	// Value node that receives the message has to add entry, 
 	// or remove entry or do remove and add both, in that order 
@@ -34,7 +34,7 @@ public class ACLUpdateToSubspaceRegionMessage<NodeIDType>
 	// then UPDATE_ENTRY is treated as insert.
 	// even when both old and new val fall on one node.
 	
-	public ACLUpdateToSubspaceRegionMessage( NodeIDType initiator, long versionNum, String GUID, 
+	public ACLUpdateToSubspaceRegionMessage( Integer initiator, long versionNum, String GUID, 
 			JSONObject updateAttrValuePairs, int operType, int subspaceNum, long requestID )
 	{
 		super(initiator, ContextServicePacket.PacketType.ACLUPDATE_TO_SUBSPACE_REGION_MESSAGE);

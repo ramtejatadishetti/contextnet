@@ -2,7 +2,6 @@ package edu.umass.cs.contextservice.database.guidattributes;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Vector;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -18,7 +17,7 @@ import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
  * that supports updates and range queries.
  * @author adipc
  */
-public interface GUIDAttributeStorageInterface<NodeIDType> 
+public interface GUIDAttributeStorageInterface 
 {
 	public void createTables();
 	
@@ -29,10 +28,10 @@ public interface GUIDAttributeStorageInterface<NodeIDType>
 	public JSONObject getGUIDStoredInPrimarySubspace( String guid );
 	
 	public void insertIntoSubspacePartitionInfo(int subspaceId, int replicaNum,
-			List<Integer> subspaceVector, NodeIDType respNodeId);
+			List<Integer> subspaceVector, Integer respNodeId);
 	
 	public void bulkInsertIntoSubspacePartitionInfo( int subspaceId, int replicaNum,
-			List<List<Integer>> subspaceVectorList, List<NodeIDType> respNodeIdList );
+			List<List<Integer>> subspaceVectorList, List<Integer> respNodeIdList );
 	
 	public void storeGUIDInPrimarySubspace(String nodeGUID, JSONObject jsonToWrite, 
     		int updateOrInsert ) throws JSONException;

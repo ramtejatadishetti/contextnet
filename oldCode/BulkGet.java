@@ -4,7 +4,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class BulkGet<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class BulkGet<Integer> extends BasicContextServicePacket<Integer>
 {
 	private enum Keys {GetReqID, GUIDsToGet, Query};
 	
@@ -13,7 +13,7 @@ public class BulkGet<NodeIDType> extends BasicContextServicePacket<NodeIDType>
 	// query is sent so that bulk get only returns GUIDs that satisfy query
 	private final String query;
 	
-	public BulkGet(NodeIDType initiator, long getReqID, JSONArray guidToGet, String query)
+	public BulkGet(Integer initiator, long getReqID, JSONArray guidToGet, String query)
 	{
 		super(initiator, ContextServicePacket.PacketType.BULK_GET);
 		this.getReqID = getReqID;

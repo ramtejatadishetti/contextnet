@@ -14,28 +14,28 @@ import edu.umass.cs.nio.JSONMessenger;
 import edu.umass.cs.nio.JSONNIOTransport;
 import edu.umass.cs.nio.interfaces.NodeConfig;
 
-public abstract class ContextServiceNode<NodeIDType>
+public abstract class ContextServiceNode
 {
-	protected final NodeIDType myID; 
+	protected final Integer myID; 
 	
-	protected final AbstractScheme<NodeIDType> contextservice;
+	protected final AbstractScheme contextservice;
 	
 	private boolean started = false;
 	
 	private final Object startMonitor = new Object();
 	
 	
-	public ContextServiceNode(NodeIDType id, NodeConfig<NodeIDType> nc) throws Exception
+	public ContextServiceNode(Integer id, NodeConfig<Integer> nc) throws Exception
 	{
 		this.myID = id;
 		AbstractJSONPacketDemultiplexer pd = new ContextServiceDemultiplexer();
 		
 		ContextServiceLogger.getLogger().fine("\n\n node IP "+nc.getNodeAddress(this.myID)+
 				" node Port "+nc.getNodePort(this.myID)+" nodeID "+this.myID);
-		JSONNIOTransport<NodeIDType> jio = new JSONNIOTransport<NodeIDType>(this.myID,  nc, pd , true);
+		JSONNIOTransport<Integer> jio = new JSONNIOTransport<Integer>(this.myID,  nc, pd , true);
 		
-		JSONMessenger<NodeIDType> messenger = 
-			new JSONMessenger<NodeIDType>(jio);
+		JSONMessenger<Integer> messenger = 
+			new JSONMessenger<Integer>(jio);
 		
 		ContextServiceLogger.getLogger().fine("Switch case started");
 		
@@ -46,11 +46,11 @@ public abstract class ContextServiceNode<NodeIDType>
 				ContextServiceLogger.getLogger().fine("HYPERSPACE_HASHING started");
 				if(ContextServiceConfig.QUERY_ALL_ENABLED)
 				{
-					this.contextservice = new QueryAllScheme<NodeIDType>(nc, messenger);
+					this.contextservice = new QueryAllScheme(nc, messenger);
 				}
 				else
 				{
-					this.contextservice = new HyperspaceHashing<NodeIDType>(nc, messenger);
+					this.contextservice = new HyperspaceHashing(nc, messenger);
 				}
 				//
 				
@@ -87,7 +87,7 @@ public abstract class ContextServiceNode<NodeIDType>
 	 * returns the context service
 	 * @return
 	 */
-	public AbstractScheme<NodeIDType> getContextService()
+	public AbstractScheme getContextService()
 	{
 		return this.contextservice;
 	}

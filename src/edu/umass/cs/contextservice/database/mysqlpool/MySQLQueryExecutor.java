@@ -15,7 +15,7 @@ import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
 public class MySQLQueryExecutor implements Runnable
 {
 	private final MySQLRequestStorage requestToExecute;
-	//private final DataSource<NodeIDType> dataSource;
+	//private final DataSource<Integer> dataSource;
 	private final Connection myConn;
 	
 	public MySQLQueryExecutor( MySQLRequestStorage requestToExecute, 

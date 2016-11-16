@@ -31,15 +31,15 @@ import edu.umass.cs.nio.interfaces.NodeConfig;
  * local testing.
  * @author adipc
  */
-public class FourNodeLocalCSSetup extends ContextServiceNode<Integer>
+public class FourNodeLocalCSSetup extends ContextServiceNode
 {
 	public static final int HYPERSPACE_HASHING							= 1;
 	
-	private static CSNodeConfig<Integer> csNodeConfig					= null;
+	private static CSNodeConfig csNodeConfig					= null;
 	
 	private static FourNodeLocalCSSetup[] nodes							= null;
 	
-	private static ContextServiceClient<Integer> csClient;
+	private static ContextServiceClient csClient;
 	
 	private static int numStarted = 0;
 	
@@ -120,7 +120,7 @@ public class FourNodeLocalCSSetup extends ContextServiceNode<Integer>
 	
 	private static void readNodeInfo() throws NumberFormatException, UnknownHostException, IOException
 	{	
-		csNodeConfig = new CSNodeConfig<Integer>();
+		csNodeConfig = new CSNodeConfig();
 		
 		BufferedReader reader = new BufferedReader(new FileReader(
 				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.nodeSetupFileName));

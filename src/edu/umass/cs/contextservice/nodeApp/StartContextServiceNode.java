@@ -28,11 +28,11 @@ import edu.umass.cs.nio.interfaces.NodeConfig;
  * conjunction query.
  * @author adipc
  */
-public class StartContextServiceNode extends ContextServiceNode<Integer>
+public class StartContextServiceNode extends ContextServiceNode
 {
 	public static final int HYPERSPACE_HASHING							= 1;
 	
-	private static CSNodeConfig<Integer> csNodeConfig					= null;
+	private static CSNodeConfig csNodeConfig					= null;
 	
 	public StartContextServiceNode(Integer id, NodeConfig<Integer> nc)
 			throws Exception
@@ -42,7 +42,7 @@ public class StartContextServiceNode extends ContextServiceNode<Integer>
 	
 	private static void readNodeInfo() throws NumberFormatException, UnknownHostException, IOException
 	{
-		csNodeConfig = new CSNodeConfig<Integer>();
+		csNodeConfig = new CSNodeConfig();
 		
 		BufferedReader reader = new BufferedReader(new FileReader(
 				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.nodeSetupFileName));

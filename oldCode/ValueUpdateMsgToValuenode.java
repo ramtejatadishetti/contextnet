@@ -3,7 +3,7 @@ package edu.umass.cs.contextservice.messages;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class ValueUpdateMsgToValuenode<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class ValueUpdateMsgToValuenode<Integer> extends BasicContextServicePacket<Integer>
 {
 	// Value node that receives the message has to add entry, 
 	// or remove entry or do remove and add both, in that order 
@@ -31,11 +31,11 @@ public class ValueUpdateMsgToValuenode<NodeIDType> extends BasicContextServicePa
 	private final int operType;
 	
 	//private final JSONObject allAttrs;
-	//private final NodeIDType sourceID;
+	//private final Integer sourceID;
 	
 	private final long requestID;
 	
-	public ValueUpdateMsgToValuenode(NodeIDType initiator, long versionNum, String GUID, String attrName, 
+	public ValueUpdateMsgToValuenode(Integer initiator, long versionNum, String GUID, String attrName, 
 			double oldValue, double newValue, int operType, long requestID)
 	{
 		super(initiator, ContextServicePacket.PacketType.VALUE_UPDATE_MSG_TO_VALUENODE);
@@ -60,7 +60,7 @@ public class ValueUpdateMsgToValuenode<NodeIDType> extends BasicContextServicePa
 		this.newValue = json.getDouble(Keys.NEW_VAL.toString());
 		this.operType = json.getInt(Keys.OPER_TYPE.toString());
 		//this.allAttrs = json.getJSONObject(Keys.ALL_ATTRS.toString());
-		//this.sourceID = (NodeIDType)json.get(Keys.SOURCE_ID.toString());
+		//this.sourceID = (Integer)json.get(Keys.SOURCE_ID.toString());
 		this.requestID = json.getLong(Keys.REQUEST_ID.toString());
 	}
 	
@@ -113,7 +113,7 @@ public class ValueUpdateMsgToValuenode<NodeIDType> extends BasicContextServicePa
 	{
 		return this.allAttrs;
 	}*/
-	/*public NodeIDType getSourceID()
+	/*public Integer getSourceID()
 	{
 		return this.sourceID;
 	}*/

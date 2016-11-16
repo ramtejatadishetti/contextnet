@@ -48,33 +48,33 @@ import edu.umass.cs.nio.interfaces.NodeConfig;
 import edu.umass.cs.protocoltask.ProtocolEvent;
 import edu.umass.cs.protocoltask.ProtocolTask;
 
-public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
+public class QueryAllScheme extends AbstractScheme
 {
-	private  QueryAllMySQLDB<NodeIDType> queryAllDB 								= null;
+	private  QueryAllMySQLDB queryAllDB 								= null;
 	
 	//TODO: make the trigger handling part in separate interfaces and classes.
 	// also the privacy stuff. 
 	// this files is getting very big.
 	private final ExecutorService nodeES;
 	
-	private HashMap<String, GUIDUpdateInfo<NodeIDType>> guidUpdateInfoMap			= null;
+	private HashMap<String, GUIDUpdateInfo> guidUpdateInfoMap			= null;
 	
 	private final Object pendingQueryLock											= new Object();
 	private long queryIdCounter														= 0;
 	public static final Logger log 													= ContextServiceLogger.getLogger();
 	
-	public QueryAllScheme(NodeConfig<NodeIDType> nc,
-			JSONMessenger<NodeIDType> m) throws Exception
+	public QueryAllScheme(NodeConfig<Integer> nc,
+			JSONMessenger<Integer> m) throws Exception
 	{
 		super(nc, m);
 		
 		nodeES = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
 		
-		guidUpdateInfoMap = new HashMap<String, GUIDUpdateInfo<NodeIDType>>();
+		guidUpdateInfoMap = new HashMap<String, GUIDUpdateInfo>();
 		
 		ContextServiceLogger.getLogger().fine("configure subspace completed");
 		
-		queryAllDB = new QueryAllMySQLDB<NodeIDType>(this.getMyID());
+		queryAllDB = new QueryAllMySQLDB(this.getMyID());
 		
 		ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
 	}
@@ -82,133 +82,133 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	//TODO not sure what is the overhead of synchronizig exectutor service
 	// but as we are accessing same executor service from many threads, so may be good to synchronize
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMsgFromUser(
+	public GenericMessagingTask<Integer, ?>[] handleQueryMsgFromUser(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleValueUpdateFromGNS(
+	public GenericMessagingTask<Integer, ?>[] handleValueUpdateFromGNS(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMesgToSubspaceRegion(
+	public GenericMessagingTask<Integer, ?>[] handleQueryMesgToSubspaceRegion(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMesgToSubspaceRegionReply(
+	public GenericMessagingTask<Integer, ?>[] handleQueryMesgToSubspaceRegionReply(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleValueUpdateToSubspaceRegionMessage(
+	public GenericMessagingTask<Integer, ?>[] handleValueUpdateToSubspaceRegionMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleGetMessage(
+	public GenericMessagingTask<Integer, ?>[] handleGetMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleGetReplyMessage(
+	public GenericMessagingTask<Integer, ?>[] handleGetReplyMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleValueUpdateToSubspaceRegionReplyMessage(
+	public GenericMessagingTask<Integer, ?>[] handleValueUpdateToSubspaceRegionReplyMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleQueryTriggerMessage(
+	public GenericMessagingTask<Integer, ?>[] handleQueryTriggerMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleUpdateTriggerMessage(
+	public GenericMessagingTask<Integer, ?>[] handleUpdateTriggerMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleUpdateTriggerReply(
+	public GenericMessagingTask<Integer, ?>[] handleUpdateTriggerReply(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleClientConfigRequest(ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+	public GenericMessagingTask<Integer, ?>[] handleClientConfigRequest(ProtocolEvent<PacketType, String> event,
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleACLUpdateToSubspaceRegionMessage(
+	public GenericMessagingTask<Integer, ?>[] handleACLUpdateToSubspaceRegionMessage(
 			ProtocolEvent<PacketType, String> event, 
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleACLUpdateToSubspaceRegionReplyMessage(
+	public GenericMessagingTask<Integer, ?>[] handleACLUpdateToSubspaceRegionReplyMessage(
 			ProtocolEvent<PacketType, String> event, 
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public NodeIDType getConsistentHashingNodeID( String stringToHash , 
-			Vector<NodeIDType> listOfNodesToConsistentlyHash )
+	public Integer getConsistentHashingNodeID( String stringToHash , 
+			Vector<Integer> listOfNodesToConsistentlyHash )
 	{
 		int numNodes = listOfNodesToConsistentlyHash.size();
 		int mapIndex = Hashing.consistentHash(stringToHash.hashCode(), numNodes);
@@ -216,7 +216,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	}
 	
 	private void processQueryMsgFromUser
-				(QueryMsgFromUser<NodeIDType> queryMsgFromUser)
+				(QueryMsgFromUser queryMsgFromUser)
 	{
 		String query;
 		
@@ -239,8 +239,8 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	}
 	
 	
-	private QueryInfo<NodeIDType> guidProcessingOfQueryMsgFromUser
-								(QueryMsgFromUser<NodeIDType> queryMsgFromUser)
+	private QueryInfo guidProcessingOfQueryMsgFromUser
+								(QueryMsgFromUser queryMsgFromUser)
 	{
 		String query;
 		long userReqID;
@@ -281,7 +281,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	    // in current query patterns this query can be generated.
 	    if( respNodeIdList.size() == 0 )
 	    {
-	    	QueryMsgFromUserReply<NodeIDType> queryMsgFromUserReply = new QueryMsgFromUserReply<NodeIDType>(this.getMyID(),
+	    	QueryMsgFromUserReply<Integer> queryMsgFromUserReply = new QueryMsgFromUserReply<Integer>(this.getMyID(),
 					query, grpGUID, new JSONArray(), userReqID, 0);
 			try
 			{
@@ -297,11 +297,11 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 			return;
 	    }*/
 		
-		QueryInfo<NodeIDType> currReq  
-			= new QueryInfo<NodeIDType>( query, this.getMyID(), grpGUID, userReqID, 
+		QueryInfo currReq  
+			= new QueryInfo( query, this.getMyID(), grpGUID, userReqID, 
 					userIP, userPort, queryMsgFromUser.getExpiryTime() );
 		
-		Vector<NodeIDType> allNodeIDs = this.allNodeIDs;
+		Vector<Integer> allNodeIDs = this.allNodeIDs;
 		
 		HashMap<Integer, RegionInfoClass> overlapInfoMap
 							= new HashMap<Integer, RegionInfoClass>();
@@ -339,15 +339,15 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	    {
 	    	Integer respNodeId = respNodeIdIter.next();
 	    	
-	    	QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion = 
-					new QueryMesgToSubspaceRegion<NodeIDType>
+	    	QueryMesgToSubspaceRegion queryMesgToSubspaceRegion = 
+					new QueryMesgToSubspaceRegion
 	    			(this.getMyID(), currReq.getRequestId(), query, grpGUID, -1, userIP, userPort, 
 	    						false, queryMsgFromUser.getExpiryTime(), 
 	    						PrivacySchemes.NO_PRIVACY.ordinal());
 	    	
 			try
 			{
-				this.messenger.sendToID( (NodeIDType)respNodeId, queryMesgToSubspaceRegion.toJSONObject() );
+				this.messenger.sendToID( (Integer)respNodeId, queryMesgToSubspaceRegion.toJSONObject() );
 			} catch (IOException e)
 			{
 				e.printStackTrace();
@@ -361,10 +361,10 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	    return currReq;
 	}
 	
-	private void processValueUpdateFromGNS( ValueUpdateFromGNS<NodeIDType> valueUpdateFromGNS )
+	private void processValueUpdateFromGNS( ValueUpdateFromGNS valueUpdateFromGNS )
 	{
 		String GUID 			  		= valueUpdateFromGNS.getGUID();
-		NodeIDType respNodeId 	  		= this.getConsistentHashingNodeID
+		Integer respNodeId 	  		= this.getConsistentHashingNodeID
 													(GUID, this.allNodeIDs);
 		
 		// just forward the request to the node that has 
@@ -391,23 +391,23 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 								+valueUpdateFromGNS.getSourceIP()
 								+" sourcePort "+valueUpdateFromGNS.getSourcePort());
 			
-			UpdateInfo<NodeIDType> updReq  	= null;
+			UpdateInfo updReq  	= null;
 			long requestID 					= -1;
 			// if no outstanding request then it is set to true
 			boolean sendOutRequest 			= false;
 			
 			synchronized( this.pendingUpdateLock )
 			{
-				updReq = new UpdateInfo<NodeIDType>(valueUpdateFromGNS, updateIdCounter++, 
+				updReq = new UpdateInfo(valueUpdateFromGNS, updateIdCounter++, 
 						null);
 				pendingUpdateRequests.put(updReq.getRequestId(), updReq);
 				requestID = updReq.getRequestId();
 				
-				GUIDUpdateInfo<NodeIDType> guidUpdateInfo = this.guidUpdateInfoMap.get(GUID);
+				GUIDUpdateInfo guidUpdateInfo = this.guidUpdateInfoMap.get(GUID);
 				
 				if(guidUpdateInfo == null)
 				{
-					guidUpdateInfo = new GUIDUpdateInfo<NodeIDType>(GUID);
+					guidUpdateInfo = new GUIDUpdateInfo(GUID);
 					guidUpdateInfo.addUpdateReqNumToQueue(requestID);
 					this.guidUpdateInfoMap.put(GUID, guidUpdateInfo);
 					sendOutRequest = true;
@@ -431,7 +431,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	 * This function processes a request serially.
 	 * when one outstanding request completes.
 	 */
-	private void processUpdateSerially(UpdateInfo<NodeIDType> updateReq)
+	private void processUpdateSerially(UpdateInfo updateReq)
 	{
 		assert( updateReq != null );
 		try
@@ -494,8 +494,8 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 				System.out.println("primary subspace update complete "+(now-updateStartTime));
 			}
 			
-			ValueUpdateFromGNSReply<NodeIDType> valueUpdateFromGNSReply
-				= new ValueUpdateFromGNSReply<NodeIDType>
+			ValueUpdateFromGNSReply valueUpdateFromGNSReply
+				= new ValueUpdateFromGNSReply
 				(this.getMyID(), updateReq.getValueUpdateFromGNS().getVersionNum(), 
 						updateReq.getValueUpdateFromGNS().getUserRequestID());
 			
@@ -518,7 +518,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 			}
 			
 			
-			UpdateInfo<NodeIDType> removedUpdate = pendingUpdateRequests.remove(requestID);
+			UpdateInfo removedUpdate = pendingUpdateRequests.remove(requestID);
 			
 			// starts the queues serialized updates for that guid
 			// null is checked becuase it can also be remove on
@@ -536,10 +536,10 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
-	private void processGetMessage(GetMessage<NodeIDType> getMessage)
+	private void processGetMessage(GetMessage getMessage)
 	{
 		String GUID 			  = getMessage.getGUIDsToGet();
-		NodeIDType respNodeId 	  = this.getConsistentHashingNodeID(GUID, this.allNodeIDs);
+		Integer respNodeId 	  = this.getConsistentHashingNodeID(GUID, this.allNodeIDs);
 		
 		// just forward the request to the node that has 
 		// guid stored in primary subspace.
@@ -562,7 +562,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 			JSONObject valueJSON= this.queryAllDB.getGUIDStoredInPrimarySubspace(GUID);
 			
 			
-			GetReplyMessage<NodeIDType> getReplyMessage = new GetReplyMessage<NodeIDType>(this.getMyID(),
+			GetReplyMessage getReplyMessage = new GetReplyMessage(this.getMyID(),
 					getMessage.getUserReqID(), GUID, valueJSON);
 			
 			try
@@ -580,12 +580,12 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	}
 	
 	public void processQueryMesgToSubspaceRegionReply
-		( QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply )
+		( QueryMesgToSubspaceRegionReply queryMesgToSubspaceRegionReply )
 	{
-		NodeIDType senderID = queryMesgToSubspaceRegionReply.getSender();
+		Integer senderID = queryMesgToSubspaceRegionReply.getSender();
 		long requestId = queryMesgToSubspaceRegionReply.getRequestId();
 
-		QueryInfo<NodeIDType> queryInfo = pendingQueryRequests.get(requestId);
+		QueryInfo queryInfo = pendingQueryRequests.get(requestId);
 
 		boolean allRepRecvd = 
 				queryInfo.addReplyFromARegionOfASubspace(0,(Integer)senderID, queryMesgToSubspaceRegionReply);
@@ -626,8 +626,8 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 			}
 			
 			
-			QueryMsgFromUserReply<NodeIDType> queryMsgFromUserReply 
-				= new QueryMsgFromUserReply<NodeIDType>(this.getMyID(), 
+			QueryMsgFromUserReply queryMsgFromUserReply 
+				= new QueryMsgFromUserReply(this.getMyID(), 
 						queryInfo.getQuery(), queryInfo.getGroupGUID(), concatResult, 
 						queryInfo.getUserReqID(), totalNumReplies, PrivacySchemes.NO_PRIVACY.ordinal());
 			try
@@ -649,14 +649,14 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 	}
 	
 	
-	private void startANewUpdate(UpdateInfo<NodeIDType> removedUpdate, long requestID)
+	private void startANewUpdate(UpdateInfo removedUpdate, long requestID)
 	{
 		boolean startANewUpdate = false;
 		Long nextRequestID = null;
 		synchronized( this.pendingUpdateLock )
 		{
 			// remove from guidUpdateInfo
-			GUIDUpdateInfo<NodeIDType> guidUpdateInfo = 
+			GUIDUpdateInfo guidUpdateInfo = 
 					this.guidUpdateInfoMap.get(removedUpdate.getValueUpdateFromGNS().getGUID());
 			
 			assert(guidUpdateInfo!=null);
@@ -687,7 +687,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
-	public void processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion<NodeIDType> 
+	public void processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion 
 	queryMesgToSubspaceRegion)
 	{
 		String query 			= queryMesgToSubspaceRegion.getQuery();
@@ -697,8 +697,8 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		int resultSize = this.queryAllDB.processSearchQueryInSubspaceRegion
 													(query, resultGUIDs);
 		
-		QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply = 
-		new QueryMesgToSubspaceRegionReply<NodeIDType>( this.getMyID(), 
+		QueryMesgToSubspaceRegionReply queryMesgToSubspaceRegionReply = 
+		new QueryMesgToSubspaceRegionReply( this.getMyID(), 
 				queryMesgToSubspaceRegion.getRequestId(), 
 						groupGUID, resultGUIDs, resultSize, 
 						PrivacySchemes.NO_PRIVACY.ordinal(), 0);
@@ -718,18 +718,18 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 												+ this.getMyID() +" to node "+queryMesgToSubspaceRegion.getSender());
 	}
 	
-	private void processClientConfigRequest(ClientConfigRequest<NodeIDType> clientConfigRequest)
+	private void processClientConfigRequest(ClientConfigRequest clientConfigRequest)
 	{
 		JSONArray nodeConfigArray 		= new JSONArray();
 		JSONArray attributeArray  		= new JSONArray();
 		// Each element is a JSONArray of attrbutes for a subspace
 		JSONArray subspaceConfigArray   = new JSONArray();
 		
-		Iterator<NodeIDType> nodeIDIter = this.allNodeIDs.iterator();
+		Iterator<Integer> nodeIDIter = this.allNodeIDs.iterator();
 		
 		while( nodeIDIter.hasNext() )
 		{
-			NodeIDType nodeId = nodeIDIter.next();
+			Integer nodeId = nodeIDIter.next();
 			InetAddress nodeAddress = this.messenger.getNodeConfig().getNodeAddress(nodeId);
 			int nodePort = this.messenger.getNodeConfig().getNodePort(nodeId);
 			String ipPortString = nodeAddress.getHostAddress()+":"+nodePort;
@@ -746,8 +746,8 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		InetSocketAddress sourceSocketAddr = new InetSocketAddress(clientConfigRequest.getSourceIP(),
 				clientConfigRequest.getSourcePort());
-		ClientConfigReply<NodeIDType> configReply 
-					= new ClientConfigReply<NodeIDType>( this.getMyID(), nodeConfigArray,
+		ClientConfigReply configReply 
+					= new ClientConfigReply( this.getMyID(), nodeConfigArray,
 							attributeArray, subspaceConfigArray );
 		try
 		{
@@ -783,10 +783,8 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 				{
 					case  QUERY_MSG_FROM_USER:
 					{
-						//long t0 = System.currentTimeMillis();	
-						@SuppressWarnings("unchecked")
-						QueryMsgFromUser<NodeIDType> queryMsgFromUser 
-												= (QueryMsgFromUser<NodeIDType>)event;
+						QueryMsgFromUser queryMsgFromUser 
+												= (QueryMsgFromUser)event;
 						
 						processQueryMsgFromUser(queryMsgFromUser);
 						
@@ -795,10 +793,8 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 					case QUERY_MESG_TO_SUBSPACE_REGION:
 					{
 						//long t0 = System.currentTimeMillis();
-						
-						@SuppressWarnings("unchecked")
-						QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion = 
-								(QueryMesgToSubspaceRegion<NodeIDType>) event;
+						QueryMesgToSubspaceRegion queryMesgToSubspaceRegion = 
+								(QueryMesgToSubspaceRegion) event;
 						
 						log.fine("CS"+getMyID()+" received " + event.getType() + ": " + event);
 						
@@ -811,9 +807,8 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 					case QUERY_MESG_TO_SUBSPACE_REGION_REPLY:
 					{
 						//long t0 = System.currentTimeMillis();
-						@SuppressWarnings("unchecked")
-						QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply = 
-								(QueryMesgToSubspaceRegionReply<NodeIDType>)event;
+						QueryMesgToSubspaceRegionReply queryMesgToSubspaceRegionReply = 
+								(QueryMesgToSubspaceRegionReply)event;
 						
 						log.fine("CS"+getMyID()+" received " + event.getType() + ": " + queryMesgToSubspaceRegionReply);
 						
@@ -825,8 +820,7 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 					case VALUE_UPDATE_MSG_FROM_GNS:
 					{
 						//long t0 = System.currentTimeMillis();
-						@SuppressWarnings("unchecked")
-						ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS = (ValueUpdateFromGNS<NodeIDType>)event;
+						ValueUpdateFromGNS valUpdMsgFromGNS = (ValueUpdateFromGNS)event;
 						//MSocketLogger.getLogger().fine("CS"+getMyID()+" received " + event.getType() + ": " + valUpdMsgFromGNS);
 						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " + event.getType() + ": " + valUpdMsgFromGNS);
 						
@@ -841,9 +835,8 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 					case GET_MESSAGE:
 					
 					{
-						@SuppressWarnings("unchecked")
-						GetMessage<NodeIDType> getMessage 
-									= (GetMessage<NodeIDType>)event;
+						GetMessage getMessage 
+									= (GetMessage)event;
 						//log.fine("CS"+getMyID()+" received " + event.getType() + ": " + valueUpdateToSubspaceRegionMessage);
 						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " + event.getType() + ": " 
 										+ getMessage);
@@ -860,9 +853,8 @@ public class QueryAllScheme<NodeIDType> extends AbstractScheme<NodeIDType>
 					
 					case CONFIG_REQUEST:
 					{
-						@SuppressWarnings("unchecked")
-						ClientConfigRequest<NodeIDType> configRequest 
-									= (ClientConfigRequest<NodeIDType>)event;
+						ClientConfigRequest configRequest 
+									= (ClientConfigRequest)event;
 						
 						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " + event.getType() + ": " 
 								+ configRequest);

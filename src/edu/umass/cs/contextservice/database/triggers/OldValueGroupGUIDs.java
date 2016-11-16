@@ -21,20 +21,20 @@ import edu.umass.cs.contextservice.utils.Utils;
  * Class created to parallelize old and new guids fetching
  * @author adipc
  */
-public class OldValueGroupGUIDs<NodeIDType> implements Runnable
+public class OldValueGroupGUIDs implements Runnable
 {
 	private int subspaceId;
 	private JSONObject oldValJSON;
 	private JSONObject updateValJSON;
 	private JSONObject newUnsetAttrs;
 	private HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap;
-	private final DataSource<NodeIDType> dataSource;
+	private final DataSource dataSource;
 	
 	
 	public OldValueGroupGUIDs(int subspaceId, JSONObject oldValJSON, 
 			JSONObject updateValJSON, JSONObject newUnsetAttrs,
 			HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap,
-			DataSource<NodeIDType> dataSource )
+			DataSource dataSource )
 	{
 		this.subspaceId = subspaceId;
 		this.oldValJSON = oldValJSON;

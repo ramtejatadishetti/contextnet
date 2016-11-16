@@ -15,12 +15,13 @@ import edu.umass.cs.nio.interfaces.NodeConfig;
 /**
  * @author ayadav
  *
- * @param <NodeIDType>
+ * @param <Integer>
  */
-public class CSNodeConfig<NodeIDType> implements NodeConfig<NodeIDType> 
+public class CSNodeConfig implements NodeConfig<Integer> 
 {
 	private boolean local = false;
-	private HashMap<NodeIDType,InetSocketAddress> nmap=new HashMap<NodeIDType,InetSocketAddress>();
+	private HashMap<Integer,InetSocketAddress> nmap 
+							= new HashMap<Integer,InetSocketAddress>();
 	private int defaultPort=2000;
 
 	public CSNodeConfig(int dp)
@@ -29,10 +30,10 @@ public class CSNodeConfig<NodeIDType> implements NodeConfig<NodeIDType>
 	}
 	public CSNodeConfig() {}
 
-	public void localSetup(Set<NodeIDType> members)
+	public void localSetup(Set<Integer> members)
 	{
 		local = true;
-		for(NodeIDType i : members)
+		for(Integer i : members)
 		{
 			this.add(i, getLocalAddress());
 		}
@@ -42,13 +43,12 @@ public class CSNodeConfig<NodeIDType> implements NodeConfig<NodeIDType>
 	 * case, nNodes from 0 to nNodes-1 will the node IDs. In the 
 	 * latter case, the explicit set of node IDs will be used.
 	 */
-	@SuppressWarnings("unchecked")
 	public void localSetup(Integer nNodes) 
 	{
 		local = true;
 		for(Integer i=0; i<nNodes; i++)
 		{
-			this.add((NodeIDType)i, getLocalAddress());
+			this.add(i, getLocalAddress());
 		}
 	}
 	
@@ -66,26 +66,26 @@ public class CSNodeConfig<NodeIDType> implements NodeConfig<NodeIDType>
 	}
 
 	@Override
-	public boolean nodeExists(NodeIDType ID) 
+	public boolean nodeExists(Integer ID) 
 	{
 		return nmap.containsKey(ID);
 	}
 
 	@Override
-	public Set<NodeIDType> getNodeIDs() 
+	public Set<Integer> getNodeIDs() 
 	{
 		//throw  new UnsupportedOperationException();
 		return this.nmap.keySet();
 	}
 
 	@Override
-	public InetAddress getNodeAddress(NodeIDType ID) 
+	public InetAddress getNodeAddress(Integer ID) 
 	{
 		InetSocketAddress addr = nmap.get(ID);
 		return addr!=null ? addr.getAddress() : (local ? getLocalAddress() : null);
 	}
 
-	public int getNodePort(NodeIDType ID) 
+	public int getNodePort(Integer ID) 
 	{
 		int maxPort = 65536;
 		int port = (defaultPort + ID.hashCode()) % maxPort;
@@ -96,23 +96,23 @@ public class CSNodeConfig<NodeIDType> implements NodeConfig<NodeIDType>
 		return addr!=null ? addr.getPort() : port;
 	}
 
-	public Set<NodeIDType> getNodes()
+	public Set<Integer> getNodes()
 	{
 		return nmap.keySet();
 	}
 	
-	public void add(NodeIDType id, InetAddress IP)
+	public void add(Integer id, InetAddress IP)
 	{
 		nmap.put(id, new InetSocketAddress(IP, defaultPort));
 	}
 	
 	
-	public void add(NodeIDType id, InetSocketAddress socketAddr) 
+	public void add(Integer id, InetSocketAddress socketAddr) 
 	{
 		nmap.put(id, socketAddr);
 	}
 	
-	public void addLocal(NodeIDType id) 
+	public void addLocal(Integer id) 
 	{
 		local = true;
 		nmap.put(id, new InetSocketAddress(getLocalAddress(), defaultPort));
@@ -121,7 +121,7 @@ public class CSNodeConfig<NodeIDType> implements NodeConfig<NodeIDType>
 	public String toString()
 	{
 		String s="";
-		for(NodeIDType i : nmap.keySet())
+		for(Integer i : nmap.keySet())
 		{
 			s += i + " : " + getNodeAddress(i) + ":" + getNodePort(i) + "\n";
 		}
@@ -131,7 +131,7 @@ public class CSNodeConfig<NodeIDType> implements NodeConfig<NodeIDType>
 	public static void main(String[] args)
 	{
 		int dp = (args.length>0 ? Integer.valueOf(args[0]) : 2222);
-		CSNodeConfig<Integer> snc = new CSNodeConfig<Integer>(dp);
+		CSNodeConfig snc = new CSNodeConfig(dp);
 		
 		ContextServiceLogger.getLogger().fine("Adding node 0, printing nodes 0 and 1");
 		try
@@ -147,26 +147,26 @@ public class CSNodeConfig<NodeIDType> implements NodeConfig<NodeIDType>
 	}
 	
 	@Override
-	public Set<NodeIDType> getValuesFromJSONArray(JSONArray arg0)
+	public Set<Integer> getValuesFromJSONArray(JSONArray arg0)
 			throws JSONException 
 	{
 		return null;
 	}
 	
 	@Override
-	public Set<NodeIDType> getValuesFromStringSet(Set<String> arg0) 
+	public Set<Integer> getValuesFromStringSet(Set<String> arg0) 
 	{
 		return null;
 	}
 	
 	@Override
-	public NodeIDType valueOf(String arg0)
+	public Integer valueOf(String arg0)
 	{
 		return null;
 	}
 	
 	@Override
-	public InetAddress getBindAddress(NodeIDType myID) 
+	public InetAddress getBindAddress(Integer myID) 
 	{
 		return nmap.get(myID).getAddress();
 	}

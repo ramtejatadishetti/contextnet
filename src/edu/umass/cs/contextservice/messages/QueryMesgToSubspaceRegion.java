@@ -3,13 +3,13 @@ package edu.umass.cs.contextservice.messages;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class QueryMesgToSubspaceRegion<NodeIDType> 
-								extends BasicContextServicePacket<NodeIDType>
+public class QueryMesgToSubspaceRegion 
+								extends BasicContextServicePacket
 {
 	private enum Keys { QUERY, REQUESTID, GROUP_GUID, SUBSPACENUM, USER_IP, USER_PORT
 						, STORE_QUERY_FOR_TRIGGER, EXPIRY_TIME, PRIVACY_SCHEME };
 	
-	//private final NodeIDType sourceNodeId;
+	//private final Integer sourceNodeId;
 	private final long requestID;
 	
 	// additional info for trigger to update groups on
@@ -34,7 +34,7 @@ public class QueryMesgToSubspaceRegion<NodeIDType>
 	 * sourceID will be the ID of the node that 
 	 * recvd query from the user.
 	 */
-	public QueryMesgToSubspaceRegion( NodeIDType initiator, long requestId, String query, 
+	public QueryMesgToSubspaceRegion( Integer initiator, long requestId, String query, 
 			String groupGUID, int subspaceNum, String userIP, int userPort, 
 			boolean storeQueryForTrigger, long expiryTime,  int privacyScheme )
 	{

@@ -102,7 +102,7 @@ public class NodeGUIDInfoRecord<AttributeType>
 		return this.primaryKeyJSON;
 	}
 	
-	public NodeIDType getNodeID()
+	public Integer getNodeID()
 	{
 		return this.nodeID;
 	}
@@ -112,7 +112,7 @@ public class NodeGUIDInfoRecord<AttributeType>
 		return this.groupGUIDList;
 	}*/
 	
-	/*public ReconfigurationRecord<NodeIDType> putActiveReplicas(String name, int epoch, Set<NodeIDType> arSet)
+	/*public ReconfigurationRecord<Integer> putActiveReplicas(String name, int epoch, Set<Integer> arSet)
 	{
 		if(epoch - this.epoch == 1)
 		{
@@ -137,12 +137,12 @@ public class NodeGUIDInfoRecord<AttributeType>
 	}*/
 	
 	/*@SuppressWarnings("unchecked")
-	private Set<NodeIDType> toSet(JSONArray jsonArray) throws JSONException
+	private Set<Integer> toSet(JSONArray jsonArray) throws JSONException
 	{
-		Set<NodeIDType> set = new HashSet<NodeIDType>();
+		Set<Integer> set = new HashSet<Integer>();
 		for(int i=0; i<jsonArray.length(); i++)
 		{
-			set.add((NodeIDType)jsonArray.get(i));
+			set.add((Integer)jsonArray.get(i));
 		}
 		return set;
 	}*/

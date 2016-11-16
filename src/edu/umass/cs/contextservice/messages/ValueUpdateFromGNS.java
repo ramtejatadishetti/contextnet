@@ -9,7 +9,7 @@ import org.json.JSONObject;
  * @author ayadav
  */
 
-public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class ValueUpdateFromGNS extends BasicContextServicePacket
 {
 	private enum Keys {VERSION_NUM, GUID, ATTR_VALUE_PAIR, USER_REQUESTID, 
 		SOURCEIP, SOURCEPORT, UPDATE_START_TIME, ANONYMIZEDID_TO_GUID_MAPPING, 
@@ -36,7 +36,7 @@ public class ValueUpdateFromGNS<NodeIDType> extends BasicContextServicePacket<No
 	// In NO_PRIVACY scheme this array can be set to empty or null.
 	private final JSONArray attrSetArray;
 	
-	public ValueUpdateFromGNS( NodeIDType initiator, long versionNum, String GUID, 
+	public ValueUpdateFromGNS( Integer initiator, long versionNum, String GUID, 
 			JSONObject attrValuePair, long userRequestID, String sourceIP, int sourcePort, 
 			long updStartTime, JSONArray anonymizedIDToGuidMapping, 
 			int privacySchemeOrdinal, JSONArray attrSetArray )

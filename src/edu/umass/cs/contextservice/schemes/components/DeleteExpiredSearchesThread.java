@@ -8,14 +8,14 @@ import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 
-public class DeleteExpiredSearchesThread<NodeIDType> implements Runnable
+public class DeleteExpiredSearchesThread implements Runnable
 {
-	private final NodeIDType myNodeId;
-	private final HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;
-	private final HyperspaceMySQLDB<NodeIDType> hyperspaceDB;
+	private final Integer myNodeId;
+	private final HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap;
+	private final HyperspaceMySQLDB hyperspaceDB;
 	
-	public DeleteExpiredSearchesThread(HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap ,
-			NodeIDType myNodeID, HyperspaceMySQLDB<NodeIDType> hyperspaceDB)
+	public DeleteExpiredSearchesThread(HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap ,
+			Integer myNodeID, HyperspaceMySQLDB hyperspaceDB)
 	{
 		this.myNodeId = myNodeID;
 		this.subspaceInfoMap = subspaceInfoMap;
@@ -40,12 +40,12 @@ public class DeleteExpiredSearchesThread<NodeIDType> implements Runnable
 			{
 				int subspaceId = subapceIdIter.next();
 				// at least one replica and all replica have same default value for each attribute.
-				Vector<SubspaceInfo<NodeIDType>> subspaceInfoVect 
+				Vector<SubspaceInfo> subspaceInfoVect 
 									= subspaceInfoMap.get(subspaceId);
 				
 				for(int i=0; i<subspaceInfoVect.size(); i++)
 				{
-					SubspaceInfo<NodeIDType> currSubspaceInfo 
+					SubspaceInfo currSubspaceInfo 
 										= subspaceInfoVect.get(i);
 					
 					int replicaNum = currSubspaceInfo.getReplicaNum();

@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.updates.UpdateInfo;
 
-public class ProfilerStatClass<NodeIDType> implements Runnable
+public class ProfilerStatClass implements Runnable
 {
 	private long numNodesForSearchQuery 			= 0;
 	private long numSearchReqs 						= 0;
@@ -29,7 +29,7 @@ public class ProfilerStatClass<NodeIDType> implements Runnable
 	
 	private final Object lock 						= new Object();
 	
-	private ConcurrentHashMap<Long, UpdateInfo<NodeIDType>> pendingUpdateRequests;
+	private ConcurrentHashMap<Long, UpdateInfo> pendingUpdateRequests;
 	
 	@Override
 	public void run()
@@ -95,7 +95,7 @@ public class ProfilerStatClass<NodeIDType> implements Runnable
 				{
 					Iterator<Long> reqIter = pendingUpdateRequests.keySet().iterator();
 					
-					UpdateInfo<NodeIDType> updInfo = pendingUpdateRequests.get(reqIter.next());
+					UpdateInfo updInfo = pendingUpdateRequests.get(reqIter.next());
 					
 					System.out.println(" value update map string "+updInfo.toStringValueUpdateReplyMap());
 				}
@@ -159,7 +159,7 @@ public class ProfilerStatClass<NodeIDType> implements Runnable
 	
 	
 	public void monitorUpdateRequestsQueue(
-			ConcurrentHashMap<Long, UpdateInfo<NodeIDType>> pendingUpdateRequests)
+			ConcurrentHashMap<Long, UpdateInfo> pendingUpdateRequests)
 	{
 		this.pendingUpdateRequests = pendingUpdateRequests;
 	}

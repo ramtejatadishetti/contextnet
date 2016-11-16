@@ -2,16 +2,16 @@ package edu.umass.cs.contextservice.configurator.helperclasses;
 
 import java.util.HashMap;
 
-public class PartitionToNodeInfo<NodeIDType>
+public class PartitionToNodeInfo
 {
 	private final int subspaceId;
 	private final int replicaNum;
 	private final HashMap<String, RangeInfo> attrBound;
-	private final NodeIDType respNodeId;
+	private final Integer respNodeId;
 	
 	
 	public PartitionToNodeInfo( int subspaceId, int replicaNum, 
-			HashMap<String, RangeInfo> attrBound, NodeIDType respNodeId )
+			HashMap<String, RangeInfo> attrBound, Integer respNodeId )
 	{
 		this.subspaceId = subspaceId;
 		this.replicaNum = replicaNum;
@@ -34,7 +34,7 @@ public class PartitionToNodeInfo<NodeIDType>
 		return attrBound;
 	}
 	
-	public NodeIDType getRespNodeId()
+	public Integer getRespNodeId()
 	{
 		return this.respNodeId;
 	}

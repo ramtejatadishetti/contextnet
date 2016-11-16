@@ -14,15 +14,15 @@ import edu.umass.cs.contextservice.queryparsing.QueryInfo;
  * Defines the methods for trigger processing.
  * @author adipc
  */
-public interface TriggerProcessingInterface<NodeIDType> 
+public interface TriggerProcessingInterface
 {
-	public boolean processTriggerOnQueryMsgFromUser(QueryInfo<NodeIDType> currReq );
+	public boolean processTriggerOnQueryMsgFromUser(QueryInfo currReq );
 	
 	public void processQuerySubspaceRegionMessageForTrigger
-		( QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion );
+		( QueryMesgToSubspaceRegion queryMesgToSubspaceRegion );
 	
 	public void processTriggerForValueUpdateToSubspaceRegion
-		( ValueUpdateToSubspaceRegionMessage<NodeIDType> 
+		( ValueUpdateToSubspaceRegionMessage 
 		valueUpdateToSubspaceRegionMessage, HashMap<String, GroupGUIDInfoClass> removedGroups, 
 		HashMap<String, GroupGUIDInfoClass> addedGroups ) throws InterruptedException;
 	

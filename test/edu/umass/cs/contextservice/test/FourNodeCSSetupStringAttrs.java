@@ -36,12 +36,12 @@ import edu.umass.cs.nio.interfaces.NodeConfig;
 import edu.umass.cs.nio.interfaces.PacketDemultiplexer;
 import edu.umass.cs.nio.nioutils.NIOHeader;
 
-public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
+public class FourNodeCSSetupStringAttrs extends ContextServiceNode
 {
 	// TODO: string attr test needs to be added to context service tests
 	public static final int HYPERSPACE_HASHING							= 1;
 	
-	private static CSNodeConfig<Integer> csNodeConfig					= null;
+	private static CSNodeConfig csNodeConfig					= null;
 	
 	private static FourNodeCSSetupStringAttrs[] nodes					= null;
 	
@@ -93,7 +93,7 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 	
 	private static void readNodeInfo() throws NumberFormatException, UnknownHostException, IOException
 	{
-		csNodeConfig = new CSNodeConfig<Integer>();
+		csNodeConfig = new CSNodeConfig();
 		
 		BufferedReader reader 
 				= new BufferedReader(new FileReader(ContextServiceConfig.nodeSetupFileName));
@@ -150,7 +150,7 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 		private final String sourceIP;
 		private final int sourcePort;
 		
-		private CSNodeConfig<Integer> localNodeConfig							= null;
+		private CSNodeConfig localNodeConfig							= null;
 		
 		public static int requestID 											= 0;
 		
@@ -220,7 +220,7 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 			
 			
 			System.out.println("Source IP address "+sourceIP);
-			localNodeConfig =  new CSNodeConfig<Integer>();
+			localNodeConfig =  new CSNodeConfig();
 			localNodeConfig.add(myID, new InetSocketAddress(sourceIP, sourcePort));
 	        
 	        AbstractJSONPacketDemultiplexer pd = new edu.umass.cs.contextservice.common.ContextServiceDemultiplexer();
@@ -252,8 +252,8 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 			
 			try
 			{
-				GetMessage<Integer> getMessageObj = 
-						new GetMessage<Integer>(myID, currID, myGUID,  sourceIP, sourcePort );
+				GetMessage getMessageObj = 
+						new GetMessage(myID, currID, myGUID,  sourceIP, sourcePort );
 				
 				niot.sendToAddress(getRandomNodeSock(), getMessageObj.toJSONObject());
 			} catch (JSONException e)
@@ -297,8 +297,8 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 				attrValuePair.put("latitude", latitude+"");
 				attrValuePair.put("longitude", longitude+"");
 				
-				ValueUpdateFromGNS<Integer> valUpdFromGNS = 
-					new ValueUpdateFromGNS<Integer>
+				ValueUpdateFromGNS valUpdFromGNS = 
+					new ValueUpdateFromGNS
 				(myID, currID, myGUID, attrValuePair,  currID, sourceIP, sourcePort, 
 						System.currentTimeMillis(), null, 
 						PrivacySchemes.NO_PRIVACY.ordinal(), 
@@ -332,8 +332,8 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 			//eservice.execute(new SendingRequest(currID, SendingRequest.QUERY, query, currNumAttr, "", -1, -1, "") );
 			//currNumAttr  = currNumAttr + 2;
 			
-			QueryMsgFromUser<Integer> qmesgU 
-			= new QueryMsgFromUser<Integer>(myID, query, currID, 
+			QueryMsgFromUser qmesgU 
+			= new QueryMsgFromUser(myID, query, currID, 
 					300000, sourceIP, sourcePort, PrivacySchemes.NO_PRIVACY.ordinal());
 			
 			InetSocketAddress sockAddr = getRandomNodeSock();
@@ -353,10 +353,10 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 		
 		public void handleUpdateReply(JSONObject jso)
 		{
-			ValueUpdateFromGNSReply<Integer> vur;
+			ValueUpdateFromGNSReply vur;
 			try
 			{
-				vur = new ValueUpdateFromGNSReply<Integer>(jso);
+				vur = new ValueUpdateFromGNSReply(jso);
 				long currReqID = vur.getVersionNum();
 				
 				System.out.println("Update completion requestID "+currReqID+" time "+System.currentTimeMillis());
@@ -370,7 +370,7 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 		{
 			try
 			{
-				GetReplyMessage<Integer> getReply= new GetReplyMessage<Integer>(jso);
+				GetReplyMessage getReply= new GetReplyMessage(jso);
 				
 				long reqID = getReply.getReqID();
 				
@@ -385,8 +385,8 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode<Integer>
 		{
 			try
 			{
-				QueryMsgFromUserReply<Integer> qmur;
-				qmur = new QueryMsgFromUserReply<Integer>(jso);
+				QueryMsgFromUserReply qmur;
+				qmur = new QueryMsgFromUserReply(jso);
 				
 				long reqID = qmur.getUserReqNum();
 				int resultSize = qmur.getReplySize();

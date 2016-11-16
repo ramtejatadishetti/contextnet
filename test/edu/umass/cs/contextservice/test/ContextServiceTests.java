@@ -43,7 +43,7 @@ import edu.umass.cs.gnscommon.exceptions.client.EncryptionException;
 public class ContextServiceTests 
 {
 	private static KeyPairGenerator kpg;
-	private static ContextServiceClient<Integer> csClient 	= null;
+	private static ContextServiceClient csClient 	= null;
 	
 	private static String memberAliasPrefix 				= "clientGUID";
 	
@@ -74,7 +74,7 @@ public class ContextServiceTests
 		
 		
 		// make a client connection
-		csClient = new ContextServiceClient<Integer>(csNodeIp, csPort, false,
+		csClient = new ContextServiceClient(csNodeIp, csPort, false,
 				privacyScheme);
 		
 		System.out.println("ContextServiceClient connected using privacy scheme ordinal "
@@ -363,8 +363,8 @@ public class ContextServiceTests
 		assert(ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED);
 		// if privacy not enabled then just return.
 		
-		ContextServiceClient<Integer> csClient 
-				= new ContextServiceClient<Integer>(csNodeIp, csPort, true,
+		ContextServiceClient csClient 
+				= new ContextServiceClient(csNodeIp, csPort, true,
 						privacyScheme);
 		
 		

@@ -33,16 +33,16 @@ import edu.umass.cs.utils.DelayProfiler;
  * and search and update trigger storage.
  * @author adipc
  */
-public class TriggerInformationStorage<NodeIDType> implements 
-										TriggerInformationStorageInterface<NodeIDType>
+public class TriggerInformationStorage implements 
+										TriggerInformationStorageInterface
 {
-	private final NodeIDType myNodeID;
-	private final HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;
-	private final DataSource<NodeIDType> dataSource;
+	private final Integer myNodeID;
+	private final HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap;
+	private final DataSource dataSource;
 	
-	public TriggerInformationStorage( NodeIDType myNodeID, 
-			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap , 
-			DataSource<NodeIDType> dataSource )
+	public TriggerInformationStorage( Integer myNodeID, 
+			HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap , 
+			DataSource dataSource )
 	{
 		this.myNodeID = myNodeID;
 		this.subspaceInfoMap = subspaceInfoMap;
@@ -63,12 +63,12 @@ public class TriggerInformationStorage<NodeIDType> implements
 			while( subspaceIter.hasNext() )
 			{
 				int subspaceId = subspaceIter.next();
-				Vector<SubspaceInfo<NodeIDType>> replicasOfSubspace 
+				Vector<SubspaceInfo> replicasOfSubspace 
 										= subspaceInfoMap.get(subspaceId);
 				
 				for(int i = 0; i<replicasOfSubspace.size(); i++)
 				{
-					SubspaceInfo<NodeIDType> subInfo = replicasOfSubspace.get(i);
+					SubspaceInfo subInfo = replicasOfSubspace.get(i);
 
 					// currently it is assumed that there are only conjunctive queries
 					// DNF form queries can be added by inserting its multiple conjunctive components.
@@ -118,7 +118,8 @@ public class TriggerInformationStorage<NodeIDType> implements
 	 * creates one dimensional subspaces and query storage tables for triggers
 	 * @throws SQLException 
 	 */
-	private void createTablesForTriggers(SubspaceInfo<NodeIDType> subInfo, Statement  stmt) throws SQLException
+	private void createTablesForTriggers(SubspaceInfo subInfo, Statement  stmt) 
+			throws SQLException
 	{
 		int subspaceId = subInfo.getSubspaceId();
 		//int replicaNum = subInfo.getReplicaNum();
@@ -170,7 +171,7 @@ public class TriggerInformationStorage<NodeIDType> implements
 		{
 			int subspaceId = subapceIdIter.next();
 			// at least one replica and all replica have same default value for each attribute.
-			SubspaceInfo<NodeIDType> currSubspaceInfo = subspaceInfoMap.get(subspaceId).get(0);
+			SubspaceInfo currSubspaceInfo = subspaceInfoMap.get(subspaceId).get(0);
 			HashMap<String, AttributePartitionInfo> attrSubspaceMap = currSubspaceInfo.getAttributesOfSubspace();
 			
 			Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
@@ -244,7 +245,7 @@ public class TriggerInformationStorage<NodeIDType> implements
 		
 		String tableName = "subspaceId"+subspaceId+"TriggerDataInfo";
 		
-		QueryInfo<NodeIDType> processedQInfo = new QueryInfo<NodeIDType>(userQuery);
+		QueryInfo processedQInfo = new QueryInfo(userQuery);
 		HashMap<String, ProcessingQueryComponent> pqcMap = processedQInfo.getProcessingQC();
 		
 		String hexIP;
@@ -349,7 +350,7 @@ public class TriggerInformationStorage<NodeIDType> implements
 		
 		if( requestType == ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY )
 		{
-			OldValueGroupGUIDs<NodeIDType> old = new OldValueGroupGUIDs<NodeIDType>
+			OldValueGroupGUIDs old = new OldValueGroupGUIDs
 			(subspaceId, oldValJSON, onlyUpdateAttrValJSON, newUnsetAttrs, removedGroupGUIDMap,
 					dataSource);
 			old.run();
@@ -373,7 +374,7 @@ public class TriggerInformationStorage<NodeIDType> implements
 				// both old and new value GUIDs stored at same nodes,
 				// makes it possible to find which groupGUIDs needs to be triggered.
 				// in parallel
-//				OldValueGroupGUIDs<NodeIDType> old = new OldValueGroupGUIDs<NodeIDType>
+//				OldValueGroupGUIDs<Integer> old = new OldValueGroupGUIDs<Integer>
 //				(subspaceId, oldValJSON, onlyUpdateAttrValJSON, newUnsetAttrs, oldValGroupGUIDMap,
 //						dataSource);
 //				old.run();

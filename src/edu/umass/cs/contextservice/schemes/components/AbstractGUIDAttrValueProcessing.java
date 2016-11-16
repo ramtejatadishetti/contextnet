@@ -30,20 +30,20 @@ import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
 import edu.umass.cs.contextservice.updates.UpdateInfo;
 import edu.umass.cs.nio.JSONMessenger;
 
-public abstract class AbstractGUIDAttrValueProcessing<NodeIDType>
+public abstract class AbstractGUIDAttrValueProcessing
 {
-	protected final HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> 
+	protected final HashMap<Integer, Vector<SubspaceInfo>> 
 																subspaceInfoMap;
 	
 	protected final Random replicaChoosingRand;
 	
-	protected final NodeIDType myID;
+	protected final Integer myID;
 	
-	protected final HyperspaceMySQLDB<NodeIDType> hyperspaceDB;
+	protected final HyperspaceMySQLDB hyperspaceDB;
 	
-	protected final JSONMessenger<NodeIDType> messenger;
+	protected final JSONMessenger<Integer> messenger;
 	
-	protected final ConcurrentHashMap<Long, QueryInfo<NodeIDType>> pendingQueryRequests;
+	protected final ConcurrentHashMap<Long, QueryInfo> pendingQueryRequests;
 	
 	protected final Object pendingQueryLock								= new Object();
 	
@@ -54,11 +54,11 @@ public abstract class AbstractGUIDAttrValueProcessing<NodeIDType>
 	protected final Random defaultAttrValGenerator;
 	
 	// FIXME: check if the abstract methods and methods implemented here are separated correctly
-	public AbstractGUIDAttrValueProcessing( NodeIDType myID, 
-			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> 
-		subspaceInfoMap , HyperspaceMySQLDB<NodeIDType> hyperspaceDB, 
-		JSONMessenger<NodeIDType> messenger , 
-		ConcurrentHashMap<Long, QueryInfo<NodeIDType>> pendingQueryRequests, 
+	public AbstractGUIDAttrValueProcessing( Integer myID, 
+			HashMap<Integer, Vector<SubspaceInfo>> 
+		subspaceInfoMap , HyperspaceMySQLDB hyperspaceDB, 
+		JSONMessenger<Integer> messenger , 
+		ConcurrentHashMap<Long, QueryInfo> pendingQueryRequests, 
 		ProfilerStatClass profStats )
 	{
 		this.myID = myID;
@@ -130,7 +130,7 @@ public abstract class AbstractGUIDAttrValueProcessing<NodeIDType>
 			String GUID , long requestID , boolean firstTimeInsert,
 			long updateStartTime, JSONObject primarySubspaceJSON ) throws JSONException
 	{
-		NodeIDType oldRespNodeId = null, newRespNodeId = null;
+		Integer oldRespNodeId = null, newRespNodeId = null;
 		
 		// processes the first time insert
 		HashMap<String, ProcessingQueryComponent> oldQueryComponents 
@@ -155,7 +155,7 @@ public abstract class AbstractGUIDAttrValueProcessing<NodeIDType>
 
 		assert(overlappingRegion.size() == 1);
 		
-		oldRespNodeId = (NodeIDType)overlappingRegion.keySet().iterator().next();
+		oldRespNodeId = (Integer)overlappingRegion.keySet().iterator().next();
 		
 
 		// for new value
@@ -189,7 +189,7 @@ public abstract class AbstractGUIDAttrValueProcessing<NodeIDType>
 
 		assert(newOverlappingRegion.size() == 1);
 		
-		newRespNodeId = (NodeIDType)newOverlappingRegion.keySet().iterator().next();
+		newRespNodeId = (Integer)newOverlappingRegion.keySet().iterator().next();
 		
 
 		ContextServiceLogger.getLogger().fine
@@ -210,12 +210,12 @@ public abstract class AbstractGUIDAttrValueProcessing<NodeIDType>
 			// before recv replies from all subspaces.
 			//updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
 
-			ValueUpdateToSubspaceRegionMessage<NodeIDType>  
+			ValueUpdateToSubspaceRegionMessage  
 							valueUpdateToSubspaceRegionMessage = null;
 
 			// just need to send update attr values
 			valueUpdateToSubspaceRegionMessage 
-					= new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, 
+					= new ValueUpdateToSubspaceRegionMessage( myID, 
 							-1, GUID, updatedAttrValJSON, 
 							ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
 							subspaceId, requestID, firstTimeInsert, updateStartTime, 
@@ -241,8 +241,8 @@ public abstract class AbstractGUIDAttrValueProcessing<NodeIDType>
 			// 2 reply as both old and new goes to different node
 			//updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
 			// it is a remove, so no need for update and old JSON.
-			ValueUpdateToSubspaceRegionMessage<NodeIDType>  oldValueUpdateToSubspaceRegionMessage 
-					= new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, -1, 
+			ValueUpdateToSubspaceRegionMessage  oldValueUpdateToSubspaceRegionMessage 
+					= new ValueUpdateToSubspaceRegionMessage( myID, -1, 
 							GUID, updatedAttrValJSON, 
 							ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY, 
 							subspaceId, requestID, firstTimeInsert, updateStartTime,
@@ -305,9 +305,9 @@ public abstract class AbstractGUIDAttrValueProcessing<NodeIDType>
 						, decodingArray);
 			}
 			
-			ValueUpdateToSubspaceRegionMessage<NodeIDType>  
+			ValueUpdateToSubspaceRegionMessage  
 				newValueUpdateToSubspaceRegionMessage = 
-						new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, -1, 
+						new ValueUpdateToSubspaceRegionMessage( myID, -1, 
 								GUID, jsonToWrite,
 								ValueUpdateToSubspaceRegionMessage.ADD_ENTRY, 
 								subspaceId, requestID, false, updateStartTime,
@@ -373,8 +373,8 @@ public abstract class AbstractGUIDAttrValueProcessing<NodeIDType>
 		}
 		assert(newOverlappingRegion.size() == 1);
 		
-		NodeIDType newRespNodeId 
-						= (NodeIDType)newOverlappingRegion.keySet().iterator().next();
+		Integer newRespNodeId 
+						= (Integer)newOverlappingRegion.keySet().iterator().next();
 
 		ContextServiceLogger.getLogger().fine
 					(" newRespNodeId "+newRespNodeId);
@@ -429,12 +429,12 @@ public abstract class AbstractGUIDAttrValueProcessing<NodeIDType>
 		// before recv replies from all subspaces.
 		//updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
 
-		ValueUpdateToSubspaceRegionMessage<NodeIDType>  
+		ValueUpdateToSubspaceRegionMessage  
 						valueUpdateToSubspaceRegionMessage = null;
 		
 		// need to send oldValueJSON as it is performed as insert
 		valueUpdateToSubspaceRegionMessage 
-				= new ValueUpdateToSubspaceRegionMessage<NodeIDType>( myID, 
+				= new ValueUpdateToSubspaceRegionMessage( myID, 
 							-1, GUID, jsonToWrite, 
 							ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
 							subspaceId, requestID, true, updateStartTime, new JSONObject(),
@@ -547,7 +547,7 @@ public abstract class AbstractGUIDAttrValueProcessing<NodeIDType>
 	
 	
 	public int processValueUpdateToSubspaceRegionMessage( 
-			ValueUpdateToSubspaceRegionMessage<NodeIDType> valueUpdateToSubspaceRegionMessage, 
+			ValueUpdateToSubspaceRegionMessage valueUpdateToSubspaceRegionMessage, 
 			int replicaNum )
 	{
 		int subspaceId  		= valueUpdateToSubspaceRegionMessage.getSubspaceNum();
@@ -640,7 +640,7 @@ public abstract class AbstractGUIDAttrValueProcessing<NodeIDType>
 		while( keyIter.hasNext() )
 		{
 			int subspaceId = keyIter.next();
-			SubspaceInfo<NodeIDType> currSubInfo = subspaceInfoMap.get(subspaceId).get(0);
+			SubspaceInfo currSubInfo = subspaceInfoMap.get(subspaceId).get(0);
 			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo = currSubInfo.getAttributesOfSubspace();
 			
 			int currMaxMatch = 0;
@@ -715,13 +715,13 @@ public abstract class AbstractGUIDAttrValueProcessing<NodeIDType>
 	
 	
 	public abstract void processQueryMsgFromUser
-		( QueryInfo<NodeIDType> queryInfo, boolean storeQueryForTrigger );
+		( QueryInfo queryInfo, boolean storeQueryForTrigger );
 	
-	public abstract void processQueryMesgToSubspaceRegionReply(QueryMesgToSubspaceRegionReply<NodeIDType> 
+	public abstract void processQueryMesgToSubspaceRegionReply(QueryMesgToSubspaceRegionReply 
 						queryMesgToSubspaceRegionReply);
 	
-	public abstract void processUpdateFromGNS( UpdateInfo<NodeIDType> updateReq );
+	public abstract void processUpdateFromGNS( UpdateInfo updateReq );
 	
-	public abstract int processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion<NodeIDType> 
+	public abstract int processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion 
 														queryMesgToSubspaceRegion, JSONArray resultGUIDs);
 }

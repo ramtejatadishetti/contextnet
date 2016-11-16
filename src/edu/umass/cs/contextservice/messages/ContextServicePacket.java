@@ -20,9 +20,9 @@ import edu.umass.cs.utils.IntegerPacketTypeMap;
 
 /**
  * @author adipc
- * @param <NodeIDType>
+ * @param <Integer>
  */
-public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<NodeIDType, ContextServicePacket.PacketType>
+public abstract class ContextServicePacket extends ProtocolPacket<Integer, ContextServicePacket.PacketType>
 {
 	public static final String PACKET_TYPE = JSONPacket.PACKET_TYPE;
 	
@@ -138,7 +138,7 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 	}
 	/**************************** End of ReconfigurationpacketType class map **************/
 
-	protected ContextServicePacket(NodeIDType initiator)
+	protected ContextServicePacket(Integer initiator)
 	{
 		super(initiator);
 	}
@@ -200,10 +200,10 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		return typeMap.get(type)!=null ? typeMap.get(type).getSimpleName() : null;
 	}
 
-	public static BasicContextServicePacket<?> getContextServicePacket(JSONObject json, 
+	public static BasicContextServicePacket getContextServicePacket(JSONObject json, 
 		Map<ContextServicePacket.PacketType,Class<?>> typeMap) throws JSONException 
 	{
-		BasicContextServicePacket<?> csPacket = null;
+		BasicContextServicePacket csPacket = null;
 		
 		try
 		{
@@ -212,7 +212,7 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 			
 			if(csType!=null && getPacketTypeClassName(csType)!=null) 
 			{
-				csPacket = (BasicContextServicePacket<?>)(Class.forName(
+				csPacket = (BasicContextServicePacket)(Class.forName(
 						"edu.umass.cs.contextservice.messages." + 
 				getPacketTypeClassName(csType)).getConstructor(JSONObject.class).newInstance(json));
 			}
@@ -226,7 +226,8 @@ public abstract class ContextServicePacket<NodeIDType> extends ProtocolPacket<No
 		return csPacket;
 	}
 	
-	public static BasicContextServicePacket<?> getContextServicePacket(JSONObject json) throws JSONException
+	public static BasicContextServicePacket getContextServicePacket
+									(JSONObject json) throws JSONException
 	{
 		return getContextServicePacket(json, typeMap);
 	}

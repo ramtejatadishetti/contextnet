@@ -35,7 +35,7 @@ import edu.umass.cs.nio.JSONMessenger;
 import edu.umass.cs.protocoltask.ProtocolEvent;
 import edu.umass.cs.protocoltask.ProtocolTask;
 
-public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
+public class HyperdexScheme<Integer>  extends AbstractScheme<Integer>
 {
 	// all hyperdex related constants
 	public static final String HYPERDEX_IP_ADDRESS 				= "compute-0-23";
@@ -53,8 +53,8 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 	private final Object hclientFreeMonitor						= new Object();
 	
 	
-	public HyperdexScheme(InterfaceNodeConfig<NodeIDType> nc,
-			JSONMessenger<NodeIDType> m)
+	public HyperdexScheme(InterfaceNodeConfig<Integer> nc,
+			JSONMessenger<Integer> m)
 	{
 		super(nc, m);
 		
@@ -71,18 +71,18 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMsgFromUser(
+	public GenericMessagingTask<Integer, ?>[] handleQueryMsgFromUser(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		/* Actions:
 		 * - send it to query processing system, where it parses it
 		 * and sends it to corresponding metadata nodes
 		 */
 		@SuppressWarnings("unchecked")
-		QueryMsgFromUser<NodeIDType> queryMsgFromUser = (QueryMsgFromUser<NodeIDType>)event;
+		QueryMsgFromUser<Integer> queryMsgFromUser = (QueryMsgFromUser<Integer>)event;
 		
-		GenericMessagingTask<NodeIDType, QueryMsgToMetadataNode<NodeIDType>>[] retMsgs =
+		GenericMessagingTask<Integer, QueryMsgToMetadataNode<Integer>>[] retMsgs =
 				processQueryMsgFromUser(queryMsgFromUser);
 		
 		synchronized(this.numMesgLock)
@@ -95,14 +95,14 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 		return retMsgs;
 	}
 	
-	public GenericMessagingTask<NodeIDType,?>[] handleValueUpdateFromGNS(
+	public GenericMessagingTask<Integer,?>[] handleValueUpdateFromGNS(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
-			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks)
+			ProtocolTask<Integer, ContextServicePacket.PacketType, String>[] ptasks)
 	{
 		@SuppressWarnings("unchecked")
-		ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS = (ValueUpdateFromGNS<NodeIDType>)event;
+		ValueUpdateFromGNS<Integer> valUpdMsgFromGNS = (ValueUpdateFromGNS<Integer>)event;
 		
-		GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>[] retMsgs 
+		GenericMessagingTask<Integer, ValueUpdateMsgToValuenode<Integer>>[] retMsgs 
 			= this.processValueUpdateFromGNS(valUpdMsgFromGNS);
 		
 		synchronized(this.numMesgLock)
@@ -116,82 +116,82 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleValueUpdateMsgToValuenodeReply(
+	public GenericMessagingTask<Integer, ?>[] handleValueUpdateMsgToValuenodeReply(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		return null;
 	}
 	
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleMetadataMsgToValuenode(
+	public GenericMessagingTask<Integer, ?>[] handleMetadataMsgToValuenode(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMsgToMetadataNode(
+	public GenericMessagingTask<Integer, ?>[] handleQueryMsgToMetadataNode(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMsgToValuenode(
+	public GenericMessagingTask<Integer, ?>[] handleQueryMsgToValuenode(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMsgToValuenodeReply(
+	public GenericMessagingTask<Integer, ?>[] handleQueryMsgToValuenodeReply(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleValueUpdateMsgToMetadataNode(
+	public GenericMessagingTask<Integer, ?>[] handleValueUpdateMsgToMetadataNode(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleValueUpdateMsgToValuenode(
+	public GenericMessagingTask<Integer, ?>[] handleValueUpdateMsgToValuenode(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		return null;
 	}
 	
 	@Override
-	public void checkQueryCompletion(QueryInfo<NodeIDType> qinfo)
+	public void checkQueryCompletion(QueryInfo<Integer> qinfo)
 	{
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] initializeScheme()
+	public GenericMessagingTask<Integer, ?>[] initializeScheme()
 	{
 		return null;
 	}
 	
 	@Override
 	protected void processReplyInternally(
-			QueryMsgToValuenodeReply<NodeIDType> queryMsgToValnodeRep,
-			QueryInfo<NodeIDType> queryInfo)
+			QueryMsgToValuenodeReply<Integer> queryMsgToValnodeRep,
+			QueryInfo<Integer> queryInfo)
 	{
 	}
 	
 	@Override
-	public NodeIDType getResponsibleNodeId(String AttrName)
+	public Integer getResponsibleNodeId(String AttrName)
 	{
 		return null;
 	}
@@ -202,8 +202,8 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 	 * @param queryMsgFromUser
 	 * @return
 	 */
-	public GenericMessagingTask<NodeIDType, QueryMsgToMetadataNode<NodeIDType>>[] 
-			processQueryMsgFromUser(QueryMsgFromUser<NodeIDType> queryMsgFromUser)
+	public GenericMessagingTask<Integer, QueryMsgToMetadataNode<Integer>>[] 
+			processQueryMsgFromUser(QueryMsgFromUser<Integer> queryMsgFromUser)
 	{
 		String query = queryMsgFromUser.getQuery();
 		long userReqID = queryMsgFromUser.getUserReqNum();
@@ -217,7 +217,7 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 		String grpGUID = GNSCalls.createQueryGroup(query);
 		
 		Vector<QueryComponent> qcomponents = QueryParser.parseQuery(query);
-		QueryInfo<NodeIDType> currReq = new QueryInfo<NodeIDType>(query, getMyID()
+		QueryInfo<Integer> currReq = new QueryInfo<Integer>(query, getMyID()
 				, grpGUID, userReqID, userIP, userPort, qcomponents);;
 		
 		
@@ -317,8 +317,8 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 	 * adds the reply of the queryComponent
 	 * @throws JSONException
 	 */
-	private GenericMessagingTask<NodeIDType, ValueUpdateMsgToValuenode<NodeIDType>>[]
-	                   processValueUpdateFromGNS(ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS)
+	private GenericMessagingTask<Integer, ValueUpdateMsgToValuenode<Integer>>[]
+	                   processValueUpdateFromGNS(ValueUpdateFromGNS<Integer> valUpdMsgFromGNS)
 	{
 		ContextServiceLogger.getLogger().info("\n\n Recvd ValueUpdateFromGNS at " 
 				+ this.getMyID() +" reply "+valUpdMsgFromGNS);
@@ -345,12 +345,12 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 		
 		long currReqID = -1;
 		
-		/*UpdateInfo<NodeIDType> currReq = null;
+		/*UpdateInfo<Integer> currReq = null;
 		
 		synchronized(this.pendingUpdateLock)
 		{
 			currReq 
-				= new UpdateInfo<NodeIDType>(valUpdMsgFromGNS, updateIdCounter++);
+				= new UpdateInfo<Integer>(valUpdMsgFromGNS, updateIdCounter++);
 			currReqID = currReq.getRequestId();
 			pendingUpdateRequests.put(currReqID, currReq);
 		}
@@ -424,10 +424,10 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 		//private boolean running					= true;
 		
 		private final int getOrUpdate;
-		private final QueryInfo<NodeIDType> queryReq;
-		private final UpdateInfo<NodeIDType> updateReq;
+		private final QueryInfo<Integer> queryReq;
+		private final UpdateInfo<Integer> updateReq;
 		
-		public HyperdexTaskClass( int getOrUpdate, QueryInfo<NodeIDType> queryReq, UpdateInfo<NodeIDType> updateReq )
+		public HyperdexTaskClass( int getOrUpdate, QueryInfo<Integer> queryReq, UpdateInfo<Integer> updateReq )
 		{
 			this.getOrUpdate = getOrUpdate;
 			this.queryReq = queryReq;
@@ -540,105 +540,105 @@ public class HyperdexScheme<NodeIDType>  extends AbstractScheme<NodeIDType>
 
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleBulkGet(
+	public GenericMessagingTask<Integer, ?>[] handleBulkGet(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			ProtocolTask<Integer, PacketType, String>[] ptasks) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleBulkGetReply(
+	public GenericMessagingTask<Integer, ?>[] handleBulkGetReply(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			ProtocolTask<Integer, PacketType, String>[] ptasks) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleConsistentStoragePut(
+	public GenericMessagingTask<Integer, ?>[] handleConsistentStoragePut(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleConsistentStoragePutReply(
+	public GenericMessagingTask<Integer, ?>[] handleConsistentStoragePutReply(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMesgToSubspaceRegion(
+	public GenericMessagingTask<Integer, ?>[] handleQueryMesgToSubspaceRegion(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			ProtocolTask<Integer, PacketType, String>[] ptasks) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMesgToSubspaceRegionReply(
+	public GenericMessagingTask<Integer, ?>[] handleQueryMesgToSubspaceRegionReply(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			ProtocolTask<Integer, PacketType, String>[] ptasks) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleValueUpdateToSubspaceRegionMessage(
+	public GenericMessagingTask<Integer, ?>[] handleValueUpdateToSubspaceRegionMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			ProtocolTask<Integer, PacketType, String>[] ptasks) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleGetMessage(
+	public GenericMessagingTask<Integer, ?>[] handleGetMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			ProtocolTask<Integer, PacketType, String>[] ptasks) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleGetReplyMessage(
+	public GenericMessagingTask<Integer, ?>[] handleGetReplyMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			ProtocolTask<Integer, PacketType, String>[] ptasks) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleValueUpdateToSubspaceRegionReplyMessage(
+	public GenericMessagingTask<Integer, ?>[] handleValueUpdateToSubspaceRegionReplyMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			ProtocolTask<Integer, PacketType, String>[] ptasks) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleQueryTriggerMessage(
+	public GenericMessagingTask<Integer, ?>[] handleQueryTriggerMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			ProtocolTask<Integer, PacketType, String>[] ptasks) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleUpdateTriggerMessage(
+	public GenericMessagingTask<Integer, ?>[] handleUpdateTriggerMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			ProtocolTask<Integer, PacketType, String>[] ptasks) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleUpdateTriggerReply(
+	public GenericMessagingTask<Integer, ?>[] handleUpdateTriggerReply(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) {
+			ProtocolTask<Integer, PacketType, String>[] ptasks) {
 		// TODO Auto-generated method stub
 		return null;
 	}

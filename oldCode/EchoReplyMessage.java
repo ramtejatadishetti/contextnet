@@ -4,13 +4,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 
-public class EchoReplyMessage<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class EchoReplyMessage<Integer> extends BasicContextServicePacket<Integer>
 {
 	private enum Keys {ECHOREPLY_MESSAGE};
 	
 	private final String echoReplyMessage;
 	
-	public EchoReplyMessage(NodeIDType initiator, String echoReplyMessage)
+	public EchoReplyMessage(Integer initiator, String echoReplyMessage)
 	{
 		super(initiator, ContextServicePacket.PacketType.ECHOREPLY_MESSAGE);
 		this.echoReplyMessage = echoReplyMessage;

@@ -2,10 +2,10 @@ package edu.umass.cs.contextservice.configurator;
 
 import edu.umass.cs.nio.interfaces.NodeConfig;
 
-public class LoadAwareReplicatedSubspaceConfigurator<NodeIDType> 
-									extends AbstractSubspaceConfigurator<NodeIDType> 
+public class LoadAwareReplicatedSubspaceConfigurator 
+									extends AbstractSubspaceConfigurator 
 {
-	public LoadAwareReplicatedSubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig) 
+	public LoadAwareReplicatedSubspaceConfigurator(NodeConfig<Integer> nodeConfig) 
 	{
 		super(nodeConfig);
 		

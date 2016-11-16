@@ -10,11 +10,11 @@ import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
  * @author ayadav
  *
  */
-public class ReducedAttributesRegionMappingPolicy<NodeIDType> 
-					implements RegionMappingPolicyInterface<NodeIDType>
+public class ReducedAttributesRegionMappingPolicy 
+					implements RegionMappingPolicyInterface
 {
 	@Override
-	public List<NodeIDType> getNodeIDsForAValueSpace
+	public List<Integer> getNodeIDsForAValueSpace
 			(HashMap<String, AttributeValueRange> valueSpaceDef) 
 	{	
 		return null;
@@ -24,7 +24,7 @@ public class ReducedAttributesRegionMappingPolicy<NodeIDType>
 	@Override
 	public void computeRegionMapping(
 			HashMap<String, AttributeMetaInfo> attributeMap, 
-			List<NodeIDType> nodeIDList)
+			List<Integer> nodeIDList)
 	{
 		
 	}

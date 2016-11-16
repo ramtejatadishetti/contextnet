@@ -9,16 +9,16 @@ import org.json.JSONObject;
  * and attributes supported
  * @author adipc
  *
- * @param <NodeIDType>
+ * @param <Integer>
  */
-public class ClientConfigRequest<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class ClientConfigRequest extends BasicContextServicePacket
 {	
 	private enum Keys {SOURCEIP, SOURCEPORT};
 	
 	private final String sourceIP;
 	private final int sourcePort;
 	
-	public ClientConfigRequest(NodeIDType initiator, String sourceIP, int sourcePort)
+	public ClientConfigRequest(Integer initiator, String sourceIP, int sourcePort)
 	{
 		super(initiator, ContextServicePacket.PacketType.CONFIG_REQUEST);
 		this.sourceIP = sourceIP;

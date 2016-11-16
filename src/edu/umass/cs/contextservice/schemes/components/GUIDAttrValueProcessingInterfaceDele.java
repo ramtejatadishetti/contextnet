@@ -15,19 +15,19 @@ import edu.umass.cs.contextservice.updates.UpdateInfo;
  * @author adipc
  *
  */
-public interface GUIDAttrValueProcessingInterfaceDele<NodeIDType>
+public interface GUIDAttrValueProcessingInterfaceDele
 {
 	public void processQueryMsgFromUser
-		(QueryInfo<NodeIDType> queryInfo, boolean storeQueryForTrigger);
+		(QueryInfo queryInfo, boolean storeQueryForTrigger);
 	
-	public int processQueryMesgToSubspaceRegion( QueryMesgToSubspaceRegion<NodeIDType> 
+	public int processQueryMesgToSubspaceRegion( QueryMesgToSubspaceRegion 
 		queryMesgToSubspaceRegion, JSONArray resultGUIDArray );
 	
-	public void processQueryMesgToSubspaceRegionReply( QueryMesgToSubspaceRegionReply<NodeIDType> 
+	public void processQueryMesgToSubspaceRegionReply( QueryMesgToSubspaceRegionReply 
 					queryMesgToSubspaceRegionReply );
 	
 	public int processValueUpdateToSubspaceRegionMessage( 
-			ValueUpdateToSubspaceRegionMessage<NodeIDType> 
+			ValueUpdateToSubspaceRegionMessage 
 								valueUpdateToSubspaceRegionMessage, int replicaNum );
 	
 //	public void guidValueProcessingOnUpdate(
@@ -37,5 +37,5 @@ public interface GUIDAttrValueProcessingInterfaceDele<NodeIDType>
 //			boolean firstTimeInsert, long updateStartTime, 
 //			JSONObject primarySubspaceJSON ) throws JSONException;
 	
-	public void processUpdateFromGNS(UpdateInfo<NodeIDType> updateReq);
+	public void processUpdateFromGNS(UpdateInfo updateReq);
 }

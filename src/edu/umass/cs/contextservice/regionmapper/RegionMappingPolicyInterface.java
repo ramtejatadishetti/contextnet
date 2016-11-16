@@ -9,9 +9,9 @@ import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
  * This interface implements methods to implement a region mapping policy.
  * @author ayadav
  * 
- * @param <NodeIDType>
+ * @param <Integer>
  */
-public interface RegionMappingPolicyInterface<NodeIDType>
+public interface RegionMappingPolicyInterface
 {
 	/**
 	 * This function computes the nodeIDs corresponding to regions that overlap
@@ -22,7 +22,7 @@ public interface RegionMappingPolicyInterface<NodeIDType>
 	 * @param valueSpaceDef
 	 * @return
 	 */
-	public List<NodeIDType> 
+	public List<Integer> 
 		getNodeIDsForAValueSpace(
 				HashMap<String, AttributeValueRange> valueSpaceDef);
 	
@@ -40,5 +40,5 @@ public interface RegionMappingPolicyInterface<NodeIDType>
 	 * @param nodeIDList
 	 */
 	public void computeRegionMapping(HashMap<String, AttributeMetaInfo> attributeMap, 
-			List<NodeIDType> nodeIDList);
+			List<Integer> nodeIDList);
 }

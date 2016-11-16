@@ -14,15 +14,15 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 
-public class DataSource<NodeIDType>
+public class DataSource
 {
-	private final HashMap<NodeIDType, SQLNodeInfo> sqlNodeInfoMap;
+	private final HashMap<Integer, SQLNodeInfo> sqlNodeInfoMap;
 	
     private ComboPooledDataSource cpds;
 
-    public DataSource(NodeIDType myNodeID) throws IOException, SQLException, PropertyVetoException 
+    public DataSource(Integer myNodeID) throws IOException, SQLException, PropertyVetoException 
     {
-    	this.sqlNodeInfoMap = new HashMap<NodeIDType, SQLNodeInfo>();
+    	this.sqlNodeInfoMap = new HashMap<Integer, SQLNodeInfo>();
     	readDBNodeSetup();
     	
     	int portNum = sqlNodeInfoMap.get(myNodeID).portNum;
@@ -186,7 +186,6 @@ public class DataSource<NodeIDType>
         return conn;
     }
     
-    @SuppressWarnings("unchecked")
 	private void readDBNodeSetup() throws NumberFormatException, IOException
 	{
 		BufferedReader reader = new BufferedReader(new FileReader(
@@ -221,7 +220,7 @@ public class DataSource<NodeIDType>
 			sqlNodeInfo.arguments = arguments;
 			
 					
-			this.sqlNodeInfoMap.put((NodeIDType)readNodeId, sqlNodeInfo);
+			this.sqlNodeInfoMap.put((Integer)readNodeId, sqlNodeInfo);
 			
 			//csNodeConfig.add(readNodeId, new InetSocketAddress(readIPAddress, readPort));
 		}

@@ -27,18 +27,18 @@ import edu.umass.cs.nio.JSONMessenger;
  * @author adipc
  *
  */
-public class TriggerProcessing<NodeIDType> implements 
-								TriggerProcessingInterface<NodeIDType>
+public class TriggerProcessing implements 
+								TriggerProcessingInterface
 {
-	private final HyperspaceMySQLDB<NodeIDType> hyperspaceDB;
+	private final HyperspaceMySQLDB hyperspaceDB;
 	
-	private final NodeIDType myID;
+	private final Integer myID;
 	
-	private final JSONMessenger<NodeIDType> messenger;
+	private final JSONMessenger<Integer> messenger;
 	
-	public TriggerProcessing(NodeIDType myID, HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> 
-						subspaceInfoMap , HyperspaceMySQLDB<NodeIDType> hyperspaceDB, 
-						JSONMessenger<NodeIDType> messenger )
+	public TriggerProcessing(Integer myID, HashMap<Integer, Vector<SubspaceInfo>> 
+						subspaceInfoMap , HyperspaceMySQLDB hyperspaceDB, 
+						JSONMessenger<Integer> messenger )
 	{
 		this.myID = myID;
 		this.messenger = messenger;
@@ -47,10 +47,10 @@ public class TriggerProcessing<NodeIDType> implements
 		ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
 	
 
-		new Thread( new DeleteExpiredSearchesThread<NodeIDType>(subspaceInfoMap, myID, hyperspaceDB) ).start();
+		new Thread( new DeleteExpiredSearchesThread(subspaceInfoMap, myID, hyperspaceDB) ).start();
 	}
 	
-	public boolean processTriggerOnQueryMsgFromUser( QueryInfo<NodeIDType> currReq)
+	public boolean processTriggerOnQueryMsgFromUser( QueryInfo currReq)
 	{
 		String groupGUID = currReq.getGroupGUID();
 		String userIP = currReq.getUserIP();
@@ -73,7 +73,7 @@ public class TriggerProcessing<NodeIDType> implements
 	}
 	
 	public void processQuerySubspaceRegionMessageForTrigger
-				( QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion )
+				( QueryMesgToSubspaceRegion queryMesgToSubspaceRegion )
 	{
 		String query 		= queryMesgToSubspaceRegion.getQuery();
 		String groupGUID 	= queryMesgToSubspaceRegion.getGroupGUID();
@@ -91,7 +91,7 @@ public class TriggerProcessing<NodeIDType> implements
 	}
 	
 	public void processTriggerForValueUpdateToSubspaceRegion
-		( ValueUpdateToSubspaceRegionMessage<NodeIDType> 
+		( ValueUpdateToSubspaceRegionMessage 
 		valueUpdateToSubspaceRegionMessage, HashMap<String, GroupGUIDInfoClass> removedGroups, 
 		HashMap<String, GroupGUIDInfoClass> addedGroups ) throws InterruptedException
 	{
@@ -174,11 +174,11 @@ public class TriggerProcessing<NodeIDType> implements
 			JSONArray toBeAddedGroupGUIDs = sameClientAddedTrigger.remove(ipPort);
 			
 			
-			RefreshTrigger<NodeIDType> refTrig = null;
+			RefreshTrigger refTrig = null;
 			
 			if(ContextServiceConfig.sendFullRepliesToClient)
 			{
-				refTrig = new RefreshTrigger<NodeIDType>
+				refTrig = new RefreshTrigger
 					(myID, toBeRemovedGroupGUIDs, 
 						(toBeAddedGroupGUIDs!=null)?toBeAddedGroupGUIDs:new JSONArray(),
 						versionNum, updateGUID, updateStartTime, toBeRemovedGroupGUIDs.length(),
@@ -186,7 +186,7 @@ public class TriggerProcessing<NodeIDType> implements
 			}
 			else
 			{
-				refTrig = new RefreshTrigger<NodeIDType>
+				refTrig = new RefreshTrigger
 					(myID, new JSONArray(), new JSONArray(),
 								versionNum, updateGUID, updateStartTime, toBeRemovedGroupGUIDs.length(),
 								(toBeAddedGroupGUIDs!=null)?toBeAddedGroupGUIDs.length():0);
@@ -221,12 +221,12 @@ public class TriggerProcessing<NodeIDType> implements
 		{
 			String ipPort = sameClientIter.next();
 			
-			RefreshTrigger<NodeIDType> refTrig = null;
+			RefreshTrigger refTrig = null;
 				
 			
 			if(ContextServiceConfig.sendFullRepliesToClient)
 			{
-				refTrig = new RefreshTrigger<NodeIDType>
+				refTrig = new RefreshTrigger
 					(myID, new JSONArray(), 
 							sameClientAddedTrigger.get(ipPort),
 							versionNum, updateGUID, updateStartTime, 0, 
@@ -235,7 +235,7 @@ public class TriggerProcessing<NodeIDType> implements
 			else
 			{
 				refTrig 
-					= new RefreshTrigger<NodeIDType>
+					= new RefreshTrigger
 					(myID, new JSONArray(), 
 					new JSONArray(), versionNum, updateGUID, updateStartTime, 0, 
 					sameClientAddedTrigger.get(ipPort).length());

@@ -19,10 +19,9 @@ import edu.umass.cs.protocoltask.ProtocolTask;
  * Protocol task for the whole context service
  * @author adipc
  *
- * @param <NodeIDType>
+ * @param <Integer>
  */
-public class ContextServiceProtocolTask<NodeIDType> implements 
-ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String> 
+public class ContextServiceProtocolTask implements ProtocolTask<Integer, ContextServicePacket.PacketType, String> 
 {
 	private static final String HANDLER_METHOD_PREFIX = ContextServicePacket.HANDLER_METHOD_PREFIX; // could be any String as scope is local
 	
@@ -30,9 +29,9 @@ ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>
 				ContextServicePacket.PacketType.getPacketTypes();
 	
 	private String key = "contextserviceKey";
-	private final AbstractScheme<NodeIDType> csNode;
+	private final AbstractScheme csNode;
 
-	public ContextServiceProtocolTask(NodeIDType id, AbstractScheme<NodeIDType> csNode)
+	public ContextServiceProtocolTask(Integer id, AbstractScheme csNode)
 	{
 		this.csNode = csNode;
 	}
@@ -52,9 +51,9 @@ ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleEvent(
+	public GenericMessagingTask<Integer, ?>[] handleEvent(
 		ProtocolEvent<ContextServicePacket.PacketType, String> event,
-		ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks)
+		ProtocolTask<Integer, ContextServicePacket.PacketType, String>[] ptasks)
 	{
 		ContextServicePacket.PacketType type = event.getType();
 		Object returnValue = null;
@@ -64,7 +63,7 @@ ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>
 			returnValue = this.csNode.getClass().getMethod(HANDLER_METHOD_PREFIX+
 				ContextServicePacket.getPacketTypeClassName(type), ProtocolEvent.class, 
 				ProtocolTask[].class).invoke(this.csNode, 
-					(BasicContextServicePacket<?>)event, ptasks);
+					(BasicContextServicePacket)event, ptasks);
 		} catch(NoSuchMethodException nsme)
 		{
 			nsme.printStackTrace();
@@ -75,13 +74,12 @@ ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>
 		{
 			iae.printStackTrace();
 		}
-		return (GenericMessagingTask<NodeIDType, ?>[])returnValue;
+		return (GenericMessagingTask<Integer, ?>[])returnValue;
 	}
 	
-	@SuppressWarnings("unchecked")
-	public BasicContextServicePacket<NodeIDType> getContextServicePacket(JSONObject json) throws JSONException
+	public BasicContextServicePacket getContextServicePacket(JSONObject json) throws JSONException
 	{
-		return (BasicContextServicePacket<NodeIDType>)ContextServicePacket.getContextServicePacket(json);
+		return (BasicContextServicePacket)ContextServicePacket.getContextServicePacket(json);
 	}
 	
 	public static void main(String[] args)
@@ -89,7 +87,7 @@ ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] start() 
+	public GenericMessagingTask<Integer, ?>[] start() 
 	{
 		return null;
 	}

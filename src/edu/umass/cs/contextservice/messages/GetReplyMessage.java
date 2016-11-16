@@ -3,7 +3,7 @@ package edu.umass.cs.contextservice.messages;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class GetReplyMessage<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class GetReplyMessage extends BasicContextServicePacket
 {
 	private enum Keys {GetReqID, GUIDsToGet, GUIDObject};
 	
@@ -13,7 +13,7 @@ public class GetReplyMessage<NodeIDType> extends BasicContextServicePacket<NodeI
 	// query is sent so that bulk get only returns GUIDs that satisfy query
 	//private final String query;
 	
-	public GetReplyMessage(NodeIDType initiator, long getReqID, String guidToGet, JSONObject guidObject)
+	public GetReplyMessage(Integer initiator, long getReqID, String guidToGet, JSONObject guidObject)
 	{
 		super(initiator, ContextServicePacket.PacketType.GET_REPLY_MESSAGE);
 		this.getReqID = getReqID;

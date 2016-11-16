@@ -1,13 +1,11 @@
 package edu.umass.cs.contextservice.gns;
 
 import java.net.InetSocketAddress;
-import java.util.LinkedList;
 import java.util.logging.Logger;
 
 import org.json.JSONArray;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.gns.GNSCallsOriginal.UserGUIDOperations;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.utils.Utils;
 

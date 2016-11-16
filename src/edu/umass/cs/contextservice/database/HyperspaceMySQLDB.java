@@ -28,7 +28,7 @@ import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
 
 
-public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
+public class HyperspaceMySQLDB extends AbstractDB
 {
 	public static final int UPDATE_REC 								= 1;
 	public static final int INSERT_REC 								= 2;
@@ -54,15 +54,15 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 	// it should be changed to bitmap to save space and stringification overhead.
 	public static final int varcharSizeForunsetAttrsCol				= 1000;
 	
-	private final DataSource<NodeIDType> mysqlDataSource;
+	private final DataSource mysqlDataSource;
 	
-	private final GUIDAttributeStorageInterface<NodeIDType> guidAttributesStorage;
-	private  TriggerInformationStorageInterface<NodeIDType> triggerInformationStorage;
+	private final GUIDAttributeStorageInterface guidAttributesStorage;
+	private  TriggerInformationStorageInterface triggerInformationStorage;
 	
 	private final Random randomGen;
 	
-	public HyperspaceMySQLDB( NodeIDType myNodeID, 
-			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap )
+	public HyperspaceMySQLDB( Integer myNodeID, 
+			HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap )
 			throws Exception
 	{
 		if(ContextServiceConfig.disableMySQLDB)
@@ -74,9 +74,9 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 			randomGen = null;
 		}
 		
-		this.mysqlDataSource = new DataSource<NodeIDType>(myNodeID);
+		this.mysqlDataSource = new DataSource(myNodeID);
 		
-		guidAttributesStorage = new GUIDAttributeStorage<NodeIDType>
+		guidAttributesStorage = new GUIDAttributeStorage
 							(myNodeID, subspaceInfoMap , mysqlDataSource);
 		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
@@ -86,7 +86,7 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 			// components.
 			ContextServiceLogger.getLogger().fine( "HyperspaceMySQLDB "
 					+ " TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED );
-			triggerInformationStorage = new TriggerInformationStorage<NodeIDType>
+			triggerInformationStorage = new TriggerInformationStorage
 											(myNodeID, subspaceInfoMap , mysqlDataSource);
 		}
 		
@@ -168,14 +168,14 @@ public class HyperspaceMySQLDB<NodeIDType> extends AbstractDB<NodeIDType>
 	 * @param subspaceVector
 	 */
 	public void insertIntoSubspacePartitionInfo(int subspaceId, int replicaNum,
-			List<Integer> subspaceVector, NodeIDType respNodeId)
+			List<Integer> subspaceVector, Integer respNodeId)
 	{
 		this.guidAttributesStorage.insertIntoSubspacePartitionInfo
 						(subspaceId, replicaNum, subspaceVector, respNodeId);
 	}
 	
 	public void bulkInsertIntoSubspacePartitionInfo( int subspaceId, int replicaNum,
-			List<List<Integer>> subspaceVectorList, List<NodeIDType> respNodeIdList )
+			List<List<Integer>> subspaceVectorList, List<Integer> respNodeIdList )
 	{
 		this.guidAttributesStorage.bulkInsertIntoSubspacePartitionInfo
 				(subspaceId, replicaNum, subspaceVectorList, respNodeIdList);

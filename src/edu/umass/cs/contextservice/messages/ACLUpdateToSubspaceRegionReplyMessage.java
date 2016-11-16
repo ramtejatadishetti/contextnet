@@ -3,8 +3,8 @@ package edu.umass.cs.contextservice.messages;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class ACLUpdateToSubspaceRegionReplyMessage<NodeIDType> 
-							extends BasicContextServicePacket<NodeIDType>
+public class ACLUpdateToSubspaceRegionReplyMessage 
+							extends BasicContextServicePacket
 {
 	private enum Keys {VERSION_NUM, REQUEST_ID, 
 									SUBSPACE_NUM, REPLICA_NUM};
@@ -14,7 +14,7 @@ public class ACLUpdateToSubspaceRegionReplyMessage<NodeIDType>
 	private final int subspaceNum;
 	private final int replicaNum;
 	
-	public ACLUpdateToSubspaceRegionReplyMessage( NodeIDType initiator, long versionNum, 
+	public ACLUpdateToSubspaceRegionReplyMessage( Integer initiator, long versionNum, 
 			long requestID, int subspaceNum, int replicaNum )
 	{
 		super( initiator, 

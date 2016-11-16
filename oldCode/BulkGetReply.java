@@ -5,14 +5,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 
-public class BulkGetReply<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class BulkGetReply<Integer> extends BasicContextServicePacket<Integer>
 {
 	private enum Keys {RequestID, GUIDRecords};
 	
 	private final long requestID;
 	private final JSONArray guidRecords;
 	
-	public BulkGetReply(NodeIDType initiator, long requestID, JSONArray guidRecords)
+	public BulkGetReply(Integer initiator, long requestID, JSONArray guidRecords)
 	{
 		super(initiator, ContextServicePacket.PacketType.BULK_GET_REPLY);
 		this.requestID   = requestID;

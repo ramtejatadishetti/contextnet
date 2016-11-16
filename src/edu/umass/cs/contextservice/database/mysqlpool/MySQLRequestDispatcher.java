@@ -10,16 +10,16 @@ import java.util.concurrent.Executors;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.DataSource;
 
-public class MySQLRequestDispatcher<NodeIDType> implements Runnable
+public class MySQLRequestDispatcher implements Runnable
 {
 	private final ExecutorService eService;
 	private final ConcurrentLinkedQueue<MySQLRequestStorage> mysqlRequestsQueue;
 	private final Object queueWaitLock;
-	private final DataSource<NodeIDType> datasource;
+	private final DataSource datasource;
 	
 	public MySQLRequestDispatcher
 		( ConcurrentLinkedQueue<MySQLRequestStorage> mysqlRequestsQueue, 
-				Object queueWaitLock, DataSource<NodeIDType> datasource )
+				Object queueWaitLock, DataSource datasource )
 	{
 		this.mysqlRequestsQueue = mysqlRequestsQueue;
 		this.queueWaitLock = queueWaitLock;

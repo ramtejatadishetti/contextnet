@@ -33,20 +33,20 @@ import edu.umass.cs.protocoltask.ProtocolExecutor;
 import edu.umass.cs.protocoltask.ProtocolTask;
 
 
-public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<JSONObject>
+public abstract class AbstractScheme implements PacketDemultiplexer<JSONObject>
 {
-	protected final JSONMessenger<NodeIDType> messenger;
-	protected final ProtocolExecutor<NodeIDType, ContextServicePacket.PacketType, String> protocolExecutor;
-	protected final ContextServiceProtocolTask<NodeIDType> protocolTask;
+	protected final JSONMessenger<Integer> messenger;
+	protected final ProtocolExecutor<Integer, ContextServicePacket.PacketType, String> protocolExecutor;
+	protected final ContextServiceProtocolTask protocolTask;
 	
 	protected final Object numMesgLock	;
 	
-	protected final Vector<NodeIDType> allNodeIDs;
+	protected final Vector<Integer> allNodeIDs;
 	
 	// stores the pending queries
-	protected ConcurrentHashMap<Long, QueryInfo<NodeIDType>> pendingQueryRequests		= null;
+	protected ConcurrentHashMap<Long, QueryInfo> pendingQueryRequests		= null;
 	
-	protected ConcurrentHashMap<Long, UpdateInfo<NodeIDType>> pendingUpdateRequests		= null;
+	protected ConcurrentHashMap<Long, UpdateInfo> pendingUpdateRequests		= null;
 	
 	
 	protected long updateIdCounter														= 0;
@@ -60,32 +60,32 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 	public static final Logger log = ContextServiceLogger.getLogger();
 	
 	
-	public AbstractScheme(NodeConfig<NodeIDType> nc, JSONMessenger<NodeIDType> m)
+	public AbstractScheme(NodeConfig<Integer> nc, JSONMessenger<Integer> m)
 	{
 		this.numMesgLock = new Object();
 		
-		this.allNodeIDs = new Vector<NodeIDType>();
+		this.allNodeIDs = new Vector<Integer>();
 		
-		Set<NodeIDType>	nodeIDSet = nc.getNodeIDs();
+		Set<Integer>	nodeIDSet = nc.getNodeIDs();
 		
-		Iterator<NodeIDType> nodeIDIter = nodeIDSet.iterator();
+		Iterator<Integer> nodeIDIter = nodeIDSet.iterator();
 		
 		while( nodeIDIter.hasNext() )
 		{
-			NodeIDType currNodeID = nodeIDIter.next();
+			Integer currNodeID = nodeIDIter.next();
 			allNodeIDs.add(currNodeID);
 		}
 		
-		pendingQueryRequests  = new ConcurrentHashMap<Long, QueryInfo<NodeIDType>>();
+		pendingQueryRequests  = new ConcurrentHashMap<Long, QueryInfo>();
 		
-		pendingUpdateRequests = new ConcurrentHashMap<Long, UpdateInfo<NodeIDType>>();
+		pendingUpdateRequests = new ConcurrentHashMap<Long, UpdateInfo>();
 		
 		// initialize attribute types
 		AttributeTypes.initialize();
 		
 		this.messenger = m;
-		this.protocolExecutor = new ProtocolExecutor<NodeIDType, ContextServicePacket.PacketType, String>(messenger);
-		this.protocolTask = new ContextServiceProtocolTask<NodeIDType>(getMyID(), this);
+		this.protocolExecutor = new ProtocolExecutor<Integer, ContextServicePacket.PacketType, String>(messenger);
+		this.protocolTask = new ContextServiceProtocolTask(getMyID(), this);
 		this.protocolExecutor.register(this.protocolTask.getEventTypes(), this.protocolTask);
 	}
 	
@@ -95,7 +95,7 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 		return this.protocolTask.getEventTypes();
 	}
 	
-	public NodeIDType getMyID()
+	public Integer getMyID()
 	{
 		return this.messenger.getMyID();
 	}
@@ -104,12 +104,12 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 	 * returns all nodeIDs
 	 * @return
 	 */
-	public Vector<NodeIDType> getAllNodeIDs()
+	public Vector<Integer> getAllNodeIDs()
 	{
 		return this.allNodeIDs;
 	}
 	
-	public JSONMessenger<NodeIDType> getJSONMessenger()
+	public JSONMessenger<Integer> getJSONMessenger()
 	{
 		return messenger;
 	}
@@ -117,7 +117,7 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 	@Override
 	public boolean handleMessage(JSONObject jsonObject, NIOHeader nioHeader) 
 	{
-		BasicContextServicePacket<NodeIDType> csPacket = null;
+		BasicContextServicePacket csPacket = null;
 		try
 		{
 			if( (csPacket = this.protocolTask.getContextServicePacket(jsonObject)) != null )
@@ -136,7 +136,7 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 		return this.numMessagesInSystem;
 	}
 	
-	protected void sendQueryReplyBackToUser(InetSocketAddress destAddress, QueryMsgFromUserReply<NodeIDType> qmesgUR)
+	protected void sendQueryReplyBackToUser(InetSocketAddress destAddress, QueryMsgFromUserReply qmesgUR)
 	{
 		try
 		{
@@ -156,8 +156,8 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 	
 	protected void sendUpdateReplyBackToUser(String sourceIP, int sourcePort, long versioNum)
 	{
-		ValueUpdateFromGNSReply<NodeIDType> valUR
-			= new ValueUpdateFromGNSReply<NodeIDType>(this.getMyID(), versioNum, versioNum);
+		ValueUpdateFromGNSReply valUR
+			= new ValueUpdateFromGNSReply(this.getMyID(), versioNum, versioNum);
 		
 		try
 		{
@@ -179,7 +179,7 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 		}
 	}
 	
-	protected void sendRefreshReplyBackToUser(InetSocketAddress destSock, RefreshTrigger<NodeIDType> valUR)
+	protected void sendRefreshReplyBackToUser(InetSocketAddress destSock, RefreshTrigger valUR)
 	{
 		try
 		{
@@ -210,63 +210,63 @@ public abstract class AbstractScheme<NodeIDType> implements PacketDemultiplexer<
 	}
 	
 	// public abstract methods
-	public abstract NodeIDType getConsistentHashingNodeID( String stringToHash, 
-												Vector<NodeIDType> listOfNodesToConsistentlyHash);
+	public abstract Integer getConsistentHashingNodeID( String stringToHash, 
+												Vector<Integer> listOfNodesToConsistentlyHash);
 	
 	
-	public abstract GenericMessagingTask<NodeIDType,?>[] handleQueryMsgFromUser(
+	public abstract GenericMessagingTask<Integer,?>[] handleQueryMsgFromUser(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
-			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+			ProtocolTask<Integer, ContextServicePacket.PacketType, String>[] ptasks);
 	
-	public abstract GenericMessagingTask<NodeIDType,?>[] handleValueUpdateFromGNS(
+	public abstract GenericMessagingTask<Integer,?>[] handleValueUpdateFromGNS(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
-			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+			ProtocolTask<Integer, ContextServicePacket.PacketType, String>[] ptasks);
 	
-	public abstract GenericMessagingTask<NodeIDType,?>[] handleQueryMesgToSubspaceRegion(
+	public abstract GenericMessagingTask<Integer,?>[] handleQueryMesgToSubspaceRegion(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
-			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+			ProtocolTask<Integer, ContextServicePacket.PacketType, String>[] ptasks);
 	
-	public abstract GenericMessagingTask<NodeIDType,?>[] handleQueryMesgToSubspaceRegionReply(
+	public abstract GenericMessagingTask<Integer,?>[] handleQueryMesgToSubspaceRegionReply(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
-			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+			ProtocolTask<Integer, ContextServicePacket.PacketType, String>[] ptasks);
 	
-	public abstract GenericMessagingTask<NodeIDType,?>[] handleValueUpdateToSubspaceRegionMessage(
+	public abstract GenericMessagingTask<Integer,?>[] handleValueUpdateToSubspaceRegionMessage(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
-			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+			ProtocolTask<Integer, ContextServicePacket.PacketType, String>[] ptasks);
 	
-	public abstract GenericMessagingTask<NodeIDType,?>[] handleGetMessage(
+	public abstract GenericMessagingTask<Integer,?>[] handleGetMessage(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
-			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+			ProtocolTask<Integer, ContextServicePacket.PacketType, String>[] ptasks);
 	
-	public abstract GenericMessagingTask<NodeIDType,?>[] handleGetReplyMessage(
+	public abstract GenericMessagingTask<Integer,?>[] handleGetReplyMessage(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
-			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+			ProtocolTask<Integer, ContextServicePacket.PacketType, String>[] ptasks);
 	
-	public abstract GenericMessagingTask<NodeIDType,?>[] handleValueUpdateToSubspaceRegionReplyMessage(
+	public abstract GenericMessagingTask<Integer,?>[] handleValueUpdateToSubspaceRegionReplyMessage(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
-			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+			ProtocolTask<Integer, ContextServicePacket.PacketType, String>[] ptasks);
 	
-	public abstract GenericMessagingTask<NodeIDType,?>[] handleQueryTriggerMessage(
+	public abstract GenericMessagingTask<Integer,?>[] handleQueryTriggerMessage(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
-			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+			ProtocolTask<Integer, ContextServicePacket.PacketType, String>[] ptasks);
 	
-	public abstract GenericMessagingTask<NodeIDType,?>[] handleUpdateTriggerMessage(
+	public abstract GenericMessagingTask<Integer,?>[] handleUpdateTriggerMessage(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
-			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+			ProtocolTask<Integer, ContextServicePacket.PacketType, String>[] ptasks);
 	
-	public abstract GenericMessagingTask<NodeIDType,?>[] handleUpdateTriggerReply(
+	public abstract GenericMessagingTask<Integer,?>[] handleUpdateTriggerReply(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
-			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+			ProtocolTask<Integer, ContextServicePacket.PacketType, String>[] ptasks);
 	
-	public abstract GenericMessagingTask<NodeIDType,?>[] handleClientConfigRequest(
+	public abstract GenericMessagingTask<Integer,?>[] handleClientConfigRequest(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
-			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+			ProtocolTask<Integer, ContextServicePacket.PacketType, String>[] ptasks);
 	
-	public abstract GenericMessagingTask<NodeIDType,?>[] handleACLUpdateToSubspaceRegionMessage(
+	public abstract GenericMessagingTask<Integer,?>[] handleACLUpdateToSubspaceRegionMessage(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
-			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+			ProtocolTask<Integer, ContextServicePacket.PacketType, String>[] ptasks);
 	
-	public abstract GenericMessagingTask<NodeIDType,?>[] handleACLUpdateToSubspaceRegionReplyMessage(
+	public abstract GenericMessagingTask<Integer,?>[] handleACLUpdateToSubspaceRegionReplyMessage(
 			ProtocolEvent<ContextServicePacket.PacketType, String> event,
-			ProtocolTask<NodeIDType, ContextServicePacket.PacketType, String>[] ptasks);
+			ProtocolTask<Integer, ContextServicePacket.PacketType, String>[] ptasks);
 }

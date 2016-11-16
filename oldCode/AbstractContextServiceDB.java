@@ -12,9 +12,9 @@ import edu.umass.cs.contextservice.database.records.ValueInfoObjectRecord;
  * 
  * @author adipc
  */
-public abstract class AbstractContextServiceDB<NodeIDType>
+public abstract class AbstractContextServiceDB<Integer>
 {
-	protected final NodeIDType myID;
+	protected final Integer myID;
 	
 	// get methods
 	/**
@@ -24,9 +24,9 @@ public abstract class AbstractContextServiceDB<NodeIDType>
 	 * @param queryAttrs
 	 * @return
 	 */
-	public abstract AttributeMetadataInfoRecord<NodeIDType, Double> getAttributeMetaInfoRecord(String attrName);
+	public abstract AttributeMetadataInfoRecord<Integer, Double> getAttributeMetaInfoRecord(String attrName);
 	
-	public abstract List<AttributeMetaObjectRecord<NodeIDType, Double>> 
+	public abstract List<AttributeMetaObjectRecord<Integer, Double>> 
 						getAttributeMetaObjectRecord(String attrName, double queryMin, double queryMax);
 	
 	
@@ -35,10 +35,10 @@ public abstract class AbstractContextServiceDB<NodeIDType>
 	
 	
 	// put methods
-	public abstract void putAttributeMetaInfoRecord(AttributeMetadataInfoRecord<NodeIDType, Double> putRec);
+	public abstract void putAttributeMetaInfoRecord(AttributeMetadataInfoRecord<Integer, Double> putRec);
 	
 	public abstract void putAttributeMetaObjectRecord
-							(AttributeMetaObjectRecord<NodeIDType, Double> putRec, String attrName);
+							(AttributeMetaObjectRecord<Integer, Double> putRec, String attrName);
 	
 	
 	public abstract void putValueObjectRecord(ValueInfoObjectRecord<Double> putRec, String attrName);
@@ -47,7 +47,7 @@ public abstract class AbstractContextServiceDB<NodeIDType>
 	// update methods
 	// having whole record in input
 	public abstract void updateAttributeMetaObjectRecord
-	(AttributeMetaObjectRecord<NodeIDType, Double> putRec, String attrName, JSONObject updateValue, 
+	(AttributeMetaObjectRecord<Integer, Double> putRec, String attrName, JSONObject updateValue, 
 			AttributeMetaObjectRecord.Operations operType, AttributeMetaObjectRecord.Keys fieldType);
 	
 	// updates valueInfoObjectRecord
@@ -67,14 +67,14 @@ public abstract class AbstractContextServiceDB<NodeIDType>
 	// gets GUID record
 	public abstract JSONObject getGUIDRecord(String GUID);
 	
-	public AbstractContextServiceDB(NodeIDType myID)
+	public AbstractContextServiceDB(Integer myID)
 	{
 		this.myID = myID;
 	}
 	
 	
 	// SQL schema methods
-	//public abstract List<AttributeMetaObjectRecord<NodeIDType, Double>> 
+	//public abstract List<AttributeMetaObjectRecord<Integer, Double>> 
 	//				getAttributeMetaObjectRecord(String attrName, double queryMin, double queryMax);
 	
 	

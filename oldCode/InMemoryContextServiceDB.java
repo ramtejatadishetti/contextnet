@@ -22,24 +22,24 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 /**
  * maintains inmemory database for the context service
  * @author adipc
- * @param <NodeIDType>
+ * @param <Integer>
  */
-public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextServiceDB<NodeIDType>
+public class InMemoryContextServiceDB<Integer> extends AbstractContextServiceDB<Integer>
 {
-	//private final ConcurrentHashMap<String, AttributeMetadataInfoRecord<NodeIDType, Double>>
+	//private final ConcurrentHashMap<String, AttributeMetadataInfoRecord<Integer, Double>>
 	//																attrMetaInfoTable;
 	
-	//private final ConcurrentHashMap<String, LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>>>
+	//private final ConcurrentHashMap<String, LinkedList<AttributeMetaObjectRecord<Integer, Double>>>
 	//																metaObjTable;
 	
 	//private final ConcurrentHashMap<String, LinkedList<ValueInfoObjectRecord<Double>>>
 	//																valObjTable;
 	
 	
-	private final HashMap<String, AttributeMetadataInfoRecord<NodeIDType, Double>>
+	private final HashMap<String, AttributeMetadataInfoRecord<Integer, Double>>
 	attrMetaInfoTable;
 
-	private final HashMap<String, LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>>>
+	private final HashMap<String, LinkedList<AttributeMetaObjectRecord<Integer, Double>>>
 	metaObjTable;
 
 	private final HashMap<String, LinkedList<ValueInfoObjectRecord<Double>>>
@@ -54,15 +54,15 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 	private final Object updateGUIDRecMonitor										= new Object();
 	
 	
-	public InMemoryContextServiceDB(NodeIDType myID)
+	public InMemoryContextServiceDB(Integer myID)
 	{
 		super(myID);
-		//attrMetaInfoTable 	= new ConcurrentHashMap<String, AttributeMetadataInfoRecord<NodeIDType, Double>>();
-		//metaObjTable 		= new ConcurrentHashMap<String, LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>>>();
+		//attrMetaInfoTable 	= new ConcurrentHashMap<String, AttributeMetadataInfoRecord<Integer, Double>>();
+		//metaObjTable 		= new ConcurrentHashMap<String, LinkedList<AttributeMetaObjectRecord<Integer, Double>>>();
 		//valObjTable 		= new ConcurrentHashMap<String, LinkedList<ValueInfoObjectRecord<Double>>>();
 		
-		attrMetaInfoTable 	= new HashMap<String, AttributeMetadataInfoRecord<NodeIDType, Double>>();
-		metaObjTable 		= new HashMap<String, LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>>>();
+		attrMetaInfoTable 	= new HashMap<String, AttributeMetadataInfoRecord<Integer, Double>>();
+		metaObjTable 		= new HashMap<String, LinkedList<AttributeMetaObjectRecord<Integer, Double>>>();
 		valObjTable 		= new HashMap<String, LinkedList<ValueInfoObjectRecord<Double>>>();
 		
 		// separately synchronized
@@ -73,25 +73,25 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 	}
 	
 	@Override
-	public AttributeMetadataInfoRecord<NodeIDType, Double> getAttributeMetaInfoRecord(
+	public AttributeMetadataInfoRecord<Integer, Double> getAttributeMetaInfoRecord(
 			String attrName)
 	{
 		return attrMetaInfoTable.get(attrName);
 	}
 	
 	@Override
-	public List<AttributeMetaObjectRecord<NodeIDType, Double>> getAttributeMetaObjectRecord(
+	public List<AttributeMetaObjectRecord<Integer, Double>> getAttributeMetaObjectRecord(
 			String attrName, double queryMin, double queryMax)
 	{
-		LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>> attrMetaObjList = 
+		LinkedList<AttributeMetaObjectRecord<Integer, Double>> attrMetaObjList = 
 				metaObjTable.get(attrName);
 		
-		LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>> resultList = 
-				new LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>>();
+		LinkedList<AttributeMetaObjectRecord<Integer, Double>> resultList = 
+				new LinkedList<AttributeMetaObjectRecord<Integer, Double>>();
 		
 		for(int i=0;i<attrMetaObjList.size();i++)
 		{
-			AttributeMetaObjectRecord<NodeIDType, Double> attrMetaObjRec = 
+			AttributeMetaObjectRecord<Integer, Double> attrMetaObjRec = 
 					attrMetaObjList.get(i);
 			
 			// trying to find if there is an overlap in the ranges, 
@@ -171,23 +171,23 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 	
 	@Override
 	public void putAttributeMetaInfoRecord(
-			AttributeMetadataInfoRecord<NodeIDType, Double> putRec)
+			AttributeMetadataInfoRecord<Integer, Double> putRec)
 	{
 		attrMetaInfoTable.put(putRec.getAttrName(), putRec);
 	}
 	
 	@Override
 	public void putAttributeMetaObjectRecord(
-			AttributeMetaObjectRecord<NodeIDType, Double> putRec,
+			AttributeMetaObjectRecord<Integer, Double> putRec,
 			String attrName)
 	{
-		//LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>>
-		LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>> attrMetaObjRecList 
+		//LinkedList<AttributeMetaObjectRecord<Integer, Double>>
+		LinkedList<AttributeMetaObjectRecord<Integer, Double>> attrMetaObjRecList 
 								= this.metaObjTable.get(attrName);
 		if(attrMetaObjRecList==null)
 		{
 			attrMetaObjRecList 
-					= new LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>>();
+					= new LinkedList<AttributeMetaObjectRecord<Integer, Double>>();
 			attrMetaObjRecList.add(putRec);
 			this.metaObjTable.put(attrName, attrMetaObjRecList);
 		} else
@@ -218,7 +218,7 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 	//FIXME: need to get groupGUID from JSON object
 	@Override
 	public void updateAttributeMetaObjectRecord(
-			AttributeMetaObjectRecord<NodeIDType, Double> dbRec,
+			AttributeMetaObjectRecord<Integer, Double> dbRec,
 			String attrName, JSONObject updateValue, Operations operType,
 			Keys fieldType)
 	{
@@ -335,13 +335,13 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 		
 		for(String key: keySet)
 		{
-			LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>> 
+			LinkedList<AttributeMetaObjectRecord<Integer, Double>> 
 						valueLinkedList = metaObjTable.get(key);
 			
 			for(int i=0;i<valueLinkedList.size();i++)
 			{
-				AttributeMetaObjectRecord<NodeIDType, Double> metadataObj = 
-					(AttributeMetaObjectRecord<NodeIDType, Double>) valueLinkedList.get(i);
+				AttributeMetaObjectRecord<Integer, Double> metadataObj = 
+					(AttributeMetaObjectRecord<Integer, Double>) valueLinkedList.get(i);
 				ContextServiceLogger.getLogger().fine("NodeID "+myID+" attr "+key+" "+metadataObj.toString());
 			}
 		}
@@ -383,7 +383,7 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 		long attrMetaInfoTableSize = 0;
 		for (String key : attrMetaInfoTable.keySet())
 		{
-			AttributeMetadataInfoRecord<NodeIDType, Double> obj = attrMetaInfoTable.get(key);
+			AttributeMetadataInfoRecord<Integer, Double> obj = attrMetaInfoTable.get(key);
 			
 			try
 			{
@@ -400,11 +400,11 @@ public class InMemoryContextServiceDB<NodeIDType> extends AbstractContextService
 		for (String key : attrMetaInfoTable.keySet())
 		{
 			metaObjTableSize+=key.length();
-			LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>> objList 
+			LinkedList<AttributeMetaObjectRecord<Integer, Double>> objList 
 																= this.metaObjTable.get(key);
 			for(int i=0;i<objList.size();i++)
 			{
-				AttributeMetaObjectRecord<NodeIDType, Double> attrMerObjRec = objList.get(i);
+				AttributeMetaObjectRecord<Integer, Double> attrMerObjRec = objList.get(i);
 				try 
 				{
 					metaObjTableSize+=attrMerObjRec.toJSONObject().toString().length();

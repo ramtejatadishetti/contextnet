@@ -16,9 +16,9 @@ import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 
-public class UpdateInfo<NodeIDType>
+public class UpdateInfo
 {	
-	private final ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS;
+	private final ValueUpdateFromGNS valUpdMsgFromGNS;
 	
 	private final long updateRequestId;
 	
@@ -48,8 +48,8 @@ public class UpdateInfo<NodeIDType>
 	private final Object subspaceRepliesLock 									= new Object();
 	
 	
-	public UpdateInfo( ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS, long updateRequestId, 
-			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap )
+	public UpdateInfo( ValueUpdateFromGNS valUpdMsgFromGNS, long updateRequestId, 
+			HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap )
 	{
 		this.valUpdMsgFromGNS = valUpdMsgFromGNS;
 		this.updateRequestId  = updateRequestId;
@@ -72,7 +72,7 @@ public class UpdateInfo<NodeIDType>
 		return updateRequestId;
 	}
 	
-	public ValueUpdateFromGNS<NodeIDType> getValueUpdateFromGNS()
+	public ValueUpdateFromGNS getValueUpdateFromGNS()
 	{
 		return this.valUpdMsgFromGNS;
 	}
@@ -185,8 +185,8 @@ public class UpdateInfo<NodeIDType>
 		return this.toBeAddedMap;
 	}
 	
-	private void initializeRepliesMap( ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS, 
-			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap )
+	private void initializeRepliesMap( ValueUpdateFromGNS valUpdMsgFromGNS, 
+			HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap )
 	{
 		int privacySchemeOrdinal = valUpdMsgFromGNS.getPrivacySchemeOrdinal();
 		
@@ -203,11 +203,11 @@ public class UpdateInfo<NodeIDType>
 				while( keyIter.hasNext() )
 				{
 					int subspaceId = keyIter.next();
-					Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
+					Vector<SubspaceInfo> replicaVector = subspaceInfoMap.get(subspaceId);
 					
 					for( int i=0; i<replicaVector.size(); i++ )
 					{
-						SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(i);
+						SubspaceInfo currSubspaceReplica = replicaVector.get(i);
 						this.initializeSubspaceEntry(subspaceId, currSubspaceReplica.getReplicaNum());
 					}
 				}
@@ -232,11 +232,11 @@ public class UpdateInfo<NodeIDType>
 				{	
 					int subspaceId = overlapSubspaceList.get(i);
 					
-					Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
+					Vector<SubspaceInfo> replicaVector = subspaceInfoMap.get(subspaceId);
 					
 					for( int j=0; j<replicaVector.size(); j++ )
 					{
-						SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(j);
+						SubspaceInfo currSubspaceReplica = replicaVector.get(j);
 						this.initializeSubspaceEntry(subspaceId, currSubspaceReplica.getReplicaNum());
 					}
 				}
@@ -264,11 +264,11 @@ public class UpdateInfo<NodeIDType>
 				{	
 					int subspaceId = overlapSubspaceList.get(i);
 					
-					Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
+					Vector<SubspaceInfo> replicaVector = subspaceInfoMap.get(subspaceId);
 					
 					for( int j=0; j<replicaVector.size(); j++ )
 					{
-						SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(j);
+						SubspaceInfo currSubspaceReplica = replicaVector.get(j);
 						this.initializeSubspaceEntry(subspaceId, currSubspaceReplica.getReplicaNum());
 					}
 				}
@@ -281,7 +281,7 @@ public class UpdateInfo<NodeIDType>
 		}
 	}
 	
-	private List<Integer> getOverlappingSubsapceIds( HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> 
+	private List<Integer> getOverlappingSubsapceIds( HashMap<Integer, Vector<SubspaceInfo>> 
 			subspaceInfoMap, JSONArray anonymizedIDAttrSet )
 	{
 		List<Integer> subspaceIdList = new LinkedList<Integer>();
@@ -291,9 +291,9 @@ public class UpdateInfo<NodeIDType>
 		while( keyIter.hasNext() )
 		{
 			int subspaceId = keyIter.next();
-			Vector<SubspaceInfo<NodeIDType>> replicaVector = subspaceInfoMap.get(subspaceId);
+			Vector<SubspaceInfo> replicaVector = subspaceInfoMap.get(subspaceId);
 			
-			SubspaceInfo<NodeIDType> currSubspaceReplica = replicaVector.get(0);
+			SubspaceInfo currSubspaceReplica = replicaVector.get(0);
 			
 			HashMap<String, AttributePartitionInfo> attrSubspace = 
 									currSubspaceReplica.getAttributesOfSubspace();

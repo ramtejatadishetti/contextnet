@@ -10,7 +10,7 @@ import org.json.JSONObject;
  * tables and its search and update calls.
  * @author adipc
  */
-public interface TriggerInformationStorageInterface<NodeIDType>
+public interface TriggerInformationStorageInterface
 {
 	/**
 	 * Creates trigger tables

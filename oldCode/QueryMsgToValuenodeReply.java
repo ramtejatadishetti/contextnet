@@ -9,12 +9,12 @@ import org.json.JSONObject;
  * the source of the query. 
  * @author adipc
  */
-public class QueryMsgToValuenodeReply<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class QueryMsgToValuenodeReply<Integer> extends BasicContextServicePacket<Integer>
 {
 	private enum Keys {GUIDs, SOURCE_ID, REQUESTID, COMPONENT_ID, NUM_VAL_NODES_CONTACTED};
 	
 	private final JSONArray resultGUIDs;
-	private final NodeIDType sourceNodeId;
+	private final Integer sourceNodeId;
 	private final long requestID;    // queryID
 	private final int componentID;   // component within the query ID
 	
@@ -23,8 +23,8 @@ public class QueryMsgToValuenodeReply<NodeIDType> extends BasicContextServicePac
 	private final int numValNodesCont;
 	
 	
-	public QueryMsgToValuenodeReply(NodeIDType initiator, JSONArray resultGUIDs, 
-			long requestID, int componentID, NodeIDType sourceID, int numValNodesCont)
+	public QueryMsgToValuenodeReply(Integer initiator, JSONArray resultGUIDs, 
+			long requestID, int componentID, Integer sourceID, int numValNodesCont)
 	{
 		super(initiator, ContextServicePacket.PacketType.QUERY_MSG_TO_VALUENODE_REPLY);
 		
@@ -53,7 +53,7 @@ public class QueryMsgToValuenodeReply<NodeIDType> extends BasicContextServicePac
 		
 		this.resultGUIDs = json.getJSONArray(Keys.GUIDs.toString());
 		
-		this.sourceNodeId = (NodeIDType)json.get(Keys.SOURCE_ID.toString());
+		this.sourceNodeId = (Integer)json.get(Keys.SOURCE_ID.toString());
 		this.requestID = json.getLong(Keys.REQUESTID.toString());
 		this.componentID = json.getInt(Keys.COMPONENT_ID.toString());
 		this.numValNodesCont = json.getInt(Keys.NUM_VAL_NODES_CONTACTED.toString());
@@ -75,7 +75,7 @@ public class QueryMsgToValuenodeReply<NodeIDType> extends BasicContextServicePac
 		return this.resultGUIDs;
 	}
 	
-	public NodeIDType getSourceID()
+	public Integer getSourceID()
 	{
 		return this.sourceNodeId;
 	}

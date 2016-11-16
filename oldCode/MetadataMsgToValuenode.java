@@ -6,9 +6,9 @@ import org.json.JSONObject;
 /**
  * @author adipc
  *
- * @param <NodeIDType>
+ * @param <Integer>
  */
-public class MetadataMsgToValuenode<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class MetadataMsgToValuenode<Integer> extends BasicContextServicePacket<Integer>
 {
 	private enum Keys {ATTR_NAME, RANGE_START, RANGE_END};
 	
@@ -16,7 +16,7 @@ public class MetadataMsgToValuenode<NodeIDType> extends BasicContextServicePacke
 	private final double rangeStart;
 	private final double rangeEnd;
 
-	public MetadataMsgToValuenode(NodeIDType initiator, String attrName, 
+	public MetadataMsgToValuenode(Integer initiator, String attrName, 
 			double rangeStart, double rangeEnd) 
 	{
 		super(initiator, ContextServicePacket.PacketType.METADATA_MSG_TO_VALUENODE);

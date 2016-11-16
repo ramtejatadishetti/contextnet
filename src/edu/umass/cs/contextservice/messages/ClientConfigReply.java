@@ -4,7 +4,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class ClientConfigReply<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class ClientConfigReply extends BasicContextServicePacket
 {
 	private enum Keys {NodeConfigArray, AttributeArray, SubspaceConfigArray};
 	
@@ -14,7 +14,7 @@ public class ClientConfigReply<NodeIDType> extends BasicContextServicePacket<Nod
 	// each element is a JSONArray of attributes.
 	private final JSONArray subspaceInfoArray;
 	
-	public ClientConfigReply( NodeIDType initiator, JSONArray nodeConfigArray, 
+	public ClientConfigReply( Integer initiator, JSONArray nodeConfigArray, 
 			JSONArray attrbuteArray, JSONArray subspaceInfoArray )
 	{
 		super(initiator, ContextServicePacket.PacketType.CONFIG_REPLY);

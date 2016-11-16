@@ -3,7 +3,7 @@ package edu.umass.cs.contextservice.messages;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class QueryMsgFromUser<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class QueryMsgFromUser extends BasicContextServicePacket
 {
 	private enum Keys {QUERY, USER_REQ_NUM, EXPIRY_TIME, 
 							SOURCEIP, SOURCEPORT, PRIVACY_SCHEME};
@@ -20,7 +20,7 @@ public class QueryMsgFromUser<NodeIDType> extends BasicContextServicePacket<Node
 	// this is privacy scheme ordinal defined in PrivacySchemes enum in contextservice config.
 	private final int privacyScheme;
 	
-	public QueryMsgFromUser(NodeIDType initiator, String userQuery, long userReqNum, 
+	public QueryMsgFromUser(Integer initiator, String userQuery, long userReqNum, 
 			long expiryTime, String sourceIP, int sourcePort, int privacyScheme)
 	{
 		super(initiator, ContextServicePacket.PacketType.QUERY_MSG_FROM_USER);

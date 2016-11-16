@@ -4,8 +4,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class QueryMsgFromUserReply<NodeIDType> 
-									extends BasicContextServicePacket<NodeIDType>
+public class QueryMsgFromUserReply 
+									extends BasicContextServicePacket
 {
 	private enum Keys { QUERY, QUERY_GUID, GUIDs, USER_REQ_NUM, 
 		REPLY_SIZE, PRIVACY_SCHEME };
@@ -18,7 +18,7 @@ public class QueryMsgFromUserReply<NodeIDType>
 	private final int privacySchemeOrdinal;
 	
 	
-	public QueryMsgFromUserReply( NodeIDType initiator, String query, String queryGUID, 
+	public QueryMsgFromUserReply( Integer initiator, String query, String queryGUID, 
 			JSONArray resultGUIDs, long userReqNum, int replySize, int privacyScheme )
 	{
 		super(initiator, ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY);

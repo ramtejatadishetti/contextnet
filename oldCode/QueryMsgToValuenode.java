@@ -10,9 +10,9 @@ import edu.umass.cs.contextservice.queryparsing.QueryComponent;
  * for each query
  * @author adipc
  *
- * @param <NodeIDType>
+ * @param <Integer>
  */
-public class QueryMsgToValuenode<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class QueryMsgToValuenode<Integer> extends BasicContextServicePacket<Integer>
 {
 	/**
 	 * PREDICATE: predicate for this message, like 1 <= contextATT0 <= 1000 is a valid predicate.
@@ -28,7 +28,7 @@ public class QueryMsgToValuenode<NodeIDType> extends BasicContextServicePacket<N
 	private enum Keys {PREDICATE, SOURCE_ID, REQUESTID, qUERY, GROUP_GUID, NUM_VAL_NODES_CONTACTED};
 	
 	private final QueryComponent predicate;
-	private final NodeIDType sourceNodeId;
+	private final Integer sourceNodeId;
 	private final long requestID;
 	
 	// additional info for trigger to update groups on
@@ -41,7 +41,7 @@ public class QueryMsgToValuenode<NodeIDType> extends BasicContextServicePacket<N
 	private final int numValueNodesContacted;
 	
 	
-	public QueryMsgToValuenode(NodeIDType initiator, QueryComponent predicate, long requestId, NodeIDType sourceID,
+	public QueryMsgToValuenode(Integer initiator, QueryComponent predicate, long requestId, Integer sourceID,
 			String query, String groupGUID, int numValNodesCon)
 	{
 		super(initiator, ContextServicePacket.PacketType.QUERY_MSG_TO_VALUENODE);
@@ -59,7 +59,7 @@ public class QueryMsgToValuenode<NodeIDType> extends BasicContextServicePacket<N
 		super(json);
 		//this.predicate = QueryComponent.getQueryComponent(json.getJSONObject(Keys.PREDICATE.toString()));
 		this.predicate = null;
-		this.sourceNodeId = (NodeIDType) json.get(Keys.SOURCE_ID.toString());
+		this.sourceNodeId = (Integer) json.get(Keys.SOURCE_ID.toString());
 		this.requestID = json.getLong(Keys.REQUESTID.toString());
 		this.query = json.getString(Keys.qUERY.toString());
 		this.groupGUID = json.getString(Keys.GROUP_GUID.toString());
@@ -89,7 +89,7 @@ public class QueryMsgToValuenode<NodeIDType> extends BasicContextServicePacket<N
 		return requestID;
 	}
 	
-	public NodeIDType getSourceId()
+	public Integer getSourceId()
 	{
 		return sourceNodeId;
 	}

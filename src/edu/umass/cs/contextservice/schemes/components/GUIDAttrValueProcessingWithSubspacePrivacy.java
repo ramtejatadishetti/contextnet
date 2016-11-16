@@ -28,14 +28,14 @@ import edu.umass.cs.contextservice.schemes.helperclasses.SubspaceSearchReplyInfo
 import edu.umass.cs.contextservice.updates.UpdateInfo;
 import edu.umass.cs.nio.JSONMessenger;
 
-public class GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType> 
-							extends AbstractGUIDAttrValueProcessing<NodeIDType>
+public class GUIDAttrValueProcessingWithSubspacePrivacy
+							extends AbstractGUIDAttrValueProcessing
 {	
-	public GUIDAttrValueProcessingWithSubspacePrivacy( NodeIDType myID, 
-			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> 
-		subspaceInfoMap , HyperspaceMySQLDB<NodeIDType> hyperspaceDB, 
-		JSONMessenger<NodeIDType> messenger , 
-		ConcurrentHashMap<Long, QueryInfo<NodeIDType>> pendingQueryRequests, 
+	public GUIDAttrValueProcessingWithSubspacePrivacy( Integer myID, 
+			HashMap<Integer, Vector<SubspaceInfo>> 
+		subspaceInfoMap , HyperspaceMySQLDB hyperspaceDB, 
+		JSONMessenger<Integer> messenger , 
+		ConcurrentHashMap<Long, QueryInfo> pendingQueryRequests, 
 		ProfilerStatClass profStats )
 	{
 		super( myID, subspaceInfoMap, hyperspaceDB, messenger, 
@@ -43,7 +43,7 @@ public class GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType>
 	}
 	
 	public void processQueryMsgFromUser
-			( QueryInfo<NodeIDType> queryInfo, boolean storeQueryForTrigger )
+			( QueryInfo queryInfo, boolean storeQueryForTrigger )
 	{
 		String query;
 		String userIP;
@@ -102,8 +102,8 @@ public class GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType>
 		    {
 		    	Integer respNodeId = respNodeIdIter.next();
 		    	
-		    	QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion = 
-						new QueryMesgToSubspaceRegion<NodeIDType>
+		    	QueryMesgToSubspaceRegion queryMesgToSubspaceRegion = 
+						new QueryMesgToSubspaceRegion
 		    			( myID, queryInfo.getRequestId(), query, grpGUID, 
 		    					subspaceId, userIP, userPort, 
 		    					storeQueryForTrigger, expiryTime, 
@@ -111,7 +111,7 @@ public class GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType>
 		    	
 				try
 				{
-					this.messenger.sendToID( (NodeIDType)respNodeId, 
+					this.messenger.sendToID( (Integer)respNodeId, 
 							queryMesgToSubspaceRegion.toJSONObject() );
 				} catch (IOException e)
 				{
@@ -127,12 +127,12 @@ public class GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType>
 	}
 	
 	
-	public int processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion<NodeIDType> 
+	public int processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion 
 													queryMesgToSubspaceRegion, 
 													JSONArray resultGUIDs)
 	{
 		String query 				 = queryMesgToSubspaceRegion.getQuery();
-		QueryInfo<NodeIDType> qInfo	 = new QueryInfo<NodeIDType>(query);
+		QueryInfo qInfo	 			 = new QueryInfo(query);
 		int subspaceId 				 = queryMesgToSubspaceRegion.getSubspaceNum();
 		
 		// first replica. There is always 1 replica
@@ -156,7 +156,7 @@ public class GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType>
 	}
 	
 	private HashMap<String, ProcessingQueryComponent> filterQueryComponentsForASubspace(
-			HashMap<String, ProcessingQueryComponent> queryComponents, SubspaceInfo<NodeIDType> subsapceInfo)
+			HashMap<String, ProcessingQueryComponent> queryComponents, SubspaceInfo subsapceInfo)
 	{
 		HashMap<String, ProcessingQueryComponent> filteredQComponents =
 					new HashMap<String, ProcessingQueryComponent>();
@@ -176,13 +176,13 @@ public class GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType>
 		return filteredQComponents;
 	}
 	
-	public void processQueryMesgToSubspaceRegionReply(QueryMesgToSubspaceRegionReply<NodeIDType> 
+	public void processQueryMesgToSubspaceRegionReply(QueryMesgToSubspaceRegionReply 
 									queryMesgToSubspaceRegionReply)
 	{
-		NodeIDType senderID = queryMesgToSubspaceRegionReply.getSender();
+		Integer senderID = queryMesgToSubspaceRegionReply.getSender();
 		long requestId = queryMesgToSubspaceRegionReply.getRequestId();
 
-		QueryInfo<NodeIDType> queryInfo = pendingQueryRequests.get(requestId);
+		QueryInfo queryInfo = pendingQueryRequests.get(requestId);
 
 		boolean allRepRecvd = 
 				queryInfo.addReplyFromARegionOfASubspace(queryMesgToSubspaceRegionReply.getSubsapceId(), 
@@ -248,8 +248,8 @@ public class GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType>
 				}
 			}
 			
-			QueryMsgFromUserReply<NodeIDType> queryMsgFromUserReply 
-				= new QueryMsgFromUserReply<NodeIDType>( myID, 
+			QueryMsgFromUserReply queryMsgFromUserReply 
+				= new QueryMsgFromUserReply( myID, 
 						queryInfo.getQuery(), queryInfo.getGroupGUID(), concatResult, 
 						queryInfo.getUserReqID(), totalNumReplies, 
 						PrivacySchemes.SUBSPACE_PRIVACY.ordinal() );
@@ -283,7 +283,7 @@ public class GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType>
 		while( keyIter.hasNext() )
 		{
 			int subspaceId = keyIter.next();
-			SubspaceInfo<NodeIDType> currSubInfo 
+			SubspaceInfo currSubInfo 
 							= subspaceInfoMap.get(subspaceId).get(0);
 			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo 
 							= currSubInfo.getAttributesOfSubspace();
@@ -330,7 +330,7 @@ public class GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType>
 			// get number of nodes/or regions to send to in that subspace.
 			
 			// choose a replica randomly
-			Vector<SubspaceInfo<NodeIDType>> subspaceReplicas 
+			Vector<SubspaceInfo> subspaceReplicas 
 								= subspaceInfoMap.get(subspaceId);
 			
 			int replicaNum = subspaceReplicas.get
@@ -353,7 +353,7 @@ public class GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType>
 	}
 	
 	
-	public void processUpdateFromGNS( UpdateInfo<NodeIDType> updateReq )
+	public void processUpdateFromGNS( UpdateInfo updateReq )
 	{
 		String GUID 	 					= updateReq.getValueUpdateFromGNS().getGUID();
 		JSONObject attrValuePairs 
@@ -445,7 +445,7 @@ public class GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType>
 		while( keyIter.hasNext() )
 		{
 			int subspaceId 			= keyIter.next();
-			Vector<SubspaceInfo<NodeIDType>> replicasVect 
+			Vector<SubspaceInfo> replicasVect 
 									= subspaceInfoMap.get(subspaceId);
 			
 			assert(replicasVect.size() > 0);
@@ -458,7 +458,7 @@ public class GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType>
 			{
 				for( int i=0; i<replicasVect.size(); i++ )
 				{
-					SubspaceInfo<NodeIDType> currSubInfo 
+					SubspaceInfo currSubInfo 
 								= replicasVect.get(i);
 					int replicaNum = currSubInfo.getReplicaNum();
 					

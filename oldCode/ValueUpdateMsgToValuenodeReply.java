@@ -3,7 +3,7 @@ package edu.umass.cs.contextservice.messages;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class ValueUpdateMsgToValuenodeReply<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class ValueUpdateMsgToValuenodeReply<Integer> extends BasicContextServicePacket<Integer>
 {
 	private enum Keys {VERSION_NUM, NUM_REPLY, REQUEST_ID};
 	
@@ -11,7 +11,7 @@ public class ValueUpdateMsgToValuenodeReply<NodeIDType> extends BasicContextServ
 	private final int numReply;  // numReply to recv
 	private final long requestID;
 	
-	public ValueUpdateMsgToValuenodeReply(NodeIDType initiator, long versionNum, int numRep, long requestID)
+	public ValueUpdateMsgToValuenodeReply(Integer initiator, long versionNum, int numRep, long requestID)
 	{
 		super(initiator, ContextServicePacket.PacketType.VALUE_UPDATE_MSG_TO_VALUENODE_REPLY);
 		this.versionNum = versionNum;
@@ -21,7 +21,7 @@ public class ValueUpdateMsgToValuenodeReply<NodeIDType> extends BasicContextServ
 	
 	public ValueUpdateMsgToValuenodeReply(JSONObject json) throws JSONException
 	{
-		//ValueUpdateFromGNS((NodeIDType)0, json.getString(Keys.GUID.toString()), 
+		//ValueUpdateFromGNS((Integer)0, json.getString(Keys.GUID.toString()), 
 		//		json.getDouble(Keys.OLDVALUE.toString()), json.getDouble(Keys.NEWVALUE.toString()));
 		super(json);
 		this.versionNum = json.getLong(Keys.VERSION_NUM.toString());

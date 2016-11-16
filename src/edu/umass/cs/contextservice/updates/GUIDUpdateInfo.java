@@ -8,9 +8,9 @@ import java.util.Queue;
  * The operations of this class is synchronized by external lock.
  * 
  * @author adipc
- * @param <NodeIDType>
+ * @param <Integer>
  */
-public class GUIDUpdateInfo<NodeIDType>
+public class GUIDUpdateInfo
 {
 	// GUID associated with this object
 	private final String GUID;

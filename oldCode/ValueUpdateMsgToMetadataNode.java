@@ -6,9 +6,9 @@ import org.json.JSONObject;
 /**
  * @author ayadav
  *
- * @param <NodeIDType>
+ * @param <Integer>
  */
-public class ValueUpdateMsgToMetadataNode<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class ValueUpdateMsgToMetadataNode<Integer> extends BasicContextServicePacket<Integer>
 {
 	private enum Keys {VERSION_NUM , GUID, ATTR_NAME, OLD_VAL, NEW_VAL, REQUEST_ID};
 	
@@ -29,11 +29,11 @@ public class ValueUpdateMsgToMetadataNode<NodeIDType> extends BasicContextServic
 	// the value of this attribute is in allAttributes array.
 	//private final String taggedAttrName;
 	
-	//private final NodeIDType sourceID;
+	//private final Integer sourceID;
 	
 	private final long requestID;
 	
-	public ValueUpdateMsgToMetadataNode(NodeIDType initiator, long versionNum, String GUID, String attrName, double oldValue,
+	public ValueUpdateMsgToMetadataNode(Integer initiator, long versionNum, String GUID, String attrName, double oldValue,
 			double newValue, long requestID)
 	{
 		super(initiator, ContextServicePacket.PacketType.VALUE_UPDATE_MSG_TO_METADATANODE);
@@ -58,7 +58,7 @@ public class ValueUpdateMsgToMetadataNode<NodeIDType> extends BasicContextServic
 		this.newValue = json.getDouble(Keys.NEW_VAL.toString());
 		//this.allAttributes = json.getJSONObject(Keys.ALL_OTHER_ATTRs.toString());
 		//this.taggedAttrName = json.getString(Keys.TAGGED_ATTR.toString());
-		//this.sourceID= (NodeIDType) json.get(Keys.SOURCE_ID.toString());
+		//this.sourceID= (Integer) json.get(Keys.SOURCE_ID.toString());
 		this.requestID = json.getLong(Keys.REQUEST_ID.toString());
 	}
 	
@@ -110,7 +110,7 @@ public class ValueUpdateMsgToMetadataNode<NodeIDType> extends BasicContextServic
 	{
 		return this.taggedAttrName;
 	}*/
-	/*public NodeIDType getSourceID()
+	/*public Integer getSourceID()
 	{
 		return this.sourceID;
 	}*/

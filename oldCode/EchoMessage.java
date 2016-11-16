@@ -4,7 +4,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 
-public class EchoMessage<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class EchoMessage<Integer> extends BasicContextServicePacket<Integer>
 {
 	private enum Keys {ECHO_MESSAGE, SOURCEIP, SOURCEPORT};
 	
@@ -12,7 +12,7 @@ public class EchoMessage<NodeIDType> extends BasicContextServicePacket<NodeIDTyp
 	private final String sourceIP;
 	private final int sourcePort;
 	
-	public EchoMessage(NodeIDType initiator, String echoMessage, String sourceIP, int sourcePort)
+	public EchoMessage(Integer initiator, String echoMessage, String sourceIP, int sourcePort)
 	{
 		super(initiator, ContextServicePacket.PacketType.ECHO_MESSAGE);
 		this.echoMessage = echoMessage;

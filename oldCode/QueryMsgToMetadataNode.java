@@ -12,12 +12,12 @@ import edu.umass.cs.contextservice.queryparsing.QueryComponent;
  * @author adipc
  * 
  */
-public class QueryMsgToMetadataNode<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class QueryMsgToMetadataNode<Integer> extends BasicContextServicePacket<Integer>
 {
 	private enum Keys {PREDICATE, SOURCE_ID, REQUESTID, qUERY, GROUP_GUID};
 	
 	private final QueryComponent predicate;
-	private final NodeIDType sourceNodeId;
+	private final Integer sourceNodeId;
 	private final long requestID;
 	
 	// additional info for trigger to update groups on
@@ -31,8 +31,8 @@ public class QueryMsgToMetadataNode<NodeIDType> extends BasicContextServicePacke
 	 * sourceID will be the ID of the node that 
 	 * recvd query from the user.
 	 */
-	public QueryMsgToMetadataNode(NodeIDType initiator, QueryComponent predicate, long requestId, 
-			NodeIDType sourceID, String query, String groupGUID)
+	public QueryMsgToMetadataNode(Integer initiator, QueryComponent predicate, long requestId, 
+			Integer sourceID, String query, String groupGUID)
 	{
 		super(initiator, ContextServicePacket.PacketType.QUERY_MSG_TO_METADATANODE);
 		this.predicate = predicate;
@@ -48,7 +48,7 @@ public class QueryMsgToMetadataNode<NodeIDType> extends BasicContextServicePacke
 		super(json);
 		//this.predicate = QueryComponent.getQueryComponent(json.getJSONObject(Keys.PREDICATE.toString()));
 		this.predicate = null;
-		this.sourceNodeId = (NodeIDType)json.get(Keys.SOURCE_ID.toString());
+		this.sourceNodeId = (Integer)json.get(Keys.SOURCE_ID.toString());
 		this.requestID = json.getLong(Keys.REQUESTID.toString());
 		this.query = json.getString(Keys.qUERY.toString());
 		this.groupGUID = json.getString(Keys.GROUP_GUID.toString());
@@ -76,7 +76,7 @@ public class QueryMsgToMetadataNode<NodeIDType> extends BasicContextServicePacke
 		return requestID;
 	}
 	
-	public NodeIDType getSourceId()
+	public Integer getSourceId()
 	{
 		return sourceNodeId;
 	}

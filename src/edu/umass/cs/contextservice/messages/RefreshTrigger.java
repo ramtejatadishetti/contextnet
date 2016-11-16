@@ -4,7 +4,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class RefreshTrigger<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class RefreshTrigger extends BasicContextServicePacket
 {
 	private enum Keys {TO_BE_REMOVED, TO_BE_ADDED, 
 		VERSION_NUM, GUID, UPDATE_START_TIME, NUM_REMOVED, NUM_ADDED};
@@ -22,7 +22,7 @@ public class RefreshTrigger<NodeIDType> extends BasicContextServicePacket<NodeID
 	private final int numAdded;
 	
 	
-	public RefreshTrigger( NodeIDType initiator, JSONArray toBeRemoved, 
+	public RefreshTrigger( Integer initiator, JSONArray toBeRemoved, 
 			JSONArray toBeAdded, long versionNum,
 			String GUID, long updStartTime, int numRemoved, int numAdded )
 	{

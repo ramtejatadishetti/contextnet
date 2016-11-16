@@ -30,11 +30,11 @@ import edu.umass.cs.contextservice.messages.ValueUpdateMsgToMetadataNode;
 import edu.umass.cs.contextservice.queryparsing.QueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryParser;
 
-public class SQLContextServiceDB<NodeIDType>
+public class SQLContextServiceDB<Integer>
 {
 	//private final Connection dbConnection;
-	private final NodeIDType myNodeID;
-	private final HashMap<NodeIDType, SQLNodeInfo> sqlNodeInfoMap;
+	private final Integer myNodeID;
+	private final HashMap<Integer, SQLNodeInfo> sqlNodeInfoMap;
 	
 	public static final int NUM_PARALLEL_CLIENTS				= 100;
 	
@@ -46,10 +46,10 @@ public class SQLContextServiceDB<NodeIDType>
 	
 	//private final Object storeFullObjMonitor					= new Object();
 	
-	public SQLContextServiceDB(NodeIDType myNodeID) throws Exception
+	public SQLContextServiceDB(Integer myNodeID) throws Exception
 	{
 		this.myNodeID = myNodeID;
-		sqlNodeInfoMap = new HashMap<NodeIDType, SQLNodeInfo>();
+		sqlNodeInfoMap = new HashMap<Integer, SQLNodeInfo>();
 		readDBNodeSetup();
 		
 		freedbConnQueue = new ConcurrentLinkedQueue<Connection>();
@@ -313,7 +313,7 @@ public class SQLContextServiceDB<NodeIDType>
 	
 	
 	public void putAttributeMetaObjectRecord
-							(String attrName, double lowerRange, double upperRange, NodeIDType nodeID)
+							(String attrName, double lowerRange, double upperRange, Integer nodeID)
 	{
 		Connection myConn = this.getAFreeConnection();
 		Statement statement = null;
@@ -671,7 +671,7 @@ public class SQLContextServiceDB<NodeIDType>
 			sqlNodeInfo.directoryName = dirName;
 			sqlNodeInfo.portNum = readPort;
 					
-			this.sqlNodeInfoMap.put((NodeIDType)readNodeId, sqlNodeInfo);
+			this.sqlNodeInfoMap.put((Integer)readNodeId, sqlNodeInfo);
 			
 			//csNodeConfig.add(readNodeId, new InetSocketAddress(readIPAddress, readPort));
 		}

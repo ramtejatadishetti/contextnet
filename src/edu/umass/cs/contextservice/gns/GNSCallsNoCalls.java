@@ -1,12 +1,9 @@
 package edu.umass.cs.contextservice.gns;
 
 import java.net.InetSocketAddress;
-import java.util.LinkedList;
-import java.util.logging.Logger;
 
 import org.json.JSONArray;
 
-import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.utils.Utils;
 
 /**

@@ -60,38 +60,38 @@ import edu.umass.cs.nio.interfaces.NodeConfig;
 import edu.umass.cs.protocoltask.ProtocolEvent;
 import edu.umass.cs.protocoltask.ProtocolTask;
 
-public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
+public class HyperspaceHashing extends AbstractScheme
 {
-	private  HyperspaceMySQLDB<NodeIDType> hyperspaceDB 								= null;
+	private  HyperspaceMySQLDB hyperspaceDB 										= null;
 	private final ExecutorService nodeES;
 	
-	private HashMap<String, GUIDUpdateInfo<NodeIDType>> guidUpdateInfoMap				= null;
+	private HashMap<String, GUIDUpdateInfo> guidUpdateInfoMap				= null;
 	
-	private final AbstractSubspaceConfigurator<NodeIDType> subspaceConfigurator;
+	private final AbstractSubspaceConfigurator subspaceConfigurator;
 	
 	private CalculateOptimalNumAttrsInSubspace optimalHCalculator;
 	
-	private final AbstractGUIDAttrValueProcessing<NodeIDType> noPrivacyGuidAttrValProcessing;
-	private final AbstractGUIDAttrValueProcessing<NodeIDType> hyperspacePrivacyGuidAttrValProcessing;
-	private final AbstractGUIDAttrValueProcessing<NodeIDType> subspacePrivacyGuidAttrValProcessing;
+	private final AbstractGUIDAttrValueProcessing noPrivacyGuidAttrValProcessing;
+	private final AbstractGUIDAttrValueProcessing hyperspacePrivacyGuidAttrValProcessing;
+	private final AbstractGUIDAttrValueProcessing subspacePrivacyGuidAttrValProcessing;
 	
 	
-	private TriggerProcessingInterface<NodeIDType> triggerProcessing;
+	private TriggerProcessingInterface triggerProcessing;
 	
-	private ProfilerStatClass<NodeIDType> profStats;
+	private ProfilerStatClass profStats;
 	
 	private HashMap<String, Boolean> groupGUIDSyncMap;
 	public static final Logger log 														= ContextServiceLogger.getLogger();
 	
 	
-	public HyperspaceHashing(NodeConfig<NodeIDType> nc,
-			JSONMessenger<NodeIDType> m) throws Exception
+	public HyperspaceHashing(NodeConfig<Integer> nc,
+			JSONMessenger<Integer> m) throws Exception
 	{
 		super(nc, m);
 		
 		if(ContextServiceConfig.PROFILER_THREAD)
 		{
-			profStats = new ProfilerStatClass<NodeIDType>();
+			profStats = new ProfilerStatClass();
 			new Thread(profStats).start();
 			profStats.monitorUpdateRequestsQueue(pendingUpdateRequests);
 		}
@@ -100,7 +100,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		nodeES = Executors.newFixedThreadPool(
 				ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
 		
-		guidUpdateInfoMap = new HashMap<String, GUIDUpdateInfo<NodeIDType>>();
+		guidUpdateInfoMap = new HashMap<String, GUIDUpdateInfo>();
 		
 		if(!ContextServiceConfig.disableOptimizer)
 		{
@@ -111,13 +111,13 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			if( optimalHCalculator.getBasicOrReplicated() )
 			{
 				subspaceConfigurator 
-					= new BasicSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), 
+					= new BasicSubspaceConfigurator(messenger.getNodeConfig(), 
 							optimalHCalculator.getOptimalH() );
 			}
 			else
 			{
 				subspaceConfigurator 
-					= new ReplicatedSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), 
+					= new ReplicatedSubspaceConfigurator(messenger.getNodeConfig(), 
 							optimalHCalculator.getOptimalH() );
 			}
 		}
@@ -126,13 +126,13 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			if(ContextServiceConfig.basicConfig)
 			{
 				subspaceConfigurator 
-					= new BasicSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), 
+					= new BasicSubspaceConfigurator(messenger.getNodeConfig(), 
 						(int)ContextServiceConfig.optimalH );
 			}
 			else
 			{
 				subspaceConfigurator 
-					= new ReplicatedSubspaceConfigurator<NodeIDType>(messenger.getNodeConfig(), 
+					= new ReplicatedSubspaceConfigurator(messenger.getNodeConfig(), 
 						(int)ContextServiceConfig.optimalH );
 			}
 		}
@@ -143,7 +143,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		ContextServiceLogger.getLogger().fine("configure subspace completed");
 		
 		
-		hyperspaceDB = new HyperspaceMySQLDB<NodeIDType>(this.getMyID(), 
+		hyperspaceDB = new HyperspaceMySQLDB(this.getMyID(), 
 					subspaceConfigurator.getSubspaceInfoMap());
 		
 		ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
@@ -152,18 +152,18 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					(nodeES, hyperspaceDB);
 		
 		noPrivacyGuidAttrValProcessing 
-					= new GUIDAttrValueProcessingForNoPrivacy<NodeIDType>(
+					= new GUIDAttrValueProcessingForNoPrivacy(
 				this.getMyID(), subspaceConfigurator.getSubspaceInfoMap(), 
 				hyperspaceDB, messenger , pendingQueryRequests , profStats);
 		
 		hyperspacePrivacyGuidAttrValProcessing 
-					= new GUIDAttrValueProcessingWithHyperspacePrivacy<NodeIDType>(
+					= new GUIDAttrValueProcessingWithHyperspacePrivacy(
 				this.getMyID(), subspaceConfigurator.getSubspaceInfoMap(), 
 				hyperspaceDB, messenger , pendingQueryRequests , profStats);
 		
 		
 		subspacePrivacyGuidAttrValProcessing = 
-					new GUIDAttrValueProcessingWithSubspacePrivacy<NodeIDType>(
+					new GUIDAttrValueProcessingWithSubspacePrivacy(
 				this.getMyID(), subspaceConfigurator.getSubspaceInfoMap(), 
 				hyperspaceDB, messenger , pendingQueryRequests , profStats);;
 		
@@ -174,16 +174,16 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			{
 				groupGUIDSyncMap = new HashMap<String, Boolean>();
 			}
-			triggerProcessing = new TriggerProcessing<NodeIDType>(this.getMyID(), 
+			triggerProcessing = new TriggerProcessing(this.getMyID(), 
 				subspaceConfigurator.getSubspaceInfoMap(), hyperspaceDB, messenger);
 		}
 		//new Thread(new ProfilerStatClass()).start();
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMsgFromUser(
+	public GenericMessagingTask<Integer, ?>[] handleQueryMsgFromUser(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		if(ContextServiceConfig.PROFILER_THREAD)
 		{
@@ -194,124 +194,124 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleValueUpdateFromGNS(
+	public GenericMessagingTask<Integer, ?>[] handleValueUpdateFromGNS(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMesgToSubspaceRegion(
+	public GenericMessagingTask<Integer, ?>[] handleQueryMesgToSubspaceRegion(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleQueryMesgToSubspaceRegionReply(
+	public GenericMessagingTask<Integer, ?>[] handleQueryMesgToSubspaceRegionReply(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleValueUpdateToSubspaceRegionMessage(
+	public GenericMessagingTask<Integer, ?>[] handleValueUpdateToSubspaceRegionMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleGetMessage(
+	public GenericMessagingTask<Integer, ?>[] handleGetMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleGetReplyMessage(
+	public GenericMessagingTask<Integer, ?>[] handleGetReplyMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleValueUpdateToSubspaceRegionReplyMessage(
+	public GenericMessagingTask<Integer, ?>[] handleValueUpdateToSubspaceRegionReplyMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleQueryTriggerMessage(
+	public GenericMessagingTask<Integer, ?>[] handleQueryTriggerMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleUpdateTriggerMessage(
+	public GenericMessagingTask<Integer, ?>[] handleUpdateTriggerMessage(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleUpdateTriggerReply(
+	public GenericMessagingTask<Integer, ?>[] handleUpdateTriggerReply(
 			ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleClientConfigRequest(ProtocolEvent<PacketType, String> event,
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks) 
+	public GenericMessagingTask<Integer, ?>[] handleClientConfigRequest(ProtocolEvent<PacketType, String> event,
+			ProtocolTask<Integer, PacketType, String>[] ptasks) 
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleACLUpdateToSubspaceRegionMessage(
+	public GenericMessagingTask<Integer, ?>[] handleACLUpdateToSubspaceRegionMessage(
 			ProtocolEvent<PacketType, String> event, 
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 
 	@Override
-	public GenericMessagingTask<NodeIDType, ?>[] handleACLUpdateToSubspaceRegionReplyMessage(
+	public GenericMessagingTask<Integer, ?>[] handleACLUpdateToSubspaceRegionReplyMessage(
 			ProtocolEvent<PacketType, String> event, 
-			ProtocolTask<NodeIDType, PacketType, String>[] ptasks)
+			ProtocolTask<Integer, PacketType, String>[] ptasks)
 	{
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
 	
 	@Override
-	public NodeIDType getConsistentHashingNodeID( String stringToHash , 
-			Vector<NodeIDType> listOfNodesToConsistentlyHash )
+	public Integer getConsistentHashingNodeID( String stringToHash , 
+			Vector<Integer> listOfNodesToConsistentlyHash )
 	{
 		int numNodes = listOfNodesToConsistentlyHash.size();
 		int mapIndex = Hashing.consistentHash(stringToHash.hashCode(), numNodes);
@@ -320,7 +320,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	
 	
 	private void processQueryMsgFromUser
-		( QueryMsgFromUser<NodeIDType> queryMsgFromUser )
+		( QueryMsgFromUser queryMsgFromUser )
 	{
 		String query;
 		String userIP;
@@ -355,7 +355,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				&& ContextServiceConfig.UniqueGroupGUIDEnabled )
 		{
 			
-			NodeIDType respNodeId = this.getConsistentHashingNodeID(hashKey, this.allNodeIDs);
+			Integer respNodeId = this.getConsistentHashingNodeID(hashKey, this.allNodeIDs);
 			
 			// just forward the request to the node that has 
 			// guid stored in primary subspace.
@@ -376,8 +376,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 		
 		boolean storeQueryForTrigger = false;
-		QueryInfo<NodeIDType> currReq  
-			= new QueryInfo<NodeIDType>( query, this.getMyID(), grpGUID, userReqID, 
+		QueryInfo currReq  
+			= new QueryInfo( query, this.getMyID(), grpGUID, userReqID, 
 					userIP, userPort, expiryTime );
 		
 		
@@ -434,10 +434,10 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	}
 	
 	
-	private void processValueUpdateFromGNS( ValueUpdateFromGNS<NodeIDType> valueUpdateFromGNS )
+	private void processValueUpdateFromGNS( ValueUpdateFromGNS valueUpdateFromGNS )
 	{
 		String GUID 			  		= valueUpdateFromGNS.getGUID();
-		NodeIDType respNodeId 	  		= this.getConsistentHashingNodeID
+		Integer respNodeId 	  		= this.getConsistentHashingNodeID
 													(GUID, this.allNodeIDs);
 		
 		// just forward the request to the node that has 
@@ -467,23 +467,23 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 								+valueUpdateFromGNS.getSourceIP()
 								+" sourcePort "+valueUpdateFromGNS.getSourcePort());
 			
-			UpdateInfo<NodeIDType> updReq  	= null;
+			UpdateInfo updReq  	= null;
 			long requestID 					= -1;
 			// if no outstanding request then it is set to true
 			boolean sendOutRequest 			= false;
 			
 			synchronized( this.pendingUpdateLock )
 			{
-				updReq = new UpdateInfo<NodeIDType>(valueUpdateFromGNS, updateIdCounter++, 
+				updReq = new UpdateInfo(valueUpdateFromGNS, updateIdCounter++, 
 						this.subspaceConfigurator.getSubspaceInfoMap());
 				pendingUpdateRequests.put(updReq.getRequestId(), updReq);
 				requestID = updReq.getRequestId();
 				
-				GUIDUpdateInfo<NodeIDType> guidUpdateInfo = this.guidUpdateInfoMap.get(GUID);
+				GUIDUpdateInfo guidUpdateInfo = this.guidUpdateInfoMap.get(GUID);
 				
 				if(guidUpdateInfo == null)
 				{
-					guidUpdateInfo = new GUIDUpdateInfo<NodeIDType>(GUID);
+					guidUpdateInfo = new GUIDUpdateInfo(GUID);
 					guidUpdateInfo.addUpdateReqNumToQueue(requestID);
 					this.guidUpdateInfoMap.put(GUID, guidUpdateInfo);
 					sendOutRequest = true;
@@ -508,7 +508,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	 * This function processes a request serially.
 	 * when one outstanding request completes.
 	 */
-	private void processUpdateSerially(UpdateInfo<NodeIDType> updateReq)
+	private void processUpdateSerially(UpdateInfo updateReq)
 	{
 		assert(updateReq != null);
 		
@@ -611,7 +611,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					throws JSONException
 	{
 		// process update at other subspaces.
-		HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap
+		HashMap<Integer, Vector<SubspaceInfo<Integer>>> subspaceInfoMap
 									= this.subspaceConfigurator.getSubspaceInfoMap();
 		
 		Iterator<Integer> keyIter   = subspaceInfoMap.keySet().iterator();
@@ -619,19 +619,19 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		while( keyIter.hasNext() )
 		{
 			int subspaceId 			= keyIter.next();
-			Vector<SubspaceInfo<NodeIDType>> replicasVect 
+			Vector<SubspaceInfo<Integer>> replicasVect 
 									= subspaceInfoMap.get(subspaceId);
 			
 			for( int i=0; i<replicasVect.size(); i++ )
 			{
-				SubspaceInfo<NodeIDType> currSubInfo 
+				SubspaceInfo<Integer> currSubInfo 
 							= replicasVect.get(i);
 				int replicaNum = currSubInfo.getReplicaNum();
 				
 				HashMap<String, AttributePartitionInfo> attrsSubspaceInfo 
 													= currSubInfo.getAttributesOfSubspace();
 				
-				//Vector<NodeIDType> subspaceNodes = currSubInfo.getNodesOfSubspace();
+				//Vector<Integer> subspaceNodes = currSubInfo.getNodesOfSubspace();
 				
 				this.guidAttrValProcessing.guidValueProcessingOnUpdate
 					( attrsSubspaceInfo, oldValueJSON, subspaceId, replicaNum, 
@@ -643,10 +643,10 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}*/
 	
-	private void processGetMessage(GetMessage<NodeIDType> getMessage)
+	private void processGetMessage(GetMessage getMessage)
 	{
 		String GUID 			  = getMessage.getGUIDsToGet();
-		NodeIDType respNodeId 	  = this.getConsistentHashingNodeID(GUID, this.allNodeIDs);
+		Integer respNodeId 	  = this.getConsistentHashingNodeID(GUID, this.allNodeIDs);
 		
 		// just forward the request to the node that has 
 		// guid stored in primary subspace.
@@ -669,7 +669,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			JSONObject valueJSON= this.hyperspaceDB.getGUIDStoredInPrimarySubspace(GUID);
 			
 			
-			GetReplyMessage<NodeIDType> getReplyMessage = new GetReplyMessage<NodeIDType>(this.getMyID(),
+			GetReplyMessage getReplyMessage = new GetReplyMessage(this.getMyID(),
 					getMessage.getUserReqID(), GUID, valueJSON);
 			
 			try
@@ -688,7 +688,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	
 	
 	private void processValueUpdateToSubspaceRegionMessageReply
-		( ValueUpdateToSubspaceRegionReplyMessage<NodeIDType> 
+		( ValueUpdateToSubspaceRegionReplyMessage 
 		valueUpdateToSubspaceRegionReplyMessage )
 	{
 		long requestID  = valueUpdateToSubspaceRegionReplyMessage.getRequestID();
@@ -703,7 +703,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						= valueUpdateToSubspaceRegionReplyMessage.getToBeAddedGroups();
 		
 		
-		UpdateInfo<NodeIDType> updInfo = pendingUpdateRequests.get(requestID);
+		UpdateInfo updInfo = pendingUpdateRequests.get(requestID);
 		
 		if( updInfo == null )
 		{
@@ -718,7 +718,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		
 		if( completion )
 		{
-			ValueUpdateFromGNSReply<NodeIDType> valueUpdateFromGNSReply = new ValueUpdateFromGNSReply<NodeIDType>
+			ValueUpdateFromGNSReply valueUpdateFromGNSReply = new ValueUpdateFromGNSReply
 			(this.getMyID(), updInfo.getValueUpdateFromGNS().getVersionNum(), updInfo.getValueUpdateFromGNS().getUserRequestID());
 			
 			ContextServiceLogger.getLogger().fine("reply IP Port "+updInfo.getValueUpdateFromGNS().getSourceIP()
@@ -752,7 +752,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			}
 			
 			
-			UpdateInfo<NodeIDType> removedUpdate 
+			UpdateInfo removedUpdate 
 					=  pendingUpdateRequests.remove(requestID);;
 			
 			// starts the queues serialized updates for that guid
@@ -763,14 +763,14 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
-	private void startANewUpdate(UpdateInfo<NodeIDType> removedUpdate, long requestID)
+	private void startANewUpdate(UpdateInfo removedUpdate, long requestID)
 	{
 		boolean startANewUpdate = false;
 		Long nextRequestID = null;
 		synchronized( this.pendingUpdateLock )
 		{
 			// remove from guidUpdateInfo
-			GUIDUpdateInfo<NodeIDType> guidUpdateInfo = 
+			GUIDUpdateInfo guidUpdateInfo = 
 					this.guidUpdateInfoMap.get(removedUpdate.getValueUpdateFromGNS().getGUID());
 			
 			assert(guidUpdateInfo!=null);
@@ -801,7 +801,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 	}
 	
-	private void processClientConfigRequest(ClientConfigRequest<NodeIDType> 
+	private void processClientConfigRequest(ClientConfigRequest 
 																clientConfigRequest)
 	{
 		JSONArray nodeConfigArray 		= new JSONArray();
@@ -809,11 +809,11 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		// Each element is a JSONArray of attrbutes for a subspace
 		JSONArray subspaceConfigArray   = new JSONArray();
 		
-		Iterator<NodeIDType> nodeIDIter = this.allNodeIDs.iterator();
+		Iterator<Integer> nodeIDIter = this.allNodeIDs.iterator();
 		
 		while( nodeIDIter.hasNext() )
 		{
-			NodeIDType nodeId = nodeIDIter.next();
+			Integer nodeId = nodeIDIter.next();
 			InetAddress nodeAddress = this.messenger.getNodeConfig().getNodeAddress(nodeId);
 			int nodePort = this.messenger.getNodeConfig().getNodePort(nodeId);
 			String ipPortString = nodeAddress.getHostAddress()+":"+nodePort;
@@ -828,7 +828,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			attributeArray.put(attrName);
 		}
 		
-		HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap = 
+		HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap = 
 				this.subspaceConfigurator.getSubspaceInfoMap();
 		
 		assert(subspaceInfoMap != null);
@@ -838,10 +838,10 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		while( subspaceIter.hasNext() )
 		{
 			// taking first replica, as we need distinct subspace attrs
-			Vector<SubspaceInfo<NodeIDType>> subsapceInfoVect 
+			Vector<SubspaceInfo> subsapceInfoVect 
 												= subspaceInfoMap.get( subspaceIter.next() );
 			
-			SubspaceInfo<NodeIDType> currSubspaceInfo = subsapceInfoVect.get(0);
+			SubspaceInfo currSubspaceInfo = subsapceInfoVect.get(0);
 			
 			JSONArray attrsOfSubspace = new JSONArray();
 			HashMap<String, AttributePartitionInfo> currSubInfoMap = 
@@ -857,10 +857,11 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 			subspaceConfigArray.put(attrsOfSubspace);
 		}
 		
-		InetSocketAddress sourceSocketAddr = new InetSocketAddress(clientConfigRequest.getSourceIP(),
+		InetSocketAddress sourceSocketAddr = new InetSocketAddress
+				(clientConfigRequest.getSourceIP(),
 				clientConfigRequest.getSourcePort());
-		ClientConfigReply<NodeIDType> configReply 
-					= new ClientConfigReply<NodeIDType>( this.getMyID(), nodeConfigArray,
+		ClientConfigReply configReply 
+					= new ClientConfigReply( this.getMyID(), nodeConfigArray,
 							attributeArray, subspaceConfigArray );
 		try
 		{
@@ -875,7 +876,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	}
 	
 	
-	private void processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion<NodeIDType> 
+	private void processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion 
 														queryMesgToSubspaceRegion)
 	{
 		String groupGUID 			 = queryMesgToSubspaceRegion.getGroupGUID();
@@ -910,8 +911,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					(queryMesgToSubspaceRegion);	
 		}
 		
-		QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply = 
-		new QueryMesgToSubspaceRegionReply<NodeIDType>( this.getMyID(), 
+		QueryMesgToSubspaceRegionReply queryMesgToSubspaceRegionReply = 
+		new QueryMesgToSubspaceRegionReply( this.getMyID(), 
 				queryMesgToSubspaceRegion.getRequestId(), 
 				groupGUID, resultGUIDArray, resultSize, privacyScheme, 
 				queryMesgToSubspaceRegion.getSubspaceNum());
@@ -935,7 +936,7 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	
 	
 	private void processValueUpdateToSubspaceRegionMessage(
-				ValueUpdateToSubspaceRegionMessage<NodeIDType> 
+				ValueUpdateToSubspaceRegionMessage 
 				valueUpdateToSubspaceRegionMessage )
 	{
 		int subspaceId				= valueUpdateToSubspaceRegionMessage.getSubspaceNum();
@@ -1011,9 +1012,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 		}
 		
 		
-		ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>  
+		ValueUpdateToSubspaceRegionReplyMessage  
 		valueUpdateToSubspaceRegionReplyMessage 
-			= new ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>(this.getMyID(), 
+			= new ValueUpdateToSubspaceRegionReplyMessage(this.getMyID(), 
 				valueUpdateToSubspaceRegionMessage.getVersionNum(), numRep, 
 				valueUpdateToSubspaceRegionMessage.getRequestID(), subspaceId, replicaNum
 				, toBeRemovedGroups, toBeAddedGroups);
@@ -1039,13 +1040,13 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 	 */
 	private int getTheReplicaNumForASubspace( int subpsaceId )
 	{
-		Vector<SubspaceInfo<NodeIDType>> replicasVect 
+		Vector<SubspaceInfo> replicasVect 
 				= subspaceConfigurator.getSubspaceInfoMap().get(subpsaceId);
 		
 		int replicaNum = -1;
 		for( int i=0;i<replicasVect.size();i++ )
 		{
-			SubspaceInfo<NodeIDType> subInfo = replicasVect.get(i);
+			SubspaceInfo subInfo = replicasVect.get(i);
 			if( subInfo.checkIfSubspaceHasMyID(this.getMyID()) )
 			{
 				replicaNum = subInfo.getReplicaNum();
@@ -1120,9 +1121,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 				{
 					case  QUERY_MSG_FROM_USER:
 					{
-						@SuppressWarnings("unchecked")
-						QueryMsgFromUser<NodeIDType> queryMsgFromUser 
-												= (QueryMsgFromUser<NodeIDType>)event;
+						QueryMsgFromUser queryMsgFromUser 
+												= (QueryMsgFromUser)event;
 						
 						processQueryMsgFromUser(queryMsgFromUser);
 						
@@ -1130,9 +1130,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					}
 					case QUERY_MESG_TO_SUBSPACE_REGION:
 					{	
-						@SuppressWarnings("unchecked")
-						QueryMesgToSubspaceRegion<NodeIDType> queryMesgToSubspaceRegion = 
-								(QueryMesgToSubspaceRegion<NodeIDType>) event;
+						QueryMesgToSubspaceRegion queryMesgToSubspaceRegion = 
+								(QueryMesgToSubspaceRegion) event;
 						
 						log.fine("CS"+getMyID()+" received " + event.getType() + ": " + event);
 						
@@ -1142,9 +1141,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					}
 					case QUERY_MESG_TO_SUBSPACE_REGION_REPLY:
 					{
-						@SuppressWarnings("unchecked")
-						QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply = 
-								(QueryMesgToSubspaceRegionReply<NodeIDType>)event;
+						QueryMesgToSubspaceRegionReply queryMesgToSubspaceRegionReply = 
+								(QueryMesgToSubspaceRegionReply)event;
 						
 						log.fine("CS"+getMyID()+" received " + event.getType() + ": " 
 																+ queryMesgToSubspaceRegionReply);
@@ -1172,9 +1170,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					}
 					case VALUE_UPDATE_MSG_FROM_GNS:
 					{
-						@SuppressWarnings("unchecked")
-						ValueUpdateFromGNS<NodeIDType> valUpdMsgFromGNS 
-												= (ValueUpdateFromGNS<NodeIDType>)event;
+						ValueUpdateFromGNS valUpdMsgFromGNS 
+												= (ValueUpdateFromGNS)event;
 						
 						ContextServiceLogger.getLogger().fine("CS"+getMyID()
 												+" received " + event.getType() + ": " + valUpdMsgFromGNS);
@@ -1187,10 +1184,9 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 						/* Actions:
 						 * - send the update message to the responsible value node
 						 */
-						@SuppressWarnings("unchecked")
-						ValueUpdateToSubspaceRegionMessage<NodeIDType> 
+						ValueUpdateToSubspaceRegionMessage 
 							valueUpdateToSubspaceRegionMessage 
-									= (ValueUpdateToSubspaceRegionMessage<NodeIDType>)event;
+									= (ValueUpdateToSubspaceRegionMessage)event;
 						
 						processValueUpdateToSubspaceRegionMessage(valueUpdateToSubspaceRegionMessage);
 						break;
@@ -1198,9 +1194,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					
 					case GET_MESSAGE:
 					{
-						@SuppressWarnings("unchecked")
-						GetMessage<NodeIDType> getMessage 
-									= (GetMessage<NodeIDType>)event;
+						GetMessage getMessage 
+									= (GetMessage)event;
 						//log.fine("CS"+getMyID()+" received " + event.getType() + ": " + valueUpdateToSubspaceRegionMessage);
 						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " + event.getType() + ": " 
 										+ getMessage);
@@ -1211,9 +1206,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					
 					case VALUEUPDATE_TO_SUBSPACE_REGION_REPLY_MESSAGE:
 					{
-						@SuppressWarnings("unchecked")
-						ValueUpdateToSubspaceRegionReplyMessage<NodeIDType> valueUpdateToSubspaceRegionReplyMessage 
-									= (ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>)event;
+						ValueUpdateToSubspaceRegionReplyMessage valueUpdateToSubspaceRegionReplyMessage 
+									= (ValueUpdateToSubspaceRegionReplyMessage)event;
 						
 						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " + event.getType() + ": " 
 								+ valueUpdateToSubspaceRegionReplyMessage);
@@ -1223,9 +1217,8 @@ public class HyperspaceHashing<NodeIDType> extends AbstractScheme<NodeIDType>
 					
 					case CONFIG_REQUEST:
 					{
-						@SuppressWarnings("unchecked")
-						ClientConfigRequest<NodeIDType> configRequest 
-									= (ClientConfigRequest<NodeIDType>)event;
+						ClientConfigRequest configRequest 
+									= (ClientConfigRequest)event;
 						
 						ContextServiceLogger.getLogger().fine("CS"+getMyID()+" received " + event.getType() + ": " 
 								+ configRequest);

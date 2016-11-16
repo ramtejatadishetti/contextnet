@@ -23,13 +23,13 @@ import edu.umass.cs.nio.interfaces.NodeConfig;
  * go into which subspaces.
  * @author adipc
  */
-public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspaceConfigurator<NodeIDType>
+public class ReplicatedSubspaceConfigurator extends AbstractSubspaceConfigurator
 {
 	// each domain is at least partitioned into two.
 	//TODO: these values will be determined by the model at some point
 	
 	private final double optimalH;
-	public ReplicatedSubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig, 
+	public ReplicatedSubspaceConfigurator(NodeConfig<Integer> nodeConfig, 
 			int optimalH)
 	{
 		super(nodeConfig);
@@ -103,10 +103,10 @@ public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspace
 					if( subspaceKeyIter.hasNext() )
 					{
 						subspaceKey = subspaceKeyIter.next();
-						Vector<SubspaceInfo<NodeIDType>> currSubVect
+						Vector<SubspaceInfo> currSubVect
 											= subspaceInfoMap.get(subspaceKey);
 						assert( currSubVect.size() > 0 );
-						currSubVect.get(0).getNodesOfSubspace().add( (NodeIDType)(Integer)nodesIdCounter );
+						currSubVect.get(0).getNodesOfSubspace().add( (Integer)(Integer)nodesIdCounter );
 						nodesIdCounter++;
 					}
 					else
@@ -133,10 +133,10 @@ public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspace
 					while( subspaceKeyIter.hasNext() )
 					{
 						subspaceKey = subspaceKeyIter.next();
-						Vector<SubspaceInfo<NodeIDType>> currSubVect
+						Vector<SubspaceInfo> currSubVect
 											= subspaceInfoMap.get(subspaceKey);
 						assert( currSubVect.size() > 0 );
-						currSubVect.get(0).getNodesOfSubspace().add( (NodeIDType)(Integer)nodesIdCounter );
+						currSubVect.get(0).getNodesOfSubspace().add( (Integer)(Integer)nodesIdCounter );
 					}
 					nodesIdCounter++;
 				}
@@ -175,13 +175,13 @@ public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspace
 		{
 			int distinctSubspaceId 	= i;
 			
-			Vector<NodeIDType> subspaceNodes = new Vector<NodeIDType>();
+			Vector<Integer> subspaceNodes = new Vector<Integer>();
 			HashMap<String, AttributePartitionInfo> subspaceAttrs 
 									= new HashMap<String, AttributePartitionInfo>();
 			
 			for(int j=0; j<numberNodesForSubspace; j++)
 			{
-				subspaceNodes.add( (NodeIDType)(Integer)nodesIdCounter );
+				subspaceNodes.add( (Integer)(Integer)nodesIdCounter );
 				nodesIdCounter++;
 			}
 			
@@ -199,11 +199,11 @@ public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspace
 			}
 			
 			// replica num 0 as first replica is created
-			SubspaceInfo<NodeIDType> currSubInfo 
-				= new SubspaceInfo<NodeIDType>( distinctSubspaceId, 0, subspaceAttrs, subspaceNodes );
+			SubspaceInfo currSubInfo 
+				= new SubspaceInfo( distinctSubspaceId, 0, subspaceAttrs, subspaceNodes );
 			
-			Vector<SubspaceInfo<NodeIDType>> replicatedSubspacesVector 
-						= new Vector<SubspaceInfo<NodeIDType>>(); 
+			Vector<SubspaceInfo> replicatedSubspacesVector 
+						= new Vector<SubspaceInfo>(); 
 			replicatedSubspacesVector.add(currSubInfo);
 			
 			subspaceInfoMap.put(distinctSubspaceId, replicatedSubspacesVector);
@@ -257,13 +257,13 @@ public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspace
 			if( mapIter.hasNext() )
 			{
 				int distinctSubId = mapIter.next();
-				SubspaceInfo<NodeIDType> currSubspace = subspaceInfoMap.get(distinctSubId).get(0);
+				SubspaceInfo currSubspace = subspaceInfoMap.get(distinctSubId).get(0);
 				
-				Vector<NodeIDType> replicatedSubspaceNodes = new Vector<NodeIDType>();
+				Vector<Integer> replicatedSubspaceNodes = new Vector<Integer>();
 				
 				for( int i=0;i<intSqrtNodes;i++ )
 				{
-					replicatedSubspaceNodes.add((NodeIDType)((Integer)nodesIdCounter));
+					replicatedSubspaceNodes.add((Integer)((Integer)nodesIdCounter));
 					nodesIdCounter++;
 				}
 				
@@ -284,8 +284,8 @@ public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspace
 					replicatedSubspaceAttrs.put(attrName, attrPartInfo);
 				}
 				
-				SubspaceInfo<NodeIDType> newReplicatedSubspace 
-					= new SubspaceInfo<NodeIDType>( distinctSubId, replicaNum,
+				SubspaceInfo newReplicatedSubspace 
+					= new SubspaceInfo( distinctSubId, replicaNum,
 							replicatedSubspaceAttrs, replicatedSubspaceNodes );
 				
 				// adding the new replicated subspace in the vector
@@ -312,11 +312,11 @@ public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspace
 			if( mapIter.hasNext() )
 			{
 				int distinctSubspaceId = mapIter.next();
-				Vector<SubspaceInfo<NodeIDType>> subspaceReplicaVect 
+				Vector<SubspaceInfo> subspaceReplicaVect 
 						= subspaceInfoMap.get(distinctSubspaceId);
 				int actualVectIndex = replicaNum%subspaceReplicaVect.size();
 				subspaceReplicaVect.get(actualVectIndex).
-				getNodesOfSubspace().add((NodeIDType)((Integer)nodesIdCounter));
+				getNodesOfSubspace().add((Integer)((Integer)nodesIdCounter));
 				nodesIdCounter++;
 			}
 			else
@@ -338,7 +338,7 @@ public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspace
 		ContextServiceConfig.configFileDirectory = "conf/singleNodeConf/contextServiceConf";
 		AttributeTypes.initialize();
 		
-		CSNodeConfig<Integer> testNodeConfig = new CSNodeConfig<Integer>();
+		CSNodeConfig testNodeConfig = new CSNodeConfig();
 		int startingPort = 5000;
 		for( int i=0;i<numberOfNodes;i++ )
 		{
@@ -347,8 +347,8 @@ public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspace
 			testNodeConfig.add(i, sockAddr);
 		}
 		
-		ReplicatedSubspaceConfigurator<Integer> subspaceConfigurator 
-								= new ReplicatedSubspaceConfigurator<Integer>(testNodeConfig, 2);
+		ReplicatedSubspaceConfigurator subspaceConfigurator 
+								= new ReplicatedSubspaceConfigurator(testNodeConfig, 2);
 		subspaceConfigurator.configureSubspaceInfo();
 		
 		subspaceConfigurator.printSubspaceInfo();
@@ -361,12 +361,12 @@ public class ReplicatedSubspaceConfigurator<NodeIDType> extends AbstractSubspace
 	Iterator<Integer> keyIter = subspaceInfoMap.keySet().iterator();
 	while( keyIter.hasNext() )
 	{
-		Vector<SubspaceInfo<NodeIDType>> currSubVect 
+		Vector<SubspaceInfo<Integer>> currSubVect 
 	 		= subspaceInfoMap.get(keyIter.next());
 		
 		for( int i=0; i<currSubVect.size(); i++ )
 		{
-			SubspaceInfo<NodeIDType> currSubInfo = currSubVect.get(i);
+			SubspaceInfo<Integer> currSubInfo = currSubVect.get(i);
 			int currSubspaceNumNodes = currSubInfo.getNodesOfSubspace().size();
 			int currSubspaceNumAttrs = currSubInfo.getAttributesOfSubspace().size();
 			

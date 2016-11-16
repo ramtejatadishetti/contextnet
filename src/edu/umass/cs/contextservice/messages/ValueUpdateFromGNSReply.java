@@ -3,7 +3,7 @@ package edu.umass.cs.contextservice.messages;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class ValueUpdateFromGNSReply<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class ValueUpdateFromGNSReply extends BasicContextServicePacket
 {
 	// start time is the time when update started,
 	// context time is the time at which context service recvd query
@@ -13,7 +13,7 @@ public class ValueUpdateFromGNSReply<NodeIDType> extends BasicContextServicePack
 	private final long versionNum;
 	private final long userReqNum;
 	
-	public ValueUpdateFromGNSReply(NodeIDType initiator, long versionNum, long userReqNum)
+	public ValueUpdateFromGNSReply(Integer initiator, long versionNum, long userReqNum)
 	{
 		super(initiator, ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY);
 		this.versionNum = versionNum;
@@ -22,7 +22,7 @@ public class ValueUpdateFromGNSReply<NodeIDType> extends BasicContextServicePack
 	
 	public ValueUpdateFromGNSReply(JSONObject json) throws JSONException
 	{
-		//ValueUpdateFromGNS((NodeIDType)0, json.getString(Keys.GUID.toString()), 
+		//ValueUpdateFromGNS((Integer)0, json.getString(Keys.GUID.toString()), 
 		//		json.getDouble(Keys.OLDVALUE.toString()), json.getDouble(Keys.NEWVALUE.toString()));
 		super(json);
 		this.versionNum = json.getLong(Keys.VERSION_NUM.toString());

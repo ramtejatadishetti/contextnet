@@ -4,7 +4,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class QueryMesgToSubspaceRegionReply<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class QueryMesgToSubspaceRegionReply extends BasicContextServicePacket
 {
 	private enum Keys { REQUESTID, GROUP_GUID, RESULT_GUIDS, REPLY_SIZE, 
 				PRIVACY_SCHEME, SUBSPACE_ID};
@@ -34,7 +34,7 @@ public class QueryMesgToSubspaceRegionReply<NodeIDType> extends BasicContextServ
 	 * sourceID will be the ID of the node that 
 	 * recvd query from the user.
 	 */
-	public QueryMesgToSubspaceRegionReply(NodeIDType initiator, long requestId, 
+	public QueryMesgToSubspaceRegionReply(Integer initiator, long requestId, 
 			String groupGUID, JSONArray resultGUIDs, int resultSize, int privacyScheme
 			, int subspaceId)
 	{

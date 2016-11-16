@@ -3,7 +3,7 @@ package edu.umass.cs.contextservice.messages;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class ConsistentStoragePut<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class ConsistentStoragePut<Integer> extends BasicContextServicePacket<Integer>
 {
 	private enum Keys {GUID, ATTR_VALUE_PAIR, VERSION_NUM};
 	
@@ -11,12 +11,12 @@ public class ConsistentStoragePut<NodeIDType> extends BasicContextServicePacket<
 	private final String guid;
 	private final JSONObject attrValuePair;
 	private final long versionNum;
-	//private final NodeIDType sourceID;
+	//private final Integer sourceID;
 	
 	/*
 	 * sending more information, so that don't need to store request
 	 */
-	public ConsistentStoragePut(NodeIDType initiator, String guid, JSONObject attrValuePair, 
+	public ConsistentStoragePut(Integer initiator, String guid, JSONObject attrValuePair, 
 			long versionNum)
 	{
 		super(initiator, ContextServicePacket.PacketType.CONSISTENT_STORAGE_PUT);
@@ -34,7 +34,7 @@ public class ConsistentStoragePut<NodeIDType> extends BasicContextServicePacket<
 		this.guid = json.getString(Keys.GUID.toString());
 		this.attrValuePair = json.getJSONObject(Keys.ATTR_VALUE_PAIR.toString());
 		this.versionNum = json.getLong(Keys.VERSION_NUM.toString());
-		//this.sourceID = (NodeIDType) ((Integer)json.getInt(Keys.SOURCEID.toString()));
+		//this.sourceID = (Integer) ((Integer)json.getInt(Keys.SOURCEID.toString()));
 		//this.query = json.getString(Keys.QUERY.toString());
 		//this.sourceIP = json.getString(Keys.SOURCE_IP.toString());
 		//this.sourcePort = json.getInt(Keys.SOURCE_PORT.toString());
@@ -74,7 +74,7 @@ public class ConsistentStoragePut<NodeIDType> extends BasicContextServicePacket<
 		return this.versionNum;
 	}
 	
-	/*public NodeIDType getSourceID()
+	/*public Integer getSourceID()
 	{
 		return this.sourceID;
 	}*/

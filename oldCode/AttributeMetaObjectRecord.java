@@ -13,10 +13,10 @@ import edu.umass.cs.contextservice.database.MongoContextServiceDB;
  * Keys for the record RANGE_START, RANGE_END pair
  * @author adipc
  *
- * @param <NodeIDType>
+ * @param <Integer>
  * @param <AttributeIDType>
  */
-public class AttributeMetaObjectRecord<NodeIDType, AttributeIDType> /*extends JSONObject*/
+public class AttributeMetaObjectRecord<Integer, AttributeIDType> /*extends JSONObject*/
 {
 	public static enum Keys {RANGE_START, RANGE_END, NODE_ID, GROUP_GUID_LIST};
 	
@@ -26,14 +26,14 @@ public class AttributeMetaObjectRecord<NodeIDType, AttributeIDType> /*extends JS
 	//private final String attributeName;
 	private final Double rangeStart;
 	private final Double rangeEnd;
-	private final NodeIDType nodeID;
+	private final Integer nodeID;
 	private final JSONArray groupGUIDList;
 	
 	// primary key is in the form of JSON like { "$oid" : "546f092044ae941f7e5157a7"}
 	private JSONObject primaryKeyJSON = null;
 	
 	public AttributeMetaObjectRecord(Double rangeStart, Double rangeEnd,
-			NodeIDType nodeID, JSONArray groupGUIDList)
+			Integer nodeID, JSONArray groupGUIDList)
 	{
 		this.rangeStart = rangeStart;
 		this.rangeEnd = rangeEnd;
@@ -55,7 +55,7 @@ public class AttributeMetaObjectRecord<NodeIDType, AttributeIDType> /*extends JS
 	{
 		this.rangeStart = json.getDouble(Keys.RANGE_START.toString());
 		this.rangeEnd = json.getDouble(Keys.RANGE_END.toString());
-		this.nodeID = (NodeIDType) json.get(Keys.NODE_ID.toString());
+		this.nodeID = (Integer) json.get(Keys.NODE_ID.toString());
 		//this.groupGUIDList = json.getJSONArray(Keys.GROUP_GUID_LIST.toString());
 		this.groupGUIDList = new JSONArray(json.getString(Keys.GROUP_GUID_LIST.toString()));
 		
@@ -92,7 +92,7 @@ public class AttributeMetaObjectRecord<NodeIDType, AttributeIDType> /*extends JS
 		return this.rangeEnd;
 	}
 	
-	public NodeIDType getNodeID()
+	public Integer getNodeID()
 	{
 		return this.nodeID;
 	}
@@ -107,7 +107,7 @@ public class AttributeMetaObjectRecord<NodeIDType, AttributeIDType> /*extends JS
 		return this.primaryKeyJSON;
 	}
 	
-	/*public ReconfigurationRecord<NodeIDType> putActiveReplicas(String name, int epoch, Set<NodeIDType> arSet)
+	/*public ReconfigurationRecord<Integer> putActiveReplicas(String name, int epoch, Set<Integer> arSet)
 	{
 		if(epoch - this.epoch == 1)
 		{
@@ -132,12 +132,12 @@ public class AttributeMetaObjectRecord<NodeIDType, AttributeIDType> /*extends JS
 	}*/
 	
 	/*@SuppressWarnings("unchecked")
-	private Set<NodeIDType> toSet(JSONArray jsonArray) throws JSONException
+	private Set<Integer> toSet(JSONArray jsonArray) throws JSONException
 	{
-		Set<NodeIDType> set = new HashSet<NodeIDType>();
+		Set<Integer> set = new HashSet<Integer>();
 		for(int i=0; i<jsonArray.length(); i++)
 		{
-			set.add((NodeIDType)jsonArray.get(i));
+			set.add((Integer)jsonArray.get(i));
 		}
 		return set;
 	}*/

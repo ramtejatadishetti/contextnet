@@ -1,17 +1,17 @@
 package edu.umass.cs.contextservice.database.records;
 
-public class MetadataTableInfo<NodeIDType>
+public class MetadataTableInfo<Integer>
 {
-	private final NodeIDType nodeID;
+	private final Integer nodeID;
 	private final int partitionNum;
 	
-	public MetadataTableInfo(NodeIDType nodeID, int partitionNum)
+	public MetadataTableInfo(Integer nodeID, int partitionNum)
 	{
 		this.nodeID = nodeID;
 		this.partitionNum = partitionNum;
 	}
 	
-	public NodeIDType getNodeID()
+	public Integer getNodeID()
 	{
 		return this.nodeID;
 	}

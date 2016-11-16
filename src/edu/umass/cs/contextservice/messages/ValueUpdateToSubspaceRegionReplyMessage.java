@@ -5,8 +5,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 
-public class ValueUpdateToSubspaceRegionReplyMessage<NodeIDType> 
-										extends BasicContextServicePacket<NodeIDType>
+public class ValueUpdateToSubspaceRegionReplyMessage 
+										extends BasicContextServicePacket
 {
 	private enum Keys {VERSION_NUM, NUM_REPLY, REQUEST_ID, SUBSPACE_NUM, REPLICA_NUM,
 		TO_BE_REMOVED_GROUPS, TO_BE_ADDED_GROUPS};
@@ -20,7 +20,7 @@ public class ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>
 	private final JSONArray toBeAddedGroups;
 	
 	
-	public ValueUpdateToSubspaceRegionReplyMessage( NodeIDType initiator, long versionNum, 
+	public ValueUpdateToSubspaceRegionReplyMessage( Integer initiator, long versionNum, 
 			int numRep, long requestID, int subspaceNum, int replicaNum, 
 			JSONArray toBeRemovedGroups, JSONArray toBeAddedGroups )
 	{
@@ -37,7 +37,7 @@ public class ValueUpdateToSubspaceRegionReplyMessage<NodeIDType>
 	
 	public ValueUpdateToSubspaceRegionReplyMessage(JSONObject json) throws JSONException
 	{
-		//ValueUpdateFromGNS((NodeIDType)0, json.getString(Keys.GUID.toString()), 
+		//ValueUpdateFromGNS((Integer)0, json.getString(Keys.GUID.toString()), 
 		//		json.getDouble(Keys.OLDVALUE.toString()), json.getDouble(Keys.NEWVALUE.toString()));
 		super(json);
 		this.versionNum = json.getLong(Keys.VERSION_NUM.toString());

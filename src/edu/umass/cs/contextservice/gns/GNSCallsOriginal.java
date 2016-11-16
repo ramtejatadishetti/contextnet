@@ -1,15 +1,6 @@
 package edu.umass.cs.contextservice.gns;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.InetSocketAddress;
-import java.security.KeyPair;
-import java.util.logging.Logger;
 
-import org.json.JSONArray;
-
-import edu.umass.cs.contextservice.logging.ContextServiceLogger;
-import edu.umass.cs.contextservice.utils.Utils;
 
 
 
@@ -30,8 +21,6 @@ public class GNSCallsOriginal
 //					= new UniversalTcpClient(defaultGns.split(":")[0], Integer.parseInt(defaultGns.split(":")[1]));
 //		
 //		private static final GuidEntry myGuidEntry = KeyPairUtils.getDefaultGuidEntry(defaultGns);
-		
-		private final static Logger log = ContextServiceLogger.getLogger();
 		
 		/**
 		 * Takes alias of group, which is query and reads groupmembers.

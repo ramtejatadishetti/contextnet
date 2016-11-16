@@ -24,16 +24,16 @@ import edu.umass.cs.nio.JSONMessenger;
 import edu.umass.cs.nio.JSONNIOTransport;
 import edu.umass.cs.nio.interfaces.PacketDemultiplexer;
 
-public abstract class AbstractContextServiceClient<NodeIDType> 
+public abstract class AbstractContextServiceClient
 								implements PacketDemultiplexer<JSONObject>
 {
-	protected final JSONNIOTransport<NodeIDType> niot;
-	protected final JSONMessenger<NodeIDType> messenger;
+	protected final JSONNIOTransport<Integer> niot;
+	protected final JSONMessenger<Integer> messenger;
 	protected final String sourceIP;
 	protected final int sourcePort;
 	protected final Random rand;
 	// local client config
-	protected CSNodeConfig<NodeIDType> clientNodeConfig									= null;
+	protected CSNodeConfig clientNodeConfig									= null;
 	
 	// context service node config
 	// this is read from the file already included in jar
@@ -47,9 +47,9 @@ public abstract class AbstractContextServiceClient<NodeIDType>
 	protected HashMap<Integer, JSONArray> subspaceAttrMap								= null;
 	
 	//long is the request num
-	protected ConcurrentHashMap<Long, SearchQueryStorage<NodeIDType>> pendingSearches 	= null;
-	protected ConcurrentHashMap<Long, UpdateStorage<NodeIDType>> pendingUpdate		  	= null;
-	protected ConcurrentHashMap<Long, GetStorage<NodeIDType>> pendingGet			  	= null;
+	protected ConcurrentHashMap<Long, SearchQueryStorage> pendingSearches 	= null;
+	protected ConcurrentHashMap<Long, UpdateStorage> pendingUpdate		  	= null;
+	protected ConcurrentHashMap<Long, GetStorage> pendingGet			  	= null;
 	
 	protected final Object searchIdLock													= new Object();
 	protected final Object updateIdLock													= new Object();
@@ -62,7 +62,7 @@ public abstract class AbstractContextServiceClient<NodeIDType>
 	protected long updateReqId															= 0;
 	protected long getReqId																= 0;
 	
-	protected NodeIDType nodeid															= null;
+	protected Integer nodeid															= null;
 	
 	protected final String configHost;
 	protected final int configPort;
@@ -79,9 +79,9 @@ public abstract class AbstractContextServiceClient<NodeIDType>
 		//readNodeInfo();
 		//readAttributeInfo();
 		
-		pendingSearches = new ConcurrentHashMap<Long, SearchQueryStorage<NodeIDType>>();
-		pendingUpdate = new ConcurrentHashMap<Long, UpdateStorage<NodeIDType>>();
-		pendingGet = new ConcurrentHashMap<Long, GetStorage<NodeIDType>>();
+		pendingSearches = new ConcurrentHashMap<Long, SearchQueryStorage>();
+		pendingUpdate = new ConcurrentHashMap<Long, UpdateStorage>();
+		pendingGet = new ConcurrentHashMap<Long, GetStorage>();
 		
 //		rand = new Random
 //			(Utils.getActiveInterfaceInetAddresses().get(0).getHostAddress().hashCode());
@@ -92,9 +92,9 @@ public abstract class AbstractContextServiceClient<NodeIDType>
 		sourceIP =  Utils.getActiveInterfaceInetAddresses().get(0).getHostAddress();
 		
 		ContextServiceLogger.getLogger().fine("Context service client IP "+sourceIP);
-		clientNodeConfig =  new CSNodeConfig<NodeIDType>();
-		Integer id = 0;
-		nodeid = (NodeIDType) id;
+		clientNodeConfig =  new CSNodeConfig();
+		
+		nodeid = new Integer(0);
 		clientNodeConfig.add(nodeid, new InetSocketAddress(sourceIP, sourcePort));
         
         AbstractJSONPacketDemultiplexer pd = new ContextServiceDemultiplexer();
@@ -102,10 +102,10 @@ public abstract class AbstractContextServiceClient<NodeIDType>
         //System.out.println("\n\n node IP "+localNodeConfig.getNodeAddress(myID) +
 		//		" node Port "+localNodeConfig.getNodePort(myID)+" nodeID "+myID);
 		
-		niot = new JSONNIOTransport<NodeIDType>(nodeid,  clientNodeConfig, pd , true);
+		niot = new JSONNIOTransport<Integer>(nodeid,  clientNodeConfig, pd , true);
 		
 		messenger = 
-			new JSONMessenger<NodeIDType>(niot);
+			new JSONMessenger<Integer>(niot);
 		
 		pd.register(ContextServicePacket.PacketType.VALUE_UPDATE_MSG_FROM_GNS_REPLY, this);
 		pd.register(ContextServicePacket.PacketType.QUERY_MSG_FROM_USER_REPLY, this);

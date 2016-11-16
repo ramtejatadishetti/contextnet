@@ -13,7 +13,7 @@ import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
 
 
-public abstract class AbstractDB<NodeIDType>
+public abstract class AbstractDB
 {
 	public abstract HashMap<Integer, RegionInfoClass> 
 			getOverlappingRegionsInSubspace(int subspaceId, int replicaNum, 
@@ -24,10 +24,10 @@ public abstract class AbstractDB<NodeIDType>
 			JSONArray resultArray);
 	
 	public abstract void insertIntoSubspacePartitionInfo(int subspaceId, int replicaNum,
-			List<Integer> subspaceVector, NodeIDType respNodeId);
+			List<Integer> subspaceVector, Integer respNodeId);
 	
 	public abstract void bulkInsertIntoSubspacePartitionInfo( int subspaceId, int replicaNum,
-			List<List<Integer>> subspaceVectorList, List<NodeIDType> respNodeIdList );
+			List<List<Integer>> subspaceVectorList, List<Integer> respNodeIdList );
 	
 	public abstract JSONObject getGUIDStoredInPrimarySubspace( String guid );
 	

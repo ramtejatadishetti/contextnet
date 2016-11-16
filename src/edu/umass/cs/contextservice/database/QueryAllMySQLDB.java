@@ -26,7 +26,7 @@ import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.utils.DelayProfiler;
 
 
-public class QueryAllMySQLDB<NodeIDType>
+public class QueryAllMySQLDB
 {
 	public static final int UPDATE_REC 								= 1;
 	public static final int INSERT_REC 								= 2;
@@ -38,12 +38,12 @@ public class QueryAllMySQLDB<NodeIDType>
 	public static final String userIP 								= "userIP";
 	public static final String userPort 							= "userPort";
 	
-	private final DataSource<NodeIDType> mysqlDataSource;
+	private final DataSource mysqlDataSource;
 	
-	public QueryAllMySQLDB( NodeIDType myNodeID )
+	public QueryAllMySQLDB( Integer myNodeID )
 			throws Exception
 	{
-		this.mysqlDataSource = new DataSource<NodeIDType>(myNodeID);
+		this.mysqlDataSource = new DataSource(myNodeID);
 		createTables();
 	}
 	
@@ -119,7 +119,7 @@ public class QueryAllMySQLDB<NodeIDType>
 				(query);
 		
 		//should not be expensive operation to be performed twice.
-		QueryInfo<NodeIDType> qinfo = new QueryInfo<NodeIDType>(query);
+		QueryInfo qinfo = new QueryInfo(query);
 		
 		Vector<QueryComponent> qcomponents = qinfo.getQueryComponents();
 		
@@ -313,7 +313,7 @@ public class QueryAllMySQLDB<NodeIDType>
 	public String getMySQLQueryForProcessSearchQueryInSubspaceRegion
 										( String query)
 	{
-		QueryInfo<NodeIDType> qinfo = new QueryInfo<NodeIDType>(query);
+		QueryInfo qinfo = new QueryInfo(query);
 		
 		HashMap<String, ProcessingQueryComponent> pqComponents = qinfo.getProcessingQC();
 		Vector<QueryComponent> qcomponents = qinfo.getQueryComponents();

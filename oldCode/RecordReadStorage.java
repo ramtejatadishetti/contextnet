@@ -10,7 +10,7 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.BulkGetReply;
 import edu.umass.cs.contextservice.messages.QueryMsgToValuenode;
 
-public class RecordReadStorage<NodeIDType>
+public class RecordReadStorage<Integer>
 {
 	private final long recordStorageNum;
 	
@@ -18,7 +18,7 @@ public class RecordReadStorage<NodeIDType>
 	// num of replies to be received
 	private final int numDiffNodesContacted;
 	
-	private final QueryMsgToValuenode<NodeIDType> queryMsgToValnode;
+	private final QueryMsgToValuenode<Integer> queryMsgToValnode;
 	
 	private int numGetRepliesRecvd;
 	
@@ -30,7 +30,7 @@ public class RecordReadStorage<NodeIDType>
 	private final Object repliesArrayMonitor = new Object();
 	
 	public RecordReadStorage(long recordStorageNum, int numDiffNodesContacted, 
-			QueryMsgToValuenode<NodeIDType> queryMsgToValnode)
+			QueryMsgToValuenode<Integer> queryMsgToValnode)
 	{
 		this.recordStorageNum = recordStorageNum;
 		
@@ -58,7 +58,7 @@ public class RecordReadStorage<NodeIDType>
 		requestCompl = false;*/
 	}
 	
-	public JSONArray addBulkGetReply( BulkGetReply<NodeIDType> bulkGetReplyMesg )
+	public JSONArray addBulkGetReply( BulkGetReply<Integer> bulkGetReplyMesg )
 	{
 		JSONArray apppendArray = bulkGetReplyMesg.getGUIDRecords();
 		if(apppendArray != null)
@@ -143,7 +143,7 @@ public class RecordReadStorage<NodeIDType>
 		}*/
 	}
 	
-	public QueryMsgToValuenode<NodeIDType> getQueryMsgToValnode()
+	public QueryMsgToValuenode<Integer> getQueryMsgToValnode()
 	{
 		return this.queryMsgToValnode;
 	}

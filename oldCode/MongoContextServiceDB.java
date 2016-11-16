@@ -28,9 +28,9 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;*/
  * Class implements context service DB in mongo DB.
  * @author adipc
  *
- * @param <NodeIDType>
+ * @param <Integer>
  */
-/*public class MongoContextServiceDB<NodeIDType> extends AbstractContextServiceDB<NodeIDType>
+/*public class MongoContextServiceDB<Integer> extends AbstractContextServiceDB<Integer>
 {
 	// this prefix appended by nodeID is the name of DB at each node.
 	public static final String DATABASE_NAME_PREFIX					= "ContextServiceDB";
@@ -52,7 +52,7 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;*/
 	
 	private DB nodeDB														= null;
 	
-	public MongoContextServiceDB(NodeIDType myID)
+	public MongoContextServiceDB(Integer myID)
 	{
 		super(myID);
 		try
@@ -65,7 +65,7 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;*/
 	}
 	
 	@Override
-	public AttributeMetadataInfoRecord<NodeIDType, Double> getAttributeMetaInfoRecord(String attrName)
+	public AttributeMetadataInfoRecord<Integer, Double> getAttributeMetaInfoRecord(String attrName)
 	{
 		DBCollection table = nodeDB.getCollection(MongoContextServiceDB.ATTR_META_INFO_TABLE_NAME);
 		
@@ -85,8 +85,8 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;*/
 				try
 				{
 					JSONObject recJSON = new JSONObject(dbRec.toString());
-					AttributeMetadataInfoRecord<NodeIDType, Double> recObject = 
-							new AttributeMetadataInfoRecord<NodeIDType, Double>(recJSON);
+					AttributeMetadataInfoRecord<Integer, Double> recObject = 
+							new AttributeMetadataInfoRecord<Integer, Double>(recJSON);
 					return recObject;
 				} catch (JSONException e)
 				{
@@ -103,7 +103,7 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;*/
 	}
 	
 	@Override
-	public List<AttributeMetaObjectRecord<NodeIDType, Double>> 
+	public List<AttributeMetaObjectRecord<Integer, Double>> 
 		getAttributeMetaObjectRecord(String attrName, double queryMin, double queryMax)
 	{
 		DBCollection table = nodeDB.getCollection(MongoContextServiceDB.ATTR_META_OBJ_TABLE_PREFIX+attrName);
@@ -117,8 +117,8 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;*/
 		//table.find(" { $and: [ { price: { $ne: 1.99 } }, { price: { $exists: true } } ] } ");
 		//(AttributeMetaObjectRecord.Keys.RANGE_START.toString(), new BasicDBObject("$lt", queryValue).append("$lt", 5));
 		
-		LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>> resultList = 
-				new LinkedList<AttributeMetaObjectRecord<NodeIDType, Double>>();
+		LinkedList<AttributeMetaObjectRecord<Integer, Double>> resultList = 
+				new LinkedList<AttributeMetaObjectRecord<Integer, Double>>();
 		
 		// trying to find if there is an overlap in the ranges, 
 		// the range specified by user and the range in database.
@@ -162,8 +162,8 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;*/
 			try
 			{
 				JSONObject recJSON = new JSONObject(dbRec.toString());
-				AttributeMetaObjectRecord<NodeIDType, Double> recObject = 
-						new AttributeMetaObjectRecord<NodeIDType, Double>(recJSON);
+				AttributeMetaObjectRecord<Integer, Double> recObject = 
+						new AttributeMetaObjectRecord<Integer, Double>(recJSON);
 				resultList.add(recObject);
 				//return recObject;
 			} catch (JSONException e)
@@ -251,7 +251,7 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;*/
 	}
 	
 	@Override
-	public void putAttributeMetaInfoRecord(AttributeMetadataInfoRecord<NodeIDType, Double> putRec)
+	public void putAttributeMetaInfoRecord(AttributeMetadataInfoRecord<Integer, Double> putRec)
 	{
 		try
 		{
@@ -266,7 +266,7 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;*/
 	}
 	
 	@Override
-	public void putAttributeMetaObjectRecord(AttributeMetaObjectRecord<NodeIDType, Double> putRec, String attrName)
+	public void putAttributeMetaObjectRecord(AttributeMetaObjectRecord<Integer, Double> putRec, String attrName)
 	{
 		try
 		{
@@ -298,7 +298,7 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;*/
 	}
 	
 	public void updateAttributeMetaObjectRecord
-	(AttributeMetaObjectRecord<NodeIDType, Double> dbRec, String attrName, JSONObject updateValue, 
+	(AttributeMetaObjectRecord<Integer, Double> dbRec, String attrName, JSONObject updateValue, 
 			AttributeMetaObjectRecord.Operations operType, AttributeMetaObjectRecord.Keys fieldType)
 	{
 		switch(operType)

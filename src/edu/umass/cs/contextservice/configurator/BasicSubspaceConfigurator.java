@@ -19,12 +19,12 @@ import edu.umass.cs.nio.interfaces.NodeConfig;
  * subspaces and assigns each subspace to all available nodes.
  * @author adipc
  */
-public class BasicSubspaceConfigurator<NodeIDType> 
-					extends AbstractSubspaceConfigurator<NodeIDType>
+public class BasicSubspaceConfigurator
+					extends AbstractSubspaceConfigurator
 {
 	private final double optimalH;
 	
-	public BasicSubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig, int optimalH)
+	public BasicSubspaceConfigurator(NodeConfig<Integer> nodeConfig, int optimalH)
 	{
 		super(nodeConfig);
 		this.optimalH = optimalH;
@@ -74,10 +74,10 @@ public class BasicSubspaceConfigurator<NodeIDType>
 				if( subspaceKeyIter.hasNext() )
 				{
 					subspaceKey = subspaceKeyIter.next();
-					Vector<SubspaceInfo<NodeIDType>> currSubVect
+					Vector<SubspaceInfo> currSubVect
 										= subspaceInfoMap.get(subspaceKey);
 					assert( currSubVect.size() > 0 );
-					currSubVect.get(0).getNodesOfSubspace().add( (NodeIDType)(Integer)nodesIdCounter );
+					currSubVect.get(0).getNodesOfSubspace().add( (Integer)(Integer)nodesIdCounter );
 					nodesIdCounter++;
 				}
 				else
@@ -104,10 +104,10 @@ public class BasicSubspaceConfigurator<NodeIDType>
 				while( subspaceKeyIter.hasNext() )
 				{
 					subspaceKey = subspaceKeyIter.next();
-					Vector<SubspaceInfo<NodeIDType>> currSubVect
+					Vector<SubspaceInfo> currSubVect
 										= subspaceInfoMap.get(subspaceKey);
 					assert( currSubVect.size() > 0 );
-					currSubVect.get(0).getNodesOfSubspace().add( (NodeIDType)(Integer)nodesIdCounter );
+					currSubVect.get(0).getNodesOfSubspace().add( (Integer)(Integer)nodesIdCounter );
 				}
 				nodesIdCounter++;
 			}
@@ -142,13 +142,13 @@ public class BasicSubspaceConfigurator<NodeIDType>
 		{
 			int distinctSubspaceId 	= i;
 			
-			Vector<NodeIDType> subspaceNodes = new Vector<NodeIDType>();
+			Vector<Integer> subspaceNodes = new Vector<Integer>();
 			HashMap<String, AttributePartitionInfo> subspaceAttrs 
 									= new HashMap<String, AttributePartitionInfo>();
 			
 			for(int j=0; j<numberNodesForSubspace; j++)
 			{
-				subspaceNodes.add( (NodeIDType)(Integer)nodesIdCounter );
+				subspaceNodes.add( (Integer)(Integer)nodesIdCounter );
 				nodesIdCounter++;
 			}
 			
@@ -166,11 +166,11 @@ public class BasicSubspaceConfigurator<NodeIDType>
 			}
 			
 			// replica num 0 as first replica is created
-			SubspaceInfo<NodeIDType> currSubInfo 
-				= new SubspaceInfo<NodeIDType>( distinctSubspaceId, 0, subspaceAttrs, subspaceNodes );
+			SubspaceInfo currSubInfo 
+				= new SubspaceInfo( distinctSubspaceId, 0, subspaceAttrs, subspaceNodes );
 			
-			Vector<SubspaceInfo<NodeIDType>> replicatedSubspacesVector 
-						= new Vector<SubspaceInfo<NodeIDType>>(); 
+			Vector<SubspaceInfo> replicatedSubspacesVector 
+						= new Vector<SubspaceInfo>(); 
 			replicatedSubspacesVector.add(currSubInfo);
 			
 			subspaceInfoMap.put(distinctSubspaceId, replicatedSubspacesVector);
@@ -187,7 +187,7 @@ public class BasicSubspaceConfigurator<NodeIDType>
 		ContextServiceConfig.configFileDirectory = "conf/singleNodeConf/contextServiceConf";
 		AttributeTypes.initialize();
 		
-		CSNodeConfig<Integer> testNodeConfig = new CSNodeConfig<Integer>();
+		CSNodeConfig testNodeConfig = new CSNodeConfig();
 		int startingPort = 5000;
 		
 		for( int i=0;i<numberOfNodes;i++ )
@@ -197,8 +197,8 @@ public class BasicSubspaceConfigurator<NodeIDType>
 			testNodeConfig.add(i, sockAddr);
 		}
 		
-		AbstractSubspaceConfigurator<Integer> basicSubspaceConfigurator 
-								= new BasicSubspaceConfigurator<Integer>(testNodeConfig, 2);
+		AbstractSubspaceConfigurator basicSubspaceConfigurator 
+								= new BasicSubspaceConfigurator(testNodeConfig, 2);
 		
 		basicSubspaceConfigurator.configureSubspaceInfo();
 		basicSubspaceConfigurator.printSubspaceInfo();

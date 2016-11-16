@@ -5,11 +5,11 @@ import edu.umass.cs.contextservice.client.callback.interfaces.SearchReplyInterfa
 import edu.umass.cs.contextservice.messages.QueryMsgFromUser;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
 
-public class SearchQueryStorage<NodeIDType>
+public class SearchQueryStorage
 {
 	public long requestID;
-	public QueryMsgFromUser<NodeIDType> queryMsgFromUser;
-	public QueryMsgFromUserReply<NodeIDType> queryMsgFromUserReply;
+	public QueryMsgFromUser queryMsgFromUser;
+	public QueryMsgFromUserReply queryMsgFromUserReply;
 	public SearchReplyInterface searchRep;
 	public CallBackInterface callback;
 }

@@ -4,7 +4,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 
-public class QueryMesgToUpdateGroupInfo<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class QueryMesgToUpdateGroupInfo<Integer> extends BasicContextServicePacket<Integer>
 {
 	private enum Keys {QUERY, SOURCE_IP, SOURCE_PORT, USER_REQ_NUM};
 	
@@ -13,7 +13,7 @@ public class QueryMesgToUpdateGroupInfo<NodeIDType> extends BasicContextServiceP
 	private final int sourcePort;
 	private final long userReqNum;
 	
-	public QueryMesgToUpdateGroupInfo(NodeIDType initiator, String userQuery, String sourceIP, 
+	public QueryMesgToUpdateGroupInfo(Integer initiator, String userQuery, String sourceIP, 
 			int sourcePort, long userReqNum)
 	{
 		super(initiator, ContextServicePacket.PacketType.QUERY_MSG_FROM_USER);

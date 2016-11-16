@@ -7,11 +7,11 @@ import org.json.JSONObject;
 /**
  * @author adipc
  *
- * @param <NodeIDType>
+ * @param <Integer>
  */
-public abstract class BasicContextServicePacket<NodeIDType> extends ContextServicePacket<NodeIDType>
+public abstract class BasicContextServicePacket extends ContextServicePacket
 {
-	public BasicContextServicePacket(NodeIDType initiator, PacketType t) 
+	public BasicContextServicePacket(Integer initiator, PacketType t) 
 	{
 		super(initiator);
 		this.setType(t);	

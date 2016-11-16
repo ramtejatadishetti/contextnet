@@ -17,7 +17,7 @@ import edu.umass.cs.contextservice.schemes.helperclasses.SubspaceSearchReplyInfo
  * like query, its source etc
  * @author ayadav
  */
-public class QueryInfo<NodeIDType>
+public class QueryInfo
 {
 	// if a query is a where or a join query
 	public static final int WHERE_QUERY								= 1;
@@ -25,7 +25,7 @@ public class QueryInfo<NodeIDType>
 	
 	// user query
 	private final String searchQuery;
-	private  NodeIDType sourceNodeId;
+	private  Integer sourceNodeId;
 	private  long requestId;
 	private  String groupGUID;
 	
@@ -61,7 +61,7 @@ public class QueryInfo<NodeIDType>
 	private final Object addReplyLock = new Object();
 	
 	public QueryInfo( String query, 
-			NodeIDType sourceNodeId, String grpGUID, long userReqID, 
+			Integer sourceNodeId, String grpGUID, long userReqID, 
 			String userIP, int userPort, long expiryTime )
 	{
 		this.searchQuery = query;
@@ -115,7 +115,7 @@ public class QueryInfo<NodeIDType>
 		return this.groupGUID;
 	}
 	
-	public NodeIDType getSourceNodeId()
+	public Integer getSourceNodeId()
 	{
 		return sourceNodeId;
 	}
@@ -176,7 +176,7 @@ public class QueryInfo<NodeIDType>
 	}
 	
 	public boolean addReplyFromARegionOfASubspace(int subspaceId, int senderID, 
-			QueryMesgToSubspaceRegionReply<NodeIDType> queryMesgToSubspaceRegionReply)
+			QueryMesgToSubspaceRegionReply queryMesgToSubspaceRegionReply)
 	{
 		synchronized(this.addReplyLock)
 		{

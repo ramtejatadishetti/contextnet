@@ -22,36 +22,36 @@ import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.nio.interfaces.NodeConfig;
 
-public class LoadAwareBasicSubspaceConfigurator<NodeIDType> 
-							extends AbstractSubspaceConfigurator<NodeIDType>
+public class LoadAwareBasicSubspaceConfigurator 
+							extends AbstractSubspaceConfigurator
 {
 	// load map , key is nodeId, and value is number of requests/s
-	//private HashMap<NodeIDType, Double> loadMap;
+	//private HashMap<Integer, Double> loadMap;
 	private final double optimalH;
 	
-	private HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> oldSubspaceInfoMap;
+	private HashMap<Integer, Vector<SubspaceInfo>> oldSubspaceInfoMap;
 	//private HashMap<String, PartitionToNodeInfo> partitionToNodeMap;
 	
 	// String key is the old subspaceId-replicaNum
-	private HashMap<String, List<PartitionLoadReporting<NodeIDType>>> partitionLoadMap;
+	private HashMap<String, List<PartitionLoadReporting>> partitionLoadMap;
 	
 	
-	public LoadAwareBasicSubspaceConfigurator( NodeConfig<NodeIDType> nodeConfig
-			, int optimalH, HashMap<String, List<PartitionLoadReporting<NodeIDType>>> partitionLoadMap )
+	public LoadAwareBasicSubspaceConfigurator( NodeConfig<Integer> nodeConfig
+			, int optimalH, HashMap<String, List<PartitionLoadReporting>> partitionLoadMap )
 	{
 		super(nodeConfig);
 		
 		oldSubspaceInfoMap 
-				= new HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>>();
+				= new HashMap<Integer, Vector<SubspaceInfo>>();
 		this.optimalH = optimalH;
 		// every node load should be non zero. 
 		// so if the load is zero we make it to 1.
 		// load is measured in requests/s
-//		Iterator<NodeIDType> nodeIter = loadMap.keySet().iterator();
+//		Iterator<Integer> nodeIter = loadMap.keySet().iterator();
 //		
 //		while( nodeIter.hasNext() )
 //		{
-//			NodeIDType nodeId = nodeIter.next();
+//			Integer nodeId = nodeIter.next();
 //			double nodeLoad = loadMap.get(nodeId);
 //			if( nodeLoad == 0.0 )
 //			{
@@ -83,15 +83,15 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 		double numNodes  = nodeConfig.getNodeIDs().size();
 		double loadPerNode = totalLoad/numNodes;
 		
-		HashMap<NodeIDType, Double> nodeAssignmentLoadMap 
-											= new HashMap<NodeIDType, Double>();
+		HashMap<Integer, Double> nodeAssignmentLoadMap 
+											= new HashMap<Integer, Double>();
 		
-		Set<NodeIDType> nodeIds = nodeConfig.getNodeIDs();
-		Iterator<NodeIDType> nodeIdIter = nodeIds.iterator();
+		Set<Integer> nodeIds = nodeConfig.getNodeIDs();
+		Iterator<Integer> nodeIdIter = nodeIds.iterator();
 		
 		while( nodeIdIter.hasNext() )
 		{
-			NodeIDType nodeId = nodeIdIter.next();
+			Integer nodeId = nodeIdIter.next();
 			nodeAssignmentLoadMap.put(nodeId, loadPerNode);
 		}
 		
@@ -108,32 +108,32 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 	 * Recursive function to generate all the
 	 * subspace regions/partitions.
 	 */
-	public HashMap<String, List<PartitionToNodeInfo<NodeIDType>>> 
+	public HashMap<String, List<PartitionToNodeInfo>> 
 										generateOldSubspacePartitions()
 	{
 		// key to map is subsapceId-replicaNum
-		HashMap<String, List<PartitionToNodeInfo<NodeIDType>>> fullPartitionMap 
-					= new HashMap<String, List<PartitionToNodeInfo<NodeIDType>>>();
+		HashMap<String, List<PartitionToNodeInfo>> fullPartitionMap 
+					= new HashMap<String, List<PartitionToNodeInfo>>();
 		
 		Iterator<Integer> subspaceIter = oldSubspaceInfoMap.keySet().iterator();
 		
 		while( subspaceIter.hasNext() )
 		{
 			int subspaceId = subspaceIter.next();
-			Vector<SubspaceInfo<NodeIDType>> replicaVect 
+			Vector<SubspaceInfo> replicaVect 
 								= oldSubspaceInfoMap.get(subspaceId);
 			
 			for( int i=0; i<replicaVect.size(); i++ )
 			{
-				SubspaceInfo<NodeIDType> subspaceInfo = replicaVect.get(i);
+				SubspaceInfo subspaceInfo = replicaVect.get(i);
 				HashMap<String, AttributePartitionInfo> attrsOfSubspace 
 										= subspaceInfo.getAttributesOfSubspace();
 				
-				Vector<NodeIDType> nodesOfSubspace 
+				Vector<Integer> nodesOfSubspace 
 					= subspaceInfo.getNodesOfSubspace();
 				
-				List<PartitionToNodeInfo<NodeIDType>> partitionList = 
-						new LinkedList<PartitionToNodeInfo<NodeIDType>>();
+				List<PartitionToNodeInfo> partitionList = 
+						new LinkedList<PartitionToNodeInfo>();
 				
 				double numAttr  = attrsOfSubspace.size();
 				//double numNodes = nodesOfSubspace.size();
@@ -164,7 +164,7 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 				
 				for( ICombinatoricsVector<Integer> perm : gen )
 				{
-					NodeIDType respNodeId 
+					Integer respNodeId 
 						= nodesOfSubspace.get(nodeIdCounter%sizeOfNumNodes);
 					
 					HashMap<String, RangeInfo> attrBounds = 
@@ -173,8 +173,8 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 					
 					//subspaceVectList.add(perm.getVector());
 					//respNodeIdList.add(respNodeId);
-					PartitionToNodeInfo<NodeIDType> partitionInfo 
-								= new PartitionToNodeInfo<NodeIDType>
+					PartitionToNodeInfo partitionInfo 
+								= new PartitionToNodeInfo
 									( subspaceId, subspaceInfo.getReplicaNum(), 
 												attrBounds, respNodeId );
 					
@@ -227,12 +227,12 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 		return attrBound;
 	}
 	
-	private HashMap<Integer, List<NodeIDType>> loadAwareSubspacesToNodesAssignment
-			( HashMap<NodeIDType, Double> nodeAssignmentLoadMap,
+	private HashMap<Integer, List<Integer>> loadAwareSubspacesToNodesAssignment
+			( HashMap<Integer, Double> nodeAssignmentLoadMap,
 					HashMap<Integer, Double> oldSubspaceLoadMap	)
 	{
-		HashMap<Integer, List<NodeIDType>> subspaceNodeAssignment 
-										= new HashMap<Integer, List<NodeIDType>>();
+		HashMap<Integer, List<Integer>> subspaceNodeAssignment 
+										= new HashMap<Integer, List<Integer>>();
 		
 		Iterator<Integer> subspaceIdIter = oldSubspaceLoadMap.keySet().iterator();
 		
@@ -240,7 +240,7 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 		{
 			int subspaceId = subspaceIdIter.next();
 			double totalSubspaceLoad = oldSubspaceLoadMap.get(subspaceId);
-			List<NodeIDType> subspaceNodeList 
+			List<Integer> subspaceNodeList 
 					= assignNodesToASubspace( totalSubspaceLoad, nodeAssignmentLoadMap );
 			
 			subspaceNodeAssignment.put(subspaceId, subspaceNodeList);
@@ -249,16 +249,16 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 	}
 	
 	
-	private List<NodeIDType> assignNodesToASubspace( double totalSubspaceLoad, 
-			HashMap<NodeIDType, Double> nodeAssignmentLoadMap )
+	private List<Integer> assignNodesToASubspace( double totalSubspaceLoad, 
+			HashMap<Integer, Double> nodeAssignmentLoadMap )
 	{
-		List<NodeIDType> nodeAssignmentList = new LinkedList<NodeIDType>();
-		Iterator<NodeIDType> nodeIdIter = nodeAssignmentLoadMap.keySet().iterator();
+		List<Integer> nodeAssignmentList = new LinkedList<Integer>();
+		Iterator<Integer> nodeIdIter = nodeAssignmentLoadMap.keySet().iterator();
 		
 		double curSubspaceLoad = totalSubspaceLoad;
 		while( nodeIdIter.hasNext() )
 		{
-			NodeIDType nodeId = nodeIdIter.next();
+			Integer nodeId = nodeIdIter.next();
 			double remainingNodeLoad = nodeAssignmentLoadMap.get(nodeId);
 			
 			// at least 1 node will be assigned even if the curSubspaceLoad=0
@@ -292,10 +292,10 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 	private double getTotalLoadOnSystem()
 	{
 		double totalLoad = 0.0;
-//		Iterator<NodeIDType> nodeIter = loadMap.keySet().iterator();
+//		Iterator<Integer> nodeIter = loadMap.keySet().iterator();
 //		while( nodeIter.hasNext() )
 //		{
-//			NodeIDType nodeId = nodeIter.next();
+//			Integer nodeId = nodeIter.next();
 //			double nodeLoad = loadMap.get(nodeId);
 //			totalLoad = totalLoad + nodeLoad;
 //		}
@@ -312,17 +312,17 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 		while( suspaceIdIter.hasNext() )
 		{
 			int subspaceId = suspaceIdIter.next();
-			Vector<SubspaceInfo<NodeIDType>> replicasVect 
+			Vector<SubspaceInfo> replicasVect 
 										= oldSubspaceInfoMap.get(subspaceId);
 			
 			// in basic configuration only one replica
 			assert(replicasVect.size() == 1);
-			Vector<NodeIDType> subspaceNodes = replicasVect.get(0).getNodesOfSubspace();
+			Vector<Integer> subspaceNodes = replicasVect.get(0).getNodesOfSubspace();
 			double totalSubspaceLoad = 0.0;
 			
 			for( int i=0; i<subspaceNodes.size(); i++ )
 			{
-				NodeIDType nodeId = subspaceNodes.get(i);
+				Integer nodeId = subspaceNodes.get(i);
 //				double nodeLoad = loadMap.get(nodeId);
 				double nodeLoad = 0.0;
 				totalSubspaceLoad = totalSubspaceLoad + nodeLoad;
@@ -366,11 +366,11 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 				if( subspaceKeyIter.hasNext() )
 				{
 					subspaceKey = subspaceKeyIter.next();
-					Vector<SubspaceInfo<NodeIDType>> currSubVect
+					Vector<SubspaceInfo> currSubVect
 										= oldSubspaceInfoMap.get(subspaceKey);
 					assert( currSubVect.size() > 0 );
 					currSubVect.get(0).getNodesOfSubspace().add
-								( (NodeIDType)(Integer)nodesIdCounter );
+								( (Integer)(Integer)nodesIdCounter );
 					nodesIdCounter++;
 				}
 				else
@@ -398,11 +398,11 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 				while( subspaceKeyIter.hasNext() )
 				{
 					subspaceKey = subspaceKeyIter.next();
-					Vector<SubspaceInfo<NodeIDType>> currSubVect
+					Vector<SubspaceInfo> currSubVect
 										= oldSubspaceInfoMap.get(subspaceKey);
 					assert( currSubVect.size() > 0 );
 					currSubVect.get(0).getNodesOfSubspace().add
-								( (NodeIDType)(Integer)nodesIdCounter );
+								( (Integer)(Integer)nodesIdCounter );
 				}
 				nodesIdCounter++;
 			}
@@ -419,12 +419,12 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 		
 		while( keyIter.hasNext() )
 		{
-			Vector<SubspaceInfo<NodeIDType>> currSubVect 
+			Vector<SubspaceInfo> currSubVect 
 		 		= oldSubspaceInfoMap.get(keyIter.next());
 			
 			for(int i=0; i<currSubVect.size(); i++)
 			{
-				SubspaceInfo<NodeIDType> currSubInfo = currSubVect.get(i);
+				SubspaceInfo currSubInfo = currSubVect.get(i);
 				int currSubspaceNumNodes = currSubInfo.getNodesOfSubspace().size();
 				int currSubspaceNumAttrs = currSubInfo.getAttributesOfSubspace().size();
 				
@@ -475,7 +475,7 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 	}
 	
 //	private HashMap<Integer, Double> getLoadOfASubspace( 
-//				List<PartitionToNodeInfo<NodeIDType>> subspacePartitionList )
+//				List<PartitionToNodeInfo<Integer>> subspacePartitionList )
 //	{
 //		
 //		
@@ -504,13 +504,13 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 		{
 			int distinctSubspaceId 	= i;
 			
-			Vector<NodeIDType> subspaceNodes = new Vector<NodeIDType>();
+			Vector<Integer> subspaceNodes = new Vector<Integer>();
 			HashMap<String, AttributePartitionInfo> subspaceAttrs 
 									= new HashMap<String, AttributePartitionInfo>();
 			
 			for(int j=0; j<numberNodesForSubspace; j++)
 			{
-				subspaceNodes.add( (NodeIDType)(Integer)nodesIdCounter );
+				subspaceNodes.add( (Integer)(Integer)nodesIdCounter );
 				nodesIdCounter++;
 			}
 			
@@ -528,12 +528,12 @@ public class LoadAwareBasicSubspaceConfigurator<NodeIDType>
 			}
 			
 			// replica num 0 as first replica is created
-			SubspaceInfo<NodeIDType> currSubInfo 
-				= new SubspaceInfo<NodeIDType>
+			SubspaceInfo currSubInfo 
+				= new SubspaceInfo
 				  ( distinctSubspaceId, 0, subspaceAttrs, subspaceNodes );
 			
-			Vector<SubspaceInfo<NodeIDType>> replicatedSubspacesVector 
-						= new Vector<SubspaceInfo<NodeIDType>>(); 
+			Vector<SubspaceInfo> replicatedSubspacesVector 
+						= new Vector<SubspaceInfo>(); 
 			replicatedSubspacesVector.add(currSubInfo);
 			
 			oldSubspaceInfoMap.put(distinctSubspaceId, replicatedSubspacesVector);

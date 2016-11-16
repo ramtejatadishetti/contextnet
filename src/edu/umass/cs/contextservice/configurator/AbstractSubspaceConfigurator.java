@@ -18,16 +18,16 @@ import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.nio.interfaces.NodeConfig;
 
-public abstract class AbstractSubspaceConfigurator<NodeIDType>
+public abstract class AbstractSubspaceConfigurator
 {
-	protected NodeConfig<NodeIDType> nodeConfig;
+	protected NodeConfig<Integer> nodeConfig;
 	
 	// stores subspace info
 	// key is the distinct subspace id and it stores all replicas of that subspace.
 	// a replica of a subspace is defined over same attributes but different nodes
 	// this map is written only once, in one thread,  and read many times, by many threads, 
 	// so no need to make concurrent.
-	protected  HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;
+	protected  HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap;
 	
 	private final Object subspacePartitionInsertLock				= new Object();
 	
@@ -35,10 +35,10 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 	private long subspacePartitionInsertSent						= 0;
 	private long subspacePartitionInsertCompl						= 0;
 	
-	public AbstractSubspaceConfigurator(NodeConfig<NodeIDType> nodeConfig)
+	public AbstractSubspaceConfigurator(NodeConfig<Integer> nodeConfig)
 	{
 		this.nodeConfig = nodeConfig;
-		subspaceInfoMap = new HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>>();
+		subspaceInfoMap = new HashMap<Integer, Vector<SubspaceInfo>>();
 	}
 	
 	public abstract void configureSubspaceInfo();
@@ -51,18 +51,18 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 		{
 			int distinctSubId = subspceIter.next();
 			
-			Vector<SubspaceInfo<NodeIDType>> replicaVect = subspaceInfoMap.get(distinctSubId);
+			Vector<SubspaceInfo> replicaVect = subspaceInfoMap.get(distinctSubId);
 			ContextServiceLogger.getLogger().fine("number of replicas for subspaceid "+distinctSubId
 					+" "+replicaVect.size());
 			for(int i=0; i<replicaVect.size();i++)
 			{
-				SubspaceInfo<NodeIDType> currSubspace = replicaVect.get(i);
+				SubspaceInfo currSubspace = replicaVect.get(i);
 				ContextServiceLogger.getLogger().fine(currSubspace.toString());
 			}
 		}
 	}
 	
-	public HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> getSubspaceInfoMap()
+	public HashMap<Integer, Vector<SubspaceInfo>> getSubspaceInfoMap()
 	{
 		return this.subspaceInfoMap;
 	}
@@ -72,7 +72,7 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 	 * subspace regions/partitions.
 	 */
 	public void generateAndStoreSubspacePartitionsInDB(ExecutorService nodeES, 
-			HyperspaceMySQLDB<NodeIDType> hyperspaceDB )
+			HyperspaceMySQLDB hyperspaceDB )
 	{
 		ContextServiceLogger.getLogger().fine
 								(" generateSubspacePartitions() entering " );
@@ -82,16 +82,16 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 		while( subspaceIter.hasNext() )
 		{
 			int subspaceId = subspaceIter.next();
-			Vector<SubspaceInfo<NodeIDType>> replicaVect 
+			Vector<SubspaceInfo> replicaVect 
 								= subspaceInfoMap.get(subspaceId);
 			
 			for( int i=0; i<replicaVect.size(); i++ )
 			{
-				SubspaceInfo<NodeIDType> subspaceInfo = replicaVect.get(i);
+				SubspaceInfo subspaceInfo = replicaVect.get(i);
 				HashMap<String, AttributePartitionInfo> attrsOfSubspace 
 										= subspaceInfo.getAttributesOfSubspace();
 				
-				Vector<NodeIDType> nodesOfSubspace = subspaceInfo.getNodesOfSubspace();
+				Vector<Integer> nodesOfSubspace = subspaceInfo.getNodesOfSubspace();
 				
 				double numAttr  = attrsOfSubspace.size();
 				//double numNodes = nodesOfSubspace.size();
@@ -118,11 +118,11 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 				int nodeIdCounter = 0;
 				int sizeOfNumNodes = nodesOfSubspace.size();
 				List<List<Integer>> subspaceVectList = new LinkedList<List<Integer>>();
-				List<NodeIDType> respNodeIdList = new LinkedList<NodeIDType>();
+				List<Integer> respNodeIdList = new LinkedList<Integer>();
 				long counter = 0;
 				for( ICombinatoricsVector<Integer> perm : gen )
 				{
-					NodeIDType respNodeId = nodesOfSubspace.get(nodeIdCounter%sizeOfNumNodes);
+					Integer respNodeId = nodesOfSubspace.get(nodeIdCounter%sizeOfNumNodes);
 					//ContextServiceLogger.getLogger().fine("perm.getVector() "+perm.getVector());
 					counter++;
 					
@@ -144,7 +144,7 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 						
 						// repointing it to a new list, and the pointer to the old list is passed to the DatabaseOperation class
 						subspaceVectList = new LinkedList<List<Integer>>();
-						respNodeIdList = new LinkedList<NodeIDType>();
+						respNodeIdList = new LinkedList<Integer>();
 						
 						
 						nodeIdCounter++;
@@ -171,7 +171,7 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 					
 					// repointing it to a new list, and the pointer to the old list is passed to the DatabaseOperation class
 					subspaceVectList = new LinkedList<List<Integer>>();
-					respNodeIdList = new LinkedList<NodeIDType>();
+					respNodeIdList = new LinkedList<Integer>();
 				}
 			}
 		}
@@ -199,12 +199,12 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 		
 		while( keyIter.hasNext() )
 		{
-			Vector<SubspaceInfo<NodeIDType>> currSubVect 
+			Vector<SubspaceInfo> currSubVect 
 		 		= subspaceInfoMap.get(keyIter.next());
 			
 			for(int i=0; i<currSubVect.size(); i++)
 			{
-				SubspaceInfo<NodeIDType> currSubInfo = currSubVect.get(i);
+				SubspaceInfo currSubInfo = currSubVect.get(i);
 				int currSubspaceNumNodes = currSubInfo.getNodesOfSubspace().size();
 				int currSubspaceNumAttrs = currSubInfo.getAttributesOfSubspace().size();
 				
@@ -254,13 +254,13 @@ public abstract class AbstractSubspaceConfigurator<NodeIDType>
 		private final int subspaceId;
 		private final int replicaNum;
 		private final List<List<Integer>> permVectorList;
-		private final List<NodeIDType> respNodeIdList;
-		private final HyperspaceMySQLDB<NodeIDType> hyperspaceDB;
+		private final List<Integer> respNodeIdList;
+		private final HyperspaceMySQLDB hyperspaceDB;
 		
 		public DatabaseOperationClass(int subspaceId, int replicaNum, 
 				List<List<Integer>> permVectorList
-				, List<NodeIDType> respNodeIdList,
-				HyperspaceMySQLDB<NodeIDType> hyperspaceDB )
+				, List<Integer> respNodeIdList,
+				HyperspaceMySQLDB hyperspaceDB )
 		{
 			this.subspaceId = subspaceId;
 			this.replicaNum = replicaNum;

@@ -6,9 +6,9 @@ import org.json.JSONObject;
 /**
  * used to fetch old value of the atrribute and 
  * @author adipc
- * @param <NodeIDType>
+ * @param <Integer>
  */
-public class ConsistentStoragePutReply<NodeIDType> extends BasicContextServicePacket<NodeIDType>
+public class ConsistentStoragePutReply<Integer> extends BasicContextServicePacket<Integer>
 {
 	private enum Keys {REQUEST_ID, GUID, ATTRNAME, OLD_VALUE, NEW_VALUE, VERSION_NUM, SOURCEID};
 	
@@ -18,10 +18,10 @@ public class ConsistentStoragePutReply<NodeIDType> extends BasicContextServicePa
 	private final double oldValue;
 	private final double newValue;
 	private final long versionNum;
-	private final NodeIDType sourceID;
+	private final Integer sourceID;
 	
-	public ConsistentStoragePutReply(NodeIDType initiator, long requestID, String guid, 
-			String attrName, double oldValue, double newValue, long versionNum, NodeIDType sourceID)
+	public ConsistentStoragePutReply(Integer initiator, long requestID, String guid, 
+			String attrName, double oldValue, double newValue, long versionNum, Integer sourceID)
 	{
 		super(initiator, ContextServicePacket.PacketType.CONSISTENT_STORAGE_PUT_REPLY);
 		this.requestID = requestID;
@@ -42,7 +42,7 @@ public class ConsistentStoragePutReply<NodeIDType> extends BasicContextServicePa
 		this.oldValue = json.getDouble(Keys.OLD_VALUE.toString());
 		this.newValue = json.getDouble(Keys.NEW_VALUE.toString());
 		this.versionNum = json.getLong(Keys.VERSION_NUM.toString());
-		this.sourceID = (NodeIDType)((Integer)json.getInt(Keys.SOURCEID.toString()));		
+		this.sourceID = (Integer)((Integer)json.getInt(Keys.SOURCEID.toString()));		
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException
@@ -89,7 +89,7 @@ public class ConsistentStoragePutReply<NodeIDType> extends BasicContextServicePa
 		return this.versionNum;
 	}
 	
-	public NodeIDType getSourceId()
+	public Integer getSourceId()
 	{
 		return this.sourceID;
 	}

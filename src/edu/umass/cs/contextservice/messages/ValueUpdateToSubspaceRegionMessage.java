@@ -3,8 +3,8 @@ package edu.umass.cs.contextservice.messages;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class ValueUpdateToSubspaceRegionMessage<NodeIDType> 
-								extends BasicContextServicePacket<NodeIDType>
+public class ValueUpdateToSubspaceRegionMessage 
+								extends BasicContextServicePacket
 {
 	// Value node that receives the message has to add entry, 
 	// or remove entry or do remove and add both, in that order 
@@ -49,7 +49,7 @@ public class ValueUpdateToSubspaceRegionMessage<NodeIDType>
 	private final int privacySchemeOrdinal;
 	
 	
-	public ValueUpdateToSubspaceRegionMessage( NodeIDType initiator, long versionNum, 
+	public ValueUpdateToSubspaceRegionMessage( Integer initiator, long versionNum, 
 			String GUID, JSONObject jsonToWrite, int operType, int subspaceNum, 
 			long requestID, boolean firstTimeInsert , long updateStartTime, 
 			JSONObject oldValJSON, JSONObject newUnsetAttrs, JSONObject updateAttrJSON, 

@@ -13,7 +13,7 @@ import org.json.JSONObject;
  * @author adipc
  *
  */
-public class AttributeMetadataInfoRecord<NodeIDType, AttributeIDType> /*extends JSONObject*/
+public class AttributeMetadataInfoRecord<Integer, AttributeIDType> /*extends JSONObject*/
 {
 	public static enum Keys {ATTR_NAME, ATTR_MIN, ATTR_MAX, TABLE_NAME};
 	//public static enum RCStates {READY, WAIT_ACK_STOP, WAIT_ACK_START, WAIT_ACK_DROP};
@@ -68,12 +68,12 @@ public class AttributeMetadataInfoRecord<NodeIDType, AttributeIDType> /*extends 
 	}
 	
 	/*@SuppressWarnings("unchecked")
-	private Set<NodeIDType> toSet(JSONArray jsonArray) throws JSONException
+	private Set<Integer> toSet(JSONArray jsonArray) throws JSONException
 	{
-		Set<NodeIDType> set = new HashSet<NodeIDType>();
+		Set<Integer> set = new HashSet<Integer>();
 		for(int i=0; i<jsonArray.length(); i++)
 		{
-			set.add((NodeIDType)jsonArray.get(i));
+			set.add((Integer)jsonArray.get(i));
 		}
 		return set;
 	}*/
@@ -112,7 +112,7 @@ public class AttributeMetadataInfoRecord<NodeIDType, AttributeIDType> /*extends 
 	}
 	
 	
-	/*public ReconfigurationRecord<NodeIDType> putActiveReplicas(String name, int epoch, Set<NodeIDType> arSet) 
+	/*public ReconfigurationRecord<Integer> putActiveReplicas(String name, int epoch, Set<Integer> arSet) 
 	{
 		if(epoch - this.epoch == 1) 
 		{

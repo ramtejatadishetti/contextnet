@@ -35,15 +35,15 @@ import edu.umass.cs.utils.DelayProfiler;
  * context service.
  * @author adipc
  */
-public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInterface<NodeIDType>
+public class GUIDAttributeStorage implements GUIDAttributeStorageInterface
 {
-	private final NodeIDType myNodeID;
-	private final HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap;
-	private final DataSource<NodeIDType> dataSource;
+	private final Integer myNodeID;
+	private final HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap;
+	private final DataSource dataSource;
 	
-	public GUIDAttributeStorage( NodeIDType myNodeID, 
-			HashMap<Integer, Vector<SubspaceInfo<NodeIDType>>> subspaceInfoMap , 
-			DataSource<NodeIDType> dataSource )
+	public GUIDAttributeStorage( Integer myNodeID, 
+			HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap , 
+			DataSource dataSource )
 	{
 		this.myNodeID = myNodeID;
 		this.subspaceInfoMap = subspaceInfoMap;
@@ -64,12 +64,12 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 			while( subspaceIter.hasNext() )
 			{
 				int subspaceId = subspaceIter.next();
-				Vector<SubspaceInfo<NodeIDType>> replicasOfSubspace 
+				Vector<SubspaceInfo> replicasOfSubspace 
 										= subspaceInfoMap.get(subspaceId);
 				
 				for(int i = 0; i<replicasOfSubspace.size(); i++)
 				{
-					SubspaceInfo<NodeIDType> subInfo = replicasOfSubspace.get(i);
+					SubspaceInfo subInfo = replicasOfSubspace.get(i);
 					
 					int replicaNum = subInfo.getReplicaNum();
 					
@@ -556,7 +556,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	 * @param subspaceVector
 	 */
 	public void insertIntoSubspacePartitionInfo(int subspaceId, int replicaNum,
-			List<Integer> subspaceVector, NodeIDType respNodeId)
+			List<Integer> subspaceVector, Integer respNodeId)
 	{
 		long t0 			= System.currentTimeMillis();
 		Connection myConn   = null;
@@ -564,7 +564,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		
 		String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"PartitionInfo";
 		
-		SubspaceInfo<NodeIDType> currSubInfo = subspaceInfoMap.
+		SubspaceInfo currSubInfo = subspaceInfoMap.
 				get(subspaceId).get(replicaNum);
 		//Vector<AttributePartitionInfo> domainPartInfo = currSubInfo.getDomainPartitionInfo();
 		//Vector<String> attrSubspaceInfo = currSubInfo.getAttributesOfSubspace();
@@ -667,7 +667,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 	 * @param respNodeIdList
 	 */
 	public void bulkInsertIntoSubspacePartitionInfo( int subspaceId, int replicaNum,
-			List<List<Integer>> subspaceVectorList, List<NodeIDType> respNodeIdList )
+			List<List<Integer>> subspaceVectorList, List<Integer> respNodeIdList )
 	{
 		assert(subspaceVectorList.size() == respNodeIdList.size());
 		
@@ -681,7 +681,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		
 		String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"PartitionInfo";
 		
-		SubspaceInfo<NodeIDType> currSubInfo = subspaceInfoMap.
+		SubspaceInfo currSubInfo = subspaceInfoMap.
 				get(subspaceId).get(replicaNum);
 		//Vector<AttributePartitionInfo> domainPartInfo = currSubInfo.getDomainPartitionInfo();
 		//Vector<String> attrSubspaceInfo = currSubInfo.getAttributesOfSubspace();
@@ -717,7 +717,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		for( int i=0; i<subspaceVectorList.size(); i++ )
 		{
 			List<Integer> subspaceVector = subspaceVectorList.get(i);
-			NodeIDType respNodeId = respNodeIdList.get(i);
+			Integer respNodeId = respNodeIdList.get(i);
 			
 			if(i == 0)
 			{
@@ -1555,7 +1555,7 @@ public class GUIDAttributeStorage<NodeIDType> implements GUIDAttributeStorageInt
 		{
 			int subspaceId = subapceIdIter.next();
 			// at least one replica and all replica have same default value for each attribute.
-			SubspaceInfo<NodeIDType> currSubspaceInfo 
+			SubspaceInfo currSubspaceInfo 
 												= subspaceInfoMap.get(subspaceId).get(0);
 			HashMap<String, AttributePartitionInfo> attrSubspaceMap 
 												= currSubspaceInfo.getAttributesOfSubspace();

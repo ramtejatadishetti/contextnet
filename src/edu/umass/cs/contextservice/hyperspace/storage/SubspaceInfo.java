@@ -8,7 +8,7 @@ import java.util.Vector;
  * Stores attributes that define a subspace
  * @author adipc
  */
-public class SubspaceInfo<NodeIDType>
+public class SubspaceInfo
 {
 	// this is the distict subspace id for a subspace
 	// replicated subspaces will have this as same.
@@ -18,13 +18,13 @@ public class SubspaceInfo<NodeIDType>
 	private final int replicaNum;
 	
 	private final HashMap<String, AttributePartitionInfo> attributesOfSubspace;
-	private final Vector<NodeIDType> nodesOfSubspace;
+	private final Vector<Integer> nodesOfSubspace;
 	// right now num of paritions is same for each attribute 
 	// in the subspace
 	private int numPartitions;
 	
 	public SubspaceInfo(int subspaceId, int replicaNum, HashMap<String, AttributePartitionInfo> attributesOfSubspace, 
-			Vector<NodeIDType> nodesOfSubspace)
+			Vector<Integer> nodesOfSubspace)
 	{
 		this.subspaceId 			= subspaceId;
 		this.replicaNum 			= replicaNum;
@@ -77,7 +77,7 @@ public class SubspaceInfo<NodeIDType>
 		return str;
 	}
 	
-	public Vector<NodeIDType> getNodesOfSubspace()
+	public Vector<Integer> getNodesOfSubspace()
 	{
 		return this.nodesOfSubspace;
 	}
@@ -86,11 +86,11 @@ public class SubspaceInfo<NodeIDType>
 	 * checks if the subspace nodes have my id.
 	 * @return
 	 */
-	public boolean checkIfSubspaceHasMyID(NodeIDType idToCheck)
+	public boolean checkIfSubspaceHasMyID(Integer idToCheck)
 	{
 		for(int i=0;i<nodesOfSubspace.size();i++)
 		{
-			NodeIDType currID = nodesOfSubspace.get(i);
+			Integer currID = nodesOfSubspace.get(i);
 			if(Integer.parseInt(currID+"") == Integer.parseInt(idToCheck+""))
 			{
 				return true;
