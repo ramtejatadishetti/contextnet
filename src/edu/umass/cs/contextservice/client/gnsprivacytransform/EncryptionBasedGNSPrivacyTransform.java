@@ -36,6 +36,8 @@ public class EncryptionBasedGNSPrivacyTransform implements GNSPrivacyTransformIn
 	{
 		//Key symKey = KeyGenerator.getInstance(algorithm).generateKey();
 		JSONObject encryptedAttrValuePairs = new JSONObject();
+		// JSON iter warning
+		@SuppressWarnings("unchecked")
 		Iterator<String> attrIter = attrValuePair.keys();
 		while(attrIter.hasNext())
 		{	
@@ -62,6 +64,8 @@ public class EncryptionBasedGNSPrivacyTransform implements GNSPrivacyTransformIn
 		JSONObject palinTextAttrValuePairs = new JSONObject();
 		JSONObject encryptedAttrValPairs = gnsTransformedMessage.getEncryptedAttrValuePair();
 		
+		// JSON iter warning
+		@SuppressWarnings("unchecked")
 		Iterator<String> attrIter = encryptedAttrValPairs.keys();
 		
 		while(attrIter.hasNext())

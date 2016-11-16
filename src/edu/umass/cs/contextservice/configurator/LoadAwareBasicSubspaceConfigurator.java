@@ -33,7 +33,7 @@ public class LoadAwareBasicSubspaceConfigurator
 	//private HashMap<String, PartitionToNodeInfo> partitionToNodeMap;
 	
 	// String key is the old subspaceId-replicaNum
-	private HashMap<String, List<PartitionLoadReporting>> partitionLoadMap;
+	//private HashMap<String, List<PartitionLoadReporting>> partitionLoadMap;
 	
 	
 	public LoadAwareBasicSubspaceConfigurator( NodeConfig<Integer> nodeConfig
@@ -59,7 +59,7 @@ public class LoadAwareBasicSubspaceConfigurator
 //			}
 //		}
 		
-		this.partitionLoadMap = partitionLoadMap;
+		//this.partitionLoadMap = partitionLoadMap;
 		
 		//partitionToNodeMap = new HashMap<String, PartitionToNodeInfo>();
 	}

@@ -34,7 +34,6 @@ public class DataSource
     	dropDB(sqlNodeInfoMap.get(myNodeID));
     	createDB(sqlNodeInfoMap.get(myNodeID));
     	
-    	//"mysqlDir-compute-0-13";
     	
         cpds = new ComboPooledDataSource();
         cpds.setDriverClass("com.mysql.jdbc.Driver"); //loads the jdbc driver
@@ -76,10 +75,8 @@ public class DataSource
     	Statement stmt = null;
     	try
     	{
-    		//STEP 2: Register JDBC driver
     		Class.forName("com.mysql.jdbc.Driver");
     		
-    		//STEP 3: Open a connection
     		String jdbcURL = "";
     		if(sqlInfo.arguments.length() > 0)
     		{
@@ -90,48 +87,54 @@ public class DataSource
     			jdbcURL = "jdbc:mysql://localhost:"+sqlInfo.portNum;
     		}
     		
-    	    //ContextServiceLogger.getLogger().fine("Connecting to database...");
     	    conn = DriverManager.getConnection(jdbcURL, sqlInfo.username, sqlInfo.password);
 
-		    //STEP 4: Execute a query
-		    //ContextServiceLogger.getLogger().fine("Creating database...");
 		    stmt = conn.createStatement();
-		    //String sql = "drop DATABASE "+sqlInfo.databaseName;
-		    //stmt.executeUpdate(sql);
 		    
 		    String sql = "CREATE DATABASE "+sqlInfo.databaseName;
 		    stmt.executeUpdate(sql);
-		    //ContextServiceLogger.getLogger().fine("Database created successfully...");
-    	   }catch(SQLException se){
-    	      se.printStackTrace();
-    	   }catch(Exception e)
+		    
+    	}
+    	catch(SQLException se)
     	{
-    	      e.printStackTrace();
-    	   }finally{
-    	      //finally block used to close resources
-    	      try{
-    	         if(stmt!=null)
-    	            stmt.close();
-    	      }catch(SQLException se2){
-    	      }// nothing we can do
-    	      try{
-    	          if(conn!=null)
-    	             conn.close();
-    	       }catch(SQLException se){
-    	          se.printStackTrace();
-    	       }//end finally try
-    	    }//end try
+    		se.printStackTrace();
+    	}
+    	catch(Exception e)
+    	{
+    		e.printStackTrace();
+    	}
+    	finally
+    	{
+    	    try
+    	    {
+    	    	if(stmt!=null)
+    	    		stmt.close();
+    	    }
+    	    catch(SQLException se2)
+    	    {
+    	    	se2.printStackTrace();
+    	    }
+    	    try
+    	    {
+    	    	if(conn!=null)
+    	    		conn.close();
+    	    }
+    	    catch(SQLException se)
+    	    {
+    	    	se.printStackTrace();
+    	    }
+    	}
     }
+    
     
     private void dropDB(SQLNodeInfo sqlInfo)
     {
     	Connection conn = null;
     	Statement stmt = null;
-    	try{
-    		//STEP 2: Register JDBC driver
+    	try
+    	{
     		Class.forName("com.mysql.jdbc.Driver");
     		
-    		//STEP 3: Open a connection
     		String jdbcURL = "";
     		if(sqlInfo.arguments.length() > 0)
     		{
@@ -142,36 +145,43 @@ public class DataSource
     			jdbcURL = "jdbc:mysql://localhost:"+sqlInfo.portNum;
     		}
     		
-    	    //ContextServiceLogger.getLogger().fine("Connecting to database...");
     	    conn = DriverManager.getConnection(jdbcURL, sqlInfo.username, sqlInfo.password);
-
-		    //STEP 4: Execute a query
-		    //ContextServiceLogger.getLogger().fine("Creating database...");
+    	    
 		    stmt = conn.createStatement();
 		    String sql = "drop DATABASE "+sqlInfo.databaseName;
 		    stmt.executeUpdate(sql);
-		    
-    	   }catch(SQLException se)
-    	   {
-    		  ContextServiceLogger.getLogger().info("Couldn't drop the database "+sqlInfo.databaseName);
-    	      //se.printStackTrace();
-    	   }catch(Exception e)
+    	}
+    	catch(SQLException se)
     	{
-    	      e.printStackTrace();
-    	   }finally{
-    	      //finally block used to close resources
-    	      try{
-    	         if(stmt!=null)
-    	            stmt.close();
-    	      }catch(SQLException se2){
-    	      }// nothing we can do
-    	      try{
-    	          if(conn!=null)
-    	             conn.close();
-    	       }catch(SQLException se){
-    	          se.printStackTrace();
-    	       }//end finally try
-    	    }//end try
+    		ContextServiceLogger.getLogger().info("Couldn't drop the database "+sqlInfo.databaseName);
+    	    se.printStackTrace();
+    	}catch(Exception e)
+    	{
+    		e.printStackTrace();
+    	}
+    	finally
+    	{
+    		//finally block used to close resources
+    		try
+    		{
+    			if(stmt!=null)
+    				stmt.close();
+    	    }
+    		catch(SQLException se2)
+    		{
+    			se2.printStackTrace();
+    		}
+    		
+    		try
+    		{
+    			if(conn!=null)
+    				conn.close();
+    	    }
+    		catch(SQLException se)
+    		{
+    	    	se.printStackTrace();
+    	    }
+    	}
     }
 
     public Connection getConnection() throws SQLException 
