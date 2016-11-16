@@ -12,12 +12,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 
-import javax.crypto.KeyGenerator;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 
-import edu.umass.cs.contextservice.client.ContextClientInterfaceWithPrivacy;
 import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.common.AnonymizedIDEntry;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
@@ -313,6 +310,8 @@ public class HyperspaceBasedASymmetricKeyAnonymizedIDCreator
 		return attrList;
 	}
 	
+	// used for debugging sometimes
+	@SuppressWarnings("unused")
 	private void printGuidToAttributesMap( HashMap<String, HashMap<String, Boolean>>
 							guidToAttributesMap )
 	{
@@ -449,7 +448,7 @@ public class HyperspaceBasedASymmetricKeyAnonymizedIDCreator
 		PublicKey publicKey0 = kp0.getPublic();
 		PrivateKey privateKey0 = kp0.getPrivate();
 		byte[] publicKeyByteArray0 = publicKey0.getEncoded();
-		byte[] privateKeyByteArray0 = privateKey0.getEncoded();
+		//byte[] privateKeyByteArray0 = privateKey0.getEncoded();
 		String guid0 = Utils.convertPublicKeyToGUIDString(publicKeyByteArray0);
 		
 		Vector<GuidEntry> guidsVector = new Vector<GuidEntry>();
@@ -465,7 +464,7 @@ public class HyperspaceBasedASymmetricKeyAnonymizedIDCreator
 			PublicKey publicKey = kp.getPublic();
 			PrivateKey privateKey = kp.getPrivate();
 			byte[] publicKeyByteArray = publicKey.getEncoded();
-			byte[] privateKeyByteArray = privateKey.getEncoded();
+			//byte[] privateKeyByteArray = privateKey.getEncoded();
 			
 			String guid = Utils.convertPublicKeyToGUIDString(publicKeyByteArray);
 			
@@ -532,7 +531,7 @@ public class HyperspaceBasedASymmetricKeyAnonymizedIDCreator
 		for( int i=0; i<anonymizedIds.size(); i++ )
 		{
 			AnonymizedIDEntry anonymizedEntry = anonymizedIds.get(i);
-//			System.out.println( anonymizedEntry.toString() );
+			System.out.println( anonymizedEntry.toString() );
 		}
 	}
 }

@@ -55,6 +55,7 @@ import edu.umass.cs.contextservice.client.csprivacytransform.SubspaceBasedSymmet
 import edu.umass.cs.contextservice.client.gnsprivacytransform.EncryptionBasedGNSPrivacyTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSPrivacyTransformInterface;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSTransformedMessage;
+import edu.umass.cs.contextservice.client.profiler.ClientProfilerStatClass;
 import edu.umass.cs.contextservice.client.storage.GetStorage;
 import edu.umass.cs.contextservice.client.storage.SearchQueryStorage;
 import edu.umass.cs.contextservice.client.storage.UpdateStorage;
@@ -96,11 +97,12 @@ public class ContextServiceClient extends AbstractContextServiceClient
 	// if experiment mode is true then triggers are not stored in a queue.
 	public static boolean EXPERIMENT_MODE								= false;
 	
+	// enables the profiler 
+	private static final boolean PROFILER_ENABLE						= true;
 	
 	public static final String SYMMETRIC_KEY_EXCHANGE_FIELD_NAME		= "SYMMETRIC_KEY_EXCHANGE_FIELD";
 	
 	public static final String GNSCLIENT_CONF_FILE_NAME					= "gnsclient.contextservice.properties";
-	
 	
 	
 	private Queue<JSONObject> refreshTriggerQueue;
@@ -150,6 +152,9 @@ public class ContextServiceClient extends AbstractContextServiceClient
 	// PrivacySchemes is defined in context service config.
 	private final PrivacySchemes privacyScheme;
 	
+	
+	private ClientProfilerStatClass clientProf;
+	
 	/**
 	 * Use this constructor if you want to directly communicate with CS, bypassing GNS.
 	 * @param csHostName
@@ -177,6 +182,12 @@ public class ContextServiceClient extends AbstractContextServiceClient
 		blockingCallBack = new BlockingCallBack();
 		execService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		initializeClient();
+		
+		if(PROFILER_ENABLE)
+		{
+			clientProf = new ClientProfilerStatClass();
+			new Thread(clientProf).start();
+		}
 	}
 	
 	public void sendUpdateWithCallBack
@@ -200,6 +211,7 @@ public class ContextServiceClient extends AbstractContextServiceClient
 			// no context service attribute matching.
 			if( csAttrValuePairs.length() <= 0 )
 			{
+				System.out.println("Number of attributes less than zero");
 				return;
 			}
 			sendUpdateToCS(GUID, 
@@ -1111,6 +1123,10 @@ public class ContextServiceClient extends AbstractContextServiceClient
 			
 			ContextServiceLogger.getLogger().fine("ContextClient sending update requestID "+currId+" to "+sockAddr+" json "+
 					valUpdFromGNS);
+			if(PROFILER_ENABLE)
+			{
+				this.clientProf.incrementNumUpdateSent();
+			}
 			niot.sendToAddress(sockAddr, valUpdFromGNS.toJSONObject());
 		}
 		catch ( Exception | Error e )
@@ -1366,8 +1382,14 @@ public class ContextServiceClient extends AbstractContextServiceClient
 			ContextServiceLogger.getLogger().fine("Update reply recvd "+currReqID);
 			UpdateStorage replyUpdObj = pendingUpdate.get(currReqID);
 			
+			
 			if( replyUpdObj != null )
 			{
+				if(PROFILER_ENABLE)
+				{
+					clientProf.incrementUpdateRepRecvd();
+				}
+				
 				replyUpdObj.valUpdFromGNSReply = vur;
 				replyUpdObj.callback.updateCompletion(replyUpdObj.updReplyObj);
 				

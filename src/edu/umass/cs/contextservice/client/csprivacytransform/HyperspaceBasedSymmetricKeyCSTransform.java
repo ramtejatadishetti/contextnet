@@ -196,6 +196,7 @@ public class HyperspaceBasedSymmetricKeyCSTransform implements CSPrivacyTransfor
 		HashMap<String, AnonymizedIDUpdateInfo> anonymizedIDsToBeUpdated 
 			= new HashMap<String, AnonymizedIDUpdateInfo>();
 		
+		@SuppressWarnings("unchecked")
 		Iterator<String> attrIter = attrValuePairs.keys();
 		
 		while( attrIter.hasNext() )
@@ -275,7 +276,7 @@ public class HyperspaceBasedSymmetricKeyCSTransform implements CSPrivacyTransfor
 		PublicKey publicKey0 = kp0.getPublic();
 		PrivateKey privateKey0 = kp0.getPrivate();
 		byte[] publicKeyByteArray0 = publicKey0.getEncoded();
-		byte[] privateKeyByteArray0 = privateKey0.getEncoded();
+		//byte[] privateKeyByteArray0 = privateKey0.getEncoded();
 		String guid0 = Utils.convertPublicKeyToGUIDString(publicKeyByteArray0);
 		
 		Vector<GuidEntry> guidsVector = new Vector<GuidEntry>();
@@ -291,7 +292,7 @@ public class HyperspaceBasedSymmetricKeyCSTransform implements CSPrivacyTransfor
 			PublicKey publicKey = kp.getPublic();
 			PrivateKey privateKey = kp.getPrivate();
 			byte[] publicKeyByteArray = publicKey.getEncoded();
-			byte[] privateKeyByteArray = privateKey.getEncoded();
+			//byte[] privateKeyByteArray = privateKey.getEncoded();
 			
 			String guid = Utils.convertPublicKeyToGUIDString(publicKeyByteArray);
 			
@@ -375,7 +376,7 @@ public class HyperspaceBasedSymmetricKeyCSTransform implements CSPrivacyTransfor
 		for(int i=0;i<anonymizedIdList.size();i++)
 		{
 			AnonymizedIDEntry anonymizedEntry = anonymizedIdList.get(i);
-//			System.out.println(anonymizedEntry.toString());
+			System.out.println(anonymizedEntry.toString());
 		}
 		
 //		System.out.println("\n\n\n##################################\n\n\n");

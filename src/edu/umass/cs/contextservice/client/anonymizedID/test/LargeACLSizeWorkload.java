@@ -58,7 +58,7 @@ public class LargeACLSizeWorkload
 				PublicKey publicKey = kp.getPublic();
 				PrivateKey privateKey = kp.getPrivate();
 				byte[] publicKeyByteArray = publicKey.getEncoded();
-				byte[] privateKeyByteArray = privateKey.getEncoded();
+				//byte[] privateKeyByteArray = privateKey.getEncoded();
 				
 				String guid = Utils.convertPublicKeyToGUIDString(publicKeyByteArray);
 				
@@ -114,10 +114,10 @@ public class LargeACLSizeWorkload
 		}
 	}
 	
-	private HashMap<String, List<ACLEntry>> getACLMap()
-	{
-		return this.aclMap;
-	}
+//	private HashMap<String, List<ACLEntry>> getACLMap()
+//	{
+//		return this.aclMap;
+//	}
 	
 	
 	private HashMap<Integer, Boolean> getDistinctCircles(int numberOfCirlcesToGet)

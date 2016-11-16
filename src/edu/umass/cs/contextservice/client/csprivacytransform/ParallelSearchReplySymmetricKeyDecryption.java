@@ -22,7 +22,7 @@ public class ParallelSearchReplySymmetricKeyDecryption
 	private final GuidEntry myGuid;
 	private final List<CSSearchReplyTransformedMessage> csTransformedList;
 	private final JSONArray replyArray;
-	private final ExecutorService execService;
+	//private final ExecutorService execService;
 	
 	private long numFinished 				= 0;
 	private final Object lock 				= new Object();
@@ -36,7 +36,7 @@ public class ParallelSearchReplySymmetricKeyDecryption
 		this.myGuid = myGuid;
 		this.csTransformedList = csTransformedList;
 		this.replyArray = replyArray;
-		this.execService = execService;
+		//this.execService = execService;
 	}
 	
 	/**
