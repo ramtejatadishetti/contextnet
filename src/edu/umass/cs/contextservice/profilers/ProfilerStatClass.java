@@ -26,6 +26,9 @@ public class ProfilerStatClass implements Runnable
 	
 	private long incomingSearchRate					= 0;
 	
+	private long numValUpdateFromGNSRecvd			= 0;
+	private long numValUpdateFromGNSReplySent		= 0;
+	
 	
 	private final Object lock 						= new Object();
 	
@@ -90,7 +93,10 @@ public class ProfilerStatClass implements Runnable
 			
 			if(pendingUpdateRequests != null)
 			{
-				System.out.println("pendingUpdateRequests "+pendingUpdateRequests.size());
+				System.out.println("pendingUpdateRequests "+pendingUpdateRequests.size()
+					+" UpdateRecvd "+this.numValUpdateFromGNSRecvd
+					+" Reply sent "+this.numValUpdateFromGNSReplySent);
+				
 				if(pendingUpdateRequests.size() > 0)
 				{
 					Iterator<Long> reqIter = pendingUpdateRequests.keySet().iterator();
@@ -162,5 +168,23 @@ public class ProfilerStatClass implements Runnable
 			ConcurrentHashMap<Long, UpdateInfo> pendingUpdateRequests)
 	{
 		this.pendingUpdateRequests = pendingUpdateRequests;
+	}
+	
+	
+	public void incrementNumValUpdateFromGNSRecvd()
+	{
+		synchronized( lock )
+		{
+			numValUpdateFromGNSRecvd++;
+		}
+	}
+	
+	public void incrementNumValUpdateFromGNSRepSent()
+	{
+		synchronized( lock )
+		{
+			//numValUpdateFromGNSRecvd++;
+			numValUpdateFromGNSReplySent++;
+		}
 	}
 }

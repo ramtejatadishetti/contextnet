@@ -492,6 +492,8 @@ public abstract class AbstractGUIDAttrValueProcessing
 			
 			if( unsetAttrs != null )
 			{
+				// JSON iterator warning
+				@SuppressWarnings("unchecked")
 				Iterator<String> updateAttrIter = updateValJSON.keys();
 				
 				while( updateAttrIter.hasNext() )

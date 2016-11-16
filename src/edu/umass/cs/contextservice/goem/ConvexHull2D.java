@@ -73,12 +73,12 @@ public class ConvexHull2D {
   public void calculateHull() {
     if (points.size() > 0) {
       // Holds the points of the calculated hull 
-      ArrayList hullPoints = new ArrayList();
+      ArrayList<PointSimple> hullPoints = new ArrayList<PointSimple>();
 
 		 // First find an extreme point guranteed to be on the hull 
       // Start from the first point and compare all others for minimal y coord 
       PointSimple startPoint = (PointSimple) points.get(0);
-      int startIndex = 0;
+      //int startIndex = 0;
 
       for (int i = 0; i < points.size(); i++) {
         PointSimple testPoint = (PointSimple) points.get(i);
@@ -86,11 +86,11 @@ public class ConvexHull2D {
         // Find lowest y, and lowest x if equal y values. 
         if (testPoint.getY() < startPoint.getY()) {
           startPoint = testPoint;
-          startIndex = i;
+          //startIndex = i;
         } else if (testPoint.getY() == startPoint.getY()) {
           if (testPoint.getX() < startPoint.getX()) {
             startPoint = testPoint;
-            startIndex = i;
+            //startIndex = i;
           }
         }
       }
@@ -110,7 +110,7 @@ public class ConvexHull2D {
       while (true) {
         // Find next point with largest right turn relative to current 
         double currentAngle = 181f;
-        int chosenIndex = -1;
+        //int chosenIndex = -1;
         for (int i = 0; i < points.size(); i++) {
           PointSimple testPoint = (PointSimple) points.get(i);
 
@@ -126,12 +126,12 @@ public class ConvexHull2D {
           if (testAngle < currentAngle) {
             currentAngle = testAngle;
             nextPoint = testPoint;
-            chosenIndex = i;
+            //chosenIndex = i;
           } else if (testAngle == currentAngle) {
             // take point furthest away from current 
             if (currentPoint.distanceTo(testPoint) > currentPoint.distanceTo(nextPoint)) {
               nextPoint = testPoint;
-              chosenIndex = i;
+              //chosenIndex = i;
             }
           }
         }

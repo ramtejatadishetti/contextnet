@@ -1187,6 +1187,8 @@ public class ContextServiceClient extends AbstractContextServiceClient
 	{
 		//filetering out CS attrbutes.
 		JSONObject csAttrValuePairs = new JSONObject();
+		// JSON iterator warning suppressed.
+		@SuppressWarnings("rawtypes")
 		Iterator gnsIter = gnsAttrValuePairs.keys();
 		
 		while( gnsIter.hasNext() )
@@ -1558,7 +1560,7 @@ public class ContextServiceClient extends AbstractContextServiceClient
 		
 //		System.out.println("privateKey0 "+((RSAPrivateKey)privateKey0).getModulus().bitLength());
 		byte[] publicKeyByteArray0 = publicKey0.getEncoded();
-		byte[] privateKeyByteArray0 = privateKey0.getEncoded();
+		//byte[] privateKeyByteArray0 = privateKey0.getEncoded();
 		
 		String guid0 = Utils.convertPublicKeyToGUIDString(publicKeyByteArray0);
 		GuidEntry myGUID = new GuidEntry("Guid0", guid0, publicKey0, privateKey0);
@@ -1582,7 +1584,7 @@ public class ContextServiceClient extends AbstractContextServiceClient
 			PublicKey publicKey = kp.getPublic();
 			PrivateKey privateKey = kp.getPrivate();
 			byte[] publicKeyByteArray = publicKey.getEncoded();
-			byte[] privateKeyByteArray = privateKey.getEncoded();
+			//byte[] privateKeyByteArray = privateKey.getEncoded();
 			
 			String guid = Utils.convertPublicKeyToGUIDString(publicKeyByteArray);
 			

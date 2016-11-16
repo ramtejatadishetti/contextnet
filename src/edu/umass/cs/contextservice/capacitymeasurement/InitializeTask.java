@@ -39,6 +39,8 @@ public class InitializeTask implements Runnable
 		}
 	}
 	
+	// JSON iterator warning 
+	@SuppressWarnings("unchecked")
 	public void putValueObjectRecord() throws SQLException
 	{
 		Connection myConn = null;
@@ -51,6 +53,7 @@ public class InitializeTask implements Runnable
 			String insertTableSQL = "INSERT INTO "
 					+ MySQLCapacityMeasurement.DATE_TABLE_NAME
 					+ " ( nodeGUID ";
+			
 			
 			Iterator<String> attrIter = attrValJSON.keys();
 			

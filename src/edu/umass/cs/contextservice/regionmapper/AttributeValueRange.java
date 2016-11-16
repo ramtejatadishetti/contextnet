@@ -13,4 +13,14 @@ public class AttributeValueRange
 		this.lowerBound = lowerBound;
 		this.upperBound = upperBound;
 	}
+	
+	public String getLowerBound()
+	{
+		return this.lowerBound;
+	}
+	
+	public String getUpperBound()
+	{
+		return this.upperBound;
+	}
 }

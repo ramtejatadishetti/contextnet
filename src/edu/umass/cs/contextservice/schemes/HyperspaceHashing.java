@@ -437,8 +437,10 @@ public class HyperspaceHashing extends AbstractScheme
 	private void processValueUpdateFromGNS( ValueUpdateFromGNS valueUpdateFromGNS )
 	{
 		String GUID 			  		= valueUpdateFromGNS.getGUID();
-		Integer respNodeId 	  		= this.getConsistentHashingNodeID
+		Integer respNodeId 	  			= this.getConsistentHashingNodeID
 													(GUID, this.allNodeIDs);
+		
+		assert(respNodeId != null);
 		
 		// just forward the request to the node that has 
 		// guid stored in primary subspace.
@@ -460,6 +462,11 @@ public class HyperspaceHashing extends AbstractScheme
 		}
 		else
 		{
+			if(ContextServiceConfig.PROFILER_THREAD)
+			{
+				profStats.incrementNumValUpdateFromGNSRecvd();
+			}
+				
 			// this piece of code takes care of consistency. Updates to a 
 			// GUID are serialized here. For a GUID only one update is outstanding at
 			// time. But multiple GUIDs can be updated in parallel.
@@ -735,6 +742,11 @@ public class HyperspaceHashing extends AbstractScheme
 			} catch (JSONException e)
 			{
 				e.printStackTrace();
+			}
+			
+			if(ContextServiceConfig.PROFILER_THREAD)
+			{
+				profStats.incrementNumValUpdateFromGNSRepSent();
 			}
 			
 			if(ContextServiceConfig.TRIGGER_ENABLED)
