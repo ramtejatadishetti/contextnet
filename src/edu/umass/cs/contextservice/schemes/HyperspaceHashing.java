@@ -445,10 +445,10 @@ public class HyperspaceHashing extends AbstractScheme
 		// guid stored in primary subspace.
 		if( this.getMyID() != respNodeId )
 		{
-			if(respNodeId >= 128)
-			{
-				System.out.println("ID greater than 128 "+respNodeId);
-			}
+//			if(respNodeId >= 128)
+//			{
+//				System.out.println("ID greater than 128 "+respNodeId);
+//			}
 			ContextServiceLogger.getLogger().fine("not primary node case souceIp "
 													+valueUpdateFromGNS.getSourceIP()
 													+" sourcePort "+valueUpdateFromGNS.getSourcePort());
@@ -470,10 +470,10 @@ public class HyperspaceHashing extends AbstractScheme
 				profStats.incrementNumValUpdateFromGNSRecvd();
 			}
 			
-			if(respNodeId >= 128)
-			{
-				System.out.println("ID greater than 128 mesg recvd"+respNodeId);
-			}
+//			if(respNodeId >= 128)
+//			{
+//				System.out.println("ID greater than 128 mesg recvd"+respNodeId);
+//			}
 			
 			// this piece of code takes care of consistency. Updates to a 
 			// GUID are serialized here. For a GUID only one update is outstanding at
