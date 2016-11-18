@@ -95,7 +95,7 @@ public abstract class AbstractScheme implements PacketDemultiplexer<JSONObject>
 		return this.protocolTask.getEventTypes();
 	}
 	
-	public Integer getMyID()
+	public int getMyID()
 	{
 		return this.messenger.getMyID();
 	}
