@@ -135,10 +135,10 @@ public class ContextServiceConfig
     // set in conjuction with that. and also the hyperpsace hashing thread pool
     // size should be set greater than that. These things affect system performance a lot.
 	// change back to 214 for experiments.
-	public static final int MYSQL_MAX_CONNECTIONS					= 10;
+	public static final int MYSQL_MAX_CONNECTIONS					= 150;
 	
 	// it is also important to set this at least the size of the database connection pool.
-	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 10;
+	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 150;
 	
 	//public static final int PRIVACY_THREAD_POOL_SIZE				= 214;
 	
