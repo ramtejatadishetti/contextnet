@@ -53,17 +53,17 @@ public class SQLiteDataSource extends AbstractDataSource
 
     public Connection getConnection(DB_REQUEST_TYPE dbReqType) throws SQLException 
     {
-    	//return searchPool.getConnection();
+    	return searchPool.getConnection();
     	
-    	if(dbReqType == DB_REQUEST_TYPE.UPDATE)
-    	{
-    		return updatePool.getConnection();
-    	}
-    	else if(dbReqType == DB_REQUEST_TYPE.SELECT)
-    	{
-    		return searchPool.getConnection();
-    	}
-    	assert(false);
-        return null;
+//    	if(dbReqType == DB_REQUEST_TYPE.UPDATE)
+//    	{
+//    		return updatePool.getConnection();
+//    	}
+//    	else if(dbReqType == DB_REQUEST_TYPE.SELECT)
+//    	{
+//    		return searchPool.getConnection();
+//    	}
+//    	assert(false);
+//        return null;
     }
 }
