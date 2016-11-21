@@ -2,6 +2,7 @@ package edu.umass.cs.contextservice.database.datasource;
 import java.beans.PropertyVetoException;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 
@@ -34,21 +35,35 @@ public class SQLiteDataSource extends AbstractDataSource
 
     	searchPool.setMaxPoolSize(ContextServiceConfig.MYSQL_MAX_CONNECTIONS);
     	searchPool.setAutoCommitOnClose(true);
+    	
+    	Connection conn;
+		
+    	try {
+			conn = searchPool.getConnection();
+			Statement stmt = conn.createStatement();
+	    	stmt.execute("pragma journal_mode=wal");
+	    	
+	    	stmt.close();
+	    	conn.close();
+		} catch (SQLException e) 
+		{
+			e.printStackTrace();
+		}
     }
 
     public Connection getConnection(DB_REQUEST_TYPE dbReqType) throws SQLException 
     {
-    	return searchPool.getConnection();
+    	//return searchPool.getConnection();
     	
-//    	if(dbReqType == DB_REQUEST_TYPE.UPDATE)
-//    	{
-//    		return updatePool.getConnection();
-//    	}
-//    	else if(dbReqType == DB_REQUEST_TYPE.SELECT)
-//    	{
-//    		return searchPool.getConnection();
-//    	}
-//    	assert(false);
-//        return null;
+    	if(dbReqType == DB_REQUEST_TYPE.UPDATE)
+    	{
+    		return updatePool.getConnection();
+    	}
+    	else if(dbReqType == DB_REQUEST_TYPE.SELECT)
+    	{
+    		return searchPool.getConnection();
+    	}
+    	assert(false);
+        return null;
     }
 }
