@@ -8,6 +8,7 @@ import java.util.concurrent.Executors;
 
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.database.datasource.AbstractDataSource.DB_REQUEST_TYPE;
 import edu.umass.cs.contextservice.database.datasource.MySQLDataSource;
 
 public class MySQLRequestDispatcher implements Runnable
@@ -65,7 +66,7 @@ public class MySQLRequestDispatcher implements Runnable
 					Connection mysqlConn = null;
 					try 
 					{
-						mysqlConn = datasource.getConnection();
+						mysqlConn = datasource.getConnection(DB_REQUEST_TYPE.UPDATE);
 					}
 					catch (SQLException e)
 					{

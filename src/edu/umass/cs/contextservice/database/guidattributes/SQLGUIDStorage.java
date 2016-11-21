@@ -21,6 +21,7 @@ import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig.SQL_DB_TYPE;
 import edu.umass.cs.contextservice.database.HyperspaceDB;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
+import edu.umass.cs.contextservice.database.datasource.AbstractDataSource.DB_REQUEST_TYPE;
 //import edu.umass.cs.contextservice.database.datasource.MySQLDataSource;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
@@ -60,7 +61,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 		Statement  stmt    = null;	
 		try
 		{
-			myConn = dataSource.getConnection();
+			myConn = dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
 			stmt   = myConn.createStatement();
 			Iterator<Integer> subspaceIter = this.subspaceInfoMap.keySet().iterator();
 			
@@ -227,7 +228,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 		int resultSize = 0;
 		try
 		{
-			myConn = this.dataSource.getConnection();
+			myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.SELECT);
 			// for row by row fetching, otherwise default is fetching whole result
 			// set in memory. 
 			// http://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html
@@ -354,7 +355,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 		
 		try
 		{
-			myConn = this.dataSource.getConnection();
+			myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.SELECT);
 			stmt = myConn.createStatement();
 			long start = System.currentTimeMillis();
 			ResultSet rs = stmt.executeQuery(selectQuery);
@@ -516,7 +517,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 		
 		try
 		{
-			myConn = this.dataSource.getConnection();
+			myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
 			stmt = myConn.createStatement();
 
 			// execute insert SQL stetement
@@ -776,7 +777,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 		//ContextServiceLogger.getLogger().fine("insertTableSQL "+insertTableSQL);
 		try
 		{
-			myConn = this.dataSource.getConnection();
+			myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
 			stmt = myConn.createStatement();
 			// execute insert SQL statement
 			stmt.executeUpdate(insertTableSQL);
@@ -890,7 +891,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 		
 		try
 		{
-			myConn = this.dataSource.getConnection();
+			myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
 			stmt = myConn.createStatement();
 			long start = System.currentTimeMillis();
 			stmt.executeUpdate(deleteCommand);
@@ -1016,7 +1017,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 		Connection myConn 	= null;
 		try
 		{
-			myConn = this.dataSource.getConnection();
+			myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.SELECT);
 			stmt = myConn.createStatement();
 			ContextServiceLogger.getLogger().fine("selectTableSQL "+selectTableSQL);
 			long start = System.currentTimeMillis();
@@ -1135,7 +1136,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 	        
 	        updateSqlQuery = updateSqlQuery + " WHERE nodeGUID = X'"+nodeGUID+"'";
             
-            myConn = this.dataSource.getConnection();
+            myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
             stmt = myConn.createStatement();
             
         	// if update fails then insert
@@ -1263,7 +1264,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
     		long end2 = System.currentTimeMillis();
     		
     		
-    		myConn = this.dataSource.getConnection();
+    		myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
             stmt = myConn.createStatement();  
             
     		ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING INSERT "+insertQuery);
@@ -1386,7 +1387,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
             
 	        updateSqlQuery = updateSqlQuery + " WHERE nodeGUID = X'"+nodeGUID+"'";
             
-            myConn = this.dataSource.getConnection();
+            myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
             stmt = myConn.createStatement();
             
         	// if update fails then insert
@@ -1523,7 +1524,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 			insertQuery = insertQuery +" , X'"+nodeGUID+"' )";			
 
     		
-    		myConn = this.dataSource.getConnection();
+    		myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
             stmt = myConn.createStatement();  
             
     		ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING INSERT "+insertQuery);

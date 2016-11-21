@@ -5,5 +5,7 @@ import java.sql.SQLException;
 
 public abstract class AbstractDataSource 
 {	
-	public abstract Connection getConnection() throws SQLException;
+	public static enum DB_REQUEST_TYPE {UPDATE, SELECT};
+	
+	public abstract Connection getConnection(DB_REQUEST_TYPE dbReqType) throws SQLException;
 }

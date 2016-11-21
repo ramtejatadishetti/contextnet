@@ -18,6 +18,7 @@ import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.datasource.MySQLDataSource;
+import edu.umass.cs.contextservice.database.datasource.AbstractDataSource.DB_REQUEST_TYPE;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
@@ -56,7 +57,7 @@ public class QueryAllDB
 		
 		try
 		{
-			myConn = mysqlDataSource.getConnection();
+			myConn = mysqlDataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
 			stmt   = myConn.createStatement();
 			
 			String tableName = "primarySubspaceDataStorage";
@@ -134,7 +135,7 @@ public class QueryAllDB
 		int resultSize = 0;
 		try
 		{
-			myConn = this.mysqlDataSource.getConnection();
+			myConn = this.mysqlDataSource.getConnection(DB_REQUEST_TYPE.SELECT);
 			// for row by row fetching, otherwise default is fetching whole result
 			// set in memory. 
 			// http://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html
@@ -474,7 +475,7 @@ public class QueryAllDB
 		
 		try
 		{
-			myConn = this.mysqlDataSource.getConnection();
+			myConn = this.mysqlDataSource.getConnection(DB_REQUEST_TYPE.SELECT);
 			stmt = myConn.createStatement();
 			long start = System.currentTimeMillis();
 			ResultSet rs = stmt.executeQuery(selectQuery);
@@ -605,7 +606,7 @@ public class QueryAllDB
             
 	        updateSqlQuery = updateSqlQuery + " WHERE nodeGUID = X'"+nodeGUID+"'";
             
-            myConn = this.mysqlDataSource.getConnection();
+            myConn = this.mysqlDataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
             stmt = myConn.createStatement();
             
         	// if update fails then insert
@@ -716,7 +717,7 @@ public class QueryAllDB
 			insertQuery = insertQuery +" , X'"+nodeGUID+"' )";
 			
     		
-    		myConn = this.mysqlDataSource.getConnection();
+    		myConn = this.mysqlDataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
             stmt = myConn.createStatement();  
             
     		ContextServiceLogger.getLogger().fine(" EXECUTING INSERT "+insertQuery);

@@ -17,6 +17,7 @@ import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
+import edu.umass.cs.contextservice.database.datasource.AbstractDataSource.DB_REQUEST_TYPE;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
@@ -57,7 +58,7 @@ public class TriggerInformationStorage implements
 		
 		try
 		{
-			myConn = dataSource.getConnection();
+			myConn = dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
 			stmt   =  myConn.createStatement();
 			Iterator<Integer> subspaceIter = this.subspaceInfoMap.keySet().iterator();
 			while( subspaceIter.hasNext() )
@@ -288,7 +289,7 @@ public class TriggerInformationStorage implements
 			}
 			insertTableSQL = insertTableSQL + " ) ";
 			
-			myConn = this.dataSource.getConnection();
+			myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
 			stmt = myConn.createStatement();
 			
 			// execute insert SQL stetement
@@ -479,7 +480,7 @@ public class TriggerInformationStorage implements
 			
 			ContextServiceLogger.getLogger().fine("returnOldValueGroupGUIDs getTriggerInfo "
 												+oldGroupQuery);
-			myConn 	     = dataSource.getConnection();
+			myConn 	     = dataSource.getConnection(DB_REQUEST_TYPE.SELECT);
 			stmt   		 = myConn.createStatement();
 			
 			ResultSet rs = stmt.executeQuery(oldGroupQuery);
@@ -830,7 +831,7 @@ public class TriggerInformationStorage implements
 		
 		try
 		{
-			myConn = this.dataSource.getConnection();
+			myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
 			stmt = myConn.createStatement();
 			rumRowsDeleted = stmt.executeUpdate(deleteCommand);
 		} catch(SQLException sqex)
@@ -876,7 +877,7 @@ public class TriggerInformationStorage implements
 		// for groups associated with the new value
 		try
 		{
-			myConn 	     = this.dataSource.getConnection();
+			myConn 	     = this.dataSource.getConnection(DB_REQUEST_TYPE.SELECT);
 			stmt   		 = myConn.createStatement();
 			
 			String selectQuery ="";
@@ -978,7 +979,7 @@ public class TriggerInformationStorage implements
 		
 		try
 		{
-			myConn 		 	= this.dataSource.getConnection();
+			myConn 		 	= this.dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
 			stmt 		 	= myConn.createStatement();
 			ResultSet rs 	= stmt.executeQuery(selectQuery);	
 			

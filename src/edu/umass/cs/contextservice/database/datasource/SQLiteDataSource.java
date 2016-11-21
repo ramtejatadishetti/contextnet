@@ -10,29 +10,43 @@ import edu.umass.cs.contextservice.config.ContextServiceConfig;
 
 public class SQLiteDataSource extends AbstractDataSource
 {	
-    private ComboPooledDataSource cpds;
+    private ComboPooledDataSource updatePool;
+    
+    private ComboPooledDataSource searchPool;
     
     public SQLiteDataSource(int myNodeID) throws PropertyVetoException
     {
-    	cpds = new ComboPooledDataSource();
-    	cpds.setDriverClass("org.sqlite.JDBC"); //loads the jdbc driver
+    	updatePool = new ComboPooledDataSource();
+    	updatePool.setDriverClass("org.sqlite.JDBC"); //loads the jdbc driver
         
-    	cpds.setJdbcUrl("jdbc:sqlite:file:contextdb"+myNodeID+"?mode=memory&cache=shared");
+    	updatePool.setJdbcUrl("jdbc:sqlite:file:contextdb"+myNodeID+"?mode=memory&cache=shared");
+    	
+        // multiple concurrent updates are not allowed.
+    	updatePool.setMaxPoolSize(1);
+    	updatePool.setAutoCommitOnClose(true);
+    	
+    	
+    	searchPool = new ComboPooledDataSource();
+    	searchPool.setDriverClass("org.sqlite.JDBC"); //loads the jdbc driver
+        
+    	searchPool.setJdbcUrl("jdbc:sqlite:file:contextdb"+myNodeID+"?mode=memory&cache=shared");
     	
 
-    	cpds.setMaxPoolSize(ContextServiceConfig.MYSQL_MAX_CONNECTIONS);
-    	cpds.setAutoCommitOnClose(true);
+    	searchPool.setMaxPoolSize(ContextServiceConfig.MYSQL_MAX_CONNECTIONS);
+    	searchPool.setAutoCommitOnClose(true);
     }
 
-    public Connection getConnection() throws SQLException 
+    public Connection getConnection(DB_REQUEST_TYPE dbReqType) throws SQLException 
     {
-    	long start = System.currentTimeMillis();
-    	Connection conn = this.cpds.getConnection();
-    	if(ContextServiceConfig.DEBUG_MODE)
+    	if(dbReqType == DB_REQUEST_TYPE.UPDATE)
     	{
-    		System.out.println("TIME_DEBUG getConnection "
-    							+(System.currentTimeMillis()-start));	
+    		return updatePool.getConnection();
     	}
-        return conn;
+    	else if(dbReqType == DB_REQUEST_TYPE.SELECT)
+    	{
+    		return searchPool.getConnection();
+    	}
+    	assert(false);
+        return null;
     }
 }

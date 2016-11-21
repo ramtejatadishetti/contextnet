@@ -70,7 +70,7 @@ public class MySQLDataSource extends AbstractDataSource
     }
     
 
-    public Connection getConnection() throws SQLException 
+    public Connection getConnection(DB_REQUEST_TYPE dbReqType) throws SQLException 
     {
     	long start = System.currentTimeMillis();
     	Connection conn = this.cpds.getConnection();
