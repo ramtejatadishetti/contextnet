@@ -11,7 +11,7 @@ import java.util.HashMap;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import edu.umass.cs.contextservice.database.DataSource;
+import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.schemes.HyperspaceHashing;
 import edu.umass.cs.contextservice.utils.Utils;
@@ -28,13 +28,13 @@ public class OldValueGroupGUIDs implements Runnable
 	private JSONObject updateValJSON;
 	private JSONObject newUnsetAttrs;
 	private HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap;
-	private final DataSource dataSource;
+	private final AbstractDataSource dataSource;
 	
 	
 	public OldValueGroupGUIDs(int subspaceId, JSONObject oldValJSON, 
 			JSONObject updateValJSON, JSONObject newUnsetAttrs,
 			HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap,
-			DataSource dataSource )
+			AbstractDataSource dataSource )
 	{
 		this.subspaceId = subspaceId;
 		this.oldValJSON = oldValJSON;

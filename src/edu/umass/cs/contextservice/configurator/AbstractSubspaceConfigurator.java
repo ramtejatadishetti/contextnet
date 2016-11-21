@@ -12,7 +12,7 @@ import org.paukov.combinatorics.Generator;
 import org.paukov.combinatorics.ICombinatoricsVector;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
+import edu.umass.cs.contextservice.database.HyperspaceDB;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
@@ -72,7 +72,7 @@ public abstract class AbstractSubspaceConfigurator
 	 * subspace regions/partitions.
 	 */
 	public void generateAndStoreSubspacePartitionsInDB(ExecutorService nodeES, 
-			HyperspaceMySQLDB hyperspaceDB )
+			HyperspaceDB hyperspaceDB )
 	{
 		ContextServiceLogger.getLogger().fine
 								(" generateSubspacePartitions() entering " );
@@ -255,12 +255,12 @@ public abstract class AbstractSubspaceConfigurator
 		private final int replicaNum;
 		private final List<List<Integer>> permVectorList;
 		private final List<Integer> respNodeIdList;
-		private final HyperspaceMySQLDB hyperspaceDB;
+		private final HyperspaceDB hyperspaceDB;
 		
 		public DatabaseOperationClass(int subspaceId, int replicaNum, 
 				List<List<Integer>> permVectorList
 				, List<Integer> respNodeIdList,
-				HyperspaceMySQLDB hyperspaceDB )
+				HyperspaceDB hyperspaceDB )
 		{
 			this.subspaceId = subspaceId;
 			this.replicaNum = replicaNum;

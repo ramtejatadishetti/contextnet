@@ -13,7 +13,7 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
-import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
+import edu.umass.cs.contextservice.database.HyperspaceDB;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
@@ -34,7 +34,7 @@ public class GUIDAttrValueProcessingWithHyperspacePrivacy
 {	
 	public GUIDAttrValueProcessingWithHyperspacePrivacy( Integer myID, 
 			HashMap<Integer, Vector<SubspaceInfo>> 
-		subspaceInfoMap , HyperspaceMySQLDB hyperspaceDB, 
+		subspaceInfoMap , HyperspaceDB hyperspaceDB, 
 		JSONMessenger<Integer> messenger , 
 		ConcurrentHashMap<Long, QueryInfo> pendingQueryRequests, 
 		ProfilerStatClass profStats )
@@ -301,12 +301,12 @@ public class GUIDAttrValueProcessingWithHyperspacePrivacy
 			if( oldValueJSON.length() == 0 )
 			{
 				firstTimeInsert = true;
-				updateOrInsert = HyperspaceMySQLDB.INSERT_REC;
+				updateOrInsert = HyperspaceDB.INSERT_REC;
 			}
 			else
 			{
 				firstTimeInsert = false;
-				updateOrInsert = HyperspaceMySQLDB.UPDATE_REC;
+				updateOrInsert = HyperspaceDB.UPDATE_REC;
 			}
 			
 			JSONObject jsonToWrite = getJSONToWriteInPrimarySubspace( oldValueJSON, 

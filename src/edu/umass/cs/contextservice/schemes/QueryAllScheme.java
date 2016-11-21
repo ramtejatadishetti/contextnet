@@ -22,8 +22,8 @@ import com.google.common.hash.Hashing;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
-import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
-import edu.umass.cs.contextservice.database.QueryAllMySQLDB;
+import edu.umass.cs.contextservice.database.HyperspaceDB;
+import edu.umass.cs.contextservice.database.QueryAllDB;
 import edu.umass.cs.contextservice.gns.GNSCalls;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ClientConfigReply;
@@ -50,7 +50,7 @@ import edu.umass.cs.protocoltask.ProtocolTask;
 
 public class QueryAllScheme extends AbstractScheme
 {
-	private  QueryAllMySQLDB queryAllDB 								= null;
+	private  QueryAllDB queryAllDB 								= null;
 	
 	//TODO: make the trigger handling part in separate interfaces and classes.
 	// also the privacy stuff. 
@@ -74,7 +74,7 @@ public class QueryAllScheme extends AbstractScheme
 		
 		ContextServiceLogger.getLogger().fine("configure subspace completed");
 		
-		queryAllDB = new QueryAllMySQLDB(this.getMyID());
+		queryAllDB = new QueryAllDB(this.getMyID());
 		
 		ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
 	}
@@ -474,11 +474,11 @@ public class QueryAllScheme extends AbstractScheme
 			
 			if( oldValueJSON.length() == 0 )
 			{
-				updateOrInsert = HyperspaceMySQLDB.INSERT_REC;
+				updateOrInsert = HyperspaceDB.INSERT_REC;
 			}
 			else
 			{
-				updateOrInsert = HyperspaceMySQLDB.UPDATE_REC;
+				updateOrInsert = HyperspaceDB.UPDATE_REC;
 			}
 			
 			// default values are set for all attributes for hyperspace indexing.

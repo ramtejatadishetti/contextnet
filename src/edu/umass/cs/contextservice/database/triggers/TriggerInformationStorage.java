@@ -16,7 +16,7 @@ import org.json.JSONObject;
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.database.DataSource;
+import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
@@ -38,11 +38,11 @@ public class TriggerInformationStorage implements
 {
 	private final Integer myNodeID;
 	private final HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap;
-	private final DataSource dataSource;
+	private final AbstractDataSource dataSource;
 	
 	public TriggerInformationStorage( Integer myNodeID, 
 			HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap , 
-			DataSource dataSource )
+			AbstractDataSource dataSource )
 	{
 		this.myNodeID = myNodeID;
 		this.subspaceInfoMap = subspaceInfoMap;

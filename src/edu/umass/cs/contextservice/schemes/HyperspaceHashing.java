@@ -26,7 +26,7 @@ import edu.umass.cs.contextservice.configurator.AbstractSubspaceConfigurator;
 import edu.umass.cs.contextservice.configurator.BasicSubspaceConfigurator;
 import edu.umass.cs.contextservice.configurator.CalculateOptimalNumAttrsInSubspace;
 import edu.umass.cs.contextservice.configurator.ReplicatedSubspaceConfigurator;
-import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
+import edu.umass.cs.contextservice.database.HyperspaceDB;
 import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
 import edu.umass.cs.contextservice.gns.GNSCalls;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
@@ -62,7 +62,7 @@ import edu.umass.cs.protocoltask.ProtocolTask;
 
 public class HyperspaceHashing extends AbstractScheme
 {
-	private  HyperspaceMySQLDB hyperspaceDB 										= null;
+	private  HyperspaceDB hyperspaceDB 										= null;
 	private final ExecutorService nodeES;
 	
 	private HashMap<String, GUIDUpdateInfo> guidUpdateInfoMap				= null;
@@ -143,7 +143,7 @@ public class HyperspaceHashing extends AbstractScheme
 		ContextServiceLogger.getLogger().fine("configure subspace completed");
 		
 		
-		hyperspaceDB = new HyperspaceMySQLDB(this.getMyID(), 
+		hyperspaceDB = new HyperspaceDB(this.getMyID(), 
 					subspaceConfigurator.getSubspaceInfoMap());
 		
 		ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
@@ -568,10 +568,10 @@ public class HyperspaceHashing extends AbstractScheme
 		
 		try
 		{
-			if( attrValJSON.has(HyperspaceMySQLDB.unsetAttrsColName) )
+			if( attrValJSON.has(HyperspaceDB.unsetAttrsColName) )
 			{
 				String jsonString 
-						= attrValJSON.getString( HyperspaceMySQLDB.unsetAttrsColName );
+						= attrValJSON.getString( HyperspaceDB.unsetAttrsColName );
 				
 				if( jsonString != null )
 				{
@@ -593,10 +593,10 @@ public class HyperspaceHashing extends AbstractScheme
 					throws JSONException
 	{
 		boolean alreadyStored = false;
-		if( oldValJSON.has(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName) )
+		if( oldValJSON.has(HyperspaceDB.anonymizedIDToGUIDMappingColName) )
 		{
 			String jsonArrayString = oldValJSON.getString
-									(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName);
+									(HyperspaceDB.anonymizedIDToGUIDMappingColName);
 			
 			if( jsonArrayString != null )
 			{

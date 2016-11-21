@@ -11,7 +11,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
+import edu.umass.cs.contextservice.database.HyperspaceDB;
 import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
@@ -30,14 +30,14 @@ import edu.umass.cs.nio.JSONMessenger;
 public class TriggerProcessing implements 
 								TriggerProcessingInterface
 {
-	private final HyperspaceMySQLDB hyperspaceDB;
+	private final HyperspaceDB hyperspaceDB;
 	
 	private final Integer myID;
 	
 	private final JSONMessenger<Integer> messenger;
 	
 	public TriggerProcessing(Integer myID, HashMap<Integer, Vector<SubspaceInfo>> 
-						subspaceInfoMap , HyperspaceMySQLDB hyperspaceDB, 
+						subspaceInfoMap , HyperspaceDB hyperspaceDB, 
 						JSONMessenger<Integer> messenger )
 	{
 		this.myID = myID;

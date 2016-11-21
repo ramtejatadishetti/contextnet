@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
 
-import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
+import edu.umass.cs.contextservice.database.HyperspaceDB;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 
@@ -12,10 +12,10 @@ public class DeleteExpiredSearchesThread implements Runnable
 {
 	private final Integer myNodeId;
 	private final HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap;
-	private final HyperspaceMySQLDB hyperspaceDB;
+	private final HyperspaceDB hyperspaceDB;
 	
 	public DeleteExpiredSearchesThread(HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap ,
-			Integer myNodeID, HyperspaceMySQLDB hyperspaceDB)
+			Integer myNodeID, HyperspaceDB hyperspaceDB)
 	{
 		this.myNodeId = myNodeID;
 		this.subspaceInfoMap = subspaceInfoMap;

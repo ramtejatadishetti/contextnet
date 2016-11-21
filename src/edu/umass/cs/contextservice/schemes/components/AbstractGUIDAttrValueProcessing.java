@@ -15,7 +15,7 @@ import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
-import edu.umass.cs.contextservice.database.HyperspaceMySQLDB;
+import edu.umass.cs.contextservice.database.HyperspaceDB;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
@@ -39,7 +39,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 	
 	protected final Integer myID;
 	
-	protected final HyperspaceMySQLDB hyperspaceDB;
+	protected final HyperspaceDB hyperspaceDB;
 	
 	protected final JSONMessenger<Integer> messenger;
 	
@@ -56,7 +56,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 	// FIXME: check if the abstract methods and methods implemented here are separated correctly
 	public AbstractGUIDAttrValueProcessing( Integer myID, 
 			HashMap<Integer, Vector<SubspaceInfo>> 
-		subspaceInfoMap , HyperspaceMySQLDB hyperspaceDB, 
+		subspaceInfoMap , HyperspaceDB hyperspaceDB, 
 		JSONMessenger<Integer> messenger , 
 		ConcurrentHashMap<Long, QueryInfo> pendingQueryRequests, 
 		ProfilerStatClass profStats )
@@ -196,7 +196,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 							("oldNodeId "+oldRespNodeId
 							+" newRespNodeId "+newRespNodeId);
 		JSONObject unsetAttrsJSON = primarySubspaceJSON.getJSONObject
-				(HyperspaceMySQLDB.unsetAttrsColName);
+				(HyperspaceDB.unsetAttrsColName);
 		
 		// send messages to the subspace region nodes
 		if( oldRespNodeId == newRespNodeId )
@@ -295,13 +295,13 @@ public abstract class AbstractGUIDAttrValueProcessing
 			}
 			
 			// anonymizedIDToGUID mapping
-			if(oldValueJSON.has(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName))
+			if(oldValueJSON.has(HyperspaceDB.anonymizedIDToGUIDMappingColName))
 			{
 				JSONArray decodingArray = oldValueJSON.getJSONArray
-							(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName);
+							(HyperspaceDB.anonymizedIDToGUIDMappingColName);
 				
 				assert(decodingArray!= null);
-				jsonToWrite.put(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName
+				jsonToWrite.put(HyperspaceDB.anonymizedIDToGUIDMappingColName
 						, decodingArray);
 			}
 			
@@ -384,7 +384,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 		
 		
 		JSONObject unsetAttrsJSON = primarySubspaceJSON.getJSONObject
-											(HyperspaceMySQLDB.unsetAttrsColName);
+											(HyperspaceDB.unsetAttrsColName);
 		
 		Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
 		
@@ -411,13 +411,13 @@ public abstract class AbstractGUIDAttrValueProcessing
 		
 		// add the anonymizedIDToGUID mapping if it is there
 		if(primarySubspaceJSON.has
-				(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName))
+				(HyperspaceDB.anonymizedIDToGUIDMappingColName))
 		{
 			JSONArray decodingArray 
-				= primarySubspaceJSON.getJSONArray(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName);
+				= primarySubspaceJSON.getJSONArray(HyperspaceDB.anonymizedIDToGUIDMappingColName);
 			
 			assert(decodingArray != null);
-			jsonToWrite.put(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName, 
+			jsonToWrite.put(HyperspaceDB.anonymizedIDToGUIDMappingColName, 
 					decodingArray);
 		}
 		
@@ -521,7 +521,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 				}
 			}
 			assert(unsetAttrs != null);
-			jsonToWrite.put(HyperspaceMySQLDB.unsetAttrsColName, unsetAttrs);
+			jsonToWrite.put(HyperspaceDB.unsetAttrsColName, unsetAttrs);
 			
 		
 			// now anonymizedIDToGUIDmapping
@@ -533,7 +533,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 			{
 				if(anonymizedIDToGuidMapping != null)
 				{
-					jsonToWrite.put(HyperspaceMySQLDB.anonymizedIDToGUIDMappingColName, 
+					jsonToWrite.put(HyperspaceDB.anonymizedIDToGUIDMappingColName, 
 						anonymizedIDToGuidMapping);
 				}
 			}
@@ -574,7 +574,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 					//if(!ContextServiceConfig.DISABLE_SECONDARY_SUBSPACES_UPDATES)
 					{
 						this.hyperspaceDB.storeGUIDInSecondarySubspace
-							(tableName, GUID, jsonToWrite, HyperspaceMySQLDB.INSERT_REC, 
+							(tableName, GUID, jsonToWrite, HyperspaceDB.INSERT_REC, 
 								subspaceId);
 					}
 					break;
@@ -597,13 +597,13 @@ public abstract class AbstractGUIDAttrValueProcessing
 						if( firstTimeInsert )
 						{
 							this.hyperspaceDB.storeGUIDInSecondarySubspace
-								(tableName, GUID, jsonToWrite, HyperspaceMySQLDB.INSERT_REC, 
+								(tableName, GUID, jsonToWrite, HyperspaceDB.INSERT_REC, 
 									subspaceId);
 						}
 						else
 						{
 							this.hyperspaceDB.storeGUIDInSecondarySubspace(tableName, GUID, 
-									jsonToWrite, HyperspaceMySQLDB.UPDATE_REC, 
+									jsonToWrite, HyperspaceDB.UPDATE_REC, 
 									subspaceId);
 						}
 					}
