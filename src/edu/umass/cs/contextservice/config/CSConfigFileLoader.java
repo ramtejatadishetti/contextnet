@@ -106,8 +106,14 @@ public class CSConfigFileLoader
 	    		properties.getProperty(ContextServiceConfig.queryAllEnabledString, 
 	    				ContextServiceConfig.QUERY_ALL_ENABLED+"") );
 	  
+	  ContextServiceConfig.MYSQL_MAX_CONNECTIONS = Integer.parseInt(
+	    		properties.getProperty(ContextServiceConfig.threadPoolSizeString, 
+	    				10+"") )  ;
 	  
-	  ContextServiceLogger.getLogger().info("read props ContextServiceConfig.modelRho "+ContextServiceConfig.modelRho
+	  
+	  
+	  
+	  System.out.println("read props ContextServiceConfig.modelRho "+ContextServiceConfig.modelRho
     		+" ContextServiceConfig.modelCsByC "+ContextServiceConfig.modelCsByC
     		+" ContextServiceConfig.modelCuByC "+ContextServiceConfig.modelCuByC
     		+" ContextServiceConfig.modelAavg "+ContextServiceConfig.modelAavg
@@ -119,7 +125,8 @@ public class CSConfigFileLoader
     		+" ContextServiceConfig.disableOptimizer "+ ContextServiceConfig.disableOptimizer 
     		+" ContextServiceConfig.basicConfig "+ContextServiceConfig.basicConfig
     		+" ContextServiceConfig.optimalH "+ContextServiceConfig.optimalH 
-    		+" ContextServiceConfig.PRIVACY_ENABLED "+ContextServiceConfig.PRIVACY_ENABLED);
+    		+" ContextServiceConfig.PRIVACY_ENABLED "+ContextServiceConfig.PRIVACY_ENABLED
+    		+" ContextServiceConfig.MYSQL_MAX_CONNECTIONS "+ContextServiceConfig.MYSQL_MAX_CONNECTIONS );
   }
   
   /**

@@ -24,6 +24,7 @@ public class ContextServiceConfig
 	public static final String optimalHString						= "optimalH";
 	public static final String privacyEnabledString					= "privacyEnabled";
 	public static final String queryAllEnabledString				= "queryAllEnabled";
+	public static final String threadPoolSizeString					= "threadPoolSize";
 	
 	// path where all config files are stored, like node setup, attribute info, subspace info
 	public static String configFileDirectory;
@@ -135,7 +136,7 @@ public class ContextServiceConfig
     // set in conjuction with that. and also the hyperpsace hashing thread pool
     // size should be set greater than that. These things affect system performance a lot.
 	// change back to 214 for experiments.
-	public static final int MYSQL_MAX_CONNECTIONS					= 150;
+	public static  int MYSQL_MAX_CONNECTIONS						= 150;
 	
 	// it is also important to set this at least the size of the database connection pool.
 	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 150;
