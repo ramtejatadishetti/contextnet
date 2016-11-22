@@ -60,7 +60,7 @@ public class BasicSubspaceConfigurator
 		{
 			// first the basic nodes are assigned then remaining nodes are assigned 
 			// uniformly to the existing subspaces.
-	
+			
 			int nodesIdCounter = assignNodesUniformlyToSubspaces(numberNodesForSubspace, (int)numSubspaces);
 	
 			//double remainingNodes = numNodes - numberNodesForSubspace*numSubspaces;

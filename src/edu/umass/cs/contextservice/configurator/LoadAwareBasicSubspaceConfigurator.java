@@ -542,8 +542,4 @@ public class LoadAwareBasicSubspaceConfigurator
 		assert(attrIndexCounter == attrVector.size() );
 		return nodesIdCounter;
 	}
-	
-	public void main(String[] args)
-	{
-	}
 }

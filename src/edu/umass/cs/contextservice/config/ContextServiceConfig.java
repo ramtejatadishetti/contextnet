@@ -244,4 +244,11 @@ public class ContextServiceConfig
 	
 	
 	public static SQL_DB_TYPE sqlDBType								= SQL_DB_TYPE.SQLITE;
+	
+	
+	// jains fairness index based number of partitions calculation.
+	
+	public static int NUM_PARTITITON_LOOK_AHEAD						= 10;
+	public static int MAX_REGION_LOOK_AHEAD							= 2048;
+	
 }

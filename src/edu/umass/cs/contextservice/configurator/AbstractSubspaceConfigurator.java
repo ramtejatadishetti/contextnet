@@ -102,17 +102,16 @@ public abstract class AbstractSubspaceConfigurator
 				for(int j = 0; j<partitionNumArray.length; j++)
 				{
 					partitionNumArray[j] = new Integer(j);
-					//ContextServiceLogger.getLogger().fine("partitionNumArray[j] "+j+" "+partitionNumArray[j]);
 				}
 				
 				// Create the initial vector of 2 elements (apple, orange)
-				ICombinatoricsVector<Integer> originalVector = Factory.createVector(partitionNumArray);
-				
-			    //ICombinatoricsVector<Integer> originalVector = Factory.createVector(new String[] { "apple", "orange" });
+				ICombinatoricsVector<Integer> originalVector 
+											= Factory.createVector(partitionNumArray);
 
 				// Create the generator by calling the appropriate method in the Factory class. 
 				// Set the second parameter as 3, since we will generate 3-elemets permutations
-				Generator<Integer> gen = Factory.createPermutationWithRepetitionGenerator(originalVector, (int)numAttr);
+				Generator<Integer> gen 
+					= Factory.createPermutationWithRepetitionGenerator(originalVector, (int)numAttr);
 				
 				// Print the result
 				int nodeIdCounter = 0;
@@ -183,8 +182,8 @@ public abstract class AbstractSubspaceConfigurator
 				try 
 				{
 					this.subspacePartitionInsertLock.wait();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
+				} catch (InterruptedException e) 
+				{
 					e.printStackTrace();
 				}
 			}
@@ -208,9 +207,15 @@ public abstract class AbstractSubspaceConfigurator
 				int currSubspaceNumNodes = currSubInfo.getNodesOfSubspace().size();
 				int currSubspaceNumAttrs = currSubInfo.getAttributesOfSubspace().size();
 				
-				int currSubspaceNumPartitions 
-					= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
+				//int currSubspaceNumPartitions 
+				//	= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
 				
+				int currSubspaceNumPartitions = getNumberOfPartitionsUsingUniformHeuristics(
+						currSubspaceNumNodes, currSubspaceNumAttrs);
+				
+				System.out.println("Num of partitions "+currSubspaceNumPartitions 
+						+" repnum "+currSubInfo.getReplicaNum());
+				//FIXME: change the uniform partition for triggers too.
 				int currTriggerNumPartitions 
 					= (int)Math.ceil(((double)currSubspaceNumNodes)/(double)currSubspaceNumAttrs);
 				
@@ -246,6 +251,101 @@ public abstract class AbstractSubspaceConfigurator
 				}
 			}
 		}
+	}
+	
+	
+	private static int getNumberOfPartitionsUsingUniformHeuristics(
+			int currSubspaceNumNodes, int currSubspaceNumAttrs)
+	{
+		int currSubspaceNumPartitions 
+			= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
+		
+		// we only check for next 10 partitions.
+		int currpart = currSubspaceNumPartitions;
+		
+		int maxPartNum = -1;
+		double maxJFI = -1;
+		
+		while(currpart < (currSubspaceNumPartitions+ContextServiceConfig.NUM_PARTITITON_LOOK_AHEAD))
+		{
+			double numRegions = Math.pow(currpart, currSubspaceNumAttrs);
+			
+			if(numRegions>= ContextServiceConfig.MAX_REGION_LOOK_AHEAD)
+			{
+				if(maxPartNum == -1)
+				{
+					maxPartNum = currSubspaceNumPartitions;
+				}
+				break;
+			}
+			
+			double div = Math.floor(numRegions/currSubspaceNumNodes);
+			
+			double[] nodeArray = new double[currSubspaceNumNodes];
+			
+			for(int i=0; i<currSubspaceNumNodes; i++)
+			{
+				nodeArray[i] = div;
+			}
+			
+			double rem = Math.floor(numRegions%currSubspaceNumNodes);
+			
+			for(int i=0; i<rem; i++)
+			{
+				nodeArray[i] = nodeArray[i] + 1;
+			}
+			
+			double jfi = computeJainsFairnessIndex(nodeArray);
+			
+			if(maxPartNum == -1)
+			{
+				maxJFI = jfi;
+				maxPartNum = currpart;
+				//System.out.println("max jfi "+maxJFI+" part "+maxPartNum);
+			}
+			else
+			{
+				if(jfi > maxJFI)
+				{
+					maxJFI = jfi;
+					maxPartNum = currpart;
+					//System.out.println("max jfi "+maxJFI+" part "+maxPartNum);
+				}
+			}
+			
+			currpart = currpart + 1;
+		}	
+		
+		return maxPartNum;
+	}
+	
+	
+	private int getNumberOfPartitionsUsingJustGreaterHeuristics(int currSubspaceNumNodes
+			, int currSubspaceNumAttrs)
+	{
+		int currSubspaceNumPartitions 
+			= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
+		
+		return currSubspaceNumPartitions;
+	}
+	
+	
+	private static double computeJainsFairnessIndex(double[] listOfNumbers)
+	{
+		double sum = 0.0;
+		for(int i=0; i<listOfNumbers.length; i++)
+		{
+			sum = sum + listOfNumbers[i];
+		}
+		
+		double squareSum = 0.0;
+		for(int i=0; i < listOfNumbers.length; i++)
+		{
+			squareSum = squareSum + Math.pow(listOfNumbers[i], 2);
+		}
+		
+		double jfi = Math.pow(sum, 2)/(listOfNumbers.length * squareSum);
+		return jfi;
 	}
 	
 	
@@ -294,5 +394,17 @@ public abstract class AbstractSubspaceConfigurator
 				ex.printStackTrace();
 			}
 		}
+	}
+	
+	
+	public static void main(String[] args)
+	{
+		// testing getNumberOfPartitionsUsingUniformHeuristics(
+		//int currSubspaceNumNodes, int currSubspaceNumAttrs);
+		
+		int numParts = getNumberOfPartitionsUsingUniformHeuristics(
+				100, 3);
+		
+		System.out.println("numParts "+numParts);
 	}
 }
