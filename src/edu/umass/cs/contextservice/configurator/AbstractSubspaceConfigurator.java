@@ -403,7 +403,7 @@ public abstract class AbstractSubspaceConfigurator
 		//int currSubspaceNumNodes, int currSubspaceNumAttrs);
 		
 		int numParts = getNumberOfPartitionsUsingUniformHeuristics(
-				100, 3);
+				11, 3);
 		
 		System.out.println("numParts "+numParts);
 	}
