@@ -209,9 +209,19 @@ public abstract class AbstractSubspaceConfigurator
 				
 				//int currSubspaceNumPartitions 
 				//	= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
+				int currSubspaceNumPartitions =  -1;
+				if(this.getClass() == BasicSubspaceConfigurator.class)
+				{
+					currSubspaceNumPartitions = getNumberOfPartitionsUsingUniformHeuristics(
+							currSubspaceNumNodes, currSubspaceNumAttrs);
+				}
+				else if(this.getClass() == ReplicatedSubspaceConfigurator.class)
+				{
+					// there are many subsapces replication, so we go with the the minimum partition requireed.
+					currSubspaceNumPartitions 
+						= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
+				}
 				
-				int currSubspaceNumPartitions = getNumberOfPartitionsUsingUniformHeuristics(
-						currSubspaceNumNodes, currSubspaceNumAttrs);
 				
 				System.out.println("Num of partitions "+currSubspaceNumPartitions 
 						+" repnum "+currSubInfo.getReplicaNum());
