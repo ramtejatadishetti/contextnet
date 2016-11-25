@@ -277,7 +277,14 @@ public class UpdateInfo
 		}
 		else
 		{
-			assert(false);
+			if(ContextServiceConfig.QUERY_ALL_ENABLED)
+			{
+				// in queryall update is processed locally.
+			}
+			else
+			{
+				assert(false);
+			}
 		}
 	}
 	

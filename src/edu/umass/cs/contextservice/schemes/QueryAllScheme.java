@@ -364,7 +364,7 @@ public class QueryAllScheme extends AbstractScheme
 	private void processValueUpdateFromGNS( ValueUpdateFromGNS valueUpdateFromGNS )
 	{
 		String GUID 			  		= valueUpdateFromGNS.getGUID();
-		Integer respNodeId 	  		= this.getConsistentHashingNodeID
+		Integer respNodeId 	  			= this.getConsistentHashingNodeID
 													(GUID, this.allNodeIDs);
 		
 		// just forward the request to the node that has 
