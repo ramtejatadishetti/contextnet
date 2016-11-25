@@ -18,6 +18,8 @@ import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.datasource.MySQLDataSource;
+import edu.umass.cs.contextservice.database.datasource.SQLiteDataSource;
+import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource.DB_REQUEST_TYPE;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
@@ -40,12 +42,23 @@ public class QueryAllDB
 	public static final String userIP 								= "userIP";
 	public static final String userPort 							= "userPort";
 	
-	private final MySQLDataSource mysqlDataSource;
+	private AbstractDataSource dataSource;
 	
 	public QueryAllDB( Integer myNodeID )
 			throws Exception
 	{
-		this.mysqlDataSource = new MySQLDataSource(myNodeID);
+		if(ContextServiceConfig.sqlDBType == ContextServiceConfig.SQL_DB_TYPE.MYSQL)
+		{
+			this.dataSource = new MySQLDataSource(myNodeID);
+		}
+		else if(ContextServiceConfig.sqlDBType == ContextServiceConfig.SQL_DB_TYPE.SQLITE)
+		{
+			this.dataSource = new SQLiteDataSource(myNodeID);
+		}
+		else
+		{
+			assert(false);
+		}
 		createTables();
 	}
 	
@@ -57,7 +70,7 @@ public class QueryAllDB
 		
 		try
 		{
-			myConn = mysqlDataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
+			myConn = dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
 			stmt   = myConn.createStatement();
 			
 			String tableName = "primarySubspaceDataStorage";
@@ -68,12 +81,23 @@ public class QueryAllDB
 			
 			// row format dynamic because we want TEXT columns to be stored completely off the row, 
 			// only pointer should be stored in the row, otherwise default is storing 700 bytes for each TEXT in row.
-			newTableCommand = newTableCommand +" ) ROW_FORMAT=DYNAMIC ";
+			if(ContextServiceConfig.sqlDBType == ContextServiceConfig.SQL_DB_TYPE.MYSQL)
+			{
+				newTableCommand = newTableCommand +" ) ROW_FORMAT=DYNAMIC ";
+			}
+			else if(ContextServiceConfig.sqlDBType == ContextServiceConfig.SQL_DB_TYPE.SQLITE)
+			{
+				newTableCommand = newTableCommand +" ) ";
+			}
+			else
+			{
+				assert(false);
+			}
 			stmt.executeUpdate(newTableCommand);
 		} catch( SQLException mysqlEx )
 		{
 			mysqlEx.printStackTrace();
-		} 
+		}
 		finally
 		{
 			try
@@ -90,6 +114,7 @@ public class QueryAllDB
 		}
 	}
 	
+	
 	private String getDataStorageString(String newTableCommand)
 	{
 		Iterator<String> attrIter 
@@ -104,13 +129,27 @@ public class QueryAllDB
 			String defaultVal 				= attrMetaInfo.getMinValue();
 			String mySQLDataType 			= AttributeTypes.mySQLDataType.get(dataType);
 			
-			newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType
+			if(ContextServiceConfig.sqlDBType == ContextServiceConfig.SQL_DB_TYPE.MYSQL)
+			{
+				newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType
+						+ " DEFAULT "
+						+ AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
+						+ " , INDEX USING BTREE("+attrName+")";
+			}
+			else if(ContextServiceConfig.sqlDBType == ContextServiceConfig.SQL_DB_TYPE.SQLITE)
+			{
+				newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType
 					+ " DEFAULT "
-					+ AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType)
-					+ " , INDEX USING BTREE("+attrName+")";
+					+ AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType);
+			}
+			else
+			{
+				assert(false);
+			}
 		}
 		return newTableCommand;
 	}
+	
 	
 	public int processSearchQueryInSubspaceRegion( String query, 
 			JSONArray resultArray)
@@ -135,7 +174,7 @@ public class QueryAllDB
 		int resultSize = 0;
 		try
 		{
-			myConn = this.mysqlDataSource.getConnection(DB_REQUEST_TYPE.SELECT);
+			myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.SELECT);
 			// for row by row fetching, otherwise default is fetching whole result
 			// set in memory. 
 			// http://dev.mysql.com/doc/connector-j/en/connector-j-reference-implementation-notes.html
@@ -427,7 +466,6 @@ public class QueryAllDB
 				}
 				
 				counter++;
-				//ContextServiceLogger.getLogger().fine(mysqlQuery);
 			}
 			return mysqlQuery;
 		} catch(Exception | Error ex)
@@ -475,7 +513,7 @@ public class QueryAllDB
 		
 		try
 		{
-			myConn = this.mysqlDataSource.getConnection(DB_REQUEST_TYPE.SELECT);
+			myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.SELECT);
 			stmt = myConn.createStatement();
 			long start = System.currentTimeMillis();
 			ResultSet rs = stmt.executeQuery(selectQuery);
@@ -606,11 +644,10 @@ public class QueryAllDB
             
 	        updateSqlQuery = updateSqlQuery + " WHERE nodeGUID = X'"+nodeGUID+"'";
             
-            myConn = this.mysqlDataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
+            myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
             stmt = myConn.createStatement();
             
         	// if update fails then insert
-    		//ContextServiceLogger.getLogger().fine(this.myNodeID+" EXECUTING UPDATE "+updateSqlQuery);
     		long start   = System.currentTimeMillis();
         	int rowCount = stmt.executeUpdate(updateSqlQuery);
         	long end     = System.currentTimeMillis();
@@ -717,7 +754,7 @@ public class QueryAllDB
 			insertQuery = insertQuery +" , X'"+nodeGUID+"' )";
 			
     		
-    		myConn = this.mysqlDataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
+    		myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
             stmt = myConn.createStatement();  
             
     		ContextServiceLogger.getLogger().fine(" EXECUTING INSERT "+insertQuery);
