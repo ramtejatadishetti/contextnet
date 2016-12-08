@@ -164,6 +164,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 			newTableCommand = newTableCommand + " , "+HyperspaceDB.unsetAttrsColName
 								+" VARCHAR("+HyperspaceDB.varcharSizeForunsetAttrsCol+") ";
 			
+			//FIXME: need to fix this for MySQL and SQLite cases.
 			if( ContextServiceConfig.PRIVACY_ENABLED )
 			{
 				newTableCommand = getPrivacyStorageString(newTableCommand);
@@ -172,8 +173,11 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 				// only pointer should be stored in the row, otherwise default is storing 700 bytes for each TEXT in row.
 				newTableCommand = newTableCommand +" ) ROW_FORMAT=DYNAMIC ";
 			}
+			else
+			{
+				newTableCommand = newTableCommand +" )";
+			}
 			
-			newTableCommand = newTableCommand +" )";
 			stmt.executeUpdate(newTableCommand);
 		}
 		catch( SQLException mysqlEx )

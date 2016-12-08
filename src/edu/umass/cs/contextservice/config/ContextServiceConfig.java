@@ -84,10 +84,10 @@ public class ContextServiceConfig
 	//control if full guids are sent in the search query
 	// reply, if false only sends the number of guids, not
 	// the actual guids
-	public static  boolean sendFullRepliesWithinCS					= false;
+	public static  boolean sendFullRepliesWithinCS					= true;
 	
 	// to check which one is bottleneck the client or CS in full replies. 
-	public static  boolean sendFullRepliesToClient					= false;
+	public static  boolean sendFullRepliesToClient					= true;
 	
 	// if this is set to true, then mysql table selects
 	// return results row by row. If set to false then
@@ -107,12 +107,12 @@ public class ContextServiceConfig
 	//public static final boolean sendUpdateReplies					= true;
 	
 	// if true group update trigger is enabled, not enabled if false
-	public static boolean TRIGGER_ENABLED							= false;
+	public static boolean TRIGGER_ENABLED							= true;
 	
 	
 	// if set to true then there is a primary node for each groupGUID
 	// and search always gores through that and doesn't update trigger info if its is repeated.
-	public static boolean UniqueGroupGUIDEnabled					= false;
+	public static boolean UniqueGroupGUIDEnabled					= true;
 	
 	// disables most of the mysql db operations, apart from the reading of 
 	// subspace info. Just for throuhgput testing.
@@ -125,7 +125,7 @@ public class ContextServiceConfig
 	
 	// GroupGUID, UserIP and UserPort are primaries keys if this option is set false.
 	// if set true then those are just hash index.
-	public static boolean disableUniqueQueryStorage					= true;
+	public static boolean disableUniqueQueryStorage					= false;
 	
 	// if set to true basic subspace config is enabled.
 	//public static boolean basicSubspaceConfig						= false;
@@ -136,10 +136,10 @@ public class ContextServiceConfig
     // set in conjuction with that. and also the hyperpsace hashing thread pool
     // size should be set greater than that. These things affect system performance a lot.
 	// change back to 214 for experiments.
-	public static  int MYSQL_MAX_CONNECTIONS						= 150;
+	public static  int MYSQL_MAX_CONNECTIONS						= 10;
 	
 	// it is also important to set this at least the size of the database connection pool.
-	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 150;
+	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 10;
 	
 	//public static final int PRIVACY_THREAD_POOL_SIZE				= 214;
 	
@@ -159,7 +159,7 @@ public class ContextServiceConfig
 	public static final int MAXIMUM_NUM_ATTRS_IN_SUBSPACE			= 10;
 	
 	
-	public static boolean PRIVACY_ENABLED							= false;
+	public static boolean PRIVACY_ENABLED							= true;
 	
 	
 	
@@ -168,7 +168,7 @@ public class ContextServiceConfig
 	
 	// if this is set to true then the context service client will do decryptions 
 	// on receiving the search reply.
-	public static boolean DECRYPTIONS_ON_SEARCH_REPLY_ENABLED		= false;
+	public static boolean DECRYPTIONS_ON_SEARCH_REPLY_ENABLED		= true;
 	
 	// if true, no encryption happens. cipher text and plain text are same.
 	public static boolean NO_ENCRYPTION								= false;
@@ -243,7 +243,7 @@ public class ContextServiceConfig
 	public static enum SQL_DB_TYPE	{MYSQL, SQLITE};
 	
 	
-	public static SQL_DB_TYPE sqlDBType								= SQL_DB_TYPE.SQLITE;
+	public static SQL_DB_TYPE sqlDBType								= SQL_DB_TYPE.MYSQL;
 	
 	
 	// jains fairness index based number of partitions calculation.

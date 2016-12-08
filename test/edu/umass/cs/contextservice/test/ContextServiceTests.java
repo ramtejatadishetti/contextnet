@@ -63,10 +63,10 @@ public class ContextServiceTests
 		// setting all config parameters for the test.
 		ContextServiceConfig.sendFullRepliesToClient 	= true;
 		ContextServiceConfig.sendFullRepliesWithinCS 	= true;
-		ContextServiceConfig.TRIGGER_ENABLED 			= false;
-		ContextServiceConfig.UniqueGroupGUIDEnabled     = false;
-		ContextServiceConfig.PRIVACY_ENABLED			= false;
-		ContextServiceClient.EXPERIMENT_MODE            = false;
+		ContextServiceConfig.TRIGGER_ENABLED 			= true;
+		ContextServiceConfig.UniqueGroupGUIDEnabled     = true;
+		ContextServiceConfig.PRIVACY_ENABLED			= true;
+		ContextServiceClient.EXPERIMENT_MODE            = true;
 		
 		
 		// start context service.
