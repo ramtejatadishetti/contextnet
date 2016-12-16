@@ -759,13 +759,15 @@ public class HyperspaceHashing extends AbstractScheme
 			
 			if(ContextServiceConfig.TRIGGER_ENABLED)
 			{
-				try {
+				try
+				{
 					this.triggerProcessing.sendOutAggregatedRefreshTrigger
 						( updInfo.getToBeRemovedMap(), 
 						  updInfo.getToBeAddedMap(), updInfo.getValueUpdateFromGNS().getGUID(), 
 						  updInfo.getValueUpdateFromGNS().getVersionNum(), 
 						  updInfo.getValueUpdateFromGNS().getUpdateStartTime() );
-				} catch (JSONException e) 
+				} 
+				catch (JSONException e) 
 				{
 					e.printStackTrace();
 				}
@@ -1003,6 +1005,7 @@ public class HyperspaceHashing extends AbstractScheme
 				this.triggerProcessing.processTriggerForValueUpdateToSubspaceRegion
 							(valueUpdateToSubspaceRegionMessage, removedGroups, addedGroups);
 				
+				
 				Iterator<String> groupGUIDIter = removedGroups.keySet().iterator();
 				while( groupGUIDIter.hasNext() )
 				{
@@ -1031,6 +1034,8 @@ public class HyperspaceHashing extends AbstractScheme
 			}
 		}
 		
+		System.out.println("TRIGGER Computation removed "+toBeRemovedGroups.length()
+								+" added "+toBeAddedGroups.length());
 		
 		ValueUpdateToSubspaceRegionReplyMessage  
 		valueUpdateToSubspaceRegionReplyMessage 

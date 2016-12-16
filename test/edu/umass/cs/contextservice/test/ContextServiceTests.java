@@ -50,7 +50,7 @@ public class ContextServiceTests
 	private static String csNodeIp 							= "127.0.0.1";
 	private static int csPort 								= 8000;
 	
-	private static PrivacySchemes privacyScheme				= PrivacySchemes.SUBSPACE_PRIVACY;
+	private static PrivacySchemes privacyScheme				= PrivacySchemes.NO_PRIVACY;
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception
@@ -65,7 +65,7 @@ public class ContextServiceTests
 		ContextServiceConfig.sendFullRepliesWithinCS 	= true;
 		ContextServiceConfig.TRIGGER_ENABLED 			= true;
 		ContextServiceConfig.UniqueGroupGUIDEnabled     = true;
-		ContextServiceConfig.PRIVACY_ENABLED			= true;
+		ContextServiceConfig.PRIVACY_ENABLED			= false;
 		ContextServiceClient.EXPERIMENT_MODE            = true;
 		
 		
@@ -98,7 +98,7 @@ public class ContextServiceTests
 		assertEquals(0, replyArray.length());
 	}
 	
-	@Test
+	/*@Test
 	public void test_2_Input100GUIDs() throws JSONException 
 	{
 		// these tests require full search replies to be sent.
@@ -623,13 +623,14 @@ public class ContextServiceTests
 			assert( numRep > 0 );
 			assert( replyArray.length() > 0 );
 		}
-	}
+	}*/
 	
 	@Test
 	public void test_5_TriggerTest() throws JSONException
 	{
 		//FIXME: need to add a circular query trigger test
 		// these tests require full search replies to be sent.
+		assert( ContextServiceConfig.TRIGGER_ENABLED );
 		assert( ContextServiceConfig.sendFullRepliesToClient );
 		assert( ContextServiceConfig.sendFullRepliesWithinCS );
 		

@@ -332,7 +332,7 @@ public class GUIDAttrValueProcessingForNoPrivacy
 			String GUID , long requestID, long updateStartTime, 
 			JSONObject primarySubspaceJSON )
 					throws JSONException
-	{	
+	{
 		Iterator<Integer> keyIter   = subspaceInfoMap.keySet().iterator();
 		
 		while( keyIter.hasNext() )
