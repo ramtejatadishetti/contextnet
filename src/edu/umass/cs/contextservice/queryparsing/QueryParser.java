@@ -16,7 +16,7 @@ public class QueryParser
 	// query keywords
 	public static final String whereKeyword 									= "WHERE";
 	public static final String joinKeyword  									= "JOIN";
-
+	
 	// equal, less equal, greater equal, less, great, not
     // order is important, equality should come in last.
     // helps in parsing

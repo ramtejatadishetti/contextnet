@@ -41,7 +41,7 @@ import edu.umass.cs.utils.DelayProfiler;
 public class SQLGUIDStorage implements GUIDStorageInterface
 {
 	private final int myNodeID;
-	private final HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap;
+	//private final HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap;
 	private final AbstractDataSource dataSource;
 	
 	
@@ -50,7 +50,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 			AbstractDataSource dataSource )
 	{
 		this.myNodeID = myNodeID;
-		this.subspaceInfoMap = subspaceInfoMap;
+		//this.subspaceInfoMap = subspaceInfoMap;
 		this.dataSource = dataSource;
 	}
 	

@@ -14,6 +14,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 
@@ -79,15 +80,15 @@ public class Utils
 	    }
 	    return CurrentInterfaceIPs;
 	}
-
-	  public static Vector<InetAddress> getActiveInterfaceInetAddresses()
-	  {
-		  Vector<InetAddress> CurrentInterfaceIPs = new Vector<InetAddress>();
-		  try
-		  {
-			  for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); 
+	
+	public static Vector<InetAddress> getActiveInterfaceInetAddresses()
+	{
+		Vector<InetAddress> CurrentInterfaceIPs = new Vector<InetAddress>();
+		try
+		{
+			for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); 
 					  en.hasMoreElements();)
-			  {
+			{
 				  NetworkInterface intf = en.nextElement();
 				  for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); 
 						  enumIpAddr.hasMoreElements();)
@@ -108,34 +109,34 @@ public class Utils
 					  }
 				  }
 			  }
-		  }
-		  catch (Exception ex)
-		  {
-			  ex.printStackTrace();
-		  }
-		  return CurrentInterfaceIPs;
-	  }
-	  
-		public static double roundTo(double value, int places) 
-		{
-			if ( places < 0 || places > 20 )
-			{
-				throw new IllegalArgumentException();
-		    }
-			
-			double factor = Math.pow(10.0, places);
-		    value = value * factor;
-		    double tmp = Math.round(value);
-		    return tmp / factor;
 		}
+		catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		return CurrentInterfaceIPs;
+	}
+	
+	public static double roundTo(double value, int places) 
+	{
+		if ( places < 0 || places > 20 )
+		{
+			throw new IllegalArgumentException();
+		}
+		
+		double factor = Math.pow(10.0, places);
+		value = value * factor;
+		double tmp = Math.round(value);
+		return tmp / factor;
+	}
 	
 	  /**
 	   * FIXME: check the time. It could be  crtical path
 	   * @param stringToHash
 	   * @return
 	   */
-	  public static String getSHA1( String stringToHash )
-	  {
+	public static String getSHA1( String stringToHash )
+	{
 //		  if(false)
 //		  {
 //			  MessageDigest md=null;
@@ -156,16 +157,15 @@ public class Utils
 //			  return new String(byteRep);
 //		  }
 		  //else
-		  {
-			  Random rand = new Random(stringToHash.hashCode());
-			  byte[] guidByte = new byte[20];
-			  rand.nextBytes(guidByte);
-			  
-			  char[] byteRep = Hex.encodeHex(guidByte);
-			  
-			  return new String(byteRep);
-		  }
-	  }
+		{
+			Random rand = new Random(stringToHash.hashCode());
+			byte[] guidByte = new byte[20];
+			rand.nextBytes(guidByte);
+			
+			char[] byteRep = Hex.encodeHex(guidByte);
+			return new String(byteRep);
+		}
+	}
 	
 	/**
 	 * FIXME: check the time, although not in critical path.
@@ -416,6 +416,24 @@ public class Utils
 			e.printStackTrace();
 		}
 		return byteArray;
+	}
+	
+	public static double computeJainsFairnessIndex(List<Double> numberList)
+	{
+		double sum = 0;
+		double squaresum = 0;
+		
+		for(int i=0; i<numberList.size(); i++)
+		{
+			double num = numberList.get(i);
+			sum = sum + num;
+			
+			squaresum = squaresum + Math.pow(num, 2);
+		}
+		
+		double jfi = (Math.pow(sum, 2))/(numberList.size() * squaresum);
+		
+		return jfi;
 	}
 	
 	//FIXME: test time taken by each method here

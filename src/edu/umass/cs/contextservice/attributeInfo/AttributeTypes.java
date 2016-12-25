@@ -16,6 +16,7 @@ import org.json.JSONObject;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
+import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 
 /**
  * Defines the attribute types on which context based
@@ -44,7 +45,7 @@ public class AttributeTypes
 	public static final String StringType 									= "String";
 	
 	
-	public static Map<String, AttributeMetaInfo> attributeMap 				= null;
+	public static HashMap<String, AttributeMetaInfo> attributeMap 			= null;
 	public static HashMap<String, String> mySQLDataType 					= null;
 	
 	
@@ -85,13 +86,22 @@ public class AttributeTypes
 		{
 			e.printStackTrace();
 		}
-		/*for(int i=0;i<ContextServiceConfig.NUM_ATTRIBUTES;i++)
-		{
-			AttributeMetaInfo attrInfo 
-						= new AttributeMetaInfo("longitude", -180+"", 180+"", -180+"", DoubleType);
-			attributeMap.put(ContextServiceConfig.CONTEXT_ATTR_PREFIX+i,
-					ContextServiceConfig.CONTEXT_ATTR_PREFIX+i);
-		}*/
+	}
+	
+	/**
+	 * Mainly used for testing.
+	 * @param givenMap
+	 */
+	public static synchronized void initializeGivenMap(Map<String, AttributeMetaInfo> givenMap)
+	{
+		attributeMap 	= givenMap;
+		mySQLDataType 	= new HashMap<String, String>();
+		
+		mySQLDataType.put(IntType, "INTEGER");
+		mySQLDataType.put(LongType, "BIGINT");
+		mySQLDataType.put(DoubleType, "DOUBLE");
+		mySQLDataType.put(StringType, "VARCHAR("+MAX_STRING_SIZE+")");
+		
 	}
 	
 	private static void readAttributeInfo() throws IOException
@@ -229,6 +239,88 @@ public class AttributeTypes
 		}
 		return false;
 	}
+	
+	/**
+	 * Returns true if two intervals overlap.
+	 * @param interval1
+	 * @return
+	 */
+	public static boolean checkOverlapOfTwoIntervals( AttributeValueRange interval1, 
+			AttributeValueRange interval2, String dataType )
+	{	
+		switch(dataType)
+		{
+			case IntType:
+			{
+				int lower1 = Integer.parseInt(interval1.getLowerBound());
+				int upper1 = Integer.parseInt(interval1.getUpperBound());
+				
+				
+				int lower2 = Integer.parseInt(interval2.getLowerBound());
+				int upper2 = Integer.parseInt(interval2.getUpperBound());
+				
+				if( ( (lower1 >= lower2) && (lower1 < upper2) ) || 
+						( (upper1 > lower2) && (upper1 <= upper2) ) || 
+						( (lower2 >= lower1) && (upper2 <= upper1) ) )
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+			case LongType:
+			{
+				long lower1 = Long.parseLong(interval1.getLowerBound());
+				long upper1 = Long.parseLong(interval1.getUpperBound());
+				
+				
+				long lower2 = Long.parseLong(interval2.getLowerBound());
+				long upper2 = Long.parseLong(interval2.getUpperBound());
+				
+				if( ( (lower1 >= lower2) && (lower1 < upper2) ) || 
+						( (upper1 > lower2) && (upper1 <= upper2) ) || 
+						( (lower2 >= lower1) && (upper2 <= upper1) ) )
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+			case DoubleType:
+			{
+				double lower1 = Double.parseDouble(interval1.getLowerBound());
+				double upper1 = Double.parseDouble(interval1.getUpperBound());
+				
+				
+				double lower2 = Double.parseDouble(interval2.getLowerBound());
+				double upper2 = Double.parseDouble(interval2.getUpperBound());
+				
+				if( ( (lower1 >= lower2) && (lower1 < upper2) ) || 
+						( (upper1 > lower2) && (upper1 <= upper2) ) || 
+						( (lower2 >= lower1) && (upper2 <= upper1) ) )
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+			case StringType:
+			{
+				assert(false);
+				return false;
+			}
+			default:
+				assert(false);
+		}
+		return false;
+	}
+	
 	
 	public static Object convertStringToDataTypeForMySQL(String value, String dataType)
 	{

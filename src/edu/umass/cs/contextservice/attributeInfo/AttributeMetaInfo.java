@@ -2,6 +2,8 @@ package edu.umass.cs.contextservice.attributeInfo;
 
 import java.util.Random;
 
+import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
+
 public class AttributeMetaInfo
 {
 	private final String attributeName;
@@ -23,6 +25,10 @@ public class AttributeMetaInfo
 	// default value can never be in between the minimum and maximum value.
 	private boolean isLowerValDefault;
 	
+	// range size, which is typically maxValue-minValue for Int, Long and Double data type.
+	// FIXME: not sure what this parameter's value will be in String data type.
+	private final double rangeSize;
+	
 	public AttributeMetaInfo( String attributeName, String minValue, 
 			String maxValue, String dataType )
 	{
@@ -33,6 +39,8 @@ public class AttributeMetaInfo
 		
 		this.defaultValue = getDataTypeMinimumValue();
 		this.isLowerValDefault = true;
+		
+		rangeSize = computeRangeSize(minValue, maxValue);
 	}
 	
 	public String getAttrName()
@@ -63,6 +71,11 @@ public class AttributeMetaInfo
 	public boolean isLowerValDefault()
 	{
 		return this.isLowerValDefault;
+	}
+	
+	public double getRangeSize()
+	{
+		return this.rangeSize;
 	}
 	
 	
@@ -126,6 +139,77 @@ public class AttributeMetaInfo
 		return randVal;	
 	}
 	
+	
+	/**
+	 * Assigns range size based on the data type.
+	 */
+	public double computeRangeSize( String lowerBound, String upperBound )
+	{
+		switch( dataType )
+		{
+			case AttributeTypes.IntType:
+			{
+				int lowerValueInt = Integer.parseInt(lowerBound);
+				int upperValueInt = Integer.parseInt(upperBound);
+				
+				return (double) (upperValueInt-lowerValueInt);
+			}
+			case AttributeTypes.LongType:
+			{
+				long lowerValueLong = Long.parseLong(lowerBound);
+				long upperValueLong = Long.parseLong(upperBound);
+				
+				
+				return (double) (upperValueLong-lowerValueLong);
+			}
+			case AttributeTypes.DoubleType:
+			{
+				double lowerValueDouble = Double.parseDouble(lowerBound);
+				double upperValueDouble = Double.parseDouble(upperBound);
+				
+				
+				return (double) (upperValueDouble-lowerValueDouble);
+			}
+			case AttributeTypes.StringType:
+			{
+				assert(false);
+				break;
+			}
+			default:
+				assert(false);
+		}
+		return -1;
+	}
+	
+	
+	public double computeIntervalToRangeRatio(AttributeValueRange attrValRange)
+	{
+		double intervalRangeRatio = 0.0;
+		
+		switch( dataType )
+		{
+			case AttributeTypes.IntType:
+			case AttributeTypes.LongType:
+			case AttributeTypes.DoubleType:
+			{
+				double lowerValueDouble = Double.parseDouble(attrValRange.getLowerBound());
+				double upperValueDouble = Double.parseDouble(attrValRange.getUpperBound());
+				intervalRangeRatio = (upperValueDouble-lowerValueDouble)/rangeSize;
+				
+				return intervalRangeRatio;
+			}
+			case AttributeTypes.StringType:
+			{
+				assert(false);
+				break;
+			}
+			default:
+				assert(false);
+		}
+		return -1;
+	}
+	
+	
 	private String getDataTypeMinimumValue()
 	{
 		String dataTypeMinVal = "";
@@ -156,7 +240,9 @@ public class AttributeMetaInfo
 			}
 			default:
 				assert(false);
-		}		
+		}
 		return dataTypeMinVal;
 	}
+	
+	
 }

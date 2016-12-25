@@ -31,7 +31,7 @@ public abstract class AbstractSubspaceConfigurator
 	
 	private final Object subspacePartitionInsertLock				= new Object();
 	
-	// this can be a huge number, it is exponential in numebr of attributes.
+	// this can be a huge number, it is exponential in number of attributes.
 	private long subspacePartitionInsertSent						= 0;
 	private long subspacePartitionInsertCompl						= 0;
 	
@@ -99,6 +99,7 @@ public abstract class AbstractSubspaceConfigurator
 												+subspaceInfo.getNumPartitions() );
 				
 				Integer[] partitionNumArray = new Integer[subspaceInfo.getNumPartitions()];
+				
 				for(int j = 0; j<partitionNumArray.length; j++)
 				{
 					partitionNumArray[j] = new Integer(j);
@@ -156,7 +157,7 @@ public abstract class AbstractSubspaceConfigurator
 					}
 				}
 				// adding the remaning ones
-				if(subspaceVectList.size() > 0)
+				if( subspaceVectList.size() > 0 )
 				{
 					synchronized(this.subspacePartitionInsertLock)
 					{
@@ -182,7 +183,7 @@ public abstract class AbstractSubspaceConfigurator
 				try 
 				{
 					this.subspacePartitionInsertLock.wait();
-				} catch (InterruptedException e) 
+				} catch (InterruptedException e)
 				{
 					e.printStackTrace();
 				}

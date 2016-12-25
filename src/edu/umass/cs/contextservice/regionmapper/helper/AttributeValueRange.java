@@ -1,4 +1,4 @@
-package edu.umass.cs.contextservice.regionmapper;
+package edu.umass.cs.contextservice.regionmapper.helper;
 
 public class AttributeValueRange
 {
