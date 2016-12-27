@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Vector;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
@@ -13,31 +13,34 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
+import edu.umass.cs.contextservice.database.AbstractDB;
 import edu.umass.cs.contextservice.database.HyperspaceDB;
-import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
-import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegion;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegionReply;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
 import edu.umass.cs.contextservice.profilers.ProfilerStatClass;
-import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
-import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
-import edu.umass.cs.contextservice.schemes.helperclasses.SubspaceSearchReplyInfo;
+import edu.umass.cs.contextservice.queryparsing.QueryParser;
+import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy;
+import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy.REQUEST_TYPE;
+import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
+import edu.umass.cs.contextservice.schemes.helperclasses.SearchReplyInfo;
 import edu.umass.cs.contextservice.updates.UpdateInfo;
 import edu.umass.cs.nio.JSONMessenger;
 
 public class GUIDAttrValueProcessingForNoPrivacy
 								extends AbstractGUIDAttrValueProcessing 
 {
-	public GUIDAttrValueProcessingForNoPrivacy( Integer myID, HashMap<Integer, Vector<SubspaceInfo>> 
-		subspaceInfoMap , HyperspaceDB hyperspaceDB, 
+	public GUIDAttrValueProcessingForNoPrivacy( Integer myID, 
+			AbstractRegionMappingPolicy regionMappingPolicy, 
+			AbstractDB hyperspaceDB, 
 		JSONMessenger<Integer> messenger , 
 		ConcurrentHashMap<Long, QueryInfo> pendingQueryRequests, 
 		ProfilerStatClass profStats )
 	{
-		super(myID, subspaceInfoMap , hyperspaceDB, messenger , 
+		super(myID, regionMappingPolicy, 
+				hyperspaceDB, messenger , 
 				pendingQueryRequests,  profStats);
 	}
 	
@@ -45,14 +48,12 @@ public class GUIDAttrValueProcessingForNoPrivacy
 		( QueryInfo queryInfo, boolean storeQueryForTrigger )
 	{
 		String query;
-		long userReqID;
 		String userIP;
 		int userPort;
 		String grpGUID;
 		long expiryTime;
 		
 		query   = queryInfo.getQuery();
-		userReqID = queryInfo.getUserReqID();
 		userIP  = queryInfo.getUserIP();
 		userPort   = queryInfo.getUserPort();
 		grpGUID = queryInfo.getGroupGUID();
@@ -64,83 +65,33 @@ public class GUIDAttrValueProcessingForNoPrivacy
 			("Query request failed at the recieving node ");
 			return;
 		}
-		
-		HashMap<String, ProcessingQueryComponent> matchingQueryComponents 
-										= new HashMap<String, ProcessingQueryComponent>();
-		
-		int maxMatchingSubspaceId = getMaxOverlapSubspace
-					(queryInfo.getProcessingQC(), matchingQueryComponents);
-		
-		ContextServiceLogger.getLogger().fine("userReqID "+userReqID
-				+" maxMatchingSubspaceNum "
-				+maxMatchingSubspaceId+" matchingQueryComponents "
-				+matchingQueryComponents.size()+" query "+query);
-		
-		// get number of nodes/or regions to send to in that subspace.
-		
-		// choose a replica randomly
-		Vector<SubspaceInfo> maxMatchingSubspaceReplicas 
-			= subspaceInfoMap.get(maxMatchingSubspaceId);
-		int replicaNum = maxMatchingSubspaceReplicas.get
-				(this.replicaChoosingRand.nextInt
-						(maxMatchingSubspaceReplicas.size())).getReplicaNum();
-		
-		if(ContextServiceConfig.PROFILER_THREAD)
-		{
-			profStats.incrementIncomingForOverlap();
-		}
-		long sTime = System.currentTimeMillis();
-	    HashMap<Integer, RegionInfoClass> overlappingRegionsMap 
-	    		= this.hyperspaceDB.getOverlappingRegionsInSubspace
-	    				(maxMatchingSubspaceId, 
-	    				replicaNum, matchingQueryComponents);
-	    
-	    if(ContextServiceConfig.PROFILER_THREAD)
-	    {
-	    	profStats.incrementNumSearches(overlappingRegionsMap.size(), 
-	    			(System.currentTimeMillis()-sTime));
-	    }
 	    
 		synchronized(this.pendingQueryLock)
 		{
 			queryInfo.setQueryRequestID(queryIdCounter++);
 		}
-		
 		pendingQueryRequests.put(queryInfo.getRequestId(), queryInfo);
 		
-		ContextServiceLogger.getLogger().fine("processQueryMsgFromUser respNodeIdList"
-				+ " size "
-				+ overlappingRegionsMap.size()+
-	    		" requestId "+queryInfo.getRequestId() +" maxMatchingSubspaceNum "
-				+ maxMatchingSubspaceId);
 		
-		SubspaceSearchReplyInfo subspaceReplyInfo = new SubspaceSearchReplyInfo();
-		subspaceReplyInfo.subspaceId = maxMatchingSubspaceId;
-		subspaceReplyInfo.overlappingRegionsMap = overlappingRegionsMap;
+		List<Integer> nodeList 
+				= regionMappingPolicy.getNodeIDsForAValueSpace
+						(queryInfo.getSearchQueryValSpace(), REQUEST_TYPE.SEARCH);
 		
-		HashMap<Integer, SubspaceSearchReplyInfo> searchReplyMap 
-				= new HashMap<Integer, SubspaceSearchReplyInfo>();
+		queryInfo.initializeSearchQueryReplyInfo(nodeList);
 		
-		searchReplyMap.put(maxMatchingSubspaceId, subspaceReplyInfo);
-		
-		queryInfo.initializeSearchQueryReplyInfo(searchReplyMap);
-		
-	    Iterator<Integer> respNodeIdIter = overlappingRegionsMap.keySet().iterator();
-	    
-	    while( respNodeIdIter.hasNext() )
-	    {
-	    	Integer respNodeId = respNodeIdIter.next();
-	    	
-	    	QueryMesgToSubspaceRegion queryMesgToSubspaceRegion = 
+		for(int i=0; i< nodeList.size(); i++)
+		{
+			int nodeid = nodeList.get(i);
+			
+			QueryMesgToSubspaceRegion queryMesgToSubspaceRegion = 
 					new QueryMesgToSubspaceRegion
 	    			(myID, queryInfo.getRequestId(), query, grpGUID, 
-	    					maxMatchingSubspaceId, userIP, userPort, 
-	    					storeQueryForTrigger, expiryTime, PrivacySchemes.NO_PRIVACY.ordinal());
-	    	
-	    	
+	    					userIP, userPort, storeQueryForTrigger, 
+	    					expiryTime, PrivacySchemes.NO_PRIVACY.ordinal());
+			
 			try
 			{
-				this.messenger.sendToID( (Integer)respNodeId, 
+				this.messenger.sendToID( nodeid, 
 						queryMesgToSubspaceRegion.toJSONObject() );
 			} catch (IOException e)
 			{
@@ -150,25 +101,24 @@ public class GUIDAttrValueProcessingForNoPrivacy
 				e.printStackTrace();
 			}
 			ContextServiceLogger.getLogger().info("Sending QueryMesgToSubspaceRegion mesg from " 
-					+ myID +" to node "+respNodeId);
-	    }
+					+ myID +" to node "+nodeid);
+		}
 	}
 	
 	public int processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion 
 													queryMesgToSubspaceRegion, 
 													JSONArray resultGUIDs)
 	{
-		String query 				 = queryMesgToSubspaceRegion.getQuery();
-		QueryInfo qInfo	 			 = new QueryInfo(query);
-		int subspaceId 				 = queryMesgToSubspaceRegion.getSubspaceNum();
+		String query 				 		= queryMesgToSubspaceRegion.getQuery();
+		ValueSpaceInfo searchQValSpace	 	= QueryParser.parseQuery(query);
 		
 		long sTime = System.currentTimeMillis();
 		if(ContextServiceConfig.PROFILER_THREAD)
 		{
 			profStats.incrementIncomingForData();
 		}
-		int resultSize = this.hyperspaceDB.processSearchQueryInSubspaceRegion
-				(subspaceId, qInfo.getProcessingQC(), resultGUIDs);
+		int resultSize = this.hyperspaceDB.processSearchQueryUsingAttrIndex
+				(searchQValSpace, resultGUIDs);
 		
 		if(ContextServiceConfig.PROFILER_THREAD)
 		{
@@ -188,8 +138,7 @@ public class GUIDAttrValueProcessingForNoPrivacy
 		QueryInfo queryInfo = pendingQueryRequests.get(requestId);
 		
 		boolean allRepRecvd = 
-				queryInfo.addReplyFromARegionOfASubspace(queryMesgToSubspaceRegionReply.getSubsapceId(), 
-						(Integer)senderID, queryMesgToSubspaceRegionReply);
+				queryInfo.addReplyFromANode( senderID, queryMesgToSubspaceRegionReply);
 		
 		if( allRepRecvd )
 		{
@@ -197,34 +146,30 @@ public class GUIDAttrValueProcessingForNoPrivacy
 
 			int totalNumReplies 							 = 0;
 			
-			HashMap<Integer,SubspaceSearchReplyInfo> searchReplyMap 
+			HashMap<Integer, SearchReplyInfo> searchReplyMap 
 											= queryInfo.getSearchReplyMap();
-		
-			// in no privacy case , the search query processing happens in only one subspace.
-			assert(searchReplyMap.size() == 1);
-		
-			int subspaceId = searchReplyMap.keySet().iterator().next();
-			
-			SubspaceSearchReplyInfo subspaceSearchInfo   = searchReplyMap.get(subspaceId);
 			
 			if( ContextServiceConfig.sendFullRepliesToClient )
 			{	
-				Iterator<Integer> nodeIdIter = subspaceSearchInfo.overlappingRegionsMap.keySet().iterator();
+				Iterator<Integer> nodeIdIter = searchReplyMap.keySet().iterator();
 
 				while( nodeIdIter.hasNext() )
 				{
-					RegionInfoClass regInfo = subspaceSearchInfo.overlappingRegionsMap.get(nodeIdIter.next());
-					concatResult.put(regInfo.replyArray);
-					totalNumReplies = totalNumReplies + regInfo.replyArray.length();
+					int nodeid = nodeIdIter.next();
+					SearchReplyInfo replyInfo = searchReplyMap.get(nodeid);
+					concatResult.put(replyInfo.replyArray);
+					totalNumReplies = totalNumReplies + replyInfo.replyArray.length();
 				}
 			}
 			else
 			{
-				Iterator<Integer> nodeIdIter = subspaceSearchInfo.overlappingRegionsMap.keySet().iterator();
+				Iterator<Integer> nodeIdIter = searchReplyMap.keySet().iterator();
 
 				while( nodeIdIter.hasNext() )
 				{
-					int currRepSize = subspaceSearchInfo.overlappingRegionsMap.get( nodeIdIter.next() ).numReplies;
+					int nodeid = nodeIdIter.next();
+					SearchReplyInfo replyInfo = searchReplyMap.get(nodeid);
+					int currRepSize = replyInfo.numReplies;
 					totalNumReplies = totalNumReplies + currRepSize;
 				}
 			}
@@ -275,10 +220,9 @@ public class GUIDAttrValueProcessingForNoPrivacy
 			boolean firstTimeInsert = false;
 			
 			long start 	 = System.currentTimeMillis();
-			// FIXME: fetch only those attributes which are specified 
-			// in the updated attrs.
-			JSONObject oldValueJSON 	
-						 = this.hyperspaceDB.getGUIDStoredInPrimarySubspace(GUID);
+			
+			JSONObject oldValueJSON 
+						 = this.hyperspaceDB.getGUIDStoredUsingHashIndex(GUID);
 			
 			long end 	 = System.currentTimeMillis();
 			
@@ -304,7 +248,7 @@ public class GUIDAttrValueProcessingForNoPrivacy
 			JSONObject jsonToWrite = getJSONToWriteInPrimarySubspace( oldValueJSON, 
 					attrValuePairs, null );
 			
-			this.hyperspaceDB.storeGUIDInPrimarySubspace
+			this.hyperspaceDB.storeGUIDUsingHashIndex
 								(GUID, jsonToWrite, updateOrInsert);
 			
 			
@@ -315,11 +259,9 @@ public class GUIDAttrValueProcessingForNoPrivacy
 			}
 			
 			// process update at secondary subspaces.
-			//FIXME: anonymizedIDToGuidMapping can be null if not present in the message.
-			// set it by reading from primarysubspace storage.
-			updateGUIDInSecondarySubspaces( oldValueJSON , 
+			updateGUIDInAttrIndexes( oldValueJSON , 
 					firstTimeInsert , attrValuePairs , GUID , 
-					requestID, updateStartTime, jsonToWrite  );
+					requestID, updateStartTime, jsonToWrite, updateReq  );
 		}
 		catch ( JSONException e )
 		{
@@ -327,36 +269,14 @@ public class GUIDAttrValueProcessingForNoPrivacy
 		}
 	}
 	
-	private void updateGUIDInSecondarySubspaces( JSONObject oldValueJSON , 
+	private void updateGUIDInAttrIndexes( JSONObject oldValueJSON , 
 			boolean firstTimeInsert , JSONObject updatedAttrValJSON , 
 			String GUID , long requestID, long updateStartTime, 
-			JSONObject primarySubspaceJSON )
+			JSONObject primarySubspaceJSON, UpdateInfo updateReq )
 					throws JSONException
 	{
-		Iterator<Integer> keyIter   = subspaceInfoMap.keySet().iterator();
-		
-		while( keyIter.hasNext() )
-		{
-			int subspaceId 			= keyIter.next();
-			Vector<SubspaceInfo> replicasVect 
-									= subspaceInfoMap.get(subspaceId);
-			
-			for( int i=0; i<replicasVect.size(); i++ )
-			{
-				SubspaceInfo currSubInfo 
-							= replicasVect.get(i);
-				int replicaNum = currSubInfo.getReplicaNum();
-				
-				HashMap<String, AttributePartitionInfo> attrsSubspaceInfo 
-													= currSubInfo.getAttributesOfSubspace();
-				
-				guidValueProcessingOnUpdate
-					( attrsSubspaceInfo, oldValueJSON, subspaceId, replicaNum, 
-							updatedAttrValJSON, GUID, requestID, firstTimeInsert, 
-							updateStartTime, 
-							primarySubspaceJSON );
-				
-			}
-		}
+		guidValueProcessingOnUpdate
+		( oldValueJSON,  updatedAttrValJSON, GUID, requestID, firstTimeInsert, 
+				updateStartTime, primarySubspaceJSON, updateReq );
 	}
 }

@@ -3,8 +3,8 @@ package edu.umass.cs.contextservice.schemes.components;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
-import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
@@ -15,31 +15,34 @@ import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
+import edu.umass.cs.contextservice.database.AbstractDB;
 import edu.umass.cs.contextservice.database.HyperspaceDB;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
-import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegion;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegionReply;
 import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionMessage;
 import edu.umass.cs.contextservice.profilers.ProfilerStatClass;
-import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
+import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy;
+import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy.REQUEST_TYPE;
+import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
+import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 import edu.umass.cs.contextservice.schemes.HyperspaceHashing;
-import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
 import edu.umass.cs.contextservice.updates.UpdateInfo;
 import edu.umass.cs.nio.JSONMessenger;
 
 public abstract class AbstractGUIDAttrValueProcessing
 {
-	protected final HashMap<Integer, Vector<SubspaceInfo>> 
-																subspaceInfoMap;
+//	protected final HashMap<Integer, Vector<SubspaceInfo>> 
+//																subspaceInfoMap;
 	
+	protected final AbstractRegionMappingPolicy regionMappingPolicy;
 	protected final Random replicaChoosingRand;
 	
 	protected final Integer myID;
 	
-	protected final HyperspaceDB hyperspaceDB;
+	protected final AbstractDB hyperspaceDB;
 	
 	protected final JSONMessenger<Integer> messenger;
 	
@@ -55,14 +58,13 @@ public abstract class AbstractGUIDAttrValueProcessing
 	
 	// FIXME: check if the abstract methods and methods implemented here are separated correctly
 	public AbstractGUIDAttrValueProcessing( Integer myID, 
-			HashMap<Integer, Vector<SubspaceInfo>> 
-		subspaceInfoMap , HyperspaceDB hyperspaceDB, 
-		JSONMessenger<Integer> messenger , 
+			AbstractRegionMappingPolicy regionMappingPolicy, 
+			AbstractDB hyperspaceDB, JSONMessenger<Integer> messenger , 
 		ConcurrentHashMap<Long, QueryInfo> pendingQueryRequests, 
 		ProfilerStatClass profStats )
 	{
 		this.myID = myID;
-		this.subspaceInfoMap = subspaceInfoMap;
+		this.regionMappingPolicy = regionMappingPolicy;
 		this.hyperspaceDB = hyperspaceDB;
 		this.messenger = messenger;
 		this.pendingQueryRequests = pendingQueryRequests;
@@ -101,74 +103,57 @@ public abstract class AbstractGUIDAttrValueProcessing
 	}
 	
 	protected void guidValueProcessingOnUpdate( 
-			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo , 
-			JSONObject oldValueJSON , int subspaceId , int  replicaNum ,
-			JSONObject updatedAttrValJSON ,
+			JSONObject oldValueJSON, JSONObject updatedAttrValJSON ,
 			String GUID , long requestID , boolean firstTimeInsert,
-			long updateStartTime, 
-			JSONObject primarySubspaceJSON ) throws JSONException
+			long updateStartTime, JSONObject primarySubspaceJSON, 
+			UpdateInfo updateReq ) throws JSONException
 	{
 		if( firstTimeInsert )
 		{
 			processFirstTimeInsertIntoSecondarySubspace( 
-					attrsSubspaceInfo, subspaceId , replicaNum ,
-					GUID , requestID, updateStartTime, primarySubspaceJSON,  updatedAttrValJSON);
+					GUID , requestID, updateStartTime, primarySubspaceJSON, 
+					updatedAttrValJSON, updateReq);
 		}
 		else
 		{
-			processUpdateIntoSecondarySubspace( 
-					attrsSubspaceInfo, oldValueJSON, subspaceId, replicaNum,
-					updatedAttrValJSON, GUID , requestID ,firstTimeInsert, 
-					updateStartTime, primarySubspaceJSON );
+			processUpdateIntoSecondarySubspace( oldValueJSON, updatedAttrValJSON, 
+					GUID , requestID ,firstTimeInsert, 
+					updateStartTime, primarySubspaceJSON, 
+					updateReq );
 		}
 	}
 	
-	protected void processUpdateIntoSecondarySubspace( 
-			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo , 
-			JSONObject oldValueJSON , int subspaceId , int  replicaNum ,
-			JSONObject updatedAttrValJSON ,
+	protected void processUpdateIntoSecondarySubspace(
+			JSONObject oldValueJSON, JSONObject updatedAttrValJSON ,
 			String GUID , long requestID , boolean firstTimeInsert,
-			long updateStartTime, JSONObject primarySubspaceJSON ) throws JSONException
+			long updateStartTime, JSONObject primarySubspaceJSON, 
+			UpdateInfo updateReq ) throws JSONException
 	{
-		Integer oldRespNodeId = null, newRespNodeId = null;
+		Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
+		ValueSpaceInfo oldValSpace = new ValueSpaceInfo();
 		
-		// processes the first time insert
-		HashMap<String, ProcessingQueryComponent> oldQueryComponents 
-											= new HashMap<String, ProcessingQueryComponent>();
-		
-		Iterator<String> subspaceAttrIter 	= attrsSubspaceInfo.keySet().iterator();
-		
-		while( subspaceAttrIter.hasNext() )
+		while(attrIter.hasNext())
 		{
-			String attrName = subspaceAttrIter.next();
-			//( String attributeName, String leftOperator, double leftValue, 
-			//		String rightOperator, double rightValue )
-			String attrVal = oldValueJSON.getString(attrName);
-			ProcessingQueryComponent qcomponent = new ProcessingQueryComponent
-										( attrName, attrVal, attrVal );
-			oldQueryComponents.put(qcomponent.getAttributeName() , qcomponent);
+			String attrName = attrIter.next();
+			String attrVal  = oldValueJSON.getString(attrName);
+			
+			// lower and upper bound are same in updates.
+			AttributeValueRange attrValRange = new AttributeValueRange(attrVal, attrVal);
+			oldValSpace.getValueSpaceBoundary().put(attrName, attrValRange);
 		}
-
-		HashMap<Integer, RegionInfoClass> overlappingRegion = 
-				this.hyperspaceDB.getOverlappingRegionsInSubspace
-								(subspaceId, replicaNum, oldQueryComponents);
-
-		assert(overlappingRegion.size() == 1);
 		
-		oldRespNodeId = (Integer)overlappingRegion.keySet().iterator().next();
+		List<Integer> oldValSpaceList 
+					= regionMappingPolicy.getNodeIDsForAValueSpace(oldValSpace, REQUEST_TYPE.UPDATE);
 		
-
+		
 		// for new value
-		HashMap<String, ProcessingQueryComponent> newQueryComponents 
-						= new HashMap<String, ProcessingQueryComponent>();
+		attrIter = AttributeTypes.attributeMap.keySet().iterator();
+		ValueSpaceInfo newValSpace = new ValueSpaceInfo();
 		
-		Iterator<String> subspaceAttrIter1 
-						= attrsSubspaceInfo.keySet().iterator();
-
-		while( subspaceAttrIter1.hasNext() )
+		while( attrIter.hasNext() )
 		{
-			String attrName = subspaceAttrIter1.next();
-
+			String attrName = attrIter.next();
+			
 			String value;
 			if( updatedAttrValJSON.has(attrName) )
 			{
@@ -178,79 +163,83 @@ public abstract class AbstractGUIDAttrValueProcessing
 			{
 				value = oldValueJSON.getString(attrName);
 			}
-			ProcessingQueryComponent qcomponent 
-					= new ProcessingQueryComponent(attrName, value, value );
-			newQueryComponents.put(qcomponent.getAttributeName(), qcomponent);
+			
+			// lower and upper bound are same in updates.
+			AttributeValueRange attrValRange = new AttributeValueRange(value, value);
+			newValSpace.getValueSpaceBoundary().put(attrName, attrValRange);
 		}
 		
-		HashMap<Integer, RegionInfoClass> newOverlappingRegion = 
-				this.hyperspaceDB.getOverlappingRegionsInSubspace( subspaceId, replicaNum, 
-						newQueryComponents );
-
-		assert(newOverlappingRegion.size() == 1);
+		List<Integer> newValSpaceList 
+					= regionMappingPolicy.getNodeIDsForAValueSpace(newValSpace, REQUEST_TYPE.UPDATE);
 		
-		newRespNodeId = (Integer)newOverlappingRegion.keySet().iterator().next();
+		HashMap<Integer, Integer> removeNodesMap = new HashMap<Integer, Integer>();
+		HashMap<Integer, Integer> addNodesMap = new HashMap<Integer, Integer>();
+		HashMap<Integer, Integer> updateNodesMap = new HashMap<Integer, Integer>();
 		
-
-		ContextServiceLogger.getLogger().fine
-							("oldNodeId "+oldRespNodeId
-							+" newRespNodeId "+newRespNodeId);
+		
+		for(int i=0; i<oldValSpaceList.size(); i++)
+		{
+			int nodeId = oldValSpaceList.get(i);
+			removeNodesMap.put(nodeId, nodeId);
+		}
+		
+		
+		for(int i=0; i<newValSpaceList.size(); i++)
+		{
+			int nodeId = newValSpaceList.get(i);
+			addNodesMap.put(nodeId, nodeId);			
+		}
+		
+		Iterator<Integer> nodeIter = removeNodesMap.keySet().iterator();
+		
+		while(nodeIter.hasNext())
+		{
+			int nodeid = nodeIter.next();
+			
+			if(addNodesMap.containsKey(nodeid))
+			{
+				// then this is the case for update.
+				updateNodesMap.put(nodeid, nodeid);
+			}
+		}
+		
+		// remove update nodes from add and remove nodes map
+		nodeIter = updateNodesMap.keySet().iterator();
+		while( nodeIter.hasNext() )
+		{
+			int nodeid = nodeIter.next();
+			addNodesMap.remove(nodeid);
+			removeNodesMap.remove(nodeid);
+		}
+		
+		int totalExpectedUpdateReplies = addNodesMap.size() + removeNodesMap.size() + updateNodesMap.size();
+		
+		updateReq.setNumberOfExpectedReplies(totalExpectedUpdateReplies);
+		
+		
 		JSONObject unsetAttrsJSON = primarySubspaceJSON.getJSONObject
 				(HyperspaceDB.unsetAttrsColName);
 		
-		// send messages to the subspace region nodes
-		if( oldRespNodeId == newRespNodeId )
+		// sending remove
+		nodeIter = removeNodesMap.keySet().iterator();
+		
+		while( nodeIter.hasNext() )
 		{
-			// update case
-			// add entry for reply
-			// 1 reply as both old and new goes to same node
-			// NOTE: doing this here was a bug, as we are also sending the message out
-			// and sometimes replies were coming back quickly before initialization for all 
-			// subspaces and the request completion code was assuming that the request was complte
-			// before recv replies from all subspaces.
-			//updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
-
-			ValueUpdateToSubspaceRegionMessage  
-							valueUpdateToSubspaceRegionMessage = null;
-
-			// just need to send update attr values
-			valueUpdateToSubspaceRegionMessage 
-					= new ValueUpdateToSubspaceRegionMessage( myID, 
-							-1, GUID, updatedAttrValJSON, 
-							ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
-							subspaceId, requestID, firstTimeInsert, updateStartTime, 
-							oldValueJSON, unsetAttrsJSON, updatedAttrValJSON, PrivacySchemes.HYPERSPACE_PRIVACY.ordinal());
+			int nodeid = nodeIter.next();
 			
-			try
-			{
-				this.messenger.sendToID
-					(oldRespNodeId, valueUpdateToSubspaceRegionMessage.toJSONObject());
-			}
-			catch (IOException e)
-			{
-				e.printStackTrace();
-			}
-			catch (JSONException e)
-			{
-				e.printStackTrace();
-			}
-		}
-		else
-		{
-			// add entry for reply
-			// 2 reply as both old and new goes to different node
-			//updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
 			// it is a remove, so no need for update and old JSON.
+			
 			ValueUpdateToSubspaceRegionMessage  oldValueUpdateToSubspaceRegionMessage 
-					= new ValueUpdateToSubspaceRegionMessage( myID, -1, 
-							GUID, updatedAttrValJSON, 
-							ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY, 
-							subspaceId, requestID, firstTimeInsert, updateStartTime,
-							oldValueJSON, unsetAttrsJSON, updatedAttrValJSON, PrivacySchemes.HYPERSPACE_PRIVACY.ordinal() );
+							= new ValueUpdateToSubspaceRegionMessage( myID, -1, 
+										GUID, updatedAttrValJSON, 
+										ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY
+										, requestID, firstTimeInsert, updateStartTime,
+										oldValueJSON, unsetAttrsJSON, updatedAttrValJSON, 
+										PrivacySchemes.HYPERSPACE_PRIVACY.ordinal() );
 			
 			try
 			{
-				this.messenger.sendToID(oldRespNodeId, 
+				this.messenger.sendToID(nodeid, 
 							oldValueUpdateToSubspaceRegionMessage.toJSONObject());
 			} catch (IOException e)
 			{
@@ -259,22 +248,24 @@ public abstract class AbstractGUIDAttrValueProcessing
 			{
 				e.printStackTrace();
 			}
-			
-			// FIXME: send full JSON, so that a new entry can be inserted 
-			// involving attributes which were not updated.
-			// need to send old JSON here, so that full guid entry can be added 
-			// not just the updated attrs
+		}
+		
+		// sending add
+		nodeIter = addNodesMap.keySet().iterator();
+		while( nodeIter.hasNext() )
+		{
+			int nodeid = nodeIter.next();
 			
 			JSONObject jsonToWrite = new JSONObject();
-			
-			
+						
+						
 			// attr values
-			Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
+			attrIter = AttributeTypes.attributeMap.keySet().iterator();
 			while( attrIter.hasNext() )
 			{
 				String attrName = attrIter.next();
 				String attrVal = "";
-				
+							
 				if(updatedAttrValJSON.has(attrName))
 				{
 					attrVal = updatedAttrValJSON.getString(attrName);
@@ -293,7 +284,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 				}
 				jsonToWrite.put(attrName, attrVal);
 			}
-			
+						
 			// anonymizedIDToGUID mapping
 			if(oldValueJSON.has(HyperspaceDB.anonymizedIDToGUIDMappingColName))
 			{
@@ -305,18 +296,19 @@ public abstract class AbstractGUIDAttrValueProcessing
 						, decodingArray);
 			}
 			
+			//FIXME: need to check if sending Hyperspace privacy is correct here.
 			ValueUpdateToSubspaceRegionMessage  
 				newValueUpdateToSubspaceRegionMessage = 
 						new ValueUpdateToSubspaceRegionMessage( myID, -1, 
 								GUID, jsonToWrite,
 								ValueUpdateToSubspaceRegionMessage.ADD_ENTRY, 
-								subspaceId, requestID, false, updateStartTime,
+								requestID, false, updateStartTime,
 								oldValueJSON, unsetAttrsJSON, updatedAttrValJSON, 
 								PrivacySchemes.HYPERSPACE_PRIVACY.ordinal());
 			
 			try
 			{
-				this.messenger.sendToID(newRespNodeId, 
+				this.messenger.sendToID(nodeid, 
 						newValueUpdateToSubspaceRegionMessage.toJSONObject());
 			} catch (IOException e)
 			{
@@ -326,67 +318,84 @@ public abstract class AbstractGUIDAttrValueProcessing
 				e.printStackTrace();
 			}
 		}
+		
+		// sending updates
+		nodeIter =  updateNodesMap.keySet().iterator();
+		while( nodeIter.hasNext() )
+		{
+			int nodeid = nodeIter.next();
+			
+			ValueUpdateToSubspaceRegionMessage  
+										valueUpdateToSubspaceRegionMessage = null;
+
+			// just need to send update attr values
+			valueUpdateToSubspaceRegionMessage 
+								= new ValueUpdateToSubspaceRegionMessage( myID, 
+										-1, GUID, updatedAttrValJSON, 
+										ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
+										requestID, firstTimeInsert, updateStartTime, 
+										oldValueJSON, unsetAttrsJSON, updatedAttrValJSON, 
+										PrivacySchemes.HYPERSPACE_PRIVACY.ordinal());
+			
+			try
+			{
+				this.messenger.sendToID
+					(nodeid, valueUpdateToSubspaceRegionMessage.toJSONObject());
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace();
+			}
+			catch (JSONException e)
+			{
+				e.printStackTrace();
+			}			
+		}
+		
 	}
 	
-	protected void processFirstTimeInsertIntoSecondarySubspace( 
-			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo,
-			int subspaceId , int  replicaNum ,
-			String GUID , long requestID,
-			long updateStartTime, JSONObject primarySubspaceJSON, JSONObject updateAttrJSON) 
-					throws JSONException
+	
+	protected void processFirstTimeInsertIntoSecondarySubspace(
+			String GUID , long requestID, long updateStartTime, 
+			JSONObject primarySubspaceJSON, JSONObject updateAttrJSON, 
+			UpdateInfo updateReq) throws JSONException
 	{
 		ContextServiceLogger.getLogger().fine
 			("processFirstTimeInsertIntoSecondarySubspace "+primarySubspaceJSON);
-		HashMap<String, ProcessingQueryComponent> newQueryComponents 
-								= new HashMap<String, ProcessingQueryComponent>();
 		
-		Iterator<String> subspaceAttrIter
-								= attrsSubspaceInfo.keySet().iterator();
+		ValueSpaceInfo newValSpace = new ValueSpaceInfo();
+		
+		Iterator<String> attrIter
+								= AttributeTypes.attributeMap.keySet().iterator();
 
 		// the attribtues that are not set by the user.
 		// for those random value set by primary subspace is used for indexing
-		while( subspaceAttrIter.hasNext() )
+		while( attrIter.hasNext() )
 		{
-			String attrName = subspaceAttrIter.next();
-			
+			String attrName = attrIter.next();
 			String value;
 			assert(primarySubspaceJSON.has(attrName));
 			
 			value = primarySubspaceJSON.getString(attrName);
 			
-			ProcessingQueryComponent qcomponent 
-				= new ProcessingQueryComponent(attrName, value, value );
-			newQueryComponents.put(qcomponent.getAttributeName(), qcomponent);
-		}
-
-		HashMap<Integer, RegionInfoClass> newOverlappingRegion = 
-				this.hyperspaceDB.getOverlappingRegionsInSubspace( subspaceId, replicaNum, 
-								newQueryComponents );
-		
-		if(newOverlappingRegion.size() != 1)
-		{
-			ContextServiceLogger.getLogger().fine("Not 1 Assertion fail primarySubspaceJSON "
-						+primarySubspaceJSON +" select query print " );
-			this.hyperspaceDB.getOverlappingRegionsInSubspace( subspaceId, replicaNum, 
-					newQueryComponents );
+			AttributeValueRange attrValRange = new AttributeValueRange(value, value);
 			
+			newValSpace.getValueSpaceBoundary().put(attrName, attrValRange);
 		}
-		assert(newOverlappingRegion.size() == 1);
 		
-		Integer newRespNodeId 
-						= (Integer)newOverlappingRegion.keySet().iterator().next();
+		List<Integer> newNodeList = regionMappingPolicy.getNodeIDsForAValueSpace(newValSpace, REQUEST_TYPE.UPDATE);
+		
+		updateReq.setNumberOfExpectedReplies(newNodeList.size());
+		
 
-		ContextServiceLogger.getLogger().fine
-					(" newRespNodeId "+newRespNodeId);
 	
 		// compute the JSONToWrite
 		JSONObject jsonToWrite = new JSONObject();
 		
-		
 		JSONObject unsetAttrsJSON = primarySubspaceJSON.getJSONObject
 											(HyperspaceDB.unsetAttrsColName);
 		
-		Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
+		attrIter = AttributeTypes.attributeMap.keySet().iterator();
 		
 		// unset attributes are set to default values, so that they don't 
 		// satisfy query constraints. But they are set some random value in primary subspace
@@ -421,38 +430,37 @@ public abstract class AbstractGUIDAttrValueProcessing
 					decodingArray);
 		}
 		
-		// add entry for reply
-		// 1 reply as both old and new goes to same node
-		// NOTE: doing this here was a bug, as we are also sending the message out
-		// and sometimes replies were coming back quickly before initialization for all 
-		// subspaces and the request completion code was assuming that the request was complte
-		// before recv replies from all subspaces.
-		//updateReq.initializeSubspaceEntry(subspaceId, replicaNum);
-
-		ValueUpdateToSubspaceRegionMessage  
-						valueUpdateToSubspaceRegionMessage = null;
 		
-		// need to send oldValueJSON as it is performed as insert
-		valueUpdateToSubspaceRegionMessage 
-				= new ValueUpdateToSubspaceRegionMessage( myID, 
-							-1, GUID, jsonToWrite, 
-							ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
-							subspaceId, requestID, true, updateStartTime, new JSONObject(),
-							unsetAttrsJSON, updateAttrJSON, PrivacySchemes.HYPERSPACE_PRIVACY.ordinal());
+		for(int i=0; i<newNodeList.size(); i++)
+		{
+			int nodeid = newNodeList.get(i);
+			
+			ValueUpdateToSubspaceRegionMessage  
+							valueUpdateToSubspaceRegionMessage = null;
+			
+			// need to send oldValueJSON as it is performed as insert
+			valueUpdateToSubspaceRegionMessage 
+					= new ValueUpdateToSubspaceRegionMessage( myID, 
+								-1, GUID, jsonToWrite, 
+								ValueUpdateToSubspaceRegionMessage.ADD_ENTRY, 
+								requestID, true, updateStartTime, new JSONObject(),
+								unsetAttrsJSON, updateAttrJSON, PrivacySchemes.HYPERSPACE_PRIVACY.ordinal());
+			
+			try
+			{
+				this.messenger.sendToID
+					(nodeid, valueUpdateToSubspaceRegionMessage.toJSONObject());
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace();
+			}
+			catch (JSONException e)
+			{
+				e.printStackTrace();
+			}
+		}
 		
-		try
-		{
-			this.messenger.sendToID
-				(newRespNodeId, valueUpdateToSubspaceRegionMessage.toJSONObject());
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-		catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
 	}
 	
 	protected JSONObject getJSONToWriteInPrimarySubspace( JSONObject oldValJSON, 
@@ -548,11 +556,9 @@ public abstract class AbstractGUIDAttrValueProcessing
 	}
 	
 	
-	public int processValueUpdateToSubspaceRegionMessage( 
-			ValueUpdateToSubspaceRegionMessage valueUpdateToSubspaceRegionMessage, 
-			int replicaNum )
+	public void processValueUpdateToSubspaceRegionMessage( 
+			ValueUpdateToSubspaceRegionMessage valueUpdateToSubspaceRegionMessage )
 	{
-		int subspaceId  		= valueUpdateToSubspaceRegionMessage.getSubspaceNum();
 		String GUID 			= valueUpdateToSubspaceRegionMessage.getGUID();
 		JSONObject jsonToWrite  = valueUpdateToSubspaceRegionMessage.getJSONToWrite();
 		int operType 			= valueUpdateToSubspaceRegionMessage.getOperType();
@@ -560,9 +566,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 		
 		long udpateStartTime 	= valueUpdateToSubspaceRegionMessage.getUpdateStartTime();
 		
-		String tableName 		= "subspaceId"+subspaceId+"DataStorage";
-		
-		int numRep = 1;
+		String tableName 		= HyperspaceDB.ATTR_INDEX_TABLE_NAME;
 		
 		try 
 		{
@@ -570,41 +574,34 @@ public abstract class AbstractGUIDAttrValueProcessing
 			{
 				case ValueUpdateToSubspaceRegionMessage.ADD_ENTRY:
 				{
-					numRep = 2;
 					//if(!ContextServiceConfig.DISABLE_SECONDARY_SUBSPACES_UPDATES)
 					{
-						this.hyperspaceDB.storeGUIDInSecondarySubspace
-							(tableName, GUID, jsonToWrite, HyperspaceDB.INSERT_REC, 
-								subspaceId);
+						this.hyperspaceDB.storeGUIDUsingAttrIndex
+							(tableName, GUID, jsonToWrite, HyperspaceDB.INSERT_REC);
 					}
 					break;
 				}
 				case ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY:
 				{
-					numRep = 2;
 					//if(!ContextServiceConfig.DISABLE_SECONDARY_SUBSPACES_UPDATES)
 					{
-						this.hyperspaceDB.deleteGUIDFromSubspaceRegion
-											(tableName, GUID, subspaceId);
+						this.hyperspaceDB.deleteGUIDFromTable(tableName, GUID);
 					}
 					break;
 				}
 				case ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY:
 				{
-					numRep = 1;
 					//if(!ContextServiceConfig.DISABLE_SECONDARY_SUBSPACES_UPDATES)
 					{
 						if( firstTimeInsert )
 						{
-							this.hyperspaceDB.storeGUIDInSecondarySubspace
-								(tableName, GUID, jsonToWrite, HyperspaceDB.INSERT_REC, 
-									subspaceId);
+							this.hyperspaceDB.storeGUIDUsingAttrIndex
+									(tableName, GUID, jsonToWrite, HyperspaceDB.INSERT_REC);
 						}
 						else
 						{
-							this.hyperspaceDB.storeGUIDInSecondarySubspace(tableName, GUID, 
-									jsonToWrite, HyperspaceDB.UPDATE_REC, 
-									subspaceId);
+							this.hyperspaceDB.storeGUIDUsingAttrIndex
+									(tableName, GUID, jsonToWrite, HyperspaceDB.UPDATE_REC);
 						}
 					}
 					break;
@@ -621,98 +618,6 @@ public abstract class AbstractGUIDAttrValueProcessing
 		{
 			e.printStackTrace();
 		}
-		return numRep;
-	}
-	
-	/**
-	 * Returns subspace number of the maximum overlapping
-	 * subspace. Used in processing search query.
-	 * @return
-	 */
-	protected int getMaxOverlapSubspace( HashMap<String, ProcessingQueryComponent> pqueryComponents, 
-			HashMap<String, ProcessingQueryComponent> matchingAttributes )
-	{
-		// first the maximum matching subspace is found and then any of its replica it chosen
-		Iterator<Integer> keyIter   	= subspaceInfoMap.keySet().iterator();
-		int maxMatchingAttrs 			= 0;
-		
-		HashMap<Integer, Vector<MaxAttrMatchingStorageClass>> matchingSubspaceHashMap = 
-				new HashMap<Integer, Vector<MaxAttrMatchingStorageClass>>();
-		
-		while( keyIter.hasNext() )
-		{
-			int subspaceId = keyIter.next();
-			SubspaceInfo currSubInfo = subspaceInfoMap.get(subspaceId).get(0);
-			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo = currSubInfo.getAttributesOfSubspace();
-			
-			int currMaxMatch = 0;
-			HashMap<String, ProcessingQueryComponent> currMatchingComponents 
-						= new HashMap<String, ProcessingQueryComponent>();
-			
-			Iterator<String> attrIter = pqueryComponents.keySet().iterator();
-			
-			while( attrIter.hasNext() )
-			{
-				String attrName = attrIter.next();
-				ProcessingQueryComponent pqc = pqueryComponents.get(attrName);
-				if( attrsSubspaceInfo.containsKey(pqc.getAttributeName()) )
-				{
-					currMaxMatch = currMaxMatch + 1;
-					currMatchingComponents.put(pqc.getAttributeName(), pqc);
-				}
-			}
-			
-			if(currMaxMatch >= maxMatchingAttrs)
-			{
-				maxMatchingAttrs = currMaxMatch;
-				MaxAttrMatchingStorageClass maxAttrMatchObj = new MaxAttrMatchingStorageClass();
-				maxAttrMatchObj.currMatchingComponents = currMatchingComponents;
-				maxAttrMatchObj.subspaceId = subspaceId;
-				
-				if(matchingSubspaceHashMap.containsKey(currMaxMatch))
-				{
-					matchingSubspaceHashMap.get(currMaxMatch).add(maxAttrMatchObj);
-				}
-				else
-				{
-					Vector<MaxAttrMatchingStorageClass> currMatchingSubspaceNumVector 
-													= new Vector<MaxAttrMatchingStorageClass>();
-					currMatchingSubspaceNumVector.add(maxAttrMatchObj);
-					matchingSubspaceHashMap.put(currMaxMatch, currMatchingSubspaceNumVector);
-				}
-			}
-		}
-		
-		Vector<MaxAttrMatchingStorageClass> maxMatchingSubspaceNumVector 
-			= matchingSubspaceHashMap.get(maxMatchingAttrs);
-		
-		int returnIndex = replicaChoosingRand.nextInt( maxMatchingSubspaceNumVector.size() );
-		matchingAttributes.clear();
-		
-		Iterator<String> attrIter 
-				= maxMatchingSubspaceNumVector.get(returnIndex).currMatchingComponents.keySet().iterator();
-		while(attrIter.hasNext())
-		{
-			String attrName = attrIter.next();
-			matchingAttributes.put( attrName, 
-			maxMatchingSubspaceNumVector.get(returnIndex).currMatchingComponents.get(attrName) );
-		}
-		
-		
-		String print = "size "+maxMatchingSubspaceNumVector.size()+" ";
-		for(int i=0;i<maxMatchingSubspaceNumVector.size();i++)
-		{
-			print = print + maxMatchingSubspaceNumVector.get(i).subspaceId+" ";
-		}
-		print = print + " chosen "+maxMatchingSubspaceNumVector.get(returnIndex).subspaceId;
-		
-		return maxMatchingSubspaceNumVector.get(returnIndex).subspaceId;
-	}
-	
-	protected class MaxAttrMatchingStorageClass
-	{
-		public int subspaceId;
-		public HashMap<String, ProcessingQueryComponent> currMatchingComponents;
 	}
 	
 	

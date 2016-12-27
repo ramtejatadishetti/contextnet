@@ -15,21 +15,20 @@ public interface TriggerInformationStorageInterface
 	/**
 	 * Creates trigger tables
 	 */
-	public void createTables();
+	public void createTriggerStorageTables();
 	
-	public void insertIntoSubspaceTriggerDataInfo( int subspaceId, 
-			String userQuery, String groupGUID, String userIP, int userPort, 
+	public void insertIntoTriggerDataStorage( String userQuery, 
+			String groupGUID, String userIP, int userPort, 
 			long expiryTimeFromNow );
 	
-	public void getTriggerDataInfo( int subspaceId,  
-			JSONObject oldValJSON, JSONObject updateAttrJSON, 
+	public void getTriggerDataInfo( JSONObject oldValJSON, JSONObject updateAttrJSON, 
 			HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap, 
 			HashMap<String, GroupGUIDInfoClass> newValGroupGUIDMap, 
 			int requestType, JSONObject newUnsetAttrs,
 			boolean firstTimeInsert )
 						throws InterruptedException;
 	
-	public int deleteExpiredSearchQueries( int subspaceId);
+	public int deleteExpiredSearchQueries();
 	
 	public boolean checkAndInsertSearchQueryRecordFromPrimaryTriggerSubspace( String groupGUID, 
 			String userIP, int userPort )

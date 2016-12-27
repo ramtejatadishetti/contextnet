@@ -11,6 +11,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.database.AbstractDB;
 import edu.umass.cs.contextservice.database.HyperspaceDB;
 import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
@@ -19,6 +20,7 @@ import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegion;
 import edu.umass.cs.contextservice.messages.RefreshTrigger;
 import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionMessage;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
+import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy;
 import edu.umass.cs.nio.JSONMessenger;
 
 /**
@@ -30,14 +32,15 @@ import edu.umass.cs.nio.JSONMessenger;
 public class TriggerProcessing implements 
 								TriggerProcessingInterface
 {
-	private final HyperspaceDB hyperspaceDB;
+	private final AbstractDB hyperspaceDB;
 	
 	private final Integer myID;
 	
 	private final JSONMessenger<Integer> messenger;
 	
-	public TriggerProcessing(Integer myID, HashMap<Integer, Vector<SubspaceInfo>> 
-						subspaceInfoMap , HyperspaceDB hyperspaceDB, 
+	public TriggerProcessing(Integer myID, 
+				AbstractRegionMappingPolicy regionMappingPolicy, 
+						AbstractDB hyperspaceDB, 
 						JSONMessenger<Integer> messenger )
 	{
 		this.myID = myID;

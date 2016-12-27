@@ -1,8 +1,13 @@
 package edu.umass.cs.contextservice.regionmapper;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -14,6 +19,7 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
+import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
@@ -32,24 +38,22 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 	
 	// this field is only for testing and will be removed later.
 	//private static final double NUM_SEARCH_QUERIES				= 1000.0;
-	
 	// we create regions such that 0.98 threshold is achieved.
 	//private static final double JAINS_FAIRNESS_THRESHOLD			= 0.90;
-	
-	//private final PriorityQueue<RegionInfo> priorityQueue;
 	private final LinkedList<RegionInfo> regionList;
 	
 	
 	public WorkloadAwareRegionMappingPolicy(HashMap<String, AttributeMetaInfo> attributeMap, 
-			List<Integer> nodeIDList)
+			CSNodeConfig nodeConfig)
 	{
-		super(attributeMap, nodeIDList);
+		super(attributeMap, nodeConfig);
 		regionList = new LinkedList<RegionInfo>();
 	}
 	
 	
 	@Override
-	public List<Integer> getNodeIDsForAValueSpace(HashMap<String, AttributeValueRange> valueSpaceDef) 
+	public List<Integer> getNodeIDsForAValueSpace(
+			ValueSpaceInfo valueSpace, REQUEST_TYPE requestType ) 
 	{
 		return null;
 	}
@@ -58,7 +62,7 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 	@Override
 	public void computeRegionMapping()
 	{
-		double numRegions = Math.sqrt(nodeIDList.size());
+		double numRegions = Math.sqrt(nodeConfig.getNodeIDs().size());
 		
 		ValueSpaceInfo totalValSpace = new ValueSpaceInfo();
 		Vector<String> attrList = new Vector<String>();
@@ -84,7 +88,8 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 		
 		// set region load.
 		double regionLoad = computeLoadOnARegionBasedOnTrace( totalValSpaceRegion, 
-													attributeMap, nodeIDList.size() );
+										attributeMap, nodeConfig.getNodeIDs().size() );
+		
 		
 		totalValSpaceRegion.setTraceLoad(regionLoad);
 		
@@ -94,7 +99,8 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 		// first create numRegions regions.	
 		while( regionList.size() < numRegions )
 		{
-			partitionValueSpaceGreedily(regionList, attributeMap, nodeIDList.size());
+			partitionValueSpaceGreedily(regionList, attributeMap, 
+										nodeConfig.getNodeIDs().size() );
 		}
 		
 		// print regions.
@@ -115,8 +121,48 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 		
 		double jfi = Utils.computeJainsFairnessIndex(loadList);
 		System.out.println("JFI on load "+jfi);
+		
+		writeRegionsToFile(nodeConfig.getNodeIDs().size());
 	}
 	
+	
+	private void writeRegionsToFile(int totalNodes)
+	{
+		BufferedWriter bw 	= null;
+		FileWriter fw 		= null;
+		
+		try
+		{
+			String fileName = "RegionInfoNumNodes"+totalNodes+".txt";
+			fw = new FileWriter(fileName);
+			bw = new BufferedWriter(fw);
+			
+			for( int i=0; i<regionList.size(); i++ )
+			{
+				RegionInfo regionInf = regionList.get(i);
+				bw.write(regionInf.getValueSpaceInfo().toString() +"\n");
+			}
+		} catch (IOException e) 
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			try 
+			{
+				if (bw != null)
+					bw.close();
+					
+				if (fw != null)
+					fw.close();
+			} 
+			catch (IOException ex) 
+			{
+				ex.printStackTrace();
+			}
+		}
+		
+	}
 	
 	/**
 	 * This function partitions a region from a list of regions greedily so that 
@@ -654,22 +700,22 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 			this.hyperplaneVal = hyperplaneVal;
 		}
 		
-		public String getHyperplaneAttrName()
-		{
-			return hyperplaneAttrName;
-		}
-		
-		public String getHyperplaneAttrVal()
-		{
-			return hyperplaneVal;
-		}
+//		public String getHyperplaneAttrName()
+//		{
+//			return hyperplaneAttrName;
+//		}
+//		
+//		public String getHyperplaneAttrVal()
+//		{
+//			return hyperplaneVal;
+//		}
 	}
 	
 	
 	public static void main(String[] args)
 	{
-		int NUM_ATTRS = 20;
-		int NUM_NODES = 400;
+		int NUM_ATTRS = Integer.parseInt(args[0]);
+		int NUM_NODES = Integer.parseInt(args[1]);
 		
 		HashMap<String, AttributeMetaInfo> givenMap = new HashMap<String, AttributeMetaInfo>();
 		
@@ -682,48 +728,24 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 			givenMap.put(attrInfo.getAttrName(), attrInfo);	
 		}
 		
-		List<Integer> nodeIDList = new LinkedList<Integer>();
-		
+		CSNodeConfig csNodeConfig = new CSNodeConfig();
 		for(int i=0; i< NUM_NODES; i++)
 		{
-			nodeIDList.add(i);
+			try 
+			{
+				csNodeConfig.add(i, 
+						new InetSocketAddress(InetAddress.getByName("localhost"), 3000+i));
+			}
+			catch (UnknownHostException e)
+			{
+				e.printStackTrace();
+			}
 		}
 		
 		AttributeTypes.initializeGivenMap(givenMap);
 		WorkloadAwareRegionMappingPolicy obj 
-				= new WorkloadAwareRegionMappingPolicy(givenMap, nodeIDList);
+				= new WorkloadAwareRegionMappingPolicy(givenMap, csNodeConfig);
 		
 		obj.computeRegionMapping();
 	}
-	
-	
-	/*private String getLargestNormalizedRangeAttribute(RegionInfo regionInfo, 
-	HashMap<String, AttributeMetaInfo> attributeMap)
-{
-String optimalAttrName = "";
-double largestRatio = -1;
-
-HashMap<String, AttributeValueRange> regionBoundaryMap 
-				= regionInfo.getValueSpaceInfo().getValueSpaceBoundary();
-
-Iterator<String> attrIter = regionBoundaryMap.keySet().iterator();
-while( attrIter.hasNext() )
-{
-	String attrName = attrIter.next();
-	
-	AttributeValueRange attrValRange = regionBoundaryMap.get(attrName);
-	
-	AttributeMetaInfo attrMetaInfo = attributeMap.get(attrName);
-	
-	double intervalRatio = attrMetaInfo.computeIntervalToRangeRatio(attrValRange);
-
-	if( intervalRatio > largestRatio )
-	{
-		largestRatio = intervalRatio;
-		optimalAttrName = attrName;
-	}
-}	
-assert(attributeMap.containsKey(optimalAttrName));
-return optimalAttrName;
-}*/
 }

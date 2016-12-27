@@ -11,7 +11,7 @@ package edu.umass.cs.contextservice.queryparsing;
  * @author adipc
  *
  */
-public class ProcessingQueryComponent 
+public class ProcessingQueryComponentOld 
 {	
 	// macros as JSON Keys
 	public static final String AttrName					= "ATTR_NAME";
@@ -47,7 +47,7 @@ public class ProcessingQueryComponent
 	// fly based on the datatype
 
 	
-	public ProcessingQueryComponent( String attributeName, String lowerBound, String upperBound)
+	public ProcessingQueryComponentOld( String attributeName, String lowerBound, String upperBound)
 	{
 		this.attributeName = attributeName;
 		this.lowerBound = lowerBound;

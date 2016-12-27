@@ -6,7 +6,7 @@ import org.json.JSONObject;
 public class QueryMesgToSubspaceRegion 
 								extends BasicContextServicePacket
 {
-	private enum Keys { QUERY, REQUESTID, GROUP_GUID, SUBSPACENUM, USER_IP, USER_PORT
+	private enum Keys { QUERY, REQUESTID, GROUP_GUID, USER_IP, USER_PORT
 						, STORE_QUERY_FOR_TRIGGER, EXPIRY_TIME, PRIVACY_SCHEME };
 	
 	//private final Integer sourceNodeId;
@@ -18,8 +18,6 @@ public class QueryMesgToSubspaceRegion
 	private final String query;
 	// GUID of group associated with this query
 	private final String groupGUID;
-
-	private final int subspaceNum;
 	
 	private final String userIP;
 	
@@ -35,15 +33,14 @@ public class QueryMesgToSubspaceRegion
 	 * recvd query from the user.
 	 */
 	public QueryMesgToSubspaceRegion( Integer initiator, long requestId, String query, 
-			String groupGUID, int subspaceNum, String userIP, int userPort, 
-			boolean storeQueryForTrigger, long expiryTime,  int privacyScheme )
+			String groupGUID, String userIP, int userPort, boolean storeQueryForTrigger, 
+			long expiryTime,  int privacyScheme )
 	{
 		super(initiator, ContextServicePacket.PacketType.QUERY_MESG_TO_SUBSPACE_REGION);
 		
 		this.requestID = requestId;
 		this.query = query;
 		this.groupGUID = groupGUID;
-		this.subspaceNum = subspaceNum;
 		
 		this.userIP = userIP;
 		this.userPort = userPort;
@@ -58,7 +55,6 @@ public class QueryMesgToSubspaceRegion
 		this.requestID = json.getLong(Keys.REQUESTID.toString());
 		this.query = json.getString(Keys.QUERY.toString());
 		this.groupGUID = json.getString(Keys.GROUP_GUID.toString());
-		this.subspaceNum = json.getInt(Keys.SUBSPACENUM.toString());
 		this.userIP = json.getString(Keys.USER_IP.toString());
 		this.userPort = json.getInt(Keys.USER_PORT.toString());
 		this.storeQueryForTrigger = json.getBoolean(Keys.STORE_QUERY_FOR_TRIGGER.toString());
@@ -72,7 +68,6 @@ public class QueryMesgToSubspaceRegion
 		json.put(Keys.REQUESTID.toString(), requestID);
 		json.put(Keys.QUERY.toString(), this.query);
 		json.put(Keys.GROUP_GUID.toString(), this.groupGUID);
-		json.put(Keys.SUBSPACENUM.toString(), subspaceNum);
 		json.put(Keys.USER_IP.toString(), userIP);
 		json.put(Keys.USER_PORT.toString(), userPort);
 		json.put(Keys.STORE_QUERY_FOR_TRIGGER.toString(), this.storeQueryForTrigger);
@@ -94,11 +89,6 @@ public class QueryMesgToSubspaceRegion
 	public String getGroupGUID()
 	{
 		return this.groupGUID;
-	}
-	
-	public int getSubspaceNum()
-	{
-		return this.subspaceNum;
 	}
 	
 	public String getUserIP()

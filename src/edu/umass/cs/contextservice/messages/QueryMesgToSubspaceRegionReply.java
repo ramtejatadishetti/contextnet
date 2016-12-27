@@ -18,7 +18,6 @@ public class QueryMesgToSubspaceRegionReply extends BasicContextServicePacket
 	// GUID of group associated with this query
 	private final String groupGUID;
 	
-	
 	private final JSONArray resultGUIDs;
 	
 	//just to indicate the reply size when 
@@ -28,15 +27,12 @@ public class QueryMesgToSubspaceRegionReply extends BasicContextServicePacket
 	
 	private final int privacySchemeOrdinal;
 	
-	private final int subspaceId;
-	
 	/*
 	 * sourceID will be the ID of the node that 
 	 * recvd query from the user.
 	 */
 	public QueryMesgToSubspaceRegionReply(Integer initiator, long requestId, 
-			String groupGUID, JSONArray resultGUIDs, int resultSize, int privacyScheme
-			, int subspaceId)
+			String groupGUID, JSONArray resultGUIDs, int resultSize, int privacyScheme)
 	{
 		super(initiator, 
 				ContextServicePacket.PacketType.QUERY_MESG_TO_SUBSPACE_REGION_REPLY);
@@ -47,7 +43,6 @@ public class QueryMesgToSubspaceRegionReply extends BasicContextServicePacket
 		this.resultGUIDs = resultGUIDs;
 		this.replySize = resultSize;
 		this.privacySchemeOrdinal = privacyScheme;
-		this.subspaceId = subspaceId;
 	}
 	
 	public QueryMesgToSubspaceRegionReply(JSONObject json) throws JSONException
@@ -58,7 +53,6 @@ public class QueryMesgToSubspaceRegionReply extends BasicContextServicePacket
 		this.resultGUIDs = json.getJSONArray(Keys.RESULT_GUIDS.toString());
 		this.replySize   = json.getInt(Keys.REPLY_SIZE.toString());
 		this.privacySchemeOrdinal = json.getInt(Keys.PRIVACY_SCHEME.toString());
-		this.subspaceId = json.getInt(Keys.SUBSPACE_ID.toString());
 	}
 	
 	public JSONObject toJSONObjectImpl() throws JSONException
@@ -69,7 +63,6 @@ public class QueryMesgToSubspaceRegionReply extends BasicContextServicePacket
 		json.put(Keys.RESULT_GUIDS.toString(), resultGUIDs);
 		json.put(Keys.REPLY_SIZE.toString(), replySize);
 		json.put(Keys.PRIVACY_SCHEME.toString(), privacySchemeOrdinal);
-		json.put(Keys.SUBSPACE_ID.toString(), subspaceId);
 		return json;
 	}
 	
@@ -96,11 +89,6 @@ public class QueryMesgToSubspaceRegionReply extends BasicContextServicePacket
 	public int getPrivacySchemeOrdinal()
 	{
 		return this.privacySchemeOrdinal;
-	}
-	
-	public int getSubsapceId()
-	{
-		return this.subspaceId;
 	}
 	
 	public static void main(String[] args)

@@ -4,10 +4,8 @@ import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Vector;
 
 
 import org.json.JSONArray;
@@ -25,10 +23,8 @@ import edu.umass.cs.contextservice.database.guidattributes.GUIDStorageInterface;
 import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
 import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorage;
 import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorageInterface;
-import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
-import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
-import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
+import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 
 
 public class HyperspaceDB extends AbstractDB
@@ -50,7 +46,14 @@ public class HyperspaceDB extends AbstractDB
 	// this information is used in indexing scheme.
 	public static final String unsetAttrsColName					= "unsetAttrs";
 	
-	public static final String PRIMARY_SUBSPACE_TABLE_NAME			= "primarySubspaceDataStorage";
+	public static final String GUID_HASH_TABLE_NAME					= "guidHashDataStorage";
+	
+	public static final String ATTR_INDEX_TABLE_NAME				= "attrIndexDataStorage";
+	
+	public static final String ATTR_INDEX_TRIGGER_TABLE_NAME		= "triggerDataStorage";
+	
+	public static final String HASH_INDEX_TRIGGER_TABLE_NAME		= "queryHashTriggerDataStorage";
+	
 	
 	//unsetAttrsColName is varchar type for now.
 	// FIXME: currently JSONObject is stored as string, but in future
@@ -64,8 +67,7 @@ public class HyperspaceDB extends AbstractDB
 	
 	private final Random randomGen;
 	
-	public HyperspaceDB( Integer myNodeID, 
-			HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap )
+	public HyperspaceDB( Integer myNodeID )
 			throws Exception
 	{
 		if(ContextServiceConfig.disableMySQLDB)
@@ -87,7 +89,7 @@ public class HyperspaceDB extends AbstractDB
 		}
 		
 		guidAttributesStorage = new SQLGUIDStorage
-							(myNodeID, subspaceInfoMap , abstractDataSource);
+							(myNodeID, abstractDataSource);
 		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
@@ -97,7 +99,7 @@ public class HyperspaceDB extends AbstractDB
 			ContextServiceLogger.getLogger().fine( "HyperspaceMySQLDB "
 					+ " TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED );
 			triggerInformationStorage = new TriggerInformationStorage
-											(myNodeID, subspaceInfoMap , abstractDataSource);
+											(myNodeID , abstractDataSource);
 		}
 		
 		createTables();
@@ -114,16 +116,15 @@ public class HyperspaceDB extends AbstractDB
 		// as it loops through subspaces three times
 		// instead of one, but it only happens in the beginning
 		// so not a bottleneck.
-		guidAttributesStorage.createTables();
+		guidAttributesStorage.createDataStorageTables();
 		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
 			// currently it is assumed that there are only conjunctive queries
 			// DNF form queries can be added by inserting its multiple conjunctive components.			
-			triggerInformationStorage.createTables();
+			triggerInformationStorage.createTriggerStorageTables();
 		}
 	}
-	
 	
 	/**
 	 * Returns a list of regions/nodes that overlap with a query in a given subspace.
@@ -131,13 +132,13 @@ public class HyperspaceDB extends AbstractDB
 	 * @param qcomponents, takes matching attributes as input
 	 * @return
 	 */
-	public HashMap<Integer, RegionInfoClass> 
-		getOverlappingRegionsInSubspace(int subspaceId, int replicaNum, 
-				HashMap<String, ProcessingQueryComponent> matchingQueryComponents)
-	{
-		return this.guidAttributesStorage.getOverlappingRegionsInSubspace
-							(subspaceId, replicaNum, matchingQueryComponents);
-	}
+//	public HashMap<Integer, RegionInfoClass> 
+//		getOverlappingRegionsInSubspace(int subspaceId, int replicaNum, 
+//				HashMap<String, ProcessingQueryComponent> matchingQueryComponents)
+//	{
+//		return this.guidAttributesStorage.getOverlappingRegionsInSubspace
+//							(subspaceId, replicaNum, matchingQueryComponents);
+//	}
 	
 	/**
 	 * This function is implemented here as it involves 
@@ -147,9 +148,8 @@ public class HyperspaceDB extends AbstractDB
 	 * @param resultArray
 	 * @return
 	 */
-	public int processSearchQueryInSubspaceRegion(int subspaceId, 
-			HashMap<String, ProcessingQueryComponent> queryComponents, 
-			JSONArray resultArray)
+	public int processSearchQueryUsingAttrIndex( ValueSpaceInfo queryValueSpace, 
+			JSONArray resultArray )
 	{
 		if(ContextServiceConfig.disableMySQLDB)
 		{
@@ -159,40 +159,41 @@ public class HyperspaceDB extends AbstractDB
 		{
 			long start = System.currentTimeMillis();
 			int resultSize 
-				= this.guidAttributesStorage.processSearchQueryInSubspaceRegion
-				(subspaceId, queryComponents, resultArray);
+				= this.guidAttributesStorage.processSearchQueryUsingAttrIndex
+													(queryValueSpace, resultArray);
+			
 			long end = System.currentTimeMillis();
 			
 			if( ContextServiceConfig.DEBUG_MODE )
 			{
-				System.out.println("TIME_DEBUG: processSearchQueryInSubspaceRegion without privacy time "
-						+(end-start));
+				System.out.println("TIME_DEBUG: processSearchQueryInSubspaceRegion "
+						+ " without privacy time "
+						+ (end-start));
 			}
 			return resultSize;
 		}
 	}
 	
-	/**
-	 * Inserts a subspace region denoted by subspace vector, 
-	 * integer denotes partition num in partition info 
-	 * @param subspaceNum
-	 * @param subspaceVector
-	 */
-	public void insertIntoSubspacePartitionInfo(int subspaceId, int replicaNum,
-			List<Integer> subspaceVector, Integer respNodeId)
-	{
-		this.guidAttributesStorage.insertIntoSubspacePartitionInfo
-						(subspaceId, replicaNum, subspaceVector, respNodeId);
-	}
+//	/**
+//	 * Inserts a subspace region denoted by subspace vector, 
+//	 * integer denotes partition num in partition info 
+//	 * @param subspaceNum
+//	 * @param subspaceVector
+//	 */
+//	public void insertIntoSubspacePartitionInfo(int subspaceId, int replicaNum,
+//			List<Integer> subspaceVector, Integer respNodeId)
+//	{
+//		this.guidAttributesStorage.insertIntoSubspacePartitionInfo
+//						(subspaceId, replicaNum, subspaceVector, respNodeId);
+//	}
+//	public void bulkInsertIntoSubspacePartitionInfo( int subspaceId, int replicaNum,
+//			List<List<Integer>> subspaceVectorList, List<Integer> respNodeIdList )
+//	{
+//		this.guidAttributesStorage.bulkInsertIntoSubspacePartitionInfo
+//				(subspaceId, replicaNum, subspaceVectorList, respNodeIdList);
+//	}
 	
-	public void bulkInsertIntoSubspacePartitionInfo( int subspaceId, int replicaNum,
-			List<List<Integer>> subspaceVectorList, List<Integer> respNodeIdList )
-	{
-		this.guidAttributesStorage.bulkInsertIntoSubspacePartitionInfo
-				(subspaceId, replicaNum, subspaceVectorList, respNodeIdList);
-	}
-	
-	public JSONObject getGUIDStoredInPrimarySubspace( String guid )
+	public JSONObject getGUIDStoredUsingHashIndex( String guid )
 	{
 		if(ContextServiceConfig.disableMySQLDB)
 		{
@@ -202,32 +203,9 @@ public class HyperspaceDB extends AbstractDB
 		else
 		{
 			JSONObject valueJSON 
-						= this.guidAttributesStorage.getGUIDStoredInPrimarySubspace(guid);
+						= this.guidAttributesStorage.getGUIDStoredUsingHashIndex(guid);
 			return valueJSON;
 		}
-	}
-	
-	private JSONObject getARandomJSON()
-	{
-		Map<String, AttributeMetaInfo> attributeMap = AttributeTypes.attributeMap;
-		Iterator<String> attrIter = attributeMap.keySet().iterator();
-		JSONObject jsonObj = new JSONObject();
-		
-		while( attrIter.hasNext() )
-		{
-			String attrName = attrIter.next();
-			AttributeMetaInfo attrMeta = attributeMap.get(attrName);
-			String randVal = attrMeta.getARandomValue(this.randomGen);
-			
-			try 
-			{
-				jsonObj.put(attrName, randVal);
-			} catch (JSONException e) 
-			{
-				e.printStackTrace();
-			}
-		}	
-		return jsonObj;
 	}
 	
 	/**
@@ -235,12 +213,12 @@ public class HyperspaceDB extends AbstractDB
 	 * @param subspaceNum
 	 * @param subspaceVector
 	 */
-	public void insertIntoSubspaceTriggerDataInfo( int subspaceId, 
+	public void insertIntoTriggerDataStorage(  
 			String userQuery, String groupGUID, String userIP, 
 			int userPort, long expiryTimeFromNow )
 	{
-		this.triggerInformationStorage.insertIntoSubspaceTriggerDataInfo
-			(subspaceId, userQuery, groupGUID, userIP, userPort, expiryTimeFromNow);
+		this.triggerInformationStorage.insertIntoTriggerDataStorage
+			(userQuery, groupGUID, userIP, userPort, expiryTimeFromNow);
 	}
 	
 	/**
@@ -250,16 +228,15 @@ public class HyperspaceDB extends AbstractDB
 	 * @return
 	 * @throws InterruptedException 
 	 */
-	public void getTriggerDataInfo(int subspaceId, 
-		JSONObject oldValJSON, JSONObject updateAttrJSON, 
+	public void getTriggerDataInfo( JSONObject oldValJSON, JSONObject updateAttrJSON, 
 		HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap, 
 		HashMap<String, GroupGUIDInfoClass> newValGroupGUIDMap, 
-		int requestType, JSONObject newUnsetAttrs, boolean firstTimeInsert) 
+		int requestType, JSONObject newUnsetAttrs, boolean firstTimeInsert)
 				throws InterruptedException
 	{
 		this.triggerInformationStorage.getTriggerDataInfo
-			(subspaceId, oldValJSON, updateAttrJSON, oldValGroupGUIDMap, 
-				newValGroupGUIDMap, requestType, newUnsetAttrs, firstTimeInsert);
+			( oldValJSON, updateAttrJSON, oldValGroupGUIDMap, 
+				newValGroupGUIDMap, requestType, newUnsetAttrs, firstTimeInsert );
 	}
 	
 	/**
@@ -267,20 +244,19 @@ public class HyperspaceDB extends AbstractDB
 	 * and deletes expired queries.
 	 * @return
 	 */
-	public int deleteExpiredSearchQueries( int subspaceId )
+	public int deleteExpiredSearchQueries()
 	{
-		return this.triggerInformationStorage.deleteExpiredSearchQueries
-										(subspaceId);
+		return this.triggerInformationStorage.deleteExpiredSearchQueries();
 	}
 	
-	public void storeGUIDInPrimarySubspace( String nodeGUID, 
+	public void storeGUIDUsingHashIndex( String nodeGUID, 
     		JSONObject jsonToWrite, int updateOrInsert ) throws JSONException
 	{
 		if(ContextServiceConfig.disableMySQLDB)
 			return; 
 		
 		long start = System.currentTimeMillis();
-		this.guidAttributesStorage.storeGUIDInPrimarySubspace
+		this.guidAttributesStorage.storeGUIDUsingHashIndex
 			( nodeGUID, jsonToWrite, updateOrInsert);
 		
 		long end = System.currentTimeMillis();
@@ -303,16 +279,15 @@ public class HyperspaceDB extends AbstractDB
      * @return
      * @throws JSONException
      */
-    public void storeGUIDInSecondarySubspace( String tableName, String nodeGUID, 
-    		JSONObject jsonToWrite, int updateOrInsert 
-    		, int subspaceId ) throws JSONException
+    public void storeGUIDUsingAttrIndex( String tableName, String nodeGUID, 
+    		JSONObject jsonToWrite, int updateOrInsert) throws JSONException
     {
     	if(ContextServiceConfig.disableMySQLDB)
 			return; 
     	
 		// no need to add realIDEntryption Info in primary subspaces.
 		long start = System.currentTimeMillis();
-		this.guidAttributesStorage.storeGUIDInSecondarySubspace
+		this.guidAttributesStorage.storeGUIDUsingAttrIndex
 					(tableName, nodeGUID, jsonToWrite, updateOrInsert);
 		long end = System.currentTimeMillis();
 		
@@ -323,14 +298,13 @@ public class HyperspaceDB extends AbstractDB
 		}
     }
 	
-	public void deleteGUIDFromSubspaceRegion(String tableName, String nodeGUID, 
-			int subspaceId)
+	public void deleteGUIDFromTable(String tableName, String nodeGUID)
 	{
 		if(ContextServiceConfig.disableMySQLDB)
 			return; 
 		
 		long start = System.currentTimeMillis();
-		this.guidAttributesStorage.deleteGUIDFromSubspaceRegion(tableName, nodeGUID);
+		this.guidAttributesStorage.deleteGUIDFromTable(tableName, nodeGUID);
 		long end = System.currentTimeMillis();
 		
 		if(ContextServiceConfig.DEBUG_MODE)
@@ -345,5 +319,30 @@ public class HyperspaceDB extends AbstractDB
 	{
 		return triggerInformationStorage.checkAndInsertSearchQueryRecordFromPrimaryTriggerSubspace
 				(groupGUID, userIP, userPort);
+	}
+	
+	
+	private JSONObject getARandomJSON()
+	{
+		Map<String, AttributeMetaInfo> attributeMap = AttributeTypes.attributeMap;
+		Iterator<String> attrIter = attributeMap.keySet().iterator();
+		JSONObject jsonObj = new JSONObject();
+		
+		while( attrIter.hasNext() )
+		{
+			String attrName = attrIter.next();
+			AttributeMetaInfo attrMeta = attributeMap.get(attrName);
+			String randVal = attrMeta.getARandomValue(this.randomGen);
+			
+			try
+			{
+				jsonObj.put(attrName, randVal);
+			} 
+			catch (JSONException e) 
+			{
+				e.printStackTrace();
+			}
+		}	
+		return jsonObj;
 	}
 }

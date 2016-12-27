@@ -136,7 +136,7 @@ public class HyperspaceHashing extends AbstractScheme
 						(int)ContextServiceConfig.optimalH );
 			}
 		}
-			
+		
 		ContextServiceLogger.getLogger().fine("configure subspace started");
 		// configure subspaces
 		subspaceConfigurator.configureSubspaceInfo();

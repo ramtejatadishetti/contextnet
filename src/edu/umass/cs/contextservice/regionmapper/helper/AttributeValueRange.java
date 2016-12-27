@@ -5,8 +5,8 @@ public class AttributeValueRange
 	// values are in String format. Based on the 
 	// datatype of the attribute, the values should be type casted to 
 	// the correct data type.
-	private final String lowerBound;
-	private final String upperBound;
+	private String lowerBound;
+	private String upperBound;
 	
 	public AttributeValueRange(String lowerBound, String upperBound)
 	{
@@ -22,5 +22,15 @@ public class AttributeValueRange
 	public String getUpperBound()
 	{
 		return this.upperBound;
+	}
+	
+	public void setLowerBound(String lowerBound)
+	{
+		this.lowerBound = lowerBound;
+	}
+	
+	public void setUpperBound(String upperBound)
+	{
+		this.upperBound = upperBound;
 	}
 }

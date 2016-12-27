@@ -4,7 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
-import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
+import edu.umass.cs.contextservice.common.CSNodeConfig;
+import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 
 /**
  * 
@@ -15,15 +16,17 @@ import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
  */
 public abstract class AbstractRegionMappingPolicy
 {
+	public static enum REQUEST_TYPE {SEARCH, UPDATE};
+	
 	protected final HashMap<String, AttributeMetaInfo> attributeMap;
-	protected final List<Integer> nodeIDList;
+	protected final CSNodeConfig nodeConfig;
 	
 	
 	public AbstractRegionMappingPolicy( HashMap<String, AttributeMetaInfo> attributeMap, 
-			List<Integer> nodeIDList )
+			CSNodeConfig nodeConfig )
 	{
 		this.attributeMap = attributeMap;
-		this.nodeIDList = nodeIDList;
+		this.nodeConfig = nodeConfig;
 	}
 	
 	
@@ -33,12 +36,15 @@ public abstract class AbstractRegionMappingPolicy
 	 * for both updates and searches. In updates, the lower and upper bound of an 
 	 * attribute are same in AttributeValueRange class. In search, the lower and upper 
 	 * bound specify the lower and upper bounds in a search query.
+	 * If the request type is set to update then all nodes corresponding to a region's value space 
+	 * that overlap with the input value space are returned. If the request is set to search then 
+	 * only one node corresponding to each region's value space that overlaps with the input value space is 
+	 * returned.
 	 * @param valueSpaceDef
 	 * @return
 	 */
 	public abstract List<Integer> getNodeIDsForAValueSpace(
-				HashMap<String, AttributeValueRange> valueSpaceDef);
-	
+				ValueSpaceInfo valueSpace,  REQUEST_TYPE requestType);
 	
 	/**
 	 * This function computes the region mapping. This function can use 

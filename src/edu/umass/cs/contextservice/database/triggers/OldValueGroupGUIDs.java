@@ -11,6 +11,7 @@ import java.util.HashMap;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import edu.umass.cs.contextservice.database.HyperspaceDB;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource.DB_REQUEST_TYPE;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
@@ -24,7 +25,6 @@ import edu.umass.cs.contextservice.utils.Utils;
  */
 public class OldValueGroupGUIDs implements Runnable
 {
-	private int subspaceId;
 	private JSONObject oldValJSON;
 	private JSONObject updateValJSON;
 	private JSONObject newUnsetAttrs;
@@ -32,12 +32,11 @@ public class OldValueGroupGUIDs implements Runnable
 	private final AbstractDataSource dataSource;
 	
 	
-	public OldValueGroupGUIDs(int subspaceId, JSONObject oldValJSON, 
+	public OldValueGroupGUIDs(JSONObject oldValJSON, 
 			JSONObject updateValJSON, JSONObject newUnsetAttrs,
 			HashMap<String, GroupGUIDInfoClass> oldValGroupGUIDMap,
 			AbstractDataSource dataSource )
 	{
-		this.subspaceId = subspaceId;
 		this.oldValJSON = oldValJSON;
 		this.updateValJSON = updateValJSON;
 		this.newUnsetAttrs = newUnsetAttrs;
@@ -52,7 +51,7 @@ public class OldValueGroupGUIDs implements Runnable
 	
 	private void returnRemovedGroupGUIDs()
 	{
-		String tableName 			= "subspaceId"+subspaceId+"TriggerDataInfo";
+		String tableName 			= HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 		
 		assert(oldValJSON != null);
 		assert(oldValJSON.length() > 0);
@@ -75,7 +74,7 @@ public class OldValueGroupGUIDs implements Runnable
 		{
 			String queriesWithAttrs 
 				= TriggerInformationStorage.getQueriesThatContainAttrsInUpdate
-					(updateValJSON, subspaceId);
+					(updateValJSON);
 			//String newTableName = "projTable";
 			
 			//String createTempTable = "CREATE TEMPORARY TABLE "+
@@ -83,11 +82,11 @@ public class OldValueGroupGUIDs implements Runnable
 			
 			String oldGroupsQuery 
 				= TriggerInformationStorage.getQueryToGetOldValueGroups
-					(oldValJSON, subspaceId);
+					(oldValJSON);
 			
 			String newGroupsQuery = TriggerInformationStorage.getQueryToGetNewValueGroups
 					( oldValJSON, updateValJSON, 
-							newUnsetAttrs, subspaceId );
+							newUnsetAttrs );
 			
 			String removedGroupQuery = "SELECT groupGUID, userIP, userPort FROM "+tableName
 					+ " WHERE "
@@ -144,4 +143,5 @@ public class OldValueGroupGUIDs implements Runnable
 			}
 		}
 	}
+	
 }

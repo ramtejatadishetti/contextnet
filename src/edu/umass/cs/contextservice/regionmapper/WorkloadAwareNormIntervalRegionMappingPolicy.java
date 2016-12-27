@@ -3,6 +3,9 @@ package edu.umass.cs.contextservice.regionmapper;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -15,8 +18,10 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
+import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
+import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy.REQUEST_TYPE;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.regionmapper.helper.RegionInfo;
 import edu.umass.cs.contextservice.regionmapper.helper.RegionLoadComparator;
@@ -32,24 +37,21 @@ public class WorkloadAwareNormIntervalRegionMappingPolicy extends AbstractRegion
 	private static final String SEARCH_TRACE_FILE				= "traces/guassianTrace/searchFile.txt";
 	private static final String UPDATE_TRACE_FILE				= "traces/guassianTrace/updateFile.txt";
 	
-	// this field is only for testing and will be removed later.
-	//private static final double NUM_SEARCH_QUERIES				= 1000.0;
-	// we create regions such that 0.98 threshold is achieved.
-	//private static final double JAINS_FAIRNESS_THRESHOLD		= 0.90;
-	
-	
 	private final PriorityQueue<RegionInfo> priorityQueue;
+	
 	
 	public WorkloadAwareNormIntervalRegionMappingPolicy( 
 			HashMap<String, AttributeMetaInfo> attributeMap, 
-			List<Integer> nodeIDList )
+			CSNodeConfig nodeConfig )
 	{
-		super(attributeMap, nodeIDList);
+		super(attributeMap, nodeConfig);
 		priorityQueue = new PriorityQueue<RegionInfo>(10, new RegionLoadComparator());
 	}
 	
+	
 	@Override
-	public List<Integer> getNodeIDsForAValueSpace(HashMap<String, AttributeValueRange> valueSpaceDef) 
+	public List<Integer> getNodeIDsForAValueSpace(
+			ValueSpaceInfo valueSpace, REQUEST_TYPE requestType) 
 	{
 		return null;
 	}
@@ -57,7 +59,7 @@ public class WorkloadAwareNormIntervalRegionMappingPolicy extends AbstractRegion
 	@Override
 	public void computeRegionMapping()
 	{
-		double numRegions = Math.sqrt(nodeIDList.size());
+		double numRegions = Math.sqrt(nodeConfig.getNodes().size());
 		
 		ValueSpaceInfo totalValSpace = new ValueSpaceInfo();
 		Vector<String> attrList = new Vector<String>();
@@ -83,7 +85,8 @@ public class WorkloadAwareNormIntervalRegionMappingPolicy extends AbstractRegion
 		
 		// set region load.
 		double regionLoad = computeLoadOnARegionBasedOnTrace( totalValSpaceRegion, 
-													attributeMap, nodeIDList.size() );
+										attributeMap, nodeConfig.getNodeIDs().size() );
+		
 		
 		totalValSpaceRegion.setTraceLoad(regionLoad);
 		
@@ -106,7 +109,8 @@ public class WorkloadAwareNormIntervalRegionMappingPolicy extends AbstractRegion
 			ValueSpaceInfo currValSpace = poppedRegion.getValueSpaceInfo(); 
 			
 			RegionInfo newRegionInfo = partitionValueSpaceUsingHyperplane
-					(currValSpace, hyperplaneAttr, attributeMap, nodeIDList.size() );
+					( currValSpace, hyperplaneAttr, attributeMap, 
+							nodeConfig.getNodeIDs().size() );
 			
 			
 			priorityQueue.offer(newRegionInfo);
@@ -117,7 +121,7 @@ public class WorkloadAwareNormIntervalRegionMappingPolicy extends AbstractRegion
 			
 			// compute trace load and set it in the region.
 			regionLoad = computeLoadOnARegionBasedOnTrace(remRegionInfo, attributeMap, 
-																nodeIDList.size() );
+														nodeConfig.getNodeIDs().size() );
 			
 			remRegionInfo.setTraceLoad(regionLoad);
 			
@@ -567,16 +571,25 @@ public class WorkloadAwareNormIntervalRegionMappingPolicy extends AbstractRegion
 			givenMap.put(attrInfo.getAttrName(), attrInfo);	
 		}
 		
-		List<Integer> nodeIDList = new LinkedList<Integer>();
 		
+		CSNodeConfig csNodeConfig = new CSNodeConfig();
 		for(int i=0; i< NUM_NODES; i++)
 		{
-			nodeIDList.add(i);
+			try 
+			{
+				csNodeConfig.add(i, 
+						new InetSocketAddress(InetAddress.getByName("localhost"), 3000+i));
+			}
+			catch (UnknownHostException e)
+			{
+				e.printStackTrace();
+			}
 		}
 		
 		AttributeTypes.initializeGivenMap(givenMap);
+		
 		WorkloadAwareNormIntervalRegionMappingPolicy obj 
-				= new WorkloadAwareNormIntervalRegionMappingPolicy(givenMap, nodeIDList);
+				= new WorkloadAwareNormIntervalRegionMappingPolicy(givenMap, csNodeConfig);
 		
 		obj.computeRegionMapping();
 	}

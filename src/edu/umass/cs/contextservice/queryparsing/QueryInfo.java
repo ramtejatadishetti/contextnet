@@ -1,16 +1,12 @@
 package edu.umass.cs.contextservice.queryparsing;
 
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Vector;
+import java.util.List;
 
-import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
-import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegionReply;
-import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
-import edu.umass.cs.contextservice.schemes.helperclasses.SubspaceSearchReplyInfo;
+import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
+import edu.umass.cs.contextservice.schemes.helperclasses.SearchReplyInfo;
 
 /**
  * Class to store the query related information, 
@@ -18,11 +14,7 @@ import edu.umass.cs.contextservice.schemes.helperclasses.SubspaceSearchReplyInfo
  * @author ayadav
  */
 public class QueryInfo
-{
-	// if a query is a where or a join query
-	public static final int WHERE_QUERY								= 1;
-	public static final int JOIN_QUERY								= 2;
-	
+{	
 	// user query
 	private final String searchQuery;
 	private  Integer sourceNodeId;
@@ -36,29 +28,23 @@ public class QueryInfo
 	
 	private long expiryTime;
 	
-	
-	// stores the parsed query components
-	private Vector<QueryComponent> queryComponents;
-	
-	// indexed by attrName
-	private HashMap<String, ProcessingQueryComponent> processingQueryComponents;
-	
 	// for synch
 	private boolean requestCompl;
+	
+	// only includes attributes that are specified in the query.
+	private ValueSpaceInfo serachQueryValSpace;
 	
 	// for hyperspace privacy and no privacy case.
 	// to store replies of each region of subspace
 	//private HashMap<Integer, OverlappingInfoClass> regionalReplies;
 	//private HashMap<Integer, Integer> regionalRepliesSize;
 	
-	// For no privacy and hyperspace privacy this map has only
-	// one entry, as in these schemes a search query only goes to one 
-	// subspace. For subsapce privacy scheme this map can have multiple 
-	// entries.
-	// key is subspace ID, 
-	private HashMap<Integer, SubspaceSearchReplyInfo> searchReplyMap;
+	// key is nodeid.
+	private HashMap<Integer, SearchReplyInfo> searchReplyMap;
 	
 	private final Object addReplyLock = new Object();
+	
+	private int numRepliesRecvsSoFar = 0;
 	
 	public QueryInfo( String query, 
 			Integer sourceNodeId, String grpGUID, long userReqID, 
@@ -73,37 +59,20 @@ public class QueryInfo
 		this.userPort = userPort;
 		this.expiryTime = expiryTime;
 		
-		searchReplyMap = new HashMap<Integer, SubspaceSearchReplyInfo>();
+		searchReplyMap = new HashMap<Integer, SearchReplyInfo>();
 		
 		
 		requestCompl = false;
 		
 		// query parsing
-		queryComponents = QueryParser.parseQueryNew(query);
-		// do second processing to get ProcessingQueryComponents
-		processingQueryComponents = new HashMap<String, ProcessingQueryComponent>();
-		initializeProcessingQueryComponents();
+		serachQueryValSpace = QueryParser.parseQuery(query);
 	}
 	
-	/**
-	 * just the parsing constructor.
-	 * @param searchQuery
-	 */
-	public QueryInfo(String searchQuery)
+	
+	public ValueSpaceInfo getSearchQueryValSpace()
 	{
-		ContextServiceLogger.getLogger().fine("QueryInfo(String searchQuery) cons searchQuery "
-				+searchQuery);
-		this.searchQuery = searchQuery;
-		// query parsing
-		queryComponents = QueryParser.parseQueryNew(searchQuery);
-		ContextServiceLogger.getLogger().fine("QueryInfo(String searchQuery) cons query parsing compl");
-		// do second processing to get ProcessingQueryComponents
-		processingQueryComponents = new HashMap<String, ProcessingQueryComponent>();
-		initializeProcessingQueryComponents();
-		ContextServiceLogger.getLogger().fine("QueryInfo(String searchQuery) "
-				+ "cons initializing processing qc complete");	
+		return serachQueryValSpace;
 	}
-	
 	
 	public String getQuery()
 	{
@@ -160,7 +129,7 @@ public class QueryInfo
 		return this.expiryTime;
 	}
 	
-	public HashMap<Integer, SubspaceSearchReplyInfo> getSearchReplyMap()
+	public HashMap<Integer, SearchReplyInfo> getSearchReplyMap()
 	{
 		return this.searchReplyMap;
 	}
@@ -170,32 +139,34 @@ public class QueryInfo
 	 * contacted for the search query.
 	 */
 	public void initializeSearchQueryReplyInfo
-						(HashMap<Integer, SubspaceSearchReplyInfo> searchQueryReplyInfo)
+						(List<Integer> searchReplyNodeList)
 	{
-		this.searchReplyMap = searchQueryReplyInfo;
+		for(int i=0; i<searchReplyNodeList.size(); i++)
+		{
+			int nodeid = searchReplyNodeList.get(i);
+			SearchReplyInfo searchReplyInfo = new SearchReplyInfo();
+			searchReplyMap.put(nodeid, searchReplyInfo);
+		}
 	}
 	
-	public boolean addReplyFromARegionOfASubspace(int subspaceId, int senderID, 
+	public boolean addReplyFromANode(int senderID, 
 			QueryMesgToSubspaceRegionReply queryMesgToSubspaceRegionReply)
 	{
 		synchronized(this.addReplyLock)
 		{
-			SubspaceSearchReplyInfo subspaceSearchReply = searchReplyMap.get(subspaceId);
-			
-			RegionInfoClass regionInfoClass = subspaceSearchReply.overlappingRegionsMap.get(senderID);
+			SearchReplyInfo subspaceSearchReply = searchReplyMap.get(senderID);
 			
 			if( ContextServiceConfig.sendFullRepliesWithinCS )
 			{
-				regionInfoClass.replyArray = queryMesgToSubspaceRegionReply.getResultGUIDs();
-				regionInfoClass.numReplies = queryMesgToSubspaceRegionReply.returnReplySize();
+				subspaceSearchReply.replyArray = queryMesgToSubspaceRegionReply.getResultGUIDs();
+				subspaceSearchReply.numReplies = queryMesgToSubspaceRegionReply.returnReplySize();
 			}
 			else
 			{
-				regionInfoClass.numReplies = queryMesgToSubspaceRegionReply.returnReplySize();
+				subspaceSearchReply.numReplies = queryMesgToSubspaceRegionReply.returnReplySize();
 			}
 			
-			subspaceSearchReply.regionRepliesCounter++;
-			
+			numRepliesRecvsSoFar++;
 			
 			if( checkForRequestCompletion() )
 			{
@@ -215,91 +186,6 @@ public class QueryInfo
 	 */
 	private boolean checkForRequestCompletion()
 	{
-		boolean completion = true;
-		Iterator<Integer> subspaceIter = searchReplyMap.keySet().iterator();
-		
-		while( subspaceIter.hasNext() )
-		{
-			int subsapceId = subspaceIter.next();
-			SubspaceSearchReplyInfo subspaceSearchInfo = searchReplyMap.get(subsapceId);
-			
-			if(subspaceSearchInfo.regionRepliesCounter != subspaceSearchInfo.overlappingRegionsMap.size())
-			{
-				completion = false;
-				break;
-			}
-		}
-		return completion;
-	}
-	
-	private void initializeProcessingQueryComponents()
-	{
-		for(int i=0;i<queryComponents.size();i++)
-		{
-			QueryComponent qcomponent = queryComponents.get(i);
-			switch(qcomponent.getComponentType())
-			{
-				case QueryComponent.COMPARISON_PREDICATE:
-				{
-					String attrName = qcomponent.getAttributeName();
-					String operator = qcomponent.getOperator();
-					String value = qcomponent.getValue();
-					
-					ContextServiceLogger.getLogger().fine("attrName "+attrName+" oper "+operator+" val "+value);
-					AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-					ProcessingQueryComponent pqc = processingQueryComponents.get(attrName);
-					if(pqc == null)
-					{
-						pqc = new ProcessingQueryComponent
-								(attrName, attrMetaInfo.getMinValue(), attrMetaInfo.getMaxValue());
-						processingQueryComponents.put(attrName, pqc);
-					}
-					
-					if( operator.equals("<=") )
-					{				
-						pqc.setUpperBound(value);
-						ContextServiceLogger.getLogger().fine("<= case attrName "+attrName+" oper "+operator+" val "+pqc.getLowerBound() +" " + pqc.getUpperBound());
-					}
-					else if( operator.equals(">="))
-					{
-						pqc.setLowerBound(value);
-						ContextServiceLogger.getLogger().fine(">= case attrName "+attrName+" oper "+operator+" val "+pqc.getLowerBound() +" " + pqc.getUpperBound());
-					}
-					else if(operator.equals("="))
-					{
-						pqc.setLowerBound(value);
-						pqc.setUpperBound(value);
-						ContextServiceLogger.getLogger().fine("= case attrName "+attrName+" oper "+operator+" val "+pqc.getLowerBound() +" " + pqc.getUpperBound());
-					}
-					
-					break;
-				}
-				case QueryComponent.FUNCTION_PREDICATE:
-				{
-					Vector<ProcessingQueryComponent> pqcVect = qcomponent.getFunction().getProcessingQueryComponents();
-					for(int j=0;j<pqcVect.size(); j++)
-					{
-						ProcessingQueryComponent pqc = pqcVect.get(j);
-						processingQueryComponents.put(pqc.getAttributeName(), pqc);
-					}
-					break;
-				}
-				case QueryComponent.JOIN_INFO:
-				{
-					//FIXME: pending
-					break;
-				}
-			}
-		}
-	}
-	
-	public Vector<QueryComponent> getQueryComponents()
-	{
-		return this.queryComponents;
-	}
-	
-	public HashMap<String, ProcessingQueryComponent> getProcessingQC()
-	{
-		return this.processingQueryComponents;
+		return numRepliesRecvsSoFar == searchReplyMap.size();
 	}
 }

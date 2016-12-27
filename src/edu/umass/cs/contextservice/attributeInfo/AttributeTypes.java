@@ -5,17 +5,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 import java.util.Vector;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
-import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 
 /**
@@ -92,7 +87,7 @@ public class AttributeTypes
 	 * Mainly used for testing.
 	 * @param givenMap
 	 */
-	public static synchronized void initializeGivenMap(Map<String, AttributeMetaInfo> givenMap)
+	public static synchronized void initializeGivenMap(HashMap<String, AttributeMetaInfo> givenMap)
 	{
 		attributeMap 	= givenMap;
 		mySQLDataType 	= new HashMap<String, String>();
@@ -101,8 +96,8 @@ public class AttributeTypes
 		mySQLDataType.put(LongType, "BIGINT");
 		mySQLDataType.put(DoubleType, "DOUBLE");
 		mySQLDataType.put(StringType, "VARCHAR("+MAX_STRING_SIZE+")");
-		
 	}
+	
 	
 	private static void readAttributeInfo() throws IOException
 	{
@@ -247,7 +242,7 @@ public class AttributeTypes
 	 */
 	public static boolean checkOverlapOfTwoIntervals( AttributeValueRange interval1, 
 			AttributeValueRange interval2, String dataType )
-	{	
+	{
 		switch(dataType)
 		{
 			case IntType:
@@ -573,7 +568,7 @@ public class AttributeTypes
 	 * @param attrValueJSON
 	 * @return
 	 */
-	public static boolean checkForComponent(ProcessingQueryComponent pqc, JSONObject attrValueJSON)
+	/*public static boolean checkForComponent(ProcessingQueryComponent pqc, JSONObject attrValueJSON)
 	{
 		String attrName = pqc.getAttributeName();
 		
@@ -687,7 +682,7 @@ public class AttributeTypes
 				assert(false);
 		}
 		return retValue;
-	}
+	}*/
 	
 	public static class DomainPartitionInfo
 	{

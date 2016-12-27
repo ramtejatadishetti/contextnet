@@ -49,13 +49,13 @@ public abstract class AbstractScheme implements PacketDemultiplexer<JSONObject>
 	protected ConcurrentHashMap<Long, UpdateInfo> pendingUpdateRequests		= null;
 	
 	
-	protected long updateIdCounter														= 0;
+	protected long updateIdCounter											= 0;
 	
-	protected final Object pendingUpdateLock											= new Object();
+	protected final Object pendingUpdateLock								= new Object();
 	
 	
 	// lock for synchronizing number of msg update
-	protected long numMessagesInSystem													= 0;
+	protected long numMessagesInSystem										= 0;
 	
 	public static final Logger log = ContextServiceLogger.getLogger();
 	

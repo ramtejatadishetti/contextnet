@@ -13,6 +13,7 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
+import edu.umass.cs.contextservice.database.AbstractDB;
 import edu.umass.cs.contextservice.database.HyperspaceDB;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
@@ -23,7 +24,7 @@ import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
 import edu.umass.cs.contextservice.profilers.ProfilerStatClass;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
-import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
+import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy;
 import edu.umass.cs.contextservice.schemes.helperclasses.SubspaceSearchReplyInfo;
 import edu.umass.cs.contextservice.updates.UpdateInfo;
 import edu.umass.cs.nio.JSONMessenger;
@@ -33,13 +34,13 @@ public class GUIDAttrValueProcessingWithHyperspacePrivacy
 
 {	
 	public GUIDAttrValueProcessingWithHyperspacePrivacy( Integer myID, 
-			HashMap<Integer, Vector<SubspaceInfo>> 
-		subspaceInfoMap , HyperspaceDB hyperspaceDB, 
+			AbstractRegionMappingPolicy regionMappingPolicy, 
+			AbstractDB hyperspaceDB, 
 		JSONMessenger<Integer> messenger , 
 		ConcurrentHashMap<Long, QueryInfo> pendingQueryRequests, 
 		ProfilerStatClass profStats )
 	{
-		super(myID, subspaceInfoMap , hyperspaceDB, messenger, pendingQueryRequests, 
+		super(myID, regionMappingPolicy , hyperspaceDB, messenger, pendingQueryRequests, 
 			profStats);
 	}
 	

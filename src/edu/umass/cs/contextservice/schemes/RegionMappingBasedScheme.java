@@ -22,12 +22,14 @@ import org.paukov.combinatorics.ICombinatoricsVector;
 import com.google.common.hash.Hashing;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
+import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
 import edu.umass.cs.contextservice.configurator.AbstractSubspaceConfigurator;
 import edu.umass.cs.contextservice.configurator.BasicSubspaceConfigurator;
 import edu.umass.cs.contextservice.configurator.CalculateOptimalNumAttrsInSubspace;
 import edu.umass.cs.contextservice.configurator.ReplicatedSubspaceConfigurator;
+import edu.umass.cs.contextservice.database.AbstractDB;
 import edu.umass.cs.contextservice.database.HyperspaceDB;
 import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
 import edu.umass.cs.contextservice.gns.GNSCalls;
@@ -49,6 +51,7 @@ import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionReplyMess
 import edu.umass.cs.contextservice.profilers.ProfilerStatClass;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
 import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy;
+import edu.umass.cs.contextservice.regionmapper.FileBasedRegionMappingPolicy;
 import edu.umass.cs.contextservice.regionmapper.WorkloadAwareRegionMappingPolicy;
 import edu.umass.cs.contextservice.schemes.components.AbstractGUIDAttrValueProcessing;
 import edu.umass.cs.contextservice.schemes.components.GUIDAttrValueProcessingForNoPrivacy;
@@ -66,10 +69,10 @@ import edu.umass.cs.protocoltask.ProtocolTask;
 
 public class RegionMappingBasedScheme extends AbstractScheme
 {
-	private  HyperspaceDB hyperspaceDB 													= null;
+	private  AbstractDB hyperspaceDB 										= null;
 	private final ExecutorService nodeES;
 	
-	private HashMap<String, GUIDUpdateInfo> guidUpdateInfoMap							= null;
+	private HashMap<String, GUIDUpdateInfo> guidUpdateInfoMap				= null;
 	
 	//private final AbstractSubspaceConfigurator subspaceConfigurator;
 	//private CalculateOptimalNumAttrsInSubspace optimalHCalculator;
@@ -86,10 +89,10 @@ public class RegionMappingBasedScheme extends AbstractScheme
 	private ProfilerStatClass profStats;
 	
 	private HashMap<String, Boolean> groupGUIDSyncMap;
-	public static final Logger log 														= ContextServiceLogger.getLogger();
+	public static final Logger log 											= ContextServiceLogger.getLogger();
 	
 	
-	public RegionMappingBasedScheme(NodeConfig<Integer> nc,
+	public RegionMappingBasedScheme(CSNodeConfig nc, 
 			JSONMessenger<Integer> m) throws Exception
 	{
 		super(nc, m);
@@ -106,23 +109,12 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		
 		guidUpdateInfoMap = new HashMap<String, GUIDUpdateInfo>();
 		
-		
-		List<Integer> nodeIdList = new LinkedList<Integer>();
-		
-		Iterator<Integer> nodeIter = nc.getNodeIDs().iterator();
-		
-		while( nodeIter.hasNext() )
-		{
-			int nodeId = nodeIter.next();
-			nodeIdList.add(nodeId);
-		}
-		
-		regionMappingPolicy = new WorkloadAwareRegionMappingPolicy(
-					AttributeTypes.attributeMap, nodeIdList);
+		regionMappingPolicy = new FileBasedRegionMappingPolicy(
+					AttributeTypes.attributeMap, nc, "");
 		
 		regionMappingPolicy.computeRegionMapping();
 		
-		if(!ContextServiceConfig.disableOptimizer)
+		/*if(!ContextServiceConfig.disableOptimizer)
 		{
 			optimalHCalculator = new CalculateOptimalNumAttrsInSubspace(
 					nc.getNodeIDs().size(),
@@ -155,37 +147,33 @@ public class RegionMappingBasedScheme extends AbstractScheme
 					= new ReplicatedSubspaceConfigurator(messenger.getNodeConfig(), 
 						(int)ContextServiceConfig.optimalH );
 			}
-		}
-			
-		ContextServiceLogger.getLogger().fine("configure subspace started");
-		// configure subspaces
-		subspaceConfigurator.configureSubspaceInfo();
-		ContextServiceLogger.getLogger().fine("configure subspace completed");
+		}*/	
+//		ContextServiceLogger.getLogger().fine("configure subspace started");
+//		// configure subspaces
+//		subspaceConfigurator.configureSubspaceInfo();
+//		ContextServiceLogger.getLogger().fine("configure subspace completed");
 		
+		hyperspaceDB = new HyperspaceDB(this.getMyID());
 		
-		hyperspaceDB = new HyperspaceDB(this.getMyID(), 
-					subspaceConfigurator.getSubspaceInfoMap());
-		
-		ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
-		
-		subspaceConfigurator.generateAndStoreSubspacePartitionsInDB
-					(nodeES, hyperspaceDB);
+//		ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
+//		
+//		subspaceConfigurator.generateAndStoreSubspacePartitionsInDB
+//					(nodeES, hyperspaceDB);
 		
 		noPrivacyGuidAttrValProcessing 
 					= new GUIDAttrValueProcessingForNoPrivacy(
-				this.getMyID(), subspaceConfigurator.getSubspaceInfoMap(), 
+				this.getMyID(), regionMappingPolicy, 
 				hyperspaceDB, messenger , pendingQueryRequests , profStats);
 		
 		hyperspacePrivacyGuidAttrValProcessing 
 					= new GUIDAttrValueProcessingWithHyperspacePrivacy(
-				this.getMyID(), subspaceConfigurator.getSubspaceInfoMap(), 
+				this.getMyID(), regionMappingPolicy, 
 				hyperspaceDB, messenger , pendingQueryRequests , profStats);
 		
 		
 		subspacePrivacyGuidAttrValProcessing = 
 					new GUIDAttrValueProcessingWithSubspacePrivacy(
-				this.getMyID(), subspaceConfigurator.getSubspaceInfoMap(), 
-				hyperspaceDB, messenger , pendingQueryRequests , profStats);;
+				this.getMyID(), regionMappingPolicy, hyperspaceDB, messenger , pendingQueryRequests , profStats);;
 		
 		
 		if( ContextServiceConfig.TRIGGER_ENABLED )
@@ -195,10 +183,11 @@ public class RegionMappingBasedScheme extends AbstractScheme
 				groupGUIDSyncMap = new HashMap<String, Boolean>();
 			}
 			triggerProcessing = new TriggerProcessing(this.getMyID(), 
-				subspaceConfigurator.getSubspaceInfoMap(), hyperspaceDB, messenger);
+				regionMappingPolicy, hyperspaceDB, messenger);
 		}
 		//new Thread(new ProfilerStatClass()).start();
 	}
+	
 	
 	@Override
 	public GenericMessagingTask<Integer, ?>[] handleQueryMsgFromUser(
@@ -212,6 +201,7 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		nodeES.execute(new HandleEventThread(event));
 		return null;
 	}
+	
 	
 	@Override
 	public GenericMessagingTask<Integer, ?>[] handleValueUpdateFromGNS(
@@ -509,8 +499,8 @@ public class RegionMappingBasedScheme extends AbstractScheme
 			
 			synchronized( this.pendingUpdateLock )
 			{
-				updReq = new UpdateInfo(valueUpdateFromGNS, updateIdCounter++, 
-						this.subspaceConfigurator.getSubspaceInfoMap());
+				updReq = new UpdateInfo(valueUpdateFromGNS, updateIdCounter++);
+				
 				pendingUpdateRequests.put(updReq.getRequestId(), updReq);
 				requestID = updReq.getRequestId();
 				
@@ -639,45 +629,6 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		}
 	}
 	
-	/*private void updateGUIDInSecondarySubspaces( JSONObject oldValueJSON , 
-			boolean firstTimeInsert , JSONObject updatedAttrValJSON , 
-			String GUID , long requestID, long updateStartTime, 
-			JSONObject primarySubspaceJSON )
-					throws JSONException
-	{
-		// process update at other subspaces.
-		HashMap<Integer, Vector<SubspaceInfo<Integer>>> subspaceInfoMap
-									= this.subspaceConfigurator.getSubspaceInfoMap();
-		
-		Iterator<Integer> keyIter   = subspaceInfoMap.keySet().iterator();
-		
-		while( keyIter.hasNext() )
-		{
-			int subspaceId 			= keyIter.next();
-			Vector<SubspaceInfo<Integer>> replicasVect 
-									= subspaceInfoMap.get(subspaceId);
-			
-			for( int i=0; i<replicasVect.size(); i++ )
-			{
-				SubspaceInfo<Integer> currSubInfo 
-							= replicasVect.get(i);
-				int replicaNum = currSubInfo.getReplicaNum();
-				
-				HashMap<String, AttributePartitionInfo> attrsSubspaceInfo 
-													= currSubInfo.getAttributesOfSubspace();
-				
-				//Vector<Integer> subspaceNodes = currSubInfo.getNodesOfSubspace();
-				
-				this.guidAttrValProcessing.guidValueProcessingOnUpdate
-					( attrsSubspaceInfo, oldValueJSON, subspaceId, replicaNum, 
-							updatedAttrValJSON, GUID, requestID, firstTimeInsert, 
-							updateStartTime, 
-							primarySubspaceJSON );
-				
-			}
-		}
-	}*/
-	
 	private void processGetMessage(GetMessage getMessage)
 	{
 		String GUID 			  = getMessage.getGUIDsToGet();
@@ -701,7 +652,7 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		else
 		{
 			//String tableName = "primarySubspaceDataStorage";
-			JSONObject valueJSON= this.hyperspaceDB.getGUIDStoredInPrimarySubspace(GUID);
+			JSONObject valueJSON= this.hyperspaceDB.getGUIDStoredUsingHashIndex(GUID);
 			
 			
 			GetReplyMessage getReplyMessage = new GetReplyMessage(this.getMyID(),
@@ -727,9 +678,6 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		valueUpdateToSubspaceRegionReplyMessage )
 	{
 		long requestID  = valueUpdateToSubspaceRegionReplyMessage.getRequestID();
-		int subspaceId  = valueUpdateToSubspaceRegionReplyMessage.getSubspaceNum();
-		int numReply 	= valueUpdateToSubspaceRegionReplyMessage.getNumReply();
-		int replicaNum  = valueUpdateToSubspaceRegionReplyMessage.getReplicaNum();
 		
 		JSONArray toBeRemovedGroups 
 						= valueUpdateToSubspaceRegionReplyMessage.getToBeRemovedGroups();
@@ -748,8 +696,7 @@ public class RegionMappingBasedScheme extends AbstractScheme
 					+ valueUpdateToSubspaceRegionReplyMessage );
 			assert(false);
 		}
-		boolean completion = updInfo.setUpdateReply(subspaceId, replicaNum, numReply, 
-				toBeRemovedGroups, toBeAddedGroups);
+		boolean completion = updInfo.setUpdateReply( toBeRemovedGroups, toBeAddedGroups);
 		
 		if( completion )
 		{
@@ -956,8 +903,7 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		QueryMesgToSubspaceRegionReply queryMesgToSubspaceRegionReply = 
 		new QueryMesgToSubspaceRegionReply( this.getMyID(), 
 				queryMesgToSubspaceRegion.getRequestId(), 
-				groupGUID, resultGUIDArray, resultSize, privacyScheme, 
-				queryMesgToSubspaceRegion.getSubspaceNum());
+				groupGUID, resultGUIDArray, resultSize, privacyScheme);
 		
 		
 		try
@@ -981,8 +927,8 @@ public class RegionMappingBasedScheme extends AbstractScheme
 				ValueUpdateToSubspaceRegionMessage 
 				valueUpdateToSubspaceRegionMessage )
 	{
-		int subspaceId				= valueUpdateToSubspaceRegionMessage.getSubspaceNum();
-		int replicaNum 				= getTheReplicaNumForASubspace(subspaceId);
+		//int subspaceId				= valueUpdateToSubspaceRegionMessage.getSubspaceNum();
+		//int replicaNum 				= getTheReplicaNumForASubspace(subspaceId);
 		
 		int privacySchemeOrdinal 	= valueUpdateToSubspaceRegionMessage.getPrivacySchemeOrdinal();
 		
@@ -990,24 +936,23 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		
 		if( privacySchemeOrdinal == PrivacySchemes.NO_PRIVACY.ordinal() )
 		{
-			numRep = this.noPrivacyGuidAttrValProcessing.processValueUpdateToSubspaceRegionMessage
-					( valueUpdateToSubspaceRegionMessage, replicaNum );
+			this.noPrivacyGuidAttrValProcessing.processValueUpdateToSubspaceRegionMessage
+					( valueUpdateToSubspaceRegionMessage);
 		}
 		else if( privacySchemeOrdinal == PrivacySchemes.HYPERSPACE_PRIVACY.ordinal() )
 		{
-			numRep = this.hyperspacePrivacyGuidAttrValProcessing.processValueUpdateToSubspaceRegionMessage
-					( valueUpdateToSubspaceRegionMessage, replicaNum );
+			this.hyperspacePrivacyGuidAttrValProcessing.processValueUpdateToSubspaceRegionMessage
+					( valueUpdateToSubspaceRegionMessage );
 		}
 		else if( privacySchemeOrdinal == PrivacySchemes.SUBSPACE_PRIVACY.ordinal() )
 		{
-			numRep = subspacePrivacyGuidAttrValProcessing.processValueUpdateToSubspaceRegionMessage
-					( valueUpdateToSubspaceRegionMessage, replicaNum );
+			 subspacePrivacyGuidAttrValProcessing.processValueUpdateToSubspaceRegionMessage
+					( valueUpdateToSubspaceRegionMessage );
 		}
 		else
 		{
 			assert(false);
 		}
-		
 		
 		HashMap<String, GroupGUIDInfoClass> removedGroups 
 							= new HashMap<String, GroupGUIDInfoClass>();
@@ -1060,9 +1005,9 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		ValueUpdateToSubspaceRegionReplyMessage  
 		valueUpdateToSubspaceRegionReplyMessage 
 			= new ValueUpdateToSubspaceRegionReplyMessage(this.getMyID(), 
-				valueUpdateToSubspaceRegionMessage.getVersionNum(), numRep, 
-				valueUpdateToSubspaceRegionMessage.getRequestID(), subspaceId, replicaNum
-				, toBeRemovedGroups, toBeAddedGroups);
+				valueUpdateToSubspaceRegionMessage.getVersionNum(), 
+				valueUpdateToSubspaceRegionMessage.getRequestID(), 
+				toBeRemovedGroups, toBeAddedGroups);
 	
 		try
 		{
@@ -1083,28 +1028,28 @@ public class RegionMappingBasedScheme extends AbstractScheme
 	 * as it can belong to just one replica of that subspace
 	 * @return
 	 */
-	private int getTheReplicaNumForASubspace( int subpsaceId )
-	{
-		Vector<SubspaceInfo> replicasVect 
-				= subspaceConfigurator.getSubspaceInfoMap().get(subpsaceId);
-		
-		int replicaNum = -1;
-		for( int i=0;i<replicasVect.size();i++ )
-		{
-			SubspaceInfo subInfo = replicasVect.get(i);
-			if( subInfo.checkIfSubspaceHasMyID(this.getMyID()) )
-			{
-				replicaNum = subInfo.getReplicaNum();
-				break;
-			}
-		}
-		
-		if(replicaNum == -1)
-		{
-			assert(false);
-		}
-		return replicaNum;
-	}
+//	private int getTheReplicaNumForASubspace( int subpsaceId )
+//	{
+//		Vector<SubspaceInfo> replicasVect 
+//				= subspaceConfigurator.getSubspaceInfoMap().get(subpsaceId);
+//		
+//		int replicaNum = -1;
+//		for( int i=0;i<replicasVect.size();i++ )
+//		{
+//			SubspaceInfo subInfo = replicasVect.get(i);
+//			if( subInfo.checkIfSubspaceHasMyID(this.getMyID()) )
+//			{
+//				replicaNum = subInfo.getReplicaNum();
+//				break;
+//			}
+//		}
+//		
+//		if(replicaNum == -1)
+//		{
+//			assert(false);
+//		}
+//		return replicaNum;
+//	}
 	
 	/*private class TaskDispatcher implements Runnable
 	{	
@@ -1224,6 +1169,7 @@ public class RegionMappingBasedScheme extends AbstractScheme
 						processValueUpdateFromGNS(valUpdMsgFromGNS);
 						break;
 					}
+					
 					case VALUEUPDATE_TO_SUBSPACE_REGION_MESSAGE:
 					{
 						/* Actions:
@@ -1318,3 +1264,43 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		}
 	}
 }
+
+
+/*private void updateGUIDInSecondarySubspaces( JSONObject oldValueJSON , 
+boolean firstTimeInsert , JSONObject updatedAttrValJSON , 
+String GUID , long requestID, long updateStartTime, 
+JSONObject primarySubspaceJSON )
+		throws JSONException
+{
+// process update at other subspaces.
+HashMap<Integer, Vector<SubspaceInfo<Integer>>> subspaceInfoMap
+						= this.subspaceConfigurator.getSubspaceInfoMap();
+
+Iterator<Integer> keyIter   = subspaceInfoMap.keySet().iterator();
+
+while( keyIter.hasNext() )
+{
+int subspaceId 			= keyIter.next();
+Vector<SubspaceInfo<Integer>> replicasVect 
+						= subspaceInfoMap.get(subspaceId);
+
+for( int i=0; i<replicasVect.size(); i++ )
+{
+	SubspaceInfo<Integer> currSubInfo 
+				= replicasVect.get(i);
+	int replicaNum = currSubInfo.getReplicaNum();
+	
+	HashMap<String, AttributePartitionInfo> attrsSubspaceInfo 
+										= currSubInfo.getAttributesOfSubspace();
+	
+	//Vector<Integer> subspaceNodes = currSubInfo.getNodesOfSubspace();
+	
+	this.guidAttrValProcessing.guidValueProcessingOnUpdate
+		( attrsSubspaceInfo, oldValueJSON, subspaceId, replicaNum, 
+				updatedAttrValJSON, GUID, requestID, firstTimeInsert, 
+				updateStartTime, 
+				primarySubspaceJSON );
+	
+}
+}
+}*/

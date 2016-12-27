@@ -1,17 +1,22 @@
 package edu.umass.cs.contextservice.regionmapper;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
+import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.database.AbstractDB;
+import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy.REQUEST_TYPE;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.regionmapper.helper.RegionInfo;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
+
 
 /**
  * This class implements a uniform region mapping policy. 
@@ -25,15 +30,15 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 	private final AbstractDB abstractDB;
 	
 	public UniformGreedyRegionMappingPolicy( HashMap<String, AttributeMetaInfo> attributeMap, 
-			List<Integer> nodeIDList, AbstractDB abstractDB )
+			CSNodeConfig nodeConfig, AbstractDB abstractDB )
 	{
-		super(attributeMap, nodeIDList);
+		super(attributeMap, nodeConfig);
 		this.abstractDB = abstractDB;
 	}
 	
 	@Override
 	public List<Integer> getNodeIDsForAValueSpace
-				(HashMap<String, AttributeValueRange> valueSpaceDef) 
+				(ValueSpaceInfo valueSpace, REQUEST_TYPE requestType) 
 	{
 		return null;
 	}
@@ -43,7 +48,7 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 	public void computeRegionMapping()
 	{
 		//FIXME: need to check if we need ceil of floor here.
-		double numRegions = Math.ceil( Math.sqrt(nodeIDList.size()) );
+		double numRegions = Math.ceil( Math.sqrt(nodeConfig.getNodeIDs().size()) );
 		ValueSpaceInfo valSpaceInfo = new ValueSpaceInfo();
 		Vector<String> attrList = new Vector<String>();
 		
@@ -232,6 +237,7 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 		return logSum;
 	}
 	
+	
 	public static void main(String[] args)
 	{
 		int NUM_ATTRS = 4;
@@ -248,16 +254,24 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 			givenMap.put(attrInfo.getAttrName(), attrInfo);	
 		}
 		
-		List<Integer> nodeIDList = new LinkedList<Integer>();
+		
+		CSNodeConfig csNodeConfig = new CSNodeConfig();
 		
 		for(int i=0; i< NUM_NODES; i++)
 		{
-			nodeIDList.add(i);
+			try 
+			{
+				csNodeConfig.add(i, 
+						new InetSocketAddress(InetAddress.getByName("localhost"), 3000+i));
+			}
+			catch (UnknownHostException e)
+			{
+				e.printStackTrace();
+			}
 		}
 		
 		UniformGreedyRegionMappingPolicy obj = new UniformGreedyRegionMappingPolicy
-														(givenMap, nodeIDList , null);
-		
+														(givenMap, csNodeConfig, null);
 		obj.computeRegionMapping();
 	}
 }

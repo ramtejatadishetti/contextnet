@@ -9,6 +9,7 @@ import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
@@ -24,9 +25,10 @@ public class BasicSubspaceConfigurator
 {
 	private final double optimalH;
 	
-	public BasicSubspaceConfigurator(NodeConfig<Integer> nodeConfig, int optimalH)
+	public BasicSubspaceConfigurator( NodeConfig<Integer> nodeConfig, int optimalH,
+			AbstractDataSource dataSource )
 	{
-		super(nodeConfig);
+		super(nodeConfig, dataSource);
 		this.optimalH = optimalH;
 	}
 	
@@ -198,7 +200,7 @@ public class BasicSubspaceConfigurator
 		}
 		
 		AbstractSubspaceConfigurator basicSubspaceConfigurator 
-								= new BasicSubspaceConfigurator(testNodeConfig, 2);
+								= new BasicSubspaceConfigurator(testNodeConfig, 2, null);
 		
 		basicSubspaceConfigurator.configureSubspaceInfo();
 		basicSubspaceConfigurator.printSubspaceInfo();

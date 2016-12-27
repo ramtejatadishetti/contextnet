@@ -14,7 +14,7 @@ public class ValueUpdateToSubspaceRegionMessage
 		
 		
 	private enum Keys { VERSION_NUM, GUID, JSON_TO_WRITE, 
-		OPER_TYPE, SUBSPACENUM, REQUEST_ID, FIRST_TIME_INSERT, UPDATE_START_TIME, 
+		OPER_TYPE, REQUEST_ID, FIRST_TIME_INSERT, UPDATE_START_TIME, 
 		OLD_VAL_JSON, NEW_UNSET_ATTRS, UPDATE_ATTR_VAL, PRIVACY_SCHEME };
 	
 	private final long versionNum;
@@ -35,7 +35,6 @@ public class ValueUpdateToSubspaceRegionMessage
 	private final JSONObject newUnsetAttrs;
 	
 	private final int operType;
-	private final int subspaceNum;
 	
 	private final long requestID;
 	
@@ -50,7 +49,7 @@ public class ValueUpdateToSubspaceRegionMessage
 	
 	
 	public ValueUpdateToSubspaceRegionMessage( Integer initiator, long versionNum, 
-			String GUID, JSONObject jsonToWrite, int operType, int subspaceNum, 
+			String GUID, JSONObject jsonToWrite, int operType, 
 			long requestID, boolean firstTimeInsert , long updateStartTime, 
 			JSONObject oldValJSON, JSONObject newUnsetAttrs, JSONObject updateAttrJSON, 
 			int privacySchemeOrdinal )
@@ -61,7 +60,6 @@ public class ValueUpdateToSubspaceRegionMessage
 		this.GUID = GUID;
 		this.jsonToWrite = jsonToWrite;
 		this.operType = operType;
-		this.subspaceNum = subspaceNum;
 		this.requestID = requestID;
 		this.oldValJSON = oldValJSON;
 		this.firstTimeInsert = firstTimeInsert;
@@ -78,7 +76,6 @@ public class ValueUpdateToSubspaceRegionMessage
 		this.GUID = json.getString(Keys.GUID.toString());
 		this.jsonToWrite = json.getJSONObject(Keys.JSON_TO_WRITE.toString());
 		this.operType = json.getInt(Keys.OPER_TYPE.toString());
-		this.subspaceNum = json.getInt(Keys.SUBSPACENUM.toString());
 		this.requestID = json.getLong( Keys.REQUEST_ID.toString() );
 		this.oldValJSON = json.getJSONObject(Keys.OLD_VAL_JSON.toString());
 		this.firstTimeInsert = json.getBoolean(Keys.FIRST_TIME_INSERT.toString());
@@ -97,7 +94,6 @@ public class ValueUpdateToSubspaceRegionMessage
 		json.put(Keys.GUID.toString(), GUID);
 		json.put(Keys.JSON_TO_WRITE.toString(), this.jsonToWrite);
 		json.put(Keys.OPER_TYPE.toString(), this.operType);
-		json.put(Keys.SUBSPACENUM.toString(), this.subspaceNum);
 		json.put(Keys.REQUEST_ID.toString(), this.requestID);
 		json.put(Keys.OLD_VAL_JSON.toString(), this.oldValJSON);
 		json.put(Keys.FIRST_TIME_INSERT.toString(), this.firstTimeInsert);
@@ -128,11 +124,6 @@ public class ValueUpdateToSubspaceRegionMessage
 	public int getOperType()
 	{
 		return this.operType;
-	}
-	
-	public int getSubspaceNum()
-	{
-		return this.subspaceNum;
 	}
 	
 	public long getRequestID()

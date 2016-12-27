@@ -1,5 +1,8 @@
 package edu.umass.cs.contextservice.configurator;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -11,12 +14,17 @@ import org.paukov.combinatorics.Factory;
 import org.paukov.combinatorics.Generator;
 import org.paukov.combinatorics.ICombinatoricsVector;
 
+import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
+import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
+import edu.umass.cs.contextservice.attributeInfo.AttributeTypes.DomainPartitionInfo;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.database.HyperspaceDB;
+import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
+import edu.umass.cs.contextservice.database.datasource.AbstractDataSource.DB_REQUEST_TYPE;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.nio.interfaces.NodeConfig;
+import edu.umass.cs.utils.DelayProfiler;
 
 public abstract class AbstractSubspaceConfigurator
 {
@@ -28,6 +36,7 @@ public abstract class AbstractSubspaceConfigurator
 	// this map is written only once, in one thread,  and read many times, by many threads, 
 	// so no need to make concurrent.
 	protected  HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap;
+	protected final AbstractDataSource dataSource;
 	
 	private final Object subspacePartitionInsertLock				= new Object();
 	
@@ -35,10 +44,13 @@ public abstract class AbstractSubspaceConfigurator
 	private long subspacePartitionInsertSent						= 0;
 	private long subspacePartitionInsertCompl						= 0;
 	
-	public AbstractSubspaceConfigurator(NodeConfig<Integer> nodeConfig)
+	
+	public AbstractSubspaceConfigurator(NodeConfig<Integer> nodeConfig, 
+						AbstractDataSource dataSource)
 	{
 		this.nodeConfig = nodeConfig;
 		subspaceInfoMap = new HashMap<Integer, Vector<SubspaceInfo>>();
+		this.dataSource = dataSource;
 	}
 	
 	public abstract void configureSubspaceInfo();
@@ -71,8 +83,7 @@ public abstract class AbstractSubspaceConfigurator
 	 * recursive function to generate all the
 	 * subspace regions/partitions.
 	 */
-	public void generateAndStoreSubspacePartitionsInDB(ExecutorService nodeES, 
-			HyperspaceDB hyperspaceDB )
+	public void generateAndStoreSubspacePartitionsInDB(ExecutorService nodeES)
 	{
 		ContextServiceLogger.getLogger().fine
 								(" generateSubspacePartitions() entering " );
@@ -137,7 +148,7 @@ public abstract class AbstractSubspaceConfigurator
 						}
 						
 						DatabaseOperationClass dbOper = new DatabaseOperationClass(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
-								subspaceVectList, respNodeIdList, hyperspaceDB);
+								subspaceVectList, respNodeIdList);
 						//dbOper.run();
 						
 						nodeES.execute(dbOper);
@@ -165,7 +176,7 @@ public abstract class AbstractSubspaceConfigurator
 					}
 					
 					DatabaseOperationClass dbOper = new DatabaseOperationClass(subspaceInfo.getSubspaceId(), subspaceInfo.getReplicaNum(), 
-							subspaceVectList, respNodeIdList, hyperspaceDB);
+							subspaceVectList, respNodeIdList);
 					
 					nodeES.execute(dbOper);
 					
@@ -207,21 +218,11 @@ public abstract class AbstractSubspaceConfigurator
 				SubspaceInfo currSubInfo = currSubVect.get(i);
 				int currSubspaceNumNodes = currSubInfo.getNodesOfSubspace().size();
 				int currSubspaceNumAttrs = currSubInfo.getAttributesOfSubspace().size();
+
 				
-				//int currSubspaceNumPartitions 
-				//	= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
-				int currSubspaceNumPartitions =  -1;
-				if(this.getClass() == BasicSubspaceConfigurator.class)
-				{
-					currSubspaceNumPartitions = getNumberOfPartitionsUsingUniformHeuristics(
-							currSubspaceNumNodes, currSubspaceNumAttrs);
-				}
-				else if(this.getClass() == ReplicatedSubspaceConfigurator.class)
-				{
-					// there are many subsapces replication, so we go with the the minimum partition requireed.
-					currSubspaceNumPartitions 
-						= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
-				}
+				int currSubspaceNumPartitions 
+						= (int)Math.ceil(
+						Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
 				
 				
 				System.out.println("Num of partitions "+currSubspaceNumPartitions 
@@ -265,100 +266,252 @@ public abstract class AbstractSubspaceConfigurator
 	}
 	
 	
-	private static int getNumberOfPartitionsUsingUniformHeuristics(
-			int currSubspaceNumNodes, int currSubspaceNumAttrs)
+	/**
+	 * Bulk insert is needed when number of partitions are very large.
+	 * Not using prepstmt, multiple inserts in single insert is faster
+	 * @param subspaceId
+	 * @param replicaNum
+	 * @param subspaceVectorList
+	 * @param respNodeIdList
+	 */
+	public void bulkInsertIntoSubspacePartitionInfo( int subspaceId, int replicaNum,
+			List<List<Integer>> subspaceVectorList, List<Integer> respNodeIdList )
 	{
-		int currSubspaceNumPartitions 
-			= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
+		assert(subspaceVectorList.size() == respNodeIdList.size());
 		
-		// we only check for next 10 partitions.
-		int currpart = currSubspaceNumPartitions;
+		ContextServiceLogger.getLogger().fine("bulkInsertIntoSubspacePartitionInfo called subspaceId "
+				+subspaceId + " replicaNum "+replicaNum+" "+subspaceVectorList.size()+" "
+				+respNodeIdList.size() );
 		
-		int maxPartNum = -1;
-		double maxJFI = -1;
+		long t0 							= System.currentTimeMillis();
+		Connection myConn   				= null;
+		Statement stmt      				= null;
 		
-		while(currpart < (currSubspaceNumPartitions+ContextServiceConfig.NUM_PARTITITON_LOOK_AHEAD))
+		String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"PartitionInfo";
+		
+		SubspaceInfo currSubInfo = subspaceInfoMap.
+				get(subspaceId).get(replicaNum);
+		//Vector<AttributePartitionInfo> domainPartInfo = currSubInfo.getDomainPartitionInfo();
+		//Vector<String> attrSubspaceInfo = currSubInfo.getAttributesOfSubspace();
+		HashMap<String, AttributePartitionInfo> attrSubspaceInfo = currSubInfo.getAttributesOfSubspace();
+		
+		// subspace vector denotes parition num for each attribute 
+		// in this subspace and attrSubspaceInfo.size denotes total 
+		// number of attributes. The size of both should be same
+		// as both denote number of attributes in this subspace.
+		if(attrSubspaceInfo.size() != subspaceVectorList.get(0).size())
 		{
-			double numRegions = Math.pow(currpart, currSubspaceNumAttrs);
+			assert(false);
+		}
+		
+		String insertTableSQL = " INSERT INTO "+tableName 
+				+" ( hashCode, respNodeID ";
+				//+ "nodeID) " + "VALUES"
+				//+ "("+lowerRange+","+upperRange+","+nodeID +")";
+		
+		Iterator<String> attrIter = attrSubspaceInfo.keySet().iterator();
+		while(attrIter.hasNext())
+		{
+			String attrName = attrIter.next();
 			
-			if(numRegions>= ContextServiceConfig.MAX_REGION_LOOK_AHEAD)
+			String lowerAtt = "lower"+attrName;
+			String upperAtt = "upper"+attrName;
+			
+			insertTableSQL = insertTableSQL + ", "+lowerAtt+" , "+upperAtt;
+		}
+		insertTableSQL = insertTableSQL + " ) VALUES ";
+		
+		
+		for( int i=0; i<subspaceVectorList.size(); i++ )
+		{
+			List<Integer> subspaceVector = subspaceVectorList.get(i);
+			Integer respNodeId = respNodeIdList.get(i);
+			
+			if(i == 0)
 			{
-				if(maxPartNum == -1)
-				{
-					maxPartNum = currSubspaceNumPartitions;
-				}
-				break;
-			}
-			
-			double div = Math.floor(numRegions/currSubspaceNumNodes);
-			
-			double[] nodeArray = new double[currSubspaceNumNodes];
-			
-			for(int i=0; i<currSubspaceNumNodes; i++)
-			{
-				nodeArray[i] = div;
-			}
-			
-			double rem = Math.floor(numRegions%currSubspaceNumNodes);
-			
-			for(int i=0; i<rem; i++)
-			{
-				nodeArray[i] = nodeArray[i] + 1;
-			}
-			
-			double jfi = computeJainsFairnessIndex(nodeArray);
-			
-			if(maxPartNum == -1)
-			{
-				maxJFI = jfi;
-				maxPartNum = currpart;
-				//System.out.println("max jfi "+maxJFI+" part "+maxPartNum);
+				insertTableSQL = insertTableSQL +" ( "+subspaceVector.hashCode()+" , "+
+					Integer.parseInt(respNodeId.toString());
 			}
 			else
 			{
-				if(jfi > maxJFI)
-				{
-					maxJFI = jfi;
-					maxPartNum = currpart;
-					//System.out.println("max jfi "+maxJFI+" part "+maxPartNum);
-				}
+				insertTableSQL = insertTableSQL +" , ( "+subspaceVector.hashCode()+" , "+
+						Integer.parseInt(respNodeId.toString());
 			}
 			
-			currpart = currpart + 1;
-		}	
-		
-		return maxPartNum;
-	}
-	
-	
-	private int getNumberOfPartitionsUsingJustGreaterHeuristics(int currSubspaceNumNodes
-			, int currSubspaceNumAttrs)
-	{
-		int currSubspaceNumPartitions 
-			= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
-		
-		return currSubspaceNumPartitions;
-	}
-	
-	
-	private static double computeJainsFairnessIndex(double[] listOfNumbers)
-	{
-		double sum = 0.0;
-		for(int i=0; i<listOfNumbers.length; i++)
-		{
-			sum = sum + listOfNumbers[i];
+			attrIter = attrSubspaceInfo.keySet().iterator();
+			int counter =0;
+			while(attrIter.hasNext())
+			{
+				String attrName = attrIter.next();
+				AttributePartitionInfo attrPartInfo = attrSubspaceInfo.get(attrName);
+				int partitionNum = subspaceVector.get(counter);
+				DomainPartitionInfo domainPartInfo 
+					= attrPartInfo.getSubspaceDomainPartitionInfo().get(partitionNum);
+				// if it is a String then single quotes needs to be added
+				
+				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
+				String dataType = attrMetaInfo.getDataType();
+				
+				
+				String lowerBound  = AttributeTypes.convertStringToDataTypeForMySQL
+								(domainPartInfo.lowerbound, dataType)+"";
+				String upperBound  = AttributeTypes.convertStringToDataTypeForMySQL
+								(domainPartInfo.upperbound, dataType)+"";
+				
+				insertTableSQL = insertTableSQL + " , "+lowerBound+" , "+ 
+						upperBound;
+				counter++;
+			}
+			insertTableSQL = insertTableSQL +" ) ";
 		}
 		
-		double squareSum = 0.0;
-		for(int i=0; i < listOfNumbers.length; i++)
+		
+		try
 		{
-			squareSum = squareSum + Math.pow(listOfNumbers[i], 2);
+			myConn = dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
+			stmt = myConn.createStatement();
+			// execute insert SQL statement
+			stmt.executeUpdate(insertTableSQL);
+		} catch(SQLException sqlex)
+		{
+			sqlex.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if( myConn != null )
+				{
+					myConn.close();
+				}
+				if( stmt != null )
+				{
+					stmt.close();
+				}
+			} catch(SQLException sqex)
+			{
+				sqex.printStackTrace();
+			}
 		}
 		
-		double jfi = Math.pow(sum, 2)/(listOfNumbers.length * squareSum);
-		return jfi;
+		ContextServiceLogger.getLogger().fine("bulkInsertIntoSubspacePartitionInfo completed "
+				+ subspaceVectorList.size()+" "+respNodeIdList.size() );
+		
+		if( ContextServiceConfig.DELAY_PROFILER_ON )
+		{
+			DelayProfiler.updateDelay("insertIntoSubspacePartitionInfo", t0);
+		}
 	}
 	
+	
+	/**
+	 * Inserts a subspace region denoted by subspace vector, 
+	 * integer denotes partition num in partition info 
+	 * @param subspaceNum
+	 * @param subspaceVector
+	 */
+	public void insertIntoSubspacePartitionInfo(int subspaceId, int replicaNum,
+			List<Integer> subspaceVector, Integer respNodeId)
+	{
+		long t0 			= System.currentTimeMillis();
+		Connection myConn   = null;
+		Statement stmt      = null;
+		
+		String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"PartitionInfo";
+		
+		SubspaceInfo currSubInfo = subspaceInfoMap.
+				get(subspaceId).get(replicaNum);
+		//Vector<AttributePartitionInfo> domainPartInfo = currSubInfo.getDomainPartitionInfo();
+		//Vector<String> attrSubspaceInfo = currSubInfo.getAttributesOfSubspace();
+		HashMap<String, AttributePartitionInfo> attrSubspaceInfo = currSubInfo.getAttributesOfSubspace();
+		
+		// subspace vector denotes parition num for each attribute 
+		// in this subspace and attrSubspaceInfo.size denotes total 
+		// number of attributes. The size of both should be same
+		// as both denote number of attributes in this subspace.
+		if(attrSubspaceInfo.size() != subspaceVector.size())
+		{
+			assert(false);
+		}
+		
+		String insertTableSQL = "SET unique_checks=0; INSERT INTO "+tableName 
+				+" ( hashCode, respNodeID ";
+				//+ "nodeID) " + "VALUES"
+				//+ "("+lowerRange+","+upperRange+","+nodeID +")";
+		
+		Iterator<String> attrIter = attrSubspaceInfo.keySet().iterator();
+		while(attrIter.hasNext())
+		{
+			String attrName = attrIter.next();
+			
+			String lowerAtt = "lower"+attrName;
+			String upperAtt = "upper"+attrName;
+			
+			insertTableSQL = insertTableSQL + ", "+lowerAtt+" , "+upperAtt;
+		}
+		
+		insertTableSQL = insertTableSQL + " ) VALUES ( "+subspaceVector.hashCode() + 
+				" , "+respNodeId;
+		
+		attrIter = attrSubspaceInfo.keySet().iterator();
+		int counter =0;
+		while(attrIter.hasNext())
+		{
+			String attrName = attrIter.next();
+			AttributePartitionInfo attrPartInfo = attrSubspaceInfo.get(attrName);
+			int partitionNum = subspaceVector.get(counter);
+			DomainPartitionInfo domainPartInfo = attrPartInfo.getSubspaceDomainPartitionInfo().get(partitionNum);
+			// if it is a String then single quotes needs to be added
+			
+			AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
+			String dataType = attrMetaInfo.getDataType();
+			
+			String lowerBound  = AttributeTypes.convertStringToDataTypeForMySQL(domainPartInfo.lowerbound, dataType)+"";
+			String upperBound  = AttributeTypes.convertStringToDataTypeForMySQL(domainPartInfo.upperbound, dataType)+"";
+			
+			insertTableSQL = insertTableSQL + " , "+lowerBound+" , "+ 
+					upperBound;
+			
+			counter++;
+		}
+		
+		insertTableSQL = insertTableSQL + " ) ";
+		
+		try
+		{
+			myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
+			stmt = myConn.createStatement();
+
+			// execute insert SQL stetement
+			stmt.executeUpdate(insertTableSQL);
+			
+		} catch(SQLException sqlex)
+		{
+			sqlex.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if( myConn != null )
+				{
+					myConn.close();
+				}
+				if( stmt != null )
+				{
+					stmt.close();
+				}
+			} catch(SQLException sqex)
+			{
+				sqex.printStackTrace();
+			}
+		}
+		
+		if( ContextServiceConfig.DELAY_PROFILER_ON )
+		{
+			DelayProfiler.updateDelay("insertIntoSubspacePartitionInfo", t0);
+		}
+	}
 	
 	private class DatabaseOperationClass implements Runnable
 	{
@@ -366,18 +519,17 @@ public abstract class AbstractSubspaceConfigurator
 		private final int replicaNum;
 		private final List<List<Integer>> permVectorList;
 		private final List<Integer> respNodeIdList;
-		private final HyperspaceDB hyperspaceDB;
+		
 		
 		public DatabaseOperationClass(int subspaceId, int replicaNum, 
 				List<List<Integer>> permVectorList
-				, List<Integer> respNodeIdList,
-				HyperspaceDB hyperspaceDB )
+				, List<Integer> respNodeIdList)
 		{
 			this.subspaceId = subspaceId;
 			this.replicaNum = replicaNum;
 			this.permVectorList = permVectorList;
 			this.respNodeIdList = respNodeIdList;
-			this.hyperspaceDB = hyperspaceDB;
+
 		}
 		
 		@Override
@@ -385,7 +537,7 @@ public abstract class AbstractSubspaceConfigurator
 		{
 			try
 			{
-				hyperspaceDB.bulkInsertIntoSubspacePartitionInfo(subspaceId, replicaNum, 
+				bulkInsertIntoSubspacePartitionInfo(subspaceId, replicaNum, 
 						permVectorList, respNodeIdList);
 				synchronized(subspacePartitionInsertLock)
 				{
@@ -409,13 +561,84 @@ public abstract class AbstractSubspaceConfigurator
 	
 	
 	public static void main(String[] args)
-	{
-		// testing getNumberOfPartitionsUsingUniformHeuristics(
-		//int currSubspaceNumNodes, int currSubspaceNumAttrs);
-		
-		int numParts = getNumberOfPartitionsUsingUniformHeuristics(
-				11, 3);
-		
-		System.out.println("numParts "+numParts);
+	{	
 	}
 }
+
+
+
+//private static int getNumberOfPartitionsUsingUniformHeuristics(
+//int currSubspaceNumNodes, int currSubspaceNumAttrs)
+//{
+//int currSubspaceNumPartitions 
+//= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
+//
+//// we only check for next 10 partitions.
+//int currpart = currSubspaceNumPartitions;
+//
+//int maxPartNum = -1;
+//double maxJFI = -1;
+//
+//while(currpart < (currSubspaceNumPartitions+ContextServiceConfig.NUM_PARTITITON_LOOK_AHEAD))
+//{
+//double numRegions = Math.pow(currpart, currSubspaceNumAttrs);
+//
+//if(numRegions>= ContextServiceConfig.MAX_REGION_LOOK_AHEAD)
+//{
+//	if(maxPartNum == -1)
+//	{
+//		maxPartNum = currSubspaceNumPartitions;
+//	}
+//	break;
+//}
+//
+//double div = Math.floor(numRegions/currSubspaceNumNodes);
+//
+//List<Double> nodeList = new LinkedList<Double>();;
+//
+//for(int i=0; i<currSubspaceNumNodes; i++)
+//{
+//	nodeList.add(div);
+//	nodeArray[i] = div;
+//}
+//
+//double rem = Math.floor(numRegions%currSubspaceNumNodes);
+//
+//for(int i=0; i<rem; i++)
+//{
+//	nodeArray[i] = nodeArray[i] + 1;
+//}
+//
+//double jfi = computeJainsFairnessIndex(nodeArray);
+//
+//if(maxPartNum == -1)
+//{
+//	maxJFI = jfi;
+//	maxPartNum = currpart;
+//	//System.out.println("max jfi "+maxJFI+" part "+maxPartNum);
+//}
+//else
+//{
+//	if(jfi > maxJFI)
+//	{
+//		maxJFI = jfi;
+//		maxPartNum = currpart;
+//		//System.out.println("max jfi "+maxJFI+" part "+maxPartNum);
+//	}
+//}
+//
+//currpart = currpart + 1;
+//}	
+//
+//return maxPartNum;
+//}
+
+
+//private int getNumberOfPartitionsUsingJustGreaterHeuristics(int currSubspaceNumNodes
+//, int currSubspaceNumAttrs)
+//{
+//int currSubspaceNumPartitions 
+//= (int)Math.ceil(Math.pow(currSubspaceNumNodes, 1.0/currSubspaceNumAttrs));
+//
+//return currSubspaceNumPartitions;
+//}

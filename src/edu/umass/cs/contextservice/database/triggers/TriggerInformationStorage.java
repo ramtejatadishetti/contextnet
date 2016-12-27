@@ -8,7 +8,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Vector;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -16,10 +15,9 @@ import org.json.JSONObject;
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.database.HyperspaceDB;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource.DB_REQUEST_TYPE;
-import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
-import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionMessage;
 import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
@@ -37,21 +35,21 @@ import edu.umass.cs.utils.DelayProfiler;
 public class TriggerInformationStorage implements 
 										TriggerInformationStorageInterface
 {
-	private final Integer myNodeID;
-	private final HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap;
+	//private final Integer myNodeID;
+	//private final HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap;
 	private final AbstractDataSource dataSource;
 	
 	public TriggerInformationStorage( Integer myNodeID, 
-			HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap , 
 			AbstractDataSource dataSource )
 	{
-		this.myNodeID = myNodeID;
-		this.subspaceInfoMap = subspaceInfoMap;
+		//this.myNodeID = myNodeID;
+		//this.subspaceInfoMap = subspaceInfoMap;
 		this.dataSource = dataSource;
 	}
 	
+	
 	@Override
-	public void createTables() 
+	public void createTriggerStorageTables()
 	{
 		Connection myConn  = null;
 		Statement  stmt    = null;
@@ -60,26 +58,30 @@ public class TriggerInformationStorage implements
 		{
 			myConn = dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
 			stmt   =  myConn.createStatement();
-			Iterator<Integer> subspaceIter = this.subspaceInfoMap.keySet().iterator();
-			while( subspaceIter.hasNext() )
+			
+			String tableName = HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
+			
+			String newTableCommand = "create table "+tableName+" ( groupGUID BINARY(20) NOT NULL , "
+					+ "userIP Binary(4) NOT NULL ,  userPort INTEGER NOT NULL , expiryTime BIGINT NOT NULL ";
+			newTableCommand = getPartitionInfoStorageString(newTableCommand);
+			
+			if( ContextServiceConfig.disableUniqueQueryStorage )
 			{
-				int subspaceId = subspaceIter.next();
-				Vector<SubspaceInfo> replicasOfSubspace 
-										= subspaceInfoMap.get(subspaceId);
-				
-				for(int i = 0; i<replicasOfSubspace.size(); i++)
-				{
-					SubspaceInfo subInfo = replicasOfSubspace.get(i);
-
-					// currently it is assumed that there are only conjunctive queries
-					// DNF form queries can be added by inserting its multiple conjunctive components.
-					ContextServiceLogger.getLogger().fine( "HyperspaceMySQLDB "
-								+ " TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED );					
-					createTablesForTriggers(subInfo, stmt);
-				}
+				newTableCommand = newTableCommand +" , INDEX USING BTREE(expiryTime), "
+						+ "INDEX USING HASH(groupGUID) )";
+			}
+			else
+			{
+				newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort), INDEX USING BTREE(expiryTime), "
+						+ "INDEX USING HASH(groupGUID) )";
 			}
 			
-			if( ContextServiceConfig.TRIGGER_ENABLED && ContextServiceConfig.UniqueGroupGUIDEnabled )
+			stmt.executeUpdate(newTableCommand);
+			
+			
+			
+			if( ContextServiceConfig.TRIGGER_ENABLED 
+								&& ContextServiceConfig.UniqueGroupGUIDEnabled )
 			{
 				// currently it is assumed that there are only conjunctive queries
 				// DNF form queries can be added by inserting its multiple conjunctive components.
@@ -89,9 +91,9 @@ public class TriggerInformationStorage implements
 				
 				// for storing the trigger data, which is search queries
 				
-				String tableName = "primarySubspaceTriggerDataStorage";
+				tableName = HyperspaceDB.HASH_INDEX_TRIGGER_TABLE_NAME;
 				
-				String newTableCommand = "create table "+tableName+" ( groupGUID BINARY(20) NOT NULL , "
+				newTableCommand = "create table "+tableName+" ( groupGUID BINARY(20) NOT NULL , "
 						+ "userIP Binary(4) NOT NULL ,  userPort INTEGER NOT NULL ";
 				
 				newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort) )";
@@ -115,128 +117,13 @@ public class TriggerInformationStorage implements
 		}
 	}
 	
-	/**
-	 * creates one dimensional subspaces and query storage tables for triggers
-	 * @throws SQLException 
-	 */
-	private void createTablesForTriggers(SubspaceInfo subInfo, Statement  stmt) 
-			throws SQLException
-	{
-		int subspaceId = subInfo.getSubspaceId();
-		//int replicaNum = subInfo.getReplicaNum();
-		// creating for all attributes rather than just the attributes of the subspace for better mataching
-		
-		// at least one replica and all replica have same default value for each attribute.
-		// FIXME: replicas may not have same default value for each attribute, because they can have 
-		// different number of nodes. But it may not changes number of partitions. Need to check.
-		// can be easily fixed by setting default value to partition 0 .but for now set to all partitions for load balancing/uniform.
-		//HashMap<String, AttributePartitionInfo> attrSubspaceMap = subInfo.getAttributesOfSubspace();
-		
-		if( !subInfo.checkIfSubspaceHasMyID(myNodeID) )
-		{
-			return;
-		}
-		
-		String tableName = "subspaceId"+subspaceId+"TriggerDataInfo";
-		
-		String newTableCommand = "create table "+tableName+" ( groupGUID BINARY(20) NOT NULL , "
-				+ "userIP Binary(4) NOT NULL ,  userPort INTEGER NOT NULL , expiryTime BIGINT NOT NULL ";
-		newTableCommand = getPartitionInfoStorageString(newTableCommand);
-		
-		if( ContextServiceConfig.disableUniqueQueryStorage )
-		{
-			newTableCommand = newTableCommand +" , INDEX USING BTREE(expiryTime), "
-					+ "INDEX USING HASH(groupGUID) )";
-		}
-		else
-		{
-			newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort), INDEX USING BTREE(expiryTime), "
-					+ "INDEX USING HASH(groupGUID) )";
-		}
-		
-		stmt.executeUpdate(newTableCommand);
-	}
-	
-	private String getPartitionInfoStorageString(String newTableCommand)
-	{
-		// query and default value mechanics
-		//Attr specified in query but not set in GUID                  Do Not return GUID
-		//Attr specified in query and  set in GUID                     Return GUID if possible
-
-		//Attr not specified in query but  set in GUID                 Return GUID if possible 
-		//Attr not specified in query and not set in GUID              Return GUID if possible as no privacy leak
-		
-		// creating for all attributes rather than just the attributes of the subspace for better mataching
-		Iterator<Integer> subapceIdIter = subspaceInfoMap.keySet().iterator();
-		while(subapceIdIter.hasNext())
-		{
-			int subspaceId = subapceIdIter.next();
-			// at least one replica and all replica have same default value for each attribute.
-			SubspaceInfo currSubspaceInfo = subspaceInfoMap.get(subspaceId).get(0);
-			HashMap<String, AttributePartitionInfo> attrSubspaceMap = currSubspaceInfo.getAttributesOfSubspace();
-			
-			Iterator<String> attrIter = attrSubspaceMap.keySet().iterator();
-			while(attrIter.hasNext())
-			{
-				String attrName = attrIter.next();
-				AttributePartitionInfo attrPartInfo = attrSubspaceMap.get(attrName);
-				AttributeMetaInfo attrMetaInfo = attrPartInfo.getAttrMetaInfo();
-				String dataType = attrMetaInfo.getDataType();
-				String minVal = attrMetaInfo.getMinValue();
-				String maxVal = attrMetaInfo.getMaxValue();
-				String defaultValue = attrMetaInfo.getDefaultValue();
-				
-				String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);			
-				
-				String lowerAttrName = "lower"+attrName;
-				String upperAttrName = "upper"+attrName;
-				
-				String queryMinDefault = minVal;
-				String queryMaxDefault = maxVal;
-				
-				// finding if default value is smaller or larger than min or max.
-				// so that the query satisfies this case
-				//Attr not specified in query and not set in GUID              Return GUID if possible as no privacy leak
-				if(AttributeTypes.compareTwoValues(defaultValue, minVal, dataType))
-				{
-					// default value smaller than min
-					queryMinDefault = defaultValue;
-					queryMaxDefault = maxVal;
-				}
-				else if(AttributeTypes.compareTwoValues(maxVal, defaultValue, dataType))
-				{
-					// maxVal is smaller than defaultValue
-					queryMinDefault = minVal;
-					queryMaxDefault = defaultValue;
-				}
-				else
-				{
-					System.out.println("defaultValue "+defaultValue+" minVal "+minVal
-							+" maxVal "+maxVal);
-					// this should not happen
-					assert(false);
-				}
-				
-				// changed it to min max for lower and upper value instead of default 
-				// because we want a query to match for attributes that are not specified 
-				// in the query, as those basically are don't care.
-				newTableCommand = newTableCommand + " , "+lowerAttrName+" "+mySQLDataType
-						+" DEFAULT "
-						+AttributeTypes.convertStringToDataTypeForMySQL(queryMinDefault, dataType)
-						+ " , "+upperAttrName+" "+mySQLDataType+" DEFAULT "
-						+AttributeTypes.convertStringToDataTypeForMySQL(queryMaxDefault, dataType)
-						+ " , INDEX USING BTREE("+lowerAttrName+" , "+upperAttrName+")";			
-			}
-		}
-		return newTableCommand;
-	}
 	
 	/**
 	 * Inserts trigger info on a query into the table
 	 * @param subspaceNum
 	 * @param subspaceVector
 	 */
-	public void insertIntoSubspaceTriggerDataInfo( int subspaceId, String userQuery, 
+	public void insertIntoTriggerDataStorage( String userQuery, 
 			String groupGUID, String userIP, int userPort, 
 			long expiryTimeFromNow )
 	{
@@ -244,7 +131,7 @@ public class TriggerInformationStorage implements
 		Connection myConn   = null;
 		Statement stmt      = null;
 		
-		String tableName = "subspaceId"+subspaceId+"TriggerDataInfo";
+		String tableName = HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 		
 		QueryInfo processedQInfo = new QueryInfo(userQuery);
 		HashMap<String, ProcessingQueryComponent> pqcMap = processedQInfo.getProcessingQC();
@@ -333,8 +220,7 @@ public class TriggerInformationStorage implements
 	 * @return
 	 * @throws InterruptedException 
 	 */
-	public void getTriggerDataInfo( int subspaceId,  
-		JSONObject oldValJSON, JSONObject onlyUpdateAttrValJSON, 
+	public void getTriggerDataInfo( JSONObject oldValJSON, JSONObject onlyUpdateAttrValJSON, 
 		HashMap<String, GroupGUIDInfoClass> removedGroupGUIDMap, 
 		HashMap<String, GroupGUIDInfoClass> addedGroupGUIDMap, 
 		int requestType, JSONObject newUnsetAttrs,
@@ -352,13 +238,13 @@ public class TriggerInformationStorage implements
 		if( requestType == ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY )
 		{
 			OldValueGroupGUIDs old = new OldValueGroupGUIDs
-			(subspaceId, oldValJSON, onlyUpdateAttrValJSON, newUnsetAttrs, removedGroupGUIDMap,
+			(oldValJSON, onlyUpdateAttrValJSON, newUnsetAttrs, removedGroupGUIDMap,
 					dataSource);
 			old.run();
 		}
 		else if( requestType == ValueUpdateToSubspaceRegionMessage.ADD_ENTRY )
 		{
-			returnAddedGroupGUIDs( subspaceId, oldValJSON, 
+			returnAddedGroupGUIDs( oldValJSON, 
 					onlyUpdateAttrValJSON, addedGroupGUIDMap, newUnsetAttrs, firstTimeInsert);
 		}
 		else if( requestType == ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY )
@@ -367,7 +253,7 @@ public class TriggerInformationStorage implements
 			// so we don't need to check for old groups to which this new GUID was part of.
 			if(firstTimeInsert)
 			{
-				returnAddedGroupGUIDs( subspaceId, oldValJSON, 
+				returnAddedGroupGUIDs(oldValJSON, 
 						onlyUpdateAttrValJSON, addedGroupGUIDMap, newUnsetAttrs, firstTimeInsert );
 			}
 			else
@@ -392,8 +278,8 @@ public class TriggerInformationStorage implements
 				HashMap<String, GroupGUIDInfoClass> newSatisfyingGroups 
 												= new HashMap<String, GroupGUIDInfoClass>();
 				getOldAndNewValueSatisfyingGroups
-					(oldValJSON, onlyUpdateAttrValJSON,  oldSatisfyingGroups, newSatisfyingGroups, 
-						subspaceId, newUnsetAttrs);
+					(oldValJSON, onlyUpdateAttrValJSON,  oldSatisfyingGroups, newSatisfyingGroups,
+							newUnsetAttrs);
 				
 				// computing removed groups
 				Iterator<String> groupGUIDIter = oldSatisfyingGroups.keySet().iterator();
@@ -434,13 +320,14 @@ public class TriggerInformationStorage implements
 		}
 	}
 	
+	
 	private void getOldAndNewValueSatisfyingGroups
-					(JSONObject oldValJSON, JSONObject updateValJSON, 
+					( JSONObject oldValJSON, JSONObject updateValJSON, 
 				HashMap<String, GroupGUIDInfoClass> oldSatisfyingGroups, 
-				HashMap<String, GroupGUIDInfoClass> newSatisfyingGroups, 
-				int subspaceId, JSONObject newUnsetAttrs)
+				HashMap<String, GroupGUIDInfoClass> newSatisfyingGroups
+				, JSONObject newUnsetAttrs )
 	{
-		String tableName 			= "subspaceId"+subspaceId+"TriggerDataInfo";
+		String tableName 			= HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 		
 		assert(oldValJSON != null);
 		assert(oldValJSON.length() > 0);
@@ -462,16 +349,14 @@ public class TriggerInformationStorage implements
 		try
 		{
 			String queriesWithAttrs 
-				= TriggerInformationStorage.getQueriesThatContainAttrsInUpdate
-					(updateValJSON, subspaceId);
+				= TriggerInformationStorage.getQueriesThatContainAttrsInUpdate(updateValJSON);
 			//String newTableName = "projTable";
 			
 			//String createTempTable = "CREATE TEMPORARY TABLE "+
 			//		newTableName+" AS ( "+queriesWithAttrs+" ) ";
 			
 			String oldGroupsQuery 
-				= TriggerInformationStorage.getQueryToGetOldValueGroups
-					(oldValJSON, subspaceId);
+				= TriggerInformationStorage.getQueryToGetOldValueGroups(oldValJSON);
 			
 			String oldGroupQuery = "SELECT groupGUID, userIP, userPort FROM "+tableName
 					+ " WHERE "
@@ -512,7 +397,7 @@ public class TriggerInformationStorage implements
 			String newGroupsQuery = 
 					getQueryToGetNewValueGroups
 					( oldValJSON, updateValJSON, 
-							newUnsetAttrs, subspaceId);
+							newUnsetAttrs);
 			
 			selectQuery = selectQuery 
 					+ " groupGUID IN ( "+queriesWithAttrs+" ) AND "
@@ -573,12 +458,12 @@ public class TriggerInformationStorage implements
 	 * @param attrsInUpdate
 	 * @return
 	 */
-	public static String getQueriesThatContainAttrsInUpdate( JSONObject attrsInUpdate, 
-			int subspaceId )
+	public static String getQueriesThatContainAttrsInUpdate( JSONObject attrsInUpdate )
 	{
-		String tableName 			= "subspaceId"+subspaceId+"TriggerDataInfo";
+		String tableName 			= HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 		String selectQuery 			= "SELECT groupGUID FROM "+tableName+" WHERE ";
 		
+		@SuppressWarnings("unchecked")
 		Iterator<String> attrIter 	= attrsInUpdate.keys();
 		boolean first = true;
 		while( attrIter.hasNext() )
@@ -619,10 +504,10 @@ public class TriggerInformationStorage implements
 	}
 	
 	
-	public static String getQueryToGetOldValueGroups(JSONObject oldValJSON, int subspaceId) 
+	public static String getQueryToGetOldValueGroups(JSONObject oldValJSON) 
 			throws JSONException
 	{
-		String tableName 			= "subspaceId"+subspaceId+"TriggerDataInfo";
+		String tableName 			= HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 		
 		JSONObject oldUnsetAttrs 	= HyperspaceHashing.getUnsetAttrJSON(oldValJSON);
 		
@@ -658,7 +543,6 @@ public class TriggerInformationStorage implements
 				attrValForMysql = AttributeTypes.convertStringToDataTypeForMySQL
 						(oldValJSON.getString(currAttrName), dataType)+"";
 			}
-			
 			
 			
 			String lowerValCol = "lower"+currAttrName;
@@ -711,12 +595,13 @@ public class TriggerInformationStorage implements
 		return selectQuery;
 	}
 	
+	
 	public static String getQueryToGetNewValueGroups
 				( JSONObject oldValJSON, JSONObject newJSONToWrite, 
-						JSONObject newUnsetAttrs,int subspaceId ) 
+						JSONObject newUnsetAttrs )
 								throws JSONException
 	{
-		String tableName 			= "subspaceId"+subspaceId+"TriggerDataInfo";
+		String tableName 			= HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 
 		Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
 		// for groups associated with the new value
@@ -813,18 +698,18 @@ public class TriggerInformationStorage implements
 	}
 	
 	
-	
 	/**
 	 * this function runs independently on every node 
 	 * and deletes expired queries.
 	 * @return
 	 */
-	public int deleteExpiredSearchQueries( int subspaceId )
+	public int deleteExpiredSearchQueries()
 	{
 		long currTime = System.currentTimeMillis();
 		int rumRowsDeleted = -1;
 		
-		String tableName = "subspaceId"+subspaceId+"TriggerDataInfo";
+		String tableName = HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
+		
 		String deleteCommand = "DELETE FROM "+tableName+" WHERE expiryTime <= "+currTime;
 		Connection myConn 	= null;
 		Statement stmt 		= null;
@@ -865,12 +750,11 @@ public class TriggerInformationStorage implements
 	}
 	
 	
-	private void returnAddedGroupGUIDs( int subspaceId, 
-			JSONObject oldValJSON, JSONObject newUpdateVal, 
+	private void returnAddedGroupGUIDs( JSONObject oldValJSON, JSONObject newUpdateVal, 
 			HashMap<String, GroupGUIDInfoClass> newValGroupGUIDMap, JSONObject newUnsetAttrs, 
 			boolean firstTimeInsert )
 	{
-		String tableName 			= "subspaceId"+subspaceId+"TriggerDataInfo";
+		String tableName 			= HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 		
 		Connection myConn 			= null;
 		Statement stmt 				= null;
@@ -889,13 +773,13 @@ public class TriggerInformationStorage implements
 				String newGroupsQuery = 
 						getQueryToGetNewValueGroups
 						( oldValJSON, newUpdateVal, 
-								newUnsetAttrs, subspaceId );
+								newUnsetAttrs);
 				selectQuery = selectQuery + " groupGUID IN ( "+newGroupsQuery+" ) ";
 			}
 			else
 			{
 				String queriesWithAttrs = TriggerInformationStorage.getQueriesThatContainAttrsInUpdate
-						(newUpdateVal, subspaceId);
+						(newUpdateVal);
 				
 				selectQuery = "SELECT groupGUID, userIP, userPort FROM "+tableName
 						+" WHERE ";
@@ -903,10 +787,10 @@ public class TriggerInformationStorage implements
 				String newGroupsQuery = 
 						getQueryToGetNewValueGroups
 						( oldValJSON, newUpdateVal, 
-								newUnsetAttrs, subspaceId);
+								newUnsetAttrs);
 				
 				String oldGroupsQuery 
-					= getQueryToGetOldValueGroups(oldValJSON, subspaceId);
+					= getQueryToGetOldValueGroups(oldValJSON);
 				
 				selectQuery = selectQuery 
 						+ " groupGUID IN ( "+queriesWithAttrs+" ) AND "
@@ -961,7 +845,7 @@ public class TriggerInformationStorage implements
 	{
 		long t0 = System.currentTimeMillis();
 		
-		String tableName 			= "primarySubspaceTriggerDataStorage";
+		String tableName 			= HyperspaceDB.HASH_INDEX_TRIGGER_TABLE_NAME;
 		
 		Connection myConn 			= null;
 		Statement stmt 				= null;
@@ -1022,5 +906,71 @@ public class TriggerInformationStorage implements
 			DelayProfiler.updateDelay("getSearchQueryRecordFromPrimaryTriggerSubspace", t0);
 		}
 		return found;
+	}
+	
+	
+	private String getPartitionInfoStorageString(String newTableCommand)
+	{
+		// query and default value mechanics
+		//Attr specified in query but not set in GUID                  Do Not return GUID
+		//Attr specified in query and  set in GUID                     Return GUID if possible
+
+		//Attr not specified in query but  set in GUID                 Return GUID if possible 
+		//Attr not specified in query and not set in GUID              Return GUID if possible as no privacy leak
+		
+		// creating for all attributes rather than just the attributes of the subspace for better matching
+		Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
+		
+		while( attrIter.hasNext() )
+		{
+			String attrName = attrIter.next();
+			AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
+			String dataType = attrMetaInfo.getDataType();
+			String minVal = attrMetaInfo.getMinValue();
+			String maxVal = attrMetaInfo.getMaxValue();
+			String defaultValue = attrMetaInfo.getDefaultValue();
+				
+			String mySQLDataType = AttributeTypes.mySQLDataType.get(dataType);			
+				
+			String lowerAttrName = "lower"+attrName;
+			String upperAttrName = "upper"+attrName;
+				
+			String queryMinDefault = minVal;
+			String queryMaxDefault = maxVal;
+				
+			// finding if default value is smaller or larger than min or max.
+			// so that the query satisfies this case
+			//Attr not specified in query and not set in GUID              Return GUID if possible as no privacy leak
+			if(AttributeTypes.compareTwoValues(defaultValue, minVal, dataType))
+			{
+				// default value smaller than min
+				queryMinDefault = defaultValue;
+				queryMaxDefault = maxVal;
+			}
+			else if(AttributeTypes.compareTwoValues(maxVal, defaultValue, dataType))
+			{
+				// maxVal is smaller than defaultValue
+				queryMinDefault = minVal;
+				queryMaxDefault = defaultValue;
+			}
+			else
+			{
+				System.out.println("defaultValue "+defaultValue+" minVal "+minVal
+							+" maxVal "+maxVal);
+				// this should not happen
+				assert(false);
+			}
+				
+			// changed it to min max for lower and upper value instead of default 
+			// because we want a query to match for attributes that are not specified 
+			// in the query, as those basically are don't care.
+			newTableCommand = newTableCommand + " , "+lowerAttrName+" "+mySQLDataType
+					+ " DEFAULT "
+					+ AttributeTypes.convertStringToDataTypeForMySQL(queryMinDefault, dataType)
+					+ " , "+upperAttrName+" "+mySQLDataType+" DEFAULT "
+					+ AttributeTypes.convertStringToDataTypeForMySQL(queryMaxDefault, dataType)
+					+ " , INDEX USING BTREE("+lowerAttrName+" , "+upperAttrName+")";
+		}
+		return newTableCommand;
 	}
 }

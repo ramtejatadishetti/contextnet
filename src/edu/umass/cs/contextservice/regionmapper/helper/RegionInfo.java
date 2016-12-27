@@ -1,6 +1,6 @@
 package edu.umass.cs.contextservice.regionmapper.helper;
 
-import java.util.Iterator;
+import java.util.List;
 
 /**
  * Region info class. Stores information like the region boundaries and 
@@ -12,7 +12,7 @@ public class RegionInfo
 {	
 	private ValueSpaceInfo valSpaceInfo;
 	
-	private int assignedNodeId;
+	private List<Integer> nodeList;
 	
 	private double traceLoad;
 	
@@ -30,10 +30,16 @@ public class RegionInfo
 		this.valSpaceInfo = valSpaceInfo;
 	}
 	
-	public int getAssignedNodeId()
+	public List<Integer> getNodeList()
 	{
-		return this.assignedNodeId;
+		return this.nodeList;
 	}
+	
+	public void setNodeList(List<Integer> nodeList)
+	{
+		this.nodeList = nodeList;
+	}
+	
 	
 	public void setTraceLoad(double traceLoad)
 	{
