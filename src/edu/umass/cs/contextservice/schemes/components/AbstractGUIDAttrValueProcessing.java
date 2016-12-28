@@ -215,6 +215,11 @@ public abstract class AbstractGUIDAttrValueProcessing
 		
 		updateReq.setNumberOfExpectedReplies(totalExpectedUpdateReplies);
 		
+		if(ContextServiceConfig.PROFILER_THREAD)
+		{
+			profStats.incrementNumUpdates(totalExpectedUpdateReplies);
+		}
+		
 		
 		JSONObject unsetAttrsJSON = primarySubspaceJSON.getJSONObject
 				(RegionMappingDataStorageDB.unsetAttrsColName);
@@ -386,7 +391,10 @@ public abstract class AbstractGUIDAttrValueProcessing
 		
 		updateReq.setNumberOfExpectedReplies(newNodeList.size());
 		
-
+		if(ContextServiceConfig.PROFILER_THREAD)
+		{
+			profStats.incrementNumUpdates(newNodeList.size());
+		}
 	
 		// compute the JSONToWrite
 		JSONObject jsonToWrite = new JSONObject();

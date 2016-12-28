@@ -77,6 +77,11 @@ public class GUIDAttrValueProcessing
 				= regionMappingPolicy.getNodeIDsForAValueSpace
 						(queryInfo.getSearchQueryValSpace(), REQUEST_TYPE.SEARCH);
 		
+		if(ContextServiceConfig.PROFILER_THREAD)
+		{
+			profStats.incrementNumSearches(nodeList.size());
+		}
+		
 		
 		queryInfo.initializeSearchQueryReplyInfo(nodeList);
 		
@@ -113,19 +118,10 @@ public class GUIDAttrValueProcessing
 		String query 				 		= queryMesgToSubspaceRegion.getQuery();
 		ValueSpaceInfo searchQValSpace	 	= QueryParser.parseQuery(query);
 		
-		long sTime = System.currentTimeMillis();
-		if(ContextServiceConfig.PROFILER_THREAD)
-		{
-			profStats.incrementIncomingForData();
-		}
 		int resultSize = this.hyperspaceDB.processSearchQueryUsingAttrIndex
 				(searchQValSpace, resultGUIDs);
 		
-		if(ContextServiceConfig.PROFILER_THREAD)
-		{
-			profStats.incrementNumRepliesFromSubspaceRegion(resultSize, 
-					(System.currentTimeMillis()-sTime));
-		}
+		
 		return resultSize;
 	}
 	

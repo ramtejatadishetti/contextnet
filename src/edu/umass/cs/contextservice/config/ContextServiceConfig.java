@@ -141,7 +141,7 @@ public class ContextServiceConfig
 	public static  int MYSQL_MAX_CONNECTIONS						= 10;
 	
 	// it is also important to set this at least the size of the database connection pool.
-	public static final int HYPERSPACE_THREAD_POOL_SIZE				= 10;
+	public static int HYPERSPACE_THREAD_POOL_SIZE				= 10;
 	
 	//public static final int PRIVACY_THREAD_POOL_SIZE				= 214;
 	

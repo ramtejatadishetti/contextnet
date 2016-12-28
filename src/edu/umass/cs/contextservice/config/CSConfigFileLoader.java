@@ -110,7 +110,7 @@ public class CSConfigFileLoader
 	    		properties.getProperty(ContextServiceConfig.threadPoolSizeString, 
 	    				10+"") )  ;
 	  
-	  
+	  ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE = ContextServiceConfig.MYSQL_MAX_CONNECTIONS;
 	  
 	  
 	  System.out.println("read props ContextServiceConfig.modelRho "+ContextServiceConfig.modelRho
@@ -126,7 +126,8 @@ public class CSConfigFileLoader
     		+" ContextServiceConfig.basicConfig "+ContextServiceConfig.basicConfig
     		+" ContextServiceConfig.optimalH "+ContextServiceConfig.optimalH 
     		+" ContextServiceConfig.PRIVACY_ENABLED "+ContextServiceConfig.PRIVACY_ENABLED
-    		+" ContextServiceConfig.MYSQL_MAX_CONNECTIONS "+ContextServiceConfig.MYSQL_MAX_CONNECTIONS );
+    		+" ContextServiceConfig.MYSQL_MAX_CONNECTIONS "+ContextServiceConfig.MYSQL_MAX_CONNECTIONS 
+    		+" ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE "+ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
   }
   
   /**

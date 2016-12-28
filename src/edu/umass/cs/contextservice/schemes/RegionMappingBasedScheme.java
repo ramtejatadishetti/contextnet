@@ -84,7 +84,6 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		{
 			profStats = new ProfilerStatClass();
 			new Thread(profStats).start();
-			profStats.monitorUpdateRequestsQueue(pendingUpdateRequests);
 		}
 		
 		nodeES = Executors.newFixedThreadPool(
@@ -435,12 +434,7 @@ public class RegionMappingBasedScheme extends AbstractScheme
 			}
 		}
 		else
-		{
-			if(ContextServiceConfig.PROFILER_THREAD)
-			{
-				profStats.incrementNumValUpdateFromGNSRecvd();
-			}
-			
+		{	
 //			if(respNodeId >= 128)
 //			{
 //				System.out.println("ID greater than 128 mesg recvd"+respNodeId);
@@ -657,11 +651,6 @@ public class RegionMappingBasedScheme extends AbstractScheme
 			} catch (JSONException e)
 			{
 				e.printStackTrace();
-			}
-			
-			if(ContextServiceConfig.PROFILER_THREAD)
-			{
-				profStats.incrementNumValUpdateFromGNSRepSent();
 			}
 			
 			if(ContextServiceConfig.TRIGGER_ENABLED)
