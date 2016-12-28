@@ -13,8 +13,8 @@ import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
-import edu.umass.cs.contextservice.database.AbstractDB;
-import edu.umass.cs.contextservice.database.HyperspaceDB;
+import edu.umass.cs.contextservice.database.AbstractDataStorageDB;
+import edu.umass.cs.contextservice.database.RegionMappingDataStorageDB;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegion;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegionReply;
@@ -29,12 +29,12 @@ import edu.umass.cs.contextservice.schemes.helperclasses.SearchReplyInfo;
 import edu.umass.cs.contextservice.updates.UpdateInfo;
 import edu.umass.cs.nio.JSONMessenger;
 
-public class GUIDAttrValueProcessingForNoPrivacy
+public class GUIDAttrValueProcessing
 								extends AbstractGUIDAttrValueProcessing 
 {
-	public GUIDAttrValueProcessingForNoPrivacy( Integer myID, 
+	public GUIDAttrValueProcessing( Integer myID, 
 			AbstractRegionMappingPolicy regionMappingPolicy, 
-			AbstractDB hyperspaceDB, 
+			AbstractDataStorageDB hyperspaceDB, 
 		JSONMessenger<Integer> messenger , 
 		ConcurrentHashMap<Long, QueryInfo> pendingQueryRequests, 
 		ProfilerStatClass profStats )
@@ -211,7 +211,8 @@ public class GUIDAttrValueProcessingForNoPrivacy
 						 		= updateReq.getValueUpdateFromGNS().getAttrValuePairs();
 		long requestID 	 		= updateReq.getRequestId();
 		long updateStartTime	= updateReq.getValueUpdateFromGNS().getUpdateStartTime();
-		
+		JSONArray anonymizedIDToGuidMapping 
+								= updateReq.getValueUpdateFromGNS().getAnonymizedIDToGuidMapping();
 		
 		// get the old value and process the update in primary subspace and other subspaces.
 		
@@ -237,16 +238,16 @@ public class GUIDAttrValueProcessingForNoPrivacy
 			if( oldValueJSON.length() == 0 )
 			{
 				firstTimeInsert = true;
-				updateOrInsert = HyperspaceDB.INSERT_REC;
+				updateOrInsert = RegionMappingDataStorageDB.INSERT_REC;
 			}
 			else
 			{
 				firstTimeInsert = false;
-				updateOrInsert = HyperspaceDB.UPDATE_REC;
+				updateOrInsert = RegionMappingDataStorageDB.UPDATE_REC;
 			}
 			
 			JSONObject jsonToWrite = getJSONToWriteInPrimarySubspace( oldValueJSON, 
-					attrValuePairs, null );
+					attrValuePairs, anonymizedIDToGuidMapping );
 			
 			this.hyperspaceDB.storeGUIDUsingHashIndex
 								(GUID, jsonToWrite, updateOrInsert);

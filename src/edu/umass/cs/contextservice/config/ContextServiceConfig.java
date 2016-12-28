@@ -32,7 +32,7 @@ public class ContextServiceConfig
 	public static enum SchemeTypes {HYPERSPACE_HASHING};
 	
 	// NO_PRIVACY 0 ordinal, HYPERSPACE_PRIVACY 1 ordinal, SUBSPACE_PRIVACY 2 ordinal
-	public static enum PrivacySchemes {NO_PRIVACY, HYPERSPACE_PRIVACY, SUBSPACE_PRIVACY};
+	public static enum PrivacySchemes {NO_PRIVACY, PRIVACY};
 	
 	public static SchemeTypes SCHEME_TYPE							= SchemeTypes.HYPERSPACE_HASHING;
 	
@@ -182,7 +182,7 @@ public class ContextServiceConfig
 	public static final int SIZE_OF_ANONYMIZED_ID					= 20;
 	
 	
-	public static PrivacySchemes privacyScheme						= PrivacySchemes.HYPERSPACE_PRIVACY;
+	public static PrivacySchemes privacyScheme						= PrivacySchemes.PRIVACY;
 	
 	
 	public static final String AssymmetricEncAlgorithm				= "RSA";

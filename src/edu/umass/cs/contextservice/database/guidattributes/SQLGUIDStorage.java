@@ -15,7 +15,7 @@ import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig.SQL_DB_TYPE;
-import edu.umass.cs.contextservice.database.HyperspaceDB;
+import edu.umass.cs.contextservice.database.RegionMappingDataStorageDB;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource.DB_REQUEST_TYPE;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
@@ -56,7 +56,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 			
 			//TODO: which indexing scheme is better, indexing two attribute once or 
 			// creating a index over all attributes datastorage table of each subspace
-			String tableName = HyperspaceDB.ATTR_INDEX_TABLE_NAME;
+			String tableName = RegionMappingDataStorageDB.ATTR_INDEX_TABLE_NAME;
 			
 			String newTableCommand = "create table "+tableName+" ( "
 				      + " nodeGUID Binary(20) PRIMARY KEY";
@@ -80,14 +80,14 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 			
 			
 			
-			tableName = HyperspaceDB.GUID_HASH_TABLE_NAME;
+			tableName = RegionMappingDataStorageDB.GUID_HASH_TABLE_NAME;
 			newTableCommand = "create table "+tableName+" ( "
 				      + " nodeGUID Binary(20) PRIMARY KEY";
 			
 			newTableCommand = getDataStorageString(newTableCommand);
 			
-			newTableCommand = newTableCommand + " , "+HyperspaceDB.unsetAttrsColName
-								+" VARCHAR("+HyperspaceDB.varcharSizeForunsetAttrsCol+") ";
+			newTableCommand = newTableCommand + " , "+RegionMappingDataStorageDB.unsetAttrsColName
+								+" VARCHAR("+RegionMappingDataStorageDB.varcharSizeForunsetAttrsCol+") ";
 			
 			//FIXME: need to fix this for MySQL and SQLite cases.
 			if( ContextServiceConfig.PRIVACY_ENABLED )
@@ -194,7 +194,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 					if( ContextServiceConfig.PRIVACY_ENABLED )
 					{
 						anonymizedIDToGUIDMapping 
-							= rs.getString(HyperspaceDB.anonymizedIDToGUIDMappingColName);
+							= rs.getString(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName);
 						
 						if(anonymizedIDToGUIDMapping != null)
 						{
@@ -275,7 +275,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 		Statement stmt 			= null;
 		
 		String selectQuery 		= "SELECT * ";
-		String tableName 		= "primarySubspaceDataStorage";
+		String tableName 		= RegionMappingDataStorageDB.GUID_HASH_TABLE_NAME;
 		
 		JSONObject oldValueJSON = new JSONObject();
 		
@@ -301,7 +301,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 					String colVal = rs.getString(colName);
 					
 					// doing translation here saves multiple strng to JSON translations later in code.
-					if(colName.equals(HyperspaceDB.anonymizedIDToGUIDMappingColName))
+					if(colName.equals(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName))
 					{
 						if(colVal != null)
 						{
@@ -316,7 +316,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 								}
 							}
 						}
-					} else if(colName.equals(HyperspaceDB.unsetAttrsColName))
+					} else if(colName.equals(RegionMappingDataStorageDB.unsetAttrsColName))
 					{
 						try
 						{
@@ -383,12 +383,12 @@ public class SQLGUIDStorage implements GUIDStorageInterface
     public void storeGUIDUsingHashIndex( String nodeGUID, 
     		JSONObject jsonToWrite, int updateOrInsert ) throws JSONException
     {
-    	if( updateOrInsert == HyperspaceDB.INSERT_REC )
+    	if( updateOrInsert == RegionMappingDataStorageDB.INSERT_REC )
     	{
     		this.performStoreGUIDInPrimarySubspaceInsert
     			(nodeGUID, jsonToWrite);
     	}
-    	else if( updateOrInsert == HyperspaceDB.UPDATE_REC )
+    	else if( updateOrInsert == RegionMappingDataStorageDB.UPDATE_REC )
     	{
     		this.performStoreGUIDInPrimarySubspaceUpdate
     				(nodeGUID, jsonToWrite);
@@ -413,7 +413,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
     		ContextServiceLogger.getLogger().fine("STARTED storeGUIDInSecondarySubspace "+nodeGUID);
     	}
     	
-    	if( updateOrInsert == HyperspaceDB.INSERT_REC )
+    	if( updateOrInsert == RegionMappingDataStorageDB.INSERT_REC )
     	{
     		this.performStoreGUIDInSecondarySubspaceInsert
     			(tableName, nodeGUID, updatedAttrValJSON);
@@ -426,7 +426,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
         				+" time "+(end-start));
         	}	
     	}
-    	else if( updateOrInsert == HyperspaceDB.UPDATE_REC )
+    	else if( updateOrInsert == RegionMappingDataStorageDB.UPDATE_REC )
     	{
     		this.performStoreGUIDInSecondarySubspaceUpdate
     				( tableName, nodeGUID, updatedAttrValJSON );
@@ -501,14 +501,14 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 	 */
 	private String getMySQLQueryForProcessingSearchQuery( ValueSpaceInfo queryValueSpace )
 	{		
-		String tableName = HyperspaceDB.ATTR_INDEX_TABLE_NAME;
+		String tableName = RegionMappingDataStorageDB.ATTR_INDEX_TABLE_NAME;
 		String mysqlQuery = "";	
 		
 		// if privacy is enabled then we also fetch 
 		// anonymizedIDToGuidMapping set.
 		if(ContextServiceConfig.PRIVACY_ENABLED)
 		{
-			mysqlQuery = "SELECT nodeGUID , "+HyperspaceDB.anonymizedIDToGUIDMappingColName
+			mysqlQuery = "SELECT nodeGUID , "+RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName
 					+" from "+tableName+" WHERE ( ";
 		}
 		else
@@ -660,9 +660,9 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 	            //		= atrToValueRep.get(attrName);
 	            String colValue = "";
 	            
-	            if( colName.equals(HyperspaceDB.anonymizedIDToGUIDMappingColName) )
+	            if( colName.equals(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName) )
 	            {
-	            	colValue = toWriteJSON.getString(HyperspaceDB.anonymizedIDToGUIDMappingColName);
+	            	colValue = toWriteJSON.getString(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName);
 	            	colValue = "'"+colValue+"'";
 	            }
 	            else
@@ -787,9 +787,9 @@ public class SQLGUIDStorage implements GUIDStorageInterface
     			
 				String colValue = "";
 				
-				if(colName.equals(HyperspaceDB.anonymizedIDToGUIDMappingColName))
+				if(colName.equals(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName))
 				{
-					String jsonArrString = toWriteJSON.getString(HyperspaceDB.anonymizedIDToGUIDMappingColName);
+					String jsonArrString = toWriteJSON.getString(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName);
 					assert(jsonArrString != null);
 					colValue = "'"+jsonArrString+"'";
 				}
@@ -878,12 +878,12 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 	{
 		ContextServiceLogger.getLogger().fine(
 				"performStoreGUIDInPrimarySubspaceUpdate "
-				+ HyperspaceDB.GUID_HASH_TABLE_NAME
+				+ RegionMappingDataStorageDB.GUID_HASH_TABLE_NAME
 				+ " nodeGUID "+nodeGUID);
 		
         Connection myConn      		= null;
         Statement stmt         		= null;
-        String tableName 			= HyperspaceDB.GUID_HASH_TABLE_NAME;
+        String tableName 			= RegionMappingDataStorageDB.GUID_HASH_TABLE_NAME;
         
         String updateSqlQuery     	= "UPDATE "+tableName+ " SET ";
         
@@ -898,10 +898,10 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 	            String colName  = colNameIter.next();
 	            String colValue = "";
 	            
-	            if( colName.equals(HyperspaceDB.anonymizedIDToGUIDMappingColName) )
+	            if( colName.equals(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName) )
 	            {
 	            	JSONArray anonymizedIDToGuidList = jsonToWrite.getJSONArray(
-	            			HyperspaceDB.anonymizedIDToGUIDMappingColName);
+	            			RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName);
 	            	
 	            	// if it is null in no privacy case, then it should be even inserted 
 	            	// in towritejson.
@@ -909,10 +909,10 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 	            	
 	            	colValue = "'"+anonymizedIDToGuidList.toString()+"'";
 	            }
-	            else if( colName.equals(HyperspaceDB.unsetAttrsColName) )
+	            else if( colName.equals(RegionMappingDataStorageDB.unsetAttrsColName) )
 	            {
 	            	JSONObject unsetAttrsJSON 
-	            					= jsonToWrite.getJSONObject(HyperspaceDB.unsetAttrsColName);
+	            					= jsonToWrite.getJSONObject(RegionMappingDataStorageDB.unsetAttrsColName);
 	            	
 	            	assert(unsetAttrsJSON != null);
 	            	
@@ -994,12 +994,12 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 					( String nodeGUID, JSONObject jsonToWrite )
 	{
 		ContextServiceLogger.getLogger().fine("performStoreGUIDInPrimarySubspaceInsert "
-				+HyperspaceDB.GUID_HASH_TABLE_NAME+" nodeGUID "+nodeGUID );
+				+RegionMappingDataStorageDB.GUID_HASH_TABLE_NAME+" nodeGUID "+nodeGUID );
     	
         Connection myConn          = null;
         Statement stmt         	   = null;
         
-        String tableName = HyperspaceDB.GUID_HASH_TABLE_NAME;
+        String tableName = RegionMappingDataStorageDB.GUID_HASH_TABLE_NAME;
         
         // delayed insert performs better than just insert
         String insertQuery         = "INSERT INTO "+tableName+ " (";
@@ -1035,10 +1035,10 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 				String colName = colIter.next();
 				String colValue = "";
 				
-				if( colName.equals(HyperspaceDB.anonymizedIDToGUIDMappingColName) )
+				if( colName.equals(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName) )
 	            {
 	            	JSONArray anonymizedIDToGuidList = jsonToWrite.getJSONArray(
-	            			HyperspaceDB.anonymizedIDToGUIDMappingColName);
+	            			RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName);
 	            	
 	            	// if it is null in no privacy case, then it should be even inserted 
 	            	// in towritejson.
@@ -1046,10 +1046,10 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 	            	
 	            	colValue = "'"+anonymizedIDToGuidList.toString()+"'";
 	            }
-	            else if( colName.equals(HyperspaceDB.unsetAttrsColName) )
+	            else if( colName.equals(RegionMappingDataStorageDB.unsetAttrsColName) )
 	            {
 	            	JSONObject unsetAttrsJSON 
-	            					= jsonToWrite.getJSONObject(HyperspaceDB.unsetAttrsColName);
+	            					= jsonToWrite.getJSONObject(RegionMappingDataStorageDB.unsetAttrsColName);
 	            	
 	            	assert(unsetAttrsJSON != null);
 	            	
@@ -1153,7 +1153,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 	private String getPrivacyStorageString( String newTableCommand )
 	{
 		newTableCommand 
-			= newTableCommand + " , "+HyperspaceDB.anonymizedIDToGUIDMappingColName
+			= newTableCommand + " , "+RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName
 				+" TEXT";
 		
 		return newTableCommand;

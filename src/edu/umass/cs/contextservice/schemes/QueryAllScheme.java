@@ -5,7 +5,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Vector;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
@@ -22,7 +22,7 @@ import com.google.common.hash.Hashing;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
-import edu.umass.cs.contextservice.database.HyperspaceDB;
+import edu.umass.cs.contextservice.database.RegionMappingDataStorageDB;
 import edu.umass.cs.contextservice.database.QueryAllDB;
 import edu.umass.cs.contextservice.gns.GNSCalls;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
@@ -38,8 +38,7 @@ import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
-import edu.umass.cs.contextservice.schemes.helperclasses.RegionInfoClass;
-import edu.umass.cs.contextservice.schemes.helperclasses.SubspaceSearchReplyInfo;
+import edu.umass.cs.contextservice.schemes.helperclasses.SearchReplyInfo;
 import edu.umass.cs.contextservice.updates.GUIDUpdateInfo;
 import edu.umass.cs.contextservice.updates.UpdateInfo;
 import edu.umass.cs.nio.GenericMessagingTask;
@@ -208,7 +207,7 @@ public class QueryAllScheme extends AbstractScheme
 	
 	@Override
 	public Integer getConsistentHashingNodeID( String stringToHash , 
-			Vector<Integer> listOfNodesToConsistentlyHash )
+			List<Integer> listOfNodesToConsistentlyHash )
 	{
 		int numNodes = listOfNodesToConsistentlyHash.size();
 		int mapIndex = Hashing.consistentHash(stringToHash.hashCode(), numNodes);
@@ -264,57 +263,11 @@ public class QueryAllScheme extends AbstractScheme
 			return null;
 		}
 		
-		
-		//Vector<QueryComponent> qcomponents = QueryParser.parseQueryNew(query);
-		//FIXME: for conflicting queries , need to be handled sometime
-		/*Vector<QueryComponent> matchingQueryComponents = new Vector<QueryComponent>();
-		int maxMatchingSubspaceNum = getMaxOverlapSubspace(qcomponents, matchingQueryComponents);
-		ContextServiceLogger.getLogger().fine("userReqID "+userReqID+" maxMatchingSubspaceNum "+maxMatchingSubspaceNum+" matchingQueryComponents "
-				+matchingQueryComponents.size()+" query "+query);
-		
-		// get number of nodes/or regions to send to in that subspace.
-	    HashMap<Integer, OverlappingInfoClass> respNodeIdList 
-	    		= this.hyperspaceDB.getOverlappingRegionsInSubspace(maxMatchingSubspaceNum, matchingQueryComponents);
-	    
-	    // query is conflicting, like same attribute has conflicting ranges
-	    // in conjunction. 1 <= contextATT0 <= 5 && 10 <= contextATT0 <= 15,
-	    // in current query patterns this query can be generated.
-	    if( respNodeIdList.size() == 0 )
-	    {
-	    	QueryMsgFromUserReply<Integer> queryMsgFromUserReply = new QueryMsgFromUserReply<Integer>(this.getMyID(),
-					query, grpGUID, new JSONArray(), userReqID, 0);
-			try
-			{
-				this.messenger.sendToAddress(new InetSocketAddress( userIP, userPort), 
-						queryMsgFromUserReply.toJSONObject() );
-			} catch (IOException e)
-			{
-				e.printStackTrace();
-			} catch (JSONException e)
-			{
-				e.printStackTrace();
-			}
-			return;
-	    }*/
-		
 		QueryInfo currReq  
 			= new QueryInfo( query, this.getMyID(), grpGUID, userReqID, 
 					userIP, userPort, queryMsgFromUser.getExpiryTime() );
 		
-		Vector<Integer> allNodeIDs = this.allNodeIDs;
-		
-		HashMap<Integer, RegionInfoClass> overlapInfoMap
-							= new HashMap<Integer, RegionInfoClass>();
-		for(int i=0; i<allNodeIDs.size(); i++)
-		{
-			int respNodeId = Integer.parseInt(allNodeIDs.get(i).toString());
-			RegionInfoClass overlapObj = new RegionInfoClass();
-	    	
-	    	//overlapObj.hashCode = hashCode;
-	    	overlapObj.respNodeId = respNodeId;
-	    	overlapObj.replyArray = null;
-	    	overlapInfoMap.put(respNodeId, overlapObj);
-		}
+		currReq.initializeSearchQueryReplyInfo(allNodeIDs);
 		
 		synchronized(this.pendingQueryLock)
 		{
@@ -324,30 +277,18 @@ public class QueryAllScheme extends AbstractScheme
 		
 		pendingQueryRequests.put(currReq.getRequestId(), currReq);
 		
-		HashMap<Integer, SubspaceSearchReplyInfo> searchQueryReplyInfo 
-															= new HashMap<Integer, SubspaceSearchReplyInfo>();
-		
-		SubspaceSearchReplyInfo subspaceSearchInfo = new SubspaceSearchReplyInfo();
-		subspaceSearchInfo.overlappingRegionsMap = overlapInfoMap;
-		searchQueryReplyInfo.put(0, subspaceSearchInfo);
-		
-	    currReq.initializeSearchQueryReplyInfo(searchQueryReplyInfo);
-		
-	    Iterator<Integer> respNodeIdIter = overlapInfoMap.keySet().iterator();
-	    
-	    while( respNodeIdIter.hasNext() )
-	    {
-	    	Integer respNodeId = respNodeIdIter.next();
-	    	
-	    	QueryMesgToSubspaceRegion queryMesgToSubspaceRegion = 
+		for(int i=0; i<allNodeIDs.size(); i++)
+		{
+			int nodeid = allNodeIDs.get(i);
+			QueryMesgToSubspaceRegion queryMesgToSubspaceRegion = 
 					new QueryMesgToSubspaceRegion
-	    			(this.getMyID(), currReq.getRequestId(), query, grpGUID, -1, userIP, userPort, 
+	    			(this.getMyID(), currReq.getRequestId(), query, grpGUID, userIP, userPort, 
 	    						false, queryMsgFromUser.getExpiryTime(), 
 	    						PrivacySchemes.NO_PRIVACY.ordinal());
 	    	
 			try
 			{
-				this.messenger.sendToID( (Integer)respNodeId, queryMesgToSubspaceRegion.toJSONObject() );
+				this.messenger.sendToID( nodeid, queryMesgToSubspaceRegion.toJSONObject() );
 			} catch (IOException e)
 			{
 				e.printStackTrace();
@@ -355,9 +296,7 @@ public class QueryAllScheme extends AbstractScheme
 			{
 				e.printStackTrace();
 			}
-			ContextServiceLogger.getLogger().info("Sending QueryMesgToSubspaceRegion mesg from " 
-					+ this.getMyID() +" to node "+respNodeId);
-	    }
+		}
 	    return currReq;
 	}
 	
@@ -398,8 +337,7 @@ public class QueryAllScheme extends AbstractScheme
 			
 			synchronized( this.pendingUpdateLock )
 			{
-				updReq = new UpdateInfo(valueUpdateFromGNS, updateIdCounter++, 
-						null);
+				updReq = new UpdateInfo(valueUpdateFromGNS, updateIdCounter++);
 				pendingUpdateRequests.put(updReq.getRequestId(), updReq);
 				requestID = updReq.getRequestId();
 				
@@ -474,11 +412,11 @@ public class QueryAllScheme extends AbstractScheme
 			
 			if( oldValueJSON.length() == 0 )
 			{
-				updateOrInsert = HyperspaceDB.INSERT_REC;
+				updateOrInsert = RegionMappingDataStorageDB.INSERT_REC;
 			}
 			else
 			{
-				updateOrInsert = HyperspaceDB.UPDATE_REC;
+				updateOrInsert = RegionMappingDataStorageDB.UPDATE_REC;
 			}
 			
 			// default values are set for all attributes for hyperspace indexing.
@@ -588,7 +526,7 @@ public class QueryAllScheme extends AbstractScheme
 		QueryInfo queryInfo = pendingQueryRequests.get(requestId);
 
 		boolean allRepRecvd = 
-				queryInfo.addReplyFromARegionOfASubspace(0,(Integer)senderID, queryMesgToSubspaceRegionReply);
+				queryInfo.addReplyFromANode(senderID, queryMesgToSubspaceRegionReply);
 
 		if( allRepRecvd )
 		{
@@ -598,28 +536,28 @@ public class QueryAllScheme extends AbstractScheme
 			
 			if( ContextServiceConfig.sendFullRepliesWithinCS )
 			{
-				HashMap<Integer, RegionInfoClass> repliesHashMap 
-					= queryInfo.getSearchReplyMap().get(0).overlappingRegionsMap;
+				HashMap<Integer, SearchReplyInfo> repliesHashMap 
+					= queryInfo.getSearchReplyMap();
 
 				Iterator<Integer> nodeIdIter 				 = repliesHashMap.keySet().iterator();
 
 				while( nodeIdIter.hasNext() )
 				{
-					RegionInfoClass regInfo = repliesHashMap.get(nodeIdIter.next());
-					concatResult.put(regInfo.replyArray);
-					totalNumReplies = totalNumReplies + regInfo.replyArray.length();
+					SearchReplyInfo searchInfo = repliesHashMap.get(nodeIdIter.next());
+					concatResult.put(searchInfo.replyArray);
+					totalNumReplies = totalNumReplies + searchInfo.replyArray.length();
 				}
 			}
 			else
 			{
-				HashMap<Integer, RegionInfoClass> repliesHashMap  
-								= queryInfo.getSearchReplyMap().get(0).overlappingRegionsMap;
+				HashMap<Integer, SearchReplyInfo> repliesHashMap  
+								= queryInfo.getSearchReplyMap();
 				Iterator<Integer> nodeIdIter = repliesHashMap.keySet().iterator();
 
 				while( nodeIdIter.hasNext() )
 				{
-					RegionInfoClass regInfo = repliesHashMap.get(nodeIdIter.next());
-					int currRepSize = regInfo.numReplies;
+					SearchReplyInfo searchInfo = repliesHashMap.get(nodeIdIter.next());
+					int currRepSize = searchInfo.numReplies;
 					totalNumReplies = totalNumReplies + currRepSize;
 					//concatResult.put(currArray);
 				}
@@ -642,7 +580,8 @@ public class QueryAllScheme extends AbstractScheme
 				e.printStackTrace();
 			}
 			ContextServiceLogger.getLogger().info("Sending queryMsgFromUserReply mesg from " 
-					+ this.getMyID() +" to node "+new InetSocketAddress(queryInfo.getUserIP(), queryInfo.getUserPort()));
+					+ this.getMyID() +" to node "
+					+new InetSocketAddress(queryInfo.getUserIP(), queryInfo.getUserPort()));
 
 			pendingQueryRequests.remove(requestId);
 		}
@@ -701,7 +640,7 @@ public class QueryAllScheme extends AbstractScheme
 		new QueryMesgToSubspaceRegionReply( this.getMyID(), 
 				queryMesgToSubspaceRegion.getRequestId(), 
 						groupGUID, resultGUIDs, resultSize, 
-						PrivacySchemes.NO_PRIVACY.ordinal(), 0);
+						PrivacySchemes.NO_PRIVACY.ordinal());
 		
 		try
 		{

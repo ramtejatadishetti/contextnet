@@ -5,14 +5,14 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.Vector;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
-import edu.umass.cs.contextservice.database.AbstractDB;
-import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy.REQUEST_TYPE;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.regionmapper.helper.RegionInfo;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
@@ -26,21 +26,90 @@ import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
  * @author ayadav
  */
 public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolicy
-{
-	private final AbstractDB abstractDB;
+{	
+	private final List<RegionInfo> regionList;
+	private final Random randGen;
 	
 	public UniformGreedyRegionMappingPolicy( HashMap<String, AttributeMetaInfo> attributeMap, 
-			CSNodeConfig nodeConfig, AbstractDB abstractDB )
+			CSNodeConfig nodeConfig )
 	{
 		super(attributeMap, nodeConfig);
-		this.abstractDB = abstractDB;
+		regionList = new LinkedList<RegionInfo>();
+		randGen = new Random();
 	}
 	
 	@Override
 	public List<Integer> getNodeIDsForAValueSpace
 				(ValueSpaceInfo valueSpace, REQUEST_TYPE requestType) 
 	{
-		return null;
+		// map so that we remove duplicates.
+		//FIXME: this code is copied in many policies need to find a way to not copy code.
+		HashMap<Integer, Integer> overlapNodeIdsMap = new HashMap<Integer, Integer>();
+		
+		for( int i=0; i<regionList.size(); i++ )
+		{
+			RegionInfo currRegion = regionList.get(i);
+			ValueSpaceInfo regionValSpace = currRegion.getValueSpaceInfo();
+			
+			boolean overlap = true;
+			
+			Iterator<String> inputAttrIter = valueSpace.getValueSpaceBoundary().keySet().iterator();
+			
+			while( inputAttrIter.hasNext() )
+			{
+				String attrName = inputAttrIter.next();
+				
+				AttributeMetaInfo attrMetaInfo = attributeMap.get(attrName);
+				
+				AttributeValueRange inputAttrValRange  
+									= valueSpace.getValueSpaceBoundary().get(attrName);
+				
+				AttributeValueRange regionAttrValRange 
+								= regionValSpace.getValueSpaceBoundary().get(attrName);
+				
+				
+				overlap = overlap && AttributeTypes.checkOverlapOfTwoIntervals(inputAttrValRange, 
+												regionAttrValRange, attrMetaInfo.getDataType());
+				
+				if(!overlap)
+				{
+					break;
+				}
+			}
+			
+			if( overlap )
+			{
+				if(requestType == REQUEST_TYPE.UPDATE)
+				{
+					// Current region's value space overlaps with the value space in 
+					// the input
+					List<Integer> regionNodeList = currRegion.getNodeList();
+					
+					for( int j=0; j<regionNodeList.size(); j++ )
+					{
+						overlapNodeIdsMap.put(regionNodeList.get(j), regionNodeList.get(j) );
+					}
+				}
+				else if(requestType == REQUEST_TYPE.SEARCH)
+				{
+					// Current region's value space overlaps with the value space in 
+					// the input
+					List<Integer> regionNodeList = currRegion.getNodeList();
+					int randNodeId = regionNodeList.get(randGen.nextInt(regionNodeList.size()));
+					overlapNodeIdsMap.put(randNodeId, randNodeId );
+				}
+			}
+		}
+		
+		List<Integer> overlapNodeIds = new LinkedList<Integer>();
+		Iterator<Integer> nodeIdIter = overlapNodeIdsMap.keySet().iterator();
+		
+		while( nodeIdIter.hasNext() )
+		{
+			overlapNodeIds.add(nodeIdIter.next());
+		}
+		
+		return overlapNodeIds;
 	}
 	
 	
@@ -70,7 +139,6 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 		
 		double desiredVolumeOfEachRegion = Math.log(1.0/numRegions) + logVolumeOfValSpace;
 		System.out.println("Desired log volume of a region "+desiredVolumeOfEachRegion);
-		Vector<RegionInfo> regionInfoVector = new Vector<RegionInfo>();
 		
 		
 		int curr = 0;
@@ -82,23 +150,25 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 			RegionInfo regionInfo = partitionValueSpaceUsingHyperplane
 					(valSpaceInfo, hyperplaneAttr, desiredVolumeOfEachRegion, attributeMap);
 			
-			regionInfoVector.add(regionInfo);
+			regionList.add(regionInfo);
 			curr++;
 		}
 		// remaining valuespace is the last region.
 		RegionInfo regionInfo = new RegionInfo();
 		regionInfo.setValueSpaceInfo(valSpaceInfo);
-		regionInfoVector.add(regionInfo);
+		regionList.add(regionInfo);
 		
 		
 		// print regions.
-		for(int i=0; i<regionInfoVector.size(); i++)
+		for(int i=0; i<regionList.size(); i++)
 		{
-			regionInfo = regionInfoVector.get(i);
+			regionInfo = regionList.get(i);
 			double volume = computeLogVolume(regionInfo.getValueSpaceInfo().getValueSpaceBoundary(), 
 						attributeMap );
 			System.out.println("Region num "+i+" log volume "+volume+" "+regionInfo.toString());
 		}
+		
+		assignNodesUniformly();
 	}
 	
 	
@@ -204,6 +274,7 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 		}
 		
 		RegionInfo regionInfo = new RegionInfo();
+		regionInfo.setValueSpaceInfo(regionValSpace);
 		return regionInfo;
 	}
 	
@@ -235,6 +306,33 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 			logSum = logSum + Math.log(intervalSize);
 		}	
 		return logSum;
+	}
+	
+	private void assignNodesUniformly()
+	{
+		int currRegionIndex = 0;
+		Iterator<Integer> nodeIdIter = nodeConfig.getNodeIDs().iterator();
+		
+		while( nodeIdIter.hasNext() )
+		{
+			int nodeId = nodeIdIter.next();
+			
+			RegionInfo regionInfo = regionList.get(currRegionIndex);
+			
+			if( regionInfo.getNodeList() == null )
+			{
+				List<Integer> nodeList = new LinkedList<Integer>();
+				nodeList.add(nodeId);
+				regionInfo.setNodeList(nodeList);
+			}
+			else
+			{
+				regionInfo.getNodeList().add(nodeId);
+			}
+			
+			currRegionIndex++;
+			currRegionIndex = currRegionIndex%regionList.size();
+		}
 	}
 	
 	
@@ -271,7 +369,7 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 		}
 		
 		UniformGreedyRegionMappingPolicy obj = new UniformGreedyRegionMappingPolicy
-														(givenMap, csNodeConfig, null);
+														(givenMap, csNodeConfig);
 		obj.computeRegionMapping();
 	}
 }

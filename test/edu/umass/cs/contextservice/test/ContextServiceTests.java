@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import java.util.Vector;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -30,27 +29,22 @@ import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
 import edu.umass.cs.contextservice.nodeApp.StartContextServiceNode;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.gnsclient.client.GNSClient;
-import edu.umass.cs.gnsclient.client.GNSCommand;
 import edu.umass.cs.gnsclient.client.util.GuidEntry;
-import edu.umass.cs.gnsclient.client.util.GuidUtils;
-import edu.umass.cs.gnscommon.AclAccessType;
-import edu.umass.cs.gnscommon.GNSCommandProtocol;
 import edu.umass.cs.gnscommon.exceptions.client.EncryptionException;
 
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class ContextServiceTests 
+public class ContextServiceTests
 {
 	private static KeyPairGenerator kpg;
-	private static ContextServiceClient csClient 	= null;
+	private static ContextServiceClient csClient 			= null;
 	
 	private static String memberAliasPrefix 				= "clientGUID";
 	
 	private static String csNodeIp 							= "127.0.0.1";
 	private static int csPort 								= 8000;
 	
-	private static PrivacySchemes privacyScheme				= PrivacySchemes.NO_PRIVACY;
+	private static PrivacySchemes privacyScheme				= PrivacySchemes.PRIVACY;
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception
@@ -60,12 +54,13 @@ public class ContextServiceTests
 		ContextServiceConfig.configFileDirectory 
 			= "conf/testConf/contextServiceConf";
 		
+		
 		// setting all config parameters for the test.
 		ContextServiceConfig.sendFullRepliesToClient 	= true;
 		ContextServiceConfig.sendFullRepliesWithinCS 	= true;
-		ContextServiceConfig.TRIGGER_ENABLED 			= true;
-		ContextServiceConfig.UniqueGroupGUIDEnabled     = true;
-		ContextServiceConfig.PRIVACY_ENABLED			= false;
+		ContextServiceConfig.TRIGGER_ENABLED 			= false;
+		ContextServiceConfig.UniqueGroupGUIDEnabled     = false;
+		ContextServiceConfig.PRIVACY_ENABLED			= true;
 		ContextServiceClient.EXPERIMENT_MODE            = true;
 		
 		
@@ -84,9 +79,7 @@ public class ContextServiceTests
 	@Test
 	public void test_1_emptyQueryTest() 
 	{
-		String selectQuery = 
-			"SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE "
-			+ "attr1 >= 1 AND attr1 <= 1500 AND "
+		String selectQuery =  "attr1 >= 1 AND attr1 <= 1500 AND "
 			+ "attr3 >= 1 AND attr3 <= 1500 AND "
 			+ "attr5 >= 1 AND attr5 <= 1500";
 		
@@ -112,19 +105,18 @@ public class ContextServiceTests
 			JSONObject attrValJSON = getARandomAttrValSet();
 			csClient.sendUpdate(myGUID, null, attrValJSON, -1);
 		}
-		String selectQuery = 
-			"SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE "
-			+ "attr1 >= 1 AND attr1 <= 1500 AND "
+		String selectQuery = "attr1 >= 1 AND attr1 <= 1500 AND "
 			+ "attr3 >= 1 AND attr3 <= 1500 AND "
 			+ "attr5 >= 1 AND attr5 <= 1500";
 		
 		JSONArray replyArray = new JSONArray();
 		long expiryTime = 300000; // 5 min
 		int numRep = csClient.sendSearchQuery(selectQuery, replyArray, expiryTime);
+		System.out.println("Num rep "+numRep);
 		
 		assertEquals(100, numRep);
 		assertEquals(100, replyArray.length());
-	}
+	}*/
 	
 	@Test
 	public void test_4_noGNSprivacyTest() 
@@ -141,7 +133,7 @@ public class ContextServiceTests
 		
 		GuidEntry userGUID = getAGUIDEntry("userGuid");
 		
-		Vector<GuidEntry> aclMemberGuids = new Vector<GuidEntry>();
+		List<GuidEntry> aclMemberGuids = new LinkedList<GuidEntry>();
 		
 		for( int i=0; i<10; i++ )
 		{
@@ -207,12 +199,12 @@ public class ContextServiceTests
 		
 		System.out.println("Number of anonymized IDs created "
 											+anonymizedIDsList.size());
-		assertTrue(anonymizedIDsList!=null);
-		assertTrue(anonymizedIDsList.size() > 0);
+		assert(anonymizedIDsList!=null);
+		assert(anonymizedIDsList.size() > 0);
 		
 		// number of anonymized IDs cannot be greater then total
 		// distinct ACL GUIDs.
-		assertTrue((aclMemberGuids.size()+1) >= anonymizedIDsList.size());
+		assert((aclMemberGuids.size()+1) >= anonymizedIDsList.size());
 		//assertEquals(101, numRep);
 		
 		
@@ -226,9 +218,7 @@ public class ContextServiceTests
 		
 		for(int i=0; i<10; i++)
 		{
-			String selectQuery = 
-					"SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE "
-					+ "attr0 >= 2 AND attr0 <= 1500 AND "
+			String selectQuery = "attr0 >= 2 AND attr0 <= 1500 AND "
 					+ "attr2 >= 2 AND attr2 <= 1500 AND "
 					+ "attr4 >= 2 AND attr4 <= 1500";
 				
@@ -238,6 +228,7 @@ public class ContextServiceTests
 			int numRep = csClient.sendSearchQuerySecure
 					(selectQuery, replyArray, expiryTime, aclMemberGuids.get(i));
 			
+			System.out.println("numRep "+numRep+ " i "+i);
 			// querier is allowed to read
 			if(i<5)
 			{
@@ -284,9 +275,7 @@ public class ContextServiceTests
 		// nobody except from userGUID should be allowed to read.
 		for(int i=0; i<10; i++)
 		{
-			String selectQuery = 
-					"SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE "
-					+ "attr0 >= 2 AND attr0 <= 1500 AND "
+			String selectQuery = "attr0 >= 2 AND attr0 <= 1500 AND "
 					+ "attr2 >= 2 AND attr2 <= 1500 AND "
 					+ "attr5 >= 2 AND attr5 <= 1500";
 				
@@ -317,9 +306,7 @@ public class ContextServiceTests
 		}
 		
 		// check with user
-		String selectQuery = 
-				"SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE "
-				+ "attr0 >= 2 AND attr0 <= 1500 AND "
+		String selectQuery = "attr0 >= 2 AND attr0 <= 1500 AND "
 				+ "attr2 >= 2 AND attr2 <= 1500 AND "
 				+ "attr5 >= 2 AND attr5 <= 1500";
 			
@@ -350,7 +337,7 @@ public class ContextServiceTests
 	}
 	
 	
-	@Test
+	/*@Test
 	public void test_3_GNSprivacyTest() 
 			throws Exception
 	{
@@ -623,7 +610,7 @@ public class ContextServiceTests
 			assert( numRep > 0 );
 			assert( replyArray.length() > 0 );
 		}
-	}*/
+	}
 	
 	@Test
 	public void test_5_TriggerTest() throws JSONException
@@ -648,9 +635,7 @@ public class ContextServiceTests
 		System.out.println("Inserting "+myGUID);
 		csClient.sendUpdate(myGUID, null, attrValJSON, -1);
 		
-		String selectQuery = 
-			"SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE "
-			+ "attr0 >= 2 AND attr0 <= 750 AND "
+		String selectQuery = "attr0 >= 2 AND attr0 <= 750 AND "
 			+ "attr1 >= 2 AND attr1 <= 750 AND "
 			+ "attr2 >= 2 AND attr2 <= 750 AND "
 			+ "attr3 >= 2 AND attr3 <= 750 AND "
@@ -680,7 +665,7 @@ public class ContextServiceTests
 		assert(triggerArray.length() >= 1);
 //		assertEquals(100, numRep);
 //		assertEquals(100, replyArray.length());
-	}
+	}*/
 	
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception 

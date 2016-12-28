@@ -21,7 +21,6 @@ import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.config.CSConfigFileLoader;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
-import edu.umass.cs.nio.interfaces.NodeConfig;
 
 /**
  * Planetlab context service example with 10 nodes, with simple
@@ -34,7 +33,7 @@ public class StartContextServiceNode extends ContextServiceNode
 	
 	private static CSNodeConfig csNodeConfig					= null;
 	
-	public StartContextServiceNode(Integer id, NodeConfig<Integer> nc)
+	public StartContextServiceNode(Integer id, CSNodeConfig nc)
 			throws Exception
 	{
 		super(id, nc);

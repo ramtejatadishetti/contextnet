@@ -6,7 +6,6 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 
@@ -21,7 +20,6 @@ import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource.DB_REQUEST_TYPE;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
-import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy.REQUEST_TYPE;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 
 
@@ -157,7 +155,7 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 	 * subspace. Used in processing search query.
 	 * @return
 	 */
-	protected int getMaxOverlapSubspace( HashMap<String, ProcessingQueryComponent> pqueryComponents, 
+	/*protected int getMaxOverlapSubspace( HashMap<String, ProcessingQueryComponent> pqueryComponents, 
 			HashMap<String, ProcessingQueryComponent> matchingAttributes )
 	{
 		// first the maximum matching subspace is found and then any of its replica it chosen
@@ -241,5 +239,5 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 	{
 		public int subspaceId;
 		public HashMap<String, ProcessingQueryComponent> currMatchingComponents;
-	}
+	}*/
 }

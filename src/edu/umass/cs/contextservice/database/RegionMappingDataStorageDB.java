@@ -27,7 +27,7 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 
 
-public class HyperspaceDB extends AbstractDB
+public class RegionMappingDataStorageDB extends AbstractDataStorageDB
 {
 	public static final int UPDATE_REC 								= 1;
 	public static final int INSERT_REC 								= 2;
@@ -67,7 +67,7 @@ public class HyperspaceDB extends AbstractDB
 	
 	private final Random randomGen;
 	
-	public HyperspaceDB( Integer myNodeID )
+	public RegionMappingDataStorageDB( Integer myNodeID )
 			throws Exception
 	{
 		if(ContextServiceConfig.disableMySQLDB)

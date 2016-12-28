@@ -9,8 +9,6 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Random;
 
 import org.json.JSONException;
@@ -20,7 +18,6 @@ import edu.umass.cs.contextservice.ContextServiceNode;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
-import edu.umass.cs.contextservice.geodesy.GlobalCoordinate;
 import edu.umass.cs.contextservice.messages.ContextServicePacket;
 import edu.umass.cs.contextservice.messages.GetMessage;
 import edu.umass.cs.contextservice.messages.GetReplyMessage;
@@ -28,11 +25,9 @@ import edu.umass.cs.contextservice.messages.QueryMsgFromUser;
 import edu.umass.cs.contextservice.messages.QueryMsgFromUserReply;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNS;
 import edu.umass.cs.contextservice.messages.ValueUpdateFromGNSReply;
-import edu.umass.cs.contextservice.queryparsing.GeoJSON;
 import edu.umass.cs.nio.AbstractJSONPacketDemultiplexer;
 import edu.umass.cs.nio.JSONMessenger;
 import edu.umass.cs.nio.JSONNIOTransport;
-import edu.umass.cs.nio.interfaces.NodeConfig;
 import edu.umass.cs.nio.interfaces.PacketDemultiplexer;
 import edu.umass.cs.nio.nioutils.NIOHeader;
 
@@ -41,12 +36,12 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode
 	// TODO: string attr test needs to be added to context service tests
 	public static final int HYPERSPACE_HASHING							= 1;
 	
-	private static CSNodeConfig csNodeConfig					= null;
+	private static CSNodeConfig csNodeConfig							= null;
 	
 	private static FourNodeCSSetupStringAttrs[] nodes					= null;
 	
 	
-	public FourNodeCSSetupStringAttrs(Integer id, NodeConfig<Integer> nc)
+	public FourNodeCSSetupStringAttrs(Integer id, CSNodeConfig nc)
 			throws Exception
 	{
 		super(id, nc);
@@ -462,34 +457,6 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode
 				e.printStackTrace();
 			}
 			return true;
-		}
-		
-		private JSONObject getGeoJSON()
-		{
-			List<GlobalCoordinate> list = new LinkedList<GlobalCoordinate>();
-			GlobalCoordinate amherst = new GlobalCoordinate(42.340382, -72.496819);
-			GlobalCoordinate northampton = new GlobalCoordinate(42.3250896, -72.6412013);
-			GlobalCoordinate sunderland = new GlobalCoordinate(42.4663727, -72.5795115);
-			list.add(amherst);
-			list.add(sunderland);
-			list.add(northampton);
-			list.add(amherst);
-			JSONObject geoJSON = null;
-			try 
-			{
-				 geoJSON = GeoJSON.createGeoJSONPolygon(list);
-				 /*JSONArray coordArray = geoJSON.getJSONArray("coordinates");
-				 JSONArray newArray = new JSONArray(coordArray.getString(0));
-				 for(int i=0;i<newArray.length();i++)
-				 {
-					 JSONArray coordList = new JSONArray(newArray.getString(i));
-					 ContextServiceLogger.getLogger().fine("i "+i+coordList.getDouble(0) );
-				 }*/
-			} catch (JSONException e) 
-			{
-				e.printStackTrace();
-			}
-			return geoJSON;
 		}
 	}
 }

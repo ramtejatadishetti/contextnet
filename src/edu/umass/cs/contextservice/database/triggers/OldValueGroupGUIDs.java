@@ -11,11 +11,11 @@ import java.util.HashMap;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import edu.umass.cs.contextservice.database.HyperspaceDB;
+import edu.umass.cs.contextservice.database.RegionMappingDataStorageDB;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource.DB_REQUEST_TYPE;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
-import edu.umass.cs.contextservice.schemes.HyperspaceHashing;
+import edu.umass.cs.contextservice.schemes.RegionMappingBasedScheme;
 import edu.umass.cs.contextservice.utils.Utils;
 
 /**
@@ -51,11 +51,11 @@ public class OldValueGroupGUIDs implements Runnable
 	
 	private void returnRemovedGroupGUIDs()
 	{
-		String tableName 			= HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
+		String tableName 			= RegionMappingDataStorageDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 		
 		assert(oldValJSON != null);
 		assert(oldValJSON.length() > 0);
-		JSONObject oldUnsetAttrs 	= HyperspaceHashing.getUnsetAttrJSON(oldValJSON);
+		JSONObject oldUnsetAttrs 	= RegionMappingBasedScheme.getUnsetAttrJSON(oldValJSON);
 		
 		// it can be empty but should not be null
 		assert( oldUnsetAttrs != null );

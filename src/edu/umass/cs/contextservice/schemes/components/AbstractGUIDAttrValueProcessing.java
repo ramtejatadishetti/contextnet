@@ -14,9 +14,8 @@ import org.json.JSONObject;
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
-import edu.umass.cs.contextservice.database.AbstractDB;
-import edu.umass.cs.contextservice.database.HyperspaceDB;
+import edu.umass.cs.contextservice.database.AbstractDataStorageDB;
+import edu.umass.cs.contextservice.database.RegionMappingDataStorageDB;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegion;
@@ -28,7 +27,7 @@ import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy;
 import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy.REQUEST_TYPE;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
-import edu.umass.cs.contextservice.schemes.HyperspaceHashing;
+import edu.umass.cs.contextservice.schemes.RegionMappingBasedScheme;
 import edu.umass.cs.contextservice.updates.UpdateInfo;
 import edu.umass.cs.nio.JSONMessenger;
 
@@ -42,7 +41,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 	
 	protected final Integer myID;
 	
-	protected final AbstractDB hyperspaceDB;
+	protected final AbstractDataStorageDB hyperspaceDB;
 	
 	protected final JSONMessenger<Integer> messenger;
 	
@@ -59,7 +58,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 	// FIXME: check if the abstract methods and methods implemented here are separated correctly
 	public AbstractGUIDAttrValueProcessing( Integer myID, 
 			AbstractRegionMappingPolicy regionMappingPolicy, 
-			AbstractDB hyperspaceDB, JSONMessenger<Integer> messenger , 
+			AbstractDataStorageDB hyperspaceDB, JSONMessenger<Integer> messenger , 
 		ConcurrentHashMap<Long, QueryInfo> pendingQueryRequests, 
 		ProfilerStatClass profStats )
 	{
@@ -218,7 +217,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 		
 		
 		JSONObject unsetAttrsJSON = primarySubspaceJSON.getJSONObject
-				(HyperspaceDB.unsetAttrsColName);
+				(RegionMappingDataStorageDB.unsetAttrsColName);
 		
 		// sending remove
 		nodeIter = removeNodesMap.keySet().iterator();
@@ -235,7 +234,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 										ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY
 										, requestID, firstTimeInsert, updateStartTime,
 										oldValueJSON, unsetAttrsJSON, updatedAttrValJSON, 
-										PrivacySchemes.HYPERSPACE_PRIVACY.ordinal() );
+										ContextServiceConfig.privacyScheme.ordinal() );
 			
 			try
 			{
@@ -286,13 +285,13 @@ public abstract class AbstractGUIDAttrValueProcessing
 			}
 						
 			// anonymizedIDToGUID mapping
-			if(oldValueJSON.has(HyperspaceDB.anonymizedIDToGUIDMappingColName))
+			if(oldValueJSON.has(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName))
 			{
 				JSONArray decodingArray = oldValueJSON.getJSONArray
-							(HyperspaceDB.anonymizedIDToGUIDMappingColName);
+							(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName);
 				
 				assert(decodingArray!= null);
-				jsonToWrite.put(HyperspaceDB.anonymizedIDToGUIDMappingColName
+				jsonToWrite.put(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName
 						, decodingArray);
 			}
 			
@@ -304,7 +303,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 								ValueUpdateToSubspaceRegionMessage.ADD_ENTRY, 
 								requestID, false, updateStartTime,
 								oldValueJSON, unsetAttrsJSON, updatedAttrValJSON, 
-								PrivacySchemes.HYPERSPACE_PRIVACY.ordinal());
+								ContextServiceConfig.privacyScheme.ordinal());
 			
 			try
 			{
@@ -335,7 +334,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 										ValueUpdateToSubspaceRegionMessage.UPDATE_ENTRY, 
 										requestID, firstTimeInsert, updateStartTime, 
 										oldValueJSON, unsetAttrsJSON, updatedAttrValJSON, 
-										PrivacySchemes.HYPERSPACE_PRIVACY.ordinal());
+										ContextServiceConfig.privacyScheme.ordinal());
 			
 			try
 			{
@@ -393,7 +392,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 		JSONObject jsonToWrite = new JSONObject();
 		
 		JSONObject unsetAttrsJSON = primarySubspaceJSON.getJSONObject
-											(HyperspaceDB.unsetAttrsColName);
+											(RegionMappingDataStorageDB.unsetAttrsColName);
 		
 		attrIter = AttributeTypes.attributeMap.keySet().iterator();
 		
@@ -420,13 +419,13 @@ public abstract class AbstractGUIDAttrValueProcessing
 		
 		// add the anonymizedIDToGUID mapping if it is there
 		if(primarySubspaceJSON.has
-				(HyperspaceDB.anonymizedIDToGUIDMappingColName))
+				(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName))
 		{
 			JSONArray decodingArray 
-				= primarySubspaceJSON.getJSONArray(HyperspaceDB.anonymizedIDToGUIDMappingColName);
+				= primarySubspaceJSON.getJSONArray(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName);
 			
 			assert(decodingArray != null);
-			jsonToWrite.put(HyperspaceDB.anonymizedIDToGUIDMappingColName, 
+			jsonToWrite.put(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName, 
 					decodingArray);
 		}
 		
@@ -444,7 +443,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 								-1, GUID, jsonToWrite, 
 								ValueUpdateToSubspaceRegionMessage.ADD_ENTRY, 
 								requestID, true, updateStartTime, new JSONObject(),
-								unsetAttrsJSON, updateAttrJSON, PrivacySchemes.HYPERSPACE_PRIVACY.ordinal());
+								unsetAttrsJSON, updateAttrJSON, ContextServiceConfig.privacyScheme.ordinal());
 			
 			try
 			{
@@ -496,7 +495,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 			}
 		
 			// update unset attributes
-			JSONObject unsetAttrs = HyperspaceHashing.getUnsetAttrJSON(oldValJSON);
+			JSONObject unsetAttrs = RegionMappingBasedScheme.getUnsetAttrJSON(oldValJSON);
 			
 			if( unsetAttrs != null )
 			{
@@ -529,19 +528,19 @@ public abstract class AbstractGUIDAttrValueProcessing
 				}
 			}
 			assert(unsetAttrs != null);
-			jsonToWrite.put(HyperspaceDB.unsetAttrsColName, unsetAttrs);
+			jsonToWrite.put(RegionMappingDataStorageDB.unsetAttrsColName, unsetAttrs);
 			
 		
 			// now anonymizedIDToGUIDmapping
 			
 			boolean alreadyStored 
-					= HyperspaceHashing.checkIfAnonymizedIDToGuidInfoAlreadyStored(oldValJSON);
+					= RegionMappingBasedScheme.checkIfAnonymizedIDToGuidInfoAlreadyStored(oldValJSON);
 			
 			if( !alreadyStored )
 			{
 				if(anonymizedIDToGuidMapping != null)
 				{
-					jsonToWrite.put(HyperspaceDB.anonymizedIDToGUIDMappingColName, 
+					jsonToWrite.put(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName, 
 						anonymizedIDToGuidMapping);
 				}
 			}
@@ -566,7 +565,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 		
 		long udpateStartTime 	= valueUpdateToSubspaceRegionMessage.getUpdateStartTime();
 		
-		String tableName 		= HyperspaceDB.ATTR_INDEX_TABLE_NAME;
+		String tableName 		= RegionMappingDataStorageDB.ATTR_INDEX_TABLE_NAME;
 		
 		try 
 		{
@@ -577,7 +576,7 @@ public abstract class AbstractGUIDAttrValueProcessing
 					//if(!ContextServiceConfig.DISABLE_SECONDARY_SUBSPACES_UPDATES)
 					{
 						this.hyperspaceDB.storeGUIDUsingAttrIndex
-							(tableName, GUID, jsonToWrite, HyperspaceDB.INSERT_REC);
+							(tableName, GUID, jsonToWrite, RegionMappingDataStorageDB.INSERT_REC);
 					}
 					break;
 				}
@@ -596,12 +595,12 @@ public abstract class AbstractGUIDAttrValueProcessing
 						if( firstTimeInsert )
 						{
 							this.hyperspaceDB.storeGUIDUsingAttrIndex
-									(tableName, GUID, jsonToWrite, HyperspaceDB.INSERT_REC);
+									(tableName, GUID, jsonToWrite, RegionMappingDataStorageDB.INSERT_REC);
 						}
 						else
 						{
 							this.hyperspaceDB.storeGUIDUsingAttrIndex
-									(tableName, GUID, jsonToWrite, HyperspaceDB.UPDATE_REC);
+									(tableName, GUID, jsonToWrite, RegionMappingDataStorageDB.UPDATE_REC);
 						}
 					}
 					break;

@@ -5,8 +5,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
-import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
@@ -41,7 +42,7 @@ public abstract class AbstractScheme implements PacketDemultiplexer<JSONObject>
 	
 	protected final Object numMesgLock	;
 	
-	protected final Vector<Integer> allNodeIDs;
+	protected final List<Integer> allNodeIDs;
 	
 	// stores the pending queries
 	protected ConcurrentHashMap<Long, QueryInfo> pendingQueryRequests		= null;
@@ -64,7 +65,7 @@ public abstract class AbstractScheme implements PacketDemultiplexer<JSONObject>
 	{
 		this.numMesgLock = new Object();
 		
-		this.allNodeIDs = new Vector<Integer>();
+		this.allNodeIDs = new LinkedList<Integer>();
 		
 		Set<Integer>	nodeIDSet = nc.getNodeIDs();
 		
@@ -104,7 +105,7 @@ public abstract class AbstractScheme implements PacketDemultiplexer<JSONObject>
 	 * returns all nodeIDs
 	 * @return
 	 */
-	public Vector<Integer> getAllNodeIDs()
+	public List<Integer> getAllNodeIDs()
 	{
 		return this.allNodeIDs;
 	}
@@ -211,7 +212,7 @@ public abstract class AbstractScheme implements PacketDemultiplexer<JSONObject>
 	
 	// public abstract methods
 	public abstract Integer getConsistentHashingNodeID( String stringToHash, 
-												Vector<Integer> listOfNodesToConsistentlyHash);
+												List<Integer> listOfNodesToConsistentlyHash);
 	
 	
 	public abstract GenericMessagingTask<Integer,?>[] handleQueryMsgFromUser(

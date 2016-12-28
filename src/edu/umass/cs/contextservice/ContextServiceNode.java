@@ -2,17 +2,17 @@ package edu.umass.cs.contextservice;
 
 import java.util.Iterator;
 
+import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.common.ContextServiceDemultiplexer;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ContextServicePacket.PacketType;
 import edu.umass.cs.contextservice.schemes.AbstractScheme;
-import edu.umass.cs.contextservice.schemes.HyperspaceHashing;
 import edu.umass.cs.contextservice.schemes.QueryAllScheme;
+import edu.umass.cs.contextservice.schemes.RegionMappingBasedScheme;
 import edu.umass.cs.nio.AbstractJSONPacketDemultiplexer;
 import edu.umass.cs.nio.JSONMessenger;
 import edu.umass.cs.nio.JSONNIOTransport;
-import edu.umass.cs.nio.interfaces.NodeConfig;
 
 public abstract class ContextServiceNode
 {
@@ -25,7 +25,7 @@ public abstract class ContextServiceNode
 	private final Object startMonitor = new Object();
 	
 	
-	public ContextServiceNode(Integer id, NodeConfig<Integer> nc) throws Exception
+	public ContextServiceNode(Integer id, CSNodeConfig nc) throws Exception
 	{
 		this.myID = id;
 		AbstractJSONPacketDemultiplexer pd = new ContextServiceDemultiplexer();
@@ -50,7 +50,7 @@ public abstract class ContextServiceNode
 				}
 				else
 				{
-					this.contextservice = new HyperspaceHashing(nc, messenger);
+					this.contextservice = new RegionMappingBasedScheme(nc, messenger);
 				}
 				//
 				

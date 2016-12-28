@@ -1,6 +1,5 @@
 package edu.umass.cs.contextservice.profilers;
 
-import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
@@ -99,11 +98,9 @@ public class ProfilerStatClass implements Runnable
 				
 				if(pendingUpdateRequests.size() > 0)
 				{
-					Iterator<Long> reqIter = pendingUpdateRequests.keySet().iterator();
-					
-					UpdateInfo updInfo = pendingUpdateRequests.get(reqIter.next());
-					
-					System.out.println(" value update map string "+updInfo.toStringValueUpdateReplyMap());
+//					Iterator<Long> reqIter = pendingUpdateRequests.keySet().iterator();
+//					
+//					UpdateInfo updInfo = pendingUpdateRequests.get(reqIter.next());
 				}
 			}
 			

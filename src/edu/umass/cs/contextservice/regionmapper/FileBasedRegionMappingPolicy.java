@@ -10,11 +10,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
-import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy.REQUEST_TYPE;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.regionmapper.helper.RegionInfo;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
@@ -29,7 +29,7 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 {
 	private final String fileName;
 	private final List<RegionInfo> regionList;
-	
+	private final Random randGen;
 	
 	public FileBasedRegionMappingPolicy( HashMap<String, AttributeMetaInfo> attributeMap, 
 			CSNodeConfig nodeConfig, String fileName )
@@ -37,6 +37,7 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 		super(attributeMap, nodeConfig);
 		this.fileName = fileName;
 		regionList = new LinkedList<RegionInfo>();
+		randGen = new Random();
 	}
 	
 	
@@ -80,13 +81,24 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 			
 			if( overlap )
 			{
-				// Current region's value space overlaps with the value space in 
-				// the input
-				List<Integer> regionNodeList = currRegion.getNodeList();
-				
-				for( int j=0; j<regionNodeList.size(); j++ )
+				if(requestType == REQUEST_TYPE.UPDATE)
 				{
-					overlapNodeIdsMap.put(regionNodeList.get(j), regionNodeList.get(j) );
+					// Current region's value space overlaps with the value space in 
+					// the input
+					List<Integer> regionNodeList = currRegion.getNodeList();
+					
+					for( int j=0; j<regionNodeList.size(); j++ )
+					{
+						overlapNodeIdsMap.put(regionNodeList.get(j), regionNodeList.get(j) );
+					}
+				}
+				else if(requestType == REQUEST_TYPE.SEARCH)
+				{
+					// Current region's value space overlaps with the value space in 
+					// the input
+					List<Integer> regionNodeList = currRegion.getNodeList();
+					int randNodeId = regionNodeList.get(randGen.nextInt(regionNodeList.size()));
+					overlapNodeIdsMap.put(randNodeId, randNodeId );
 				}
 			}
 		}
@@ -223,7 +235,8 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 		ValueSpaceInfo vspaceInfo = new ValueSpaceInfo();
 		vspaceInfo.getValueSpaceBoundary().put("attr10", new AttributeValueRange(1+"", 1500+""));
 		
-		List<Integer> nodeList = regionMapping.getNodeIDsForAValueSpace(vspaceInfo);
+		List<Integer> nodeList = regionMapping.getNodeIDsForAValueSpace(vspaceInfo, 
+				REQUEST_TYPE.SEARCH);
 		
 		System.out.println("Node list size "+nodeList.size()+" expected "+NUM_NODES);
 		

@@ -20,8 +20,7 @@ import org.json.JSONObject;
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
-import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
-import edu.umass.cs.contextservice.queryparsing.QueryInfo;
+import edu.umass.cs.contextservice.queryparsing.QueryParser;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.regionmapper.helper.RegionInfo;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
@@ -564,14 +563,12 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 	private boolean checkIfQueryAndRegionOverlap(String searchQuery, 
 			RegionInfo regionInfo, HashMap<String, AttributeMetaInfo> attributeMap )
 	{
-		QueryInfo qInfo = new QueryInfo(searchQuery);
-		
-		HashMap<String, ProcessingQueryComponent> qCompMap = qInfo.getProcessingQC();
+		ValueSpaceInfo queryValspace = QueryParser.parseQuery(searchQuery);
 		
 		HashMap<String, AttributeValueRange> regionBoundary 
 							= regionInfo.getValueSpaceInfo().getValueSpaceBoundary();
 		
-		Iterator<String> attrIter = qCompMap.keySet().iterator();
+		Iterator<String> attrIter = regionBoundary.keySet().iterator();
 		
 		boolean overlap = true;
 		
@@ -579,12 +576,9 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 		{
 			String attrName = attrIter.next();
 			
-			ProcessingQueryComponent pqc = qCompMap.get(attrName);
+			AttributeValueRange queryAttrRange = queryValspace.getValueSpaceBoundary().get(attrName);
 			
 			AttributeValueRange regionAttrRange = regionBoundary.get(attrName);
-			
-			AttributeValueRange queryAttrRange 
-					= new AttributeValueRange( pqc.getLowerBound(), pqc.getUpperBound() );
 			
 			overlap = overlap && AttributeTypes.checkOverlapOfTwoIntervals
 					( regionAttrRange, queryAttrRange, attributeMap.get(attrName).getDataType() );

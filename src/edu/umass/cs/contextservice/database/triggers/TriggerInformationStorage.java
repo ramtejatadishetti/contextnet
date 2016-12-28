@@ -15,14 +15,15 @@ import org.json.JSONObject;
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.database.HyperspaceDB;
+import edu.umass.cs.contextservice.database.RegionMappingDataStorageDB;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource.DB_REQUEST_TYPE;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionMessage;
-import edu.umass.cs.contextservice.queryparsing.ProcessingQueryComponent;
-import edu.umass.cs.contextservice.queryparsing.QueryInfo;
-import edu.umass.cs.contextservice.schemes.HyperspaceHashing;
+import edu.umass.cs.contextservice.queryparsing.QueryParser;
+import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
+import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
+import edu.umass.cs.contextservice.schemes.RegionMappingBasedScheme;
 import edu.umass.cs.contextservice.utils.Utils;
 import edu.umass.cs.utils.DelayProfiler;
 
@@ -59,7 +60,7 @@ public class TriggerInformationStorage implements
 			myConn = dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
 			stmt   =  myConn.createStatement();
 			
-			String tableName = HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
+			String tableName = RegionMappingDataStorageDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 			
 			String newTableCommand = "create table "+tableName+" ( groupGUID BINARY(20) NOT NULL , "
 					+ "userIP Binary(4) NOT NULL ,  userPort INTEGER NOT NULL , expiryTime BIGINT NOT NULL ";
@@ -91,7 +92,7 @@ public class TriggerInformationStorage implements
 				
 				// for storing the trigger data, which is search queries
 				
-				tableName = HyperspaceDB.HASH_INDEX_TRIGGER_TABLE_NAME;
+				tableName = RegionMappingDataStorageDB.HASH_INDEX_TRIGGER_TABLE_NAME;
 				
 				newTableCommand = "create table "+tableName+" ( groupGUID BINARY(20) NOT NULL , "
 						+ "userIP Binary(4) NOT NULL ,  userPort INTEGER NOT NULL ";
@@ -131,20 +132,20 @@ public class TriggerInformationStorage implements
 		Connection myConn   = null;
 		Statement stmt      = null;
 		
-		String tableName = HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
+		String tableName = RegionMappingDataStorageDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 		
-		QueryInfo processedQInfo = new QueryInfo(userQuery);
-		HashMap<String, ProcessingQueryComponent> pqcMap = processedQInfo.getProcessingQC();
+		ValueSpaceInfo queryValSpace = QueryParser.parseQuery(userQuery);
+		HashMap<String, AttributeValueRange> valSpaceBoundary = queryValSpace.getValueSpaceBoundary();
 		
 		String hexIP;
 		try
 		{
-			hexIP = Utils.byteArrayToHex(InetAddress.getByName(userIP).getAddress());	
+			hexIP = Utils.byteArrayToHex(InetAddress.getByName(userIP).getAddress());
 			
 			String insertTableSQL = " INSERT INTO "+tableName 
 					+" ( groupGUID, userIP, userPort , expiryTime ";
 			
-			Iterator<String> qattrIter = pqcMap.keySet().iterator();
+			Iterator<String> qattrIter = valSpaceBoundary.keySet().iterator();
 			while( qattrIter.hasNext() )
 			{
 				String qattrName = qattrIter.next();
@@ -157,20 +158,22 @@ public class TriggerInformationStorage implements
 							 " X'"+hexIP+"', "+userPort+" , "+expiryTimeFromNow+" ";
 			
 			// assuming the order of iterator over attributes to be same in above and here
-			qattrIter = pqcMap.keySet().iterator();
+			qattrIter = valSpaceBoundary.keySet().iterator();
 			while( qattrIter.hasNext() )
 			{
 				String qattrName = qattrIter.next();
 				
-				ProcessingQueryComponent pqc = pqcMap.get(qattrName);
+				AttributeValueRange attrValRange = valSpaceBoundary.get(qattrName);
 					
 				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(qattrName);
 				String dataType = attrMetaInfo.getDataType();
 				
 				String lowerBound 
-					= AttributeTypes.convertStringToDataTypeForMySQL(pqc.getLowerBound(), dataType)+"";
+					= AttributeTypes.convertStringToDataTypeForMySQL
+						(attrValRange.getLowerBound(), dataType)+"";
 				String upperBound 
-					= AttributeTypes.convertStringToDataTypeForMySQL(pqc.getUpperBound(), dataType)+"";
+					= AttributeTypes.convertStringToDataTypeForMySQL
+						(attrValRange.getUpperBound(), dataType)+"";
 				
 				insertTableSQL = insertTableSQL + " , "+lowerBound+" , "+ upperBound;
 			}
@@ -212,6 +215,7 @@ public class TriggerInformationStorage implements
 			DelayProfiler.updateDelay("insertIntoSubspaceTriggerInfo", t0);
 		}
 	}
+	
 	
 	/**
 	 * returns a JSONArray of JSONObjects denoting each row in the table
@@ -327,11 +331,11 @@ public class TriggerInformationStorage implements
 				HashMap<String, GroupGUIDInfoClass> newSatisfyingGroups
 				, JSONObject newUnsetAttrs )
 	{
-		String tableName 			= HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
+		String tableName 			= RegionMappingDataStorageDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 		
 		assert(oldValJSON != null);
 		assert(oldValJSON.length() > 0);
-		JSONObject oldUnsetAttrs 	= HyperspaceHashing.getUnsetAttrJSON(oldValJSON);
+		JSONObject oldUnsetAttrs 	= RegionMappingBasedScheme.getUnsetAttrJSON(oldValJSON);
 		
 		// it can be empty but should not be null
 		assert( oldUnsetAttrs != null );
@@ -460,7 +464,7 @@ public class TriggerInformationStorage implements
 	 */
 	public static String getQueriesThatContainAttrsInUpdate( JSONObject attrsInUpdate )
 	{
-		String tableName 			= HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
+		String tableName 			= RegionMappingDataStorageDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 		String selectQuery 			= "SELECT groupGUID FROM "+tableName+" WHERE ";
 		
 		@SuppressWarnings("unchecked")
@@ -507,9 +511,9 @@ public class TriggerInformationStorage implements
 	public static String getQueryToGetOldValueGroups(JSONObject oldValJSON) 
 			throws JSONException
 	{
-		String tableName 			= HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
+		String tableName 			= RegionMappingDataStorageDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 		
-		JSONObject oldUnsetAttrs 	= HyperspaceHashing.getUnsetAttrJSON(oldValJSON);
+		JSONObject oldUnsetAttrs 	= RegionMappingBasedScheme.getUnsetAttrJSON(oldValJSON);
 		
 		assert( oldUnsetAttrs != null );
 		
@@ -601,7 +605,7 @@ public class TriggerInformationStorage implements
 						JSONObject newUnsetAttrs )
 								throws JSONException
 	{
-		String tableName 			= HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
+		String tableName 			= RegionMappingDataStorageDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 
 		Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
 		// for groups associated with the new value
@@ -708,7 +712,7 @@ public class TriggerInformationStorage implements
 		long currTime = System.currentTimeMillis();
 		int rumRowsDeleted = -1;
 		
-		String tableName = HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
+		String tableName = RegionMappingDataStorageDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 		
 		String deleteCommand = "DELETE FROM "+tableName+" WHERE expiryTime <= "+currTime;
 		Connection myConn 	= null;
@@ -754,7 +758,7 @@ public class TriggerInformationStorage implements
 			HashMap<String, GroupGUIDInfoClass> newValGroupGUIDMap, JSONObject newUnsetAttrs, 
 			boolean firstTimeInsert )
 	{
-		String tableName 			= HyperspaceDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
+		String tableName 			= RegionMappingDataStorageDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 		
 		Connection myConn 			= null;
 		Statement stmt 				= null;
@@ -845,7 +849,7 @@ public class TriggerInformationStorage implements
 	{
 		long t0 = System.currentTimeMillis();
 		
-		String tableName 			= HyperspaceDB.HASH_INDEX_TRIGGER_TABLE_NAME;
+		String tableName 			= RegionMappingDataStorageDB.HASH_INDEX_TRIGGER_TABLE_NAME;
 		
 		Connection myConn 			= null;
 		Statement stmt 				= null;

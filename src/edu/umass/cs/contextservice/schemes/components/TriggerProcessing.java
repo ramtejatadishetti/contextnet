@@ -4,17 +4,14 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Vector;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.database.AbstractDB;
-import edu.umass.cs.contextservice.database.HyperspaceDB;
+import edu.umass.cs.contextservice.database.AbstractDataStorageDB;
 import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
-import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegion;
 import edu.umass.cs.contextservice.messages.RefreshTrigger;
@@ -32,7 +29,7 @@ import edu.umass.cs.nio.JSONMessenger;
 public class TriggerProcessing implements 
 								TriggerProcessingInterface
 {
-	private final AbstractDB hyperspaceDB;
+	private final AbstractDataStorageDB regionMappingDataStorageDB;
 	
 	private final Integer myID;
 	
@@ -40,17 +37,17 @@ public class TriggerProcessing implements
 	
 	public TriggerProcessing(Integer myID, 
 				AbstractRegionMappingPolicy regionMappingPolicy, 
-						AbstractDB hyperspaceDB, 
+						AbstractDataStorageDB regionMappingDataStorageDB, 
 						JSONMessenger<Integer> messenger )
 	{
 		this.myID = myID;
 		this.messenger = messenger;
-		this.hyperspaceDB = hyperspaceDB;
+		this.regionMappingDataStorageDB = regionMappingDataStorageDB;
 		
 		ContextServiceLogger.getLogger().fine("generateSubspacePartitions completed");
 	
 
-		new Thread( new DeleteExpiredSearchesThread(subspaceInfoMap, myID, hyperspaceDB) ).start();
+		new Thread( new DeleteExpiredSearchesThread( regionMappingDataStorageDB) ).start();
 	}
 	
 	public boolean processTriggerOnQueryMsgFromUser( QueryInfo currReq)
@@ -62,7 +59,8 @@ public class TriggerProcessing implements
 		
 		try
 		{
-			found = this.hyperspaceDB.checkAndInsertSearchQueryRecordFromPrimaryTriggerSubspace
+			found 
+				= this.regionMappingDataStorageDB.checkAndInsertSearchQueryRecordFromPrimaryTriggerSubspace
 					(groupGUID, userIP, userPort);
 			
 			ContextServiceLogger.getLogger().fine(" search query "+currReq.getQuery()+" found "+found
@@ -80,7 +78,6 @@ public class TriggerProcessing implements
 	{
 		String query 		= queryMesgToSubspaceRegion.getQuery();
 		String groupGUID 	= queryMesgToSubspaceRegion.getGroupGUID();
-		int subspaceId 		= queryMesgToSubspaceRegion.getSubspaceNum();
 		String userIP       = queryMesgToSubspaceRegion.getUserIP();
 		int userPort        = queryMesgToSubspaceRegion.getUserPort();
 		long expiryTime		= queryMesgToSubspaceRegion.getExpiryTime();
@@ -88,7 +85,7 @@ public class TriggerProcessing implements
 		if( ContextServiceConfig.TRIGGER_ENABLED )
 		{
 			long expiryTimeFromNow = System.currentTimeMillis() + expiryTime;
-			this.hyperspaceDB.insertIntoSubspaceTriggerDataInfo( subspaceId, 
+			this.regionMappingDataStorageDB.insertIntoTriggerDataStorage( 
 					query, groupGUID, userIP, userPort, expiryTimeFromNow);
 		}
 	}
@@ -98,7 +95,6 @@ public class TriggerProcessing implements
 		valueUpdateToSubspaceRegionMessage, HashMap<String, GroupGUIDInfoClass> removedGroups, 
 		HashMap<String, GroupGUIDInfoClass> addedGroups ) throws InterruptedException
 	{
-		int subspaceId  = valueUpdateToSubspaceRegionMessage.getSubspaceNum();
 		JSONObject oldValJSON = valueUpdateToSubspaceRegionMessage.getOldValJSON();
 		JSONObject updateAttrJSON = valueUpdateToSubspaceRegionMessage.getUpdateAttrValJSON();
 		int requestType = valueUpdateToSubspaceRegionMessage.getOperType();
@@ -106,11 +102,8 @@ public class TriggerProcessing implements
 		boolean firstTimeInsert = valueUpdateToSubspaceRegionMessage.getFirstTimeInsert();
 		
 		
-		this.hyperspaceDB.getTriggerDataInfo(subspaceId, 
-				oldValJSON, updateAttrJSON, 
-				removedGroups, 
-				addedGroups, 
-				requestType, newUnsetAttr, firstTimeInsert); 
+		this.regionMappingDataStorageDB.getTriggerDataInfo( oldValJSON, updateAttrJSON, 
+				removedGroups, addedGroups, requestType, newUnsetAttr, firstTimeInsert); 
 	}
 	
 	public void sendOutAggregatedRefreshTrigger

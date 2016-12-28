@@ -31,8 +31,6 @@ import edu.umass.cs.contextservice.client.common.ACLEntry;
 import edu.umass.cs.contextservice.client.anonymizedID.AnonymizedIDCreationInterface;
 import edu.umass.cs.contextservice.client.anonymizedID.HyperspaceBasedASymmetricKeyAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.anonymizedID.HyperspaceBasedSymmetricKeyAnonymizedIDCreator;
-import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedASymmetricKeyAnonymizedIDCreator;
-import edu.umass.cs.contextservice.client.anonymizedID.SubspaceBasedSymmetricKeyAnonymizedIDCreator;
 import edu.umass.cs.contextservice.client.callback.implementations.BlockingCallBack;
 import edu.umass.cs.contextservice.client.callback.implementations.BlockingSearchReply;
 import edu.umass.cs.contextservice.client.callback.implementations.BlockingUpdateReply;
@@ -50,8 +48,6 @@ import edu.umass.cs.contextservice.client.csprivacytransform.CSSearchReplyTransf
 import edu.umass.cs.contextservice.client.csprivacytransform.CSUpdateTransformedMessage;
 import edu.umass.cs.contextservice.client.csprivacytransform.HyperspaceBasedASymmetricKeyCSTransform;
 import edu.umass.cs.contextservice.client.csprivacytransform.HyperspaceBasedSymmetricKeyCSTransform;
-import edu.umass.cs.contextservice.client.csprivacytransform.SubspaceBasedASymmetricKeyCSTransform;
-import edu.umass.cs.contextservice.client.csprivacytransform.SubspaceBasedSymmetricKeyCSTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.EncryptionBasedGNSPrivacyTransform;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSPrivacyTransformInterface;
 import edu.umass.cs.contextservice.client.gnsprivacytransform.GNSTransformedMessage;
@@ -645,7 +641,7 @@ public class ContextServiceClient extends AbstractContextServiceClient
 		
 		blockingSearch.waitForCompletion();
 		
-		if( this.privacyScheme == PrivacySchemes.HYPERSPACE_PRIVACY )
+		if( this.privacyScheme == PrivacySchemes.PRIVACY )
 		{
 			List<CSSearchReplyTransformedMessage> searchRepTransformList =  
 					computeListForUnTransformFromSearchReply( blockingSearch.getSearchReplyArray() );
@@ -662,20 +658,20 @@ public class ContextServiceClient extends AbstractContextServiceClient
 				return blockingSearch.getReplySize();
 			}
 		}
-		else if( this.privacyScheme == PrivacySchemes.SUBSPACE_PRIVACY )
-		{
-			processSearchReplyInSubspacePrivacyFromCNS(blockingSearch.getSearchReplyArray(), 
-					replyArray, myGUIDInfo, null);
-			
-			if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
-			{
-				return replyArray.length();
-			}
-			else
-			{
-				return blockingSearch.getReplySize();
-			}
-		}
+//		else if( this.privacyScheme == PrivacySchemes.SUBSPACE_PRIVACY )
+//		{
+//			processSearchReplyInSubspacePrivacyFromCNS(blockingSearch.getSearchReplyArray(), 
+//					replyArray, myGUIDInfo, null);
+//			
+//			if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+//			{
+//				return replyArray.length();
+//			}
+//			else
+//			{
+//				return blockingSearch.getReplySize();
+//			}
+//		}
 		else
 		{
 			assert(false);
@@ -707,7 +703,7 @@ public class ContextServiceClient extends AbstractContextServiceClient
 		
 		blockingSearch.waitForCompletion();
 		
-		if( this.privacyScheme == PrivacySchemes.HYPERSPACE_PRIVACY )
+		if( this.privacyScheme == PrivacySchemes.PRIVACY )
 		{
 			List<CSSearchReplyTransformedMessage> searchRepTransformList 
 							= new LinkedList<CSSearchReplyTransformedMessage>();
@@ -765,20 +761,20 @@ public class ContextServiceClient extends AbstractContextServiceClient
 				return blockingSearch.getReplySize();
 			}
 		}
-		else if( this.privacyScheme == PrivacySchemes.SUBSPACE_PRIVACY  )
-		{
-			processSearchReplyInSubspacePrivacyFromCNS(blockingSearch.getSearchReplyArray(), 
-					replyArray, null, anonymizedIDToSecretKeyMap);
-			
-			if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
-			{
-				return replyArray.length();
-			}
-			else
-			{
-				return blockingSearch.getReplySize();
-			}
-		}
+//		else if( this.privacyScheme == PrivacySchemes.SUBSPACE_PRIVACY  )
+//		{
+//			processSearchReplyInSubspacePrivacyFromCNS(blockingSearch.getSearchReplyArray(), 
+//					replyArray, null, anonymizedIDToSecretKeyMap);
+//			
+//			if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
+//			{
+//				return replyArray.length();
+//			}
+//			else
+//			{
+//				return blockingSearch.getReplySize();
+//			}
+//		}
 		else
 		{
 			assert(false);
@@ -1231,7 +1227,7 @@ public class ContextServiceClient extends AbstractContextServiceClient
 				break;
 			}
 			
-			case HYPERSPACE_PRIVACY:
+			case PRIVACY:
 			{
 				this.asymmetricAnonymizedIDCreation 
 								= new HyperspaceBasedASymmetricKeyAnonymizedIDCreator();
@@ -1251,25 +1247,25 @@ public class ContextServiceClient extends AbstractContextServiceClient
 				break;
 			}
 			
-			case SUBSPACE_PRIVACY:
-			{	
-				this.asymmetricAnonymizedIDCreation 
-						= new SubspaceBasedASymmetricKeyAnonymizedIDCreator(this.subspaceAttrMap);
-
-
-				this.asymmetricCSPrivacyTransform 
-						= new SubspaceBasedASymmetricKeyCSTransform(execService);
-
-
-				this.symmetricAnonymizedIDCreation 
-						= new SubspaceBasedSymmetricKeyAnonymizedIDCreator(subspaceAttrMap);
-
-
-				this.symmetricCSPrivacyTransform 
-						= new SubspaceBasedSymmetricKeyCSTransform(execService);
-				
-				break;
-			}
+//			case SUBSPACE_PRIVACY:
+//			{	
+//				this.asymmetricAnonymizedIDCreation 
+//						= new SubspaceBasedASymmetricKeyAnonymizedIDCreator(this.subspaceAttrMap);
+//
+//
+//				this.asymmetricCSPrivacyTransform 
+//						= new SubspaceBasedASymmetricKeyCSTransform(execService);
+//
+//
+//				this.symmetricAnonymizedIDCreation 
+//						= new SubspaceBasedSymmetricKeyAnonymizedIDCreator(subspaceAttrMap);
+//
+//
+//				this.symmetricCSPrivacyTransform 
+//						= new SubspaceBasedSymmetricKeyCSTransform(execService);
+//				
+//				break;
+//			}
 		}
 		
 		
@@ -1661,7 +1657,7 @@ public class ContextServiceClient extends AbstractContextServiceClient
 		
 		
 		ContextServiceClient csClient = new ContextServiceClient
-			("127.0.0.1", 8000, false, PrivacySchemes.SUBSPACE_PRIVACY);
+			("127.0.0.1", 8000, false, PrivacySchemes.PRIVACY);
 		
 		CallBackInterface callback = new NoopCallBack();
 		

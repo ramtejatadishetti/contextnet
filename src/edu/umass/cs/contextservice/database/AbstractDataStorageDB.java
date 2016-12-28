@@ -10,7 +10,7 @@ import org.json.JSONObject;
 import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 
-public abstract class AbstractDB
+public abstract class AbstractDataStorageDB
 {
 //	public abstract HashMap<Integer, RegionInfoClass> 
 //			getOverlappingRegionsInSubspace(int subspaceId, int replicaNum, 
