@@ -15,27 +15,28 @@ import java.util.Random;
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
+import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.regionmapper.helper.RegionInfo;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 
 /**
- * This policy reads regions from a file. The fullpath
- * name should be given as input.
+ * This policy reads regions from a file. 
+ * The file should be in location ContextServiceConfig.configFileDirectory+
+				"/"+ContextServiceConfig.REGION_INFO_FILENAME along with other 
+				node , db and csConfig files.
  * 
  * @author ayadav
  */
 public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 {
-	private final String fileName;
 	private final List<RegionInfo> regionList;
 	private final Random randGen;
 	
 	public FileBasedRegionMappingPolicy( HashMap<String, AttributeMetaInfo> attributeMap, 
-			CSNodeConfig nodeConfig, String fileName )
+			CSNodeConfig nodeConfig )
 	{
 		super(attributeMap, nodeConfig);
-		this.fileName = fileName;
 		regionList = new LinkedList<RegionInfo>();
 		randGen = new Random();
 	}
@@ -123,7 +124,8 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 		
 		try
 		{
-			fr = new FileReader(fileName);
+			fr = new FileReader(ContextServiceConfig.configFileDirectory+
+					"/"+ContextServiceConfig.REGION_INFO_FILENAME);
 			br = new BufferedReader(fr);
 			
 			String valSpaceString;
@@ -222,11 +224,9 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 		}
 		AttributeTypes.initializeGivenMap(givenMap);
 		
-		
-		String filename = "RegionInfoNumNodes100.txt";
 		AbstractRegionMappingPolicy regionMapping 
 				= new FileBasedRegionMappingPolicy(givenMap, 
-						csNodeConfig, filename);
+						csNodeConfig);
 		
 		
 		regionMapping.computeRegionMapping();

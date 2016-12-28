@@ -91,7 +91,7 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode
 		csNodeConfig = new CSNodeConfig();
 		
 		BufferedReader reader 
-				= new BufferedReader(new FileReader(ContextServiceConfig.nodeSetupFileName));
+				= new BufferedReader(new FileReader(ContextServiceConfig.NODE_SETUP_FILENAME));
 		String line 
 				= null;
 		while ( (line = reader.readLine()) != null )

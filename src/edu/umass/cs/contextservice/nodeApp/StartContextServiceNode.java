@@ -44,7 +44,7 @@ public class StartContextServiceNode extends ContextServiceNode
 		csNodeConfig = new CSNodeConfig();
 		
 		BufferedReader reader = new BufferedReader(new FileReader(
-				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.nodeSetupFileName));
+				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.NODE_SETUP_FILENAME));
 		String line = null;
 		while ((line = reader.readLine()) != null)
 		{
@@ -87,7 +87,7 @@ public class StartContextServiceNode extends ContextServiceNode
 			ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERSPACE_HASHING;
 			
 			new CSConfigFileLoader(
-					ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.csConfigFileName);
+					ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.CS_CONFIG_FILENAME);
 			
 			readNodeInfo();
 			

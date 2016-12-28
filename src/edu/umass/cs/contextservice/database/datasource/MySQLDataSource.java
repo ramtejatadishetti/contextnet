@@ -85,7 +85,7 @@ public class MySQLDataSource extends AbstractDataSource
 	private void readDBNodeSetup() throws NumberFormatException, IOException
 	{
 		BufferedReader reader = new BufferedReader(new FileReader(
-				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.dbConfigFileName));
+				ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.DB_SETUP_FILENAME));
 		String line = null;
 		
 		while ( (line = reader.readLine()) != null )

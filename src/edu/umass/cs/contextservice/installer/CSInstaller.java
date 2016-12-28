@@ -20,6 +20,7 @@
 package edu.umass.cs.contextservice.installer;
 
 
+import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.networktools.ExecuteBash;
 import edu.umass.cs.contextservice.networktools.RSync;
@@ -77,11 +78,7 @@ public class CSInstaller
   private static final String DEFAULT_KEYNAME 				= "id_rsa";
   private static final String DEFAULT_INSTALL_PATH 			= "gns";
   private static final String INSTALLER_CONFIG_FILENAME 	= "installer_config";
-  private static final String CS_CONF_FOLDERNAME  			= "contextServiceConf";
-  private static final String ATTR_INFO_FILENAME  			= "attributeInfo.txt";
-  private static final String NODE_SETUP_FILENAME 			= "contextServiceNodeSetup.txt";
-  private static final String DB_SETUP_FILENAME   			= "dbNodeSetup.txt";
-  private static final String CS_CONFIG_FILENAME   			= "csConfigFile.txt";
+  
   
   //private static final String SUBSPACE_INFO_FILENAME   		= "subspaceInfo.txt";
   
@@ -129,12 +126,13 @@ public class CSInstaller
   private static String localNodeSetupFileLocation;
   private static String localDBSetupFileLocation;
   private static String localCSConfigFileLocation;
-  //private static String localSubspaceInfoFileLocation;
+  private static String localRegionInfoFileLocation;
   
   private static String localAttrInfoFileName;
   private static String localNodeSetupFileName;
   private static String localDBSetupFileName;
   private static String localCSConfigFileName;
+  private static String localRegionInfoFileName;
 
   private static final String StartCSClass 
   				 = "edu.umass.cs.contextservice.nodeApp.StartContextServiceNode";
@@ -177,9 +175,10 @@ public class CSInstaller
 
   private static void loadCSConfFiles(String configName) throws NumberFormatException, UnknownHostException, IOException 
   {
-	  String csConfFolderName = configName + FILESEPARATOR+CS_CONF_FOLDERNAME;
+	  String csConfFolderName = configName + FILESEPARATOR+ContextServiceConfig.CS_CONF_FOLDERNAME;
 	  
-	  File nodeSetupFile = fileSomewhere(csConfFolderName + FILESEPARATOR + NODE_SETUP_FILENAME, confFolderPath);
+	  File nodeSetupFile = fileSomewhere(csConfFolderName + FILESEPARATOR 
+			  				+ ContextServiceConfig.NODE_SETUP_FILENAME, confFolderPath);
 	  BufferedReader reader = new BufferedReader(new FileReader(nodeSetupFile));
 	  String line = null;
 	  while ( (line = reader.readLine()) != null )
@@ -349,7 +348,7 @@ public class CSInstaller
             + "-id "
             + nodeId + " "
             + "-csConfDir "
-            + CONF_FOLDER_NAME + FILESEPARATOR + CS_CONF_FOLDERNAME + " "
+            + CONF_FOLDER_NAME + FILESEPARATOR + ContextServiceConfig.CS_CONF_FOLDERNAME + " "
             + " > CSlogfileId"+nodeId+" 2>&1 &");
     System.out.println("Starting context service on "+hostname+" with nodeId "+ nodeId);
   }
@@ -427,7 +426,7 @@ public class CSInstaller
       SSHClient.exec(userName, hostname, getKeyFile(), "mkdir -p " + installPath + FILESEPARATOR+CONF_FOLDER_NAME);
 
       SSHClient.exec(userName, hostname, getKeyFile(), "mkdir -p " + installPath 
-    		  + FILESEPARATOR +CONF_FOLDER_NAME + FILESEPARATOR + CS_CONF_FOLDERNAME);
+    		  + FILESEPARATOR +CONF_FOLDER_NAME + FILESEPARATOR + ContextServiceConfig.CS_CONF_FOLDERNAME);
       //SSHClient.exec(userName, hostname, getKeyFile(), "mkdir -p " + installPath + CONF_FOLDER + FILESEPARATOR + TRUSTSTORE_FOLDER_NAME);
 
 //      SSHClient.exec(userName, hostname, getKeyFile(), "rm " + installPath + FILESEPARATOR + "*.txt");
@@ -440,7 +439,7 @@ public class CSInstaller
       // localNodeSetupFileLocation;
       // localDBSetupFileLocation;
       // localSubspaceInfoFileLocation;
-      String relativeCsConfFolder = CONF_FOLDER_NAME + FILESEPARATOR +CS_CONF_FOLDERNAME;
+      String relativeCsConfFolder = CONF_FOLDER_NAME + FILESEPARATOR +ContextServiceConfig.CS_CONF_FOLDERNAME;
       
       RSync.upload(userName, hostname, keyFileName, localAttrInfoFileLocation,
               buildInstallFilePath(relativeCsConfFolder + FILESEPARATOR + localAttrInfoFileName));
@@ -450,6 +449,8 @@ public class CSInstaller
               buildInstallFilePath(relativeCsConfFolder + FILESEPARATOR + localDBSetupFileName));
       RSync.upload(userName, hostname, keyFileName, localCSConfigFileLocation,
               buildInstallFilePath(relativeCsConfFolder + FILESEPARATOR + localCSConfigFileName));
+      RSync.upload(userName, hostname, keyFileName, localRegionInfoFileLocation,
+              buildInstallFilePath(relativeCsConfFolder + FILESEPARATOR + localRegionInfoFileName));
     }
   }
 
@@ -464,7 +465,7 @@ public class CSInstaller
     File mainPath = jarPath.getParentFile().getParentFile();
     System.out.println("Main path: " + mainPath);
     confFolderPath = mainPath + FILESEPARATOR + CONF_FOLDER_NAME;
-    String csConfFolderPath = confFolderPath+FILESEPARATOR + CS_CONF_FOLDERNAME;
+    String csConfFolderPath = confFolderPath+FILESEPARATOR + ContextServiceConfig.CS_CONF_FOLDERNAME;
     System.out.println("Conf folder path: " + confFolderPath+" csConfPath "+csConfFolderPath);
     csJarFileName = new File(csJarFileLocation).getName();
   }
@@ -505,18 +506,23 @@ public class CSInstaller
     //DB_SETUP_FILENAME
     //SUBSPACE_INFO_FILENAME
     
-    String relativeCsConfFolder = configNameOrFolder + FILESEPARATOR +CS_CONF_FOLDERNAME;
+    String relativeCsConfFolder = configNameOrFolder + FILESEPARATOR +ContextServiceConfig.CS_CONF_FOLDERNAME;
     if (!fileExistsSomewhere(
-    		relativeCsConfFolder + FILESEPARATOR + ATTR_INFO_FILENAME, confFolderPath)) {
-      System.out.println("csConfig folder " + relativeCsConfFolder + " missing file " + ATTR_INFO_FILENAME);
+    		relativeCsConfFolder + FILESEPARATOR + ContextServiceConfig.ATTR_INFO_FILENAME, confFolderPath)) {
+      System.out.println("csConfig folder " + relativeCsConfFolder + " missing file " 
+    		  	+ ContextServiceConfig.ATTR_INFO_FILENAME);
     }
     if (!fileExistsSomewhere(
-    		relativeCsConfFolder + FILESEPARATOR + NODE_SETUP_FILENAME, confFolderPath)) {
-      System.out.println("csConfig folder " + relativeCsConfFolder + " missing file " + NODE_SETUP_FILENAME);
+    		relativeCsConfFolder + FILESEPARATOR + ContextServiceConfig.NODE_SETUP_FILENAME, confFolderPath)) 
+    {
+      System.out.println("csConfig folder " + relativeCsConfFolder 
+    		  	+ " missing file " + ContextServiceConfig.NODE_SETUP_FILENAME);
     }
     if (!fileExistsSomewhere(
-    		relativeCsConfFolder + FILESEPARATOR + DB_SETUP_FILENAME, confFolderPath)) {
-      System.out.println("csConfig folder " + relativeCsConfFolder + " missing file " + DB_SETUP_FILENAME);
+    		relativeCsConfFolder + FILESEPARATOR + ContextServiceConfig.DB_SETUP_FILENAME, confFolderPath)) 
+    {
+      System.out.println("csConfig folder " + relativeCsConfFolder 
+    		  	+ " missing file " + ContextServiceConfig.DB_SETUP_FILENAME);
     }
 //    if (!fileExistsSomewhere(
 //    		relativeCsConfFolder + FILESEPARATOR + SUBSPACE_INFO_FILENAME, confFolderPath)) {
@@ -529,28 +535,28 @@ public class CSInstaller
     //localSubspaceInfoFileLocation;
     
     localAttrInfoFileLocation = fileSomewhere(relativeCsConfFolder + FILESEPARATOR + 
-    		ATTR_INFO_FILENAME, confFolderPath).toString();
+    		ContextServiceConfig.ATTR_INFO_FILENAME, confFolderPath).toString();
     localNodeSetupFileLocation = fileSomewhere(relativeCsConfFolder + FILESEPARATOR + 
-    		NODE_SETUP_FILENAME, confFolderPath).toString();
+    		ContextServiceConfig.NODE_SETUP_FILENAME, confFolderPath).toString();
     localDBSetupFileLocation = fileSomewhere(relativeCsConfFolder + FILESEPARATOR + 
-    		DB_SETUP_FILENAME, confFolderPath).toString();
+    		ContextServiceConfig.DB_SETUP_FILENAME, confFolderPath).toString();
     localCSConfigFileLocation = fileSomewhere(relativeCsConfFolder + FILESEPARATOR + 
-    		CS_CONFIG_FILENAME, confFolderPath).toString();
-//    localSubspaceInfoFileLocation = fileSomewhere(relativeCsConfFolder + FILESEPARATOR + 
-//    		SUBSPACE_INFO_FILENAME, confFolderPath).toString();
+    		ContextServiceConfig.CS_CONFIG_FILENAME, confFolderPath).toString();
+    localRegionInfoFileLocation = fileSomewhere(relativeCsConfFolder + FILESEPARATOR + 
+    		ContextServiceConfig.REGION_INFO_FILENAME, confFolderPath).toString();
     
     
     localAttrInfoFileName		= new File(localAttrInfoFileLocation).getName();
     localNodeSetupFileName    	= new File(localNodeSetupFileLocation).getName();
     localDBSetupFileName 		= new File(localDBSetupFileLocation).getName();
     localCSConfigFileName		= new File(localCSConfigFileLocation).getName();
-    //localSubspaceInfoFileName 	= new File(localSubspaceInfoFileLocation).getName();
+    localRegionInfoFileName 	= new File(localRegionInfoFileLocation).getName();
 
-    assert(localAttrInfoFileName.equals(ATTR_INFO_FILENAME));
-    assert(localNodeSetupFileName.equals(NODE_SETUP_FILENAME));
-    assert(localDBSetupFileName.equals(DB_SETUP_FILENAME));
-    assert(localCSConfigFileName.equals(CS_CONFIG_FILENAME));
-    //assert(localSubspaceInfoFileName.equals(SUBSPACE_INFO_FILENAME));
+    assert(localAttrInfoFileName.equals(ContextServiceConfig.ATTR_INFO_FILENAME));
+    assert(localNodeSetupFileName.equals(ContextServiceConfig.NODE_SETUP_FILENAME));
+    assert(localDBSetupFileName.equals(ContextServiceConfig.DB_SETUP_FILENAME));
+    assert(localCSConfigFileName.equals(ContextServiceConfig.CS_CONFIG_FILENAME));
+    assert(localRegionInfoFileName.equals(ContextServiceConfig.REGION_INFO_FILENAME));
     
     return true;
   }

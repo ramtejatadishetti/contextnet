@@ -102,7 +102,7 @@ public class AttributeTypes
 	private static void readAttributeInfo() throws IOException
 	{
 		FileReader freader 	  = new FileReader(ContextServiceConfig.configFileDirectory+
-				"/"+ContextServiceConfig.attributeInfoFileName);
+				"/"+ContextServiceConfig.ATTR_INFO_FILENAME);
 		BufferedReader reader = new BufferedReader( freader );
 		String line 		  = null;
 		

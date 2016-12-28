@@ -75,11 +75,13 @@ public class ContextServiceConfig
 	public static final boolean PROFILER_THREAD						= true;
 	
 	// config files
-	public static String csConfigFileName							= "csConfigFile.txt";
-	public static String subspaceInfoFileName						= "subspaceInfo.txt";
-	public static String attributeInfoFileName						= "attributeInfo.txt";
-	public static String nodeSetupFileName							= "contextServiceNodeSetup.txt";
-	public static String dbConfigFileName							= "dbNodeSetup.txt";
+	
+	public static final String CS_CONF_FOLDERNAME  					= "contextServiceConf";
+	public static final String ATTR_INFO_FILENAME  					= "attributeInfo.txt";
+	public static final String NODE_SETUP_FILENAME 					= "contextServiceNodeSetup.txt";
+	public static final String DB_SETUP_FILENAME   					= "dbNodeSetup.txt";
+	public static final String CS_CONFIG_FILENAME   				= "csConfigFile.txt";
+	public static final String REGION_INFO_FILENAME   				= "regionInfoFile.txt";
 	
 	//control if full guids are sent in the search query
 	// reply, if false only sends the number of guids, not

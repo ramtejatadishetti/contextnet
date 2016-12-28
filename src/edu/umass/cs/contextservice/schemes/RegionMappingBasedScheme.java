@@ -92,11 +92,11 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		
 		guidUpdateInfoMap = new HashMap<String, GUIDUpdateInfo>();
 		
-//		regionMappingPolicy = new FileBasedRegionMappingPolicy(
-//					AttributeTypes.attributeMap, nc, "RegionInfoNumNodes"+nc.getNodeIDs().size()+".txt");
+		regionMappingPolicy = new FileBasedRegionMappingPolicy(
+					AttributeTypes.attributeMap, nc);
 		
-		regionMappingPolicy = new UniformGreedyRegionMappingPolicy(
-				AttributeTypes.attributeMap, nc);
+//		regionMappingPolicy = new UniformGreedyRegionMappingPolicy(
+//				AttributeTypes.attributeMap, nc);
 		
 		
 		regionMappingPolicy.computeRegionMapping();
