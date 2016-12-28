@@ -76,6 +76,9 @@ public class ParallelSearchReplyASymmetricKeyDecryption
 			
 			if(searchReplyJSON.getAnonymizedIDToGuidMapping() != null)
 			{
+				System.out.println("\n\n list size "
+						+searchReplyJSON.getAnonymizedIDToGuidMapping().length());
+				
 				SearchReplyDecryptionThread searchRepThread = new SearchReplyDecryptionThread
 						( myGuid, csSearchRepMessage.getSearchGUIDObj() );
 				

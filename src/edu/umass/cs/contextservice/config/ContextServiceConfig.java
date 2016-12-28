@@ -243,7 +243,7 @@ public class ContextServiceConfig
 	public static enum SQL_DB_TYPE	{MYSQL, SQLITE};
 	
 	
-	public static SQL_DB_TYPE sqlDBType								= SQL_DB_TYPE.MYSQL;
+	public static SQL_DB_TYPE sqlDBType								= SQL_DB_TYPE.SQLITE;
 	
 	
 	// jains fairness index based number of partitions calculation.
