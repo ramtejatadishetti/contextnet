@@ -112,6 +112,7 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 			overlapNodeIds.add(nodeIdIter.next());
 		}
 		
+		assert(overlapNodeIds.size() >= 1);
 		return overlapNodeIds;
 	}
 	

@@ -77,6 +77,7 @@ public class GUIDAttrValueProcessing
 				= regionMappingPolicy.getNodeIDsForAValueSpace
 						(queryInfo.getSearchQueryValSpace(), REQUEST_TYPE.SEARCH);
 		
+		
 		queryInfo.initializeSearchQueryReplyInfo(nodeList);
 		
 		for(int i=0; i< nodeList.size(); i++)
