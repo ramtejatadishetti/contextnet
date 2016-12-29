@@ -43,6 +43,9 @@ public class AttributeTypes
 	
 	
 	public static HashMap<String, AttributeMetaInfo> attributeMap 			= null;
+	// stores the attributes in order as read from the file.
+	// becuase only storing in hashmap destroys order.
+	public static List<String> attributeInOrderList							= null;
 	public static HashMap<String, String> mySQLDataType 					= null;
 	
 	
@@ -68,9 +71,9 @@ public class AttributeTypes
 	 */
 	public static synchronized void initialize()
 	{
-		attributeMap 	= new HashMap<String, AttributeMetaInfo>();
-		mySQLDataType 	= new HashMap<String, String>();
-		
+		attributeMap 			= new HashMap<String, AttributeMetaInfo>();
+		mySQLDataType 			= new HashMap<String, String>();
+		attributeInOrderList 	= new LinkedList<String>();
 		mySQLDataType.put(IntType, "INTEGER");
 		mySQLDataType.put(LongType, "BIGINT");
 		mySQLDataType.put(DoubleType, "DOUBLE");
@@ -89,10 +92,12 @@ public class AttributeTypes
 	 * Mainly used for testing.
 	 * @param givenMap
 	 */
-	public static synchronized void initializeGivenMap(HashMap<String, AttributeMetaInfo> givenMap)
+	public static synchronized void initializeGivenMapAndList
+				(HashMap<String, AttributeMetaInfo> givenMap, List<String> givenList)
 	{
 		attributeMap 	= givenMap;
 		mySQLDataType 	= new HashMap<String, String>();
+		attributeInOrderList = givenList;
 		
 		mySQLDataType.put(IntType, "INTEGER");
 		mySQLDataType.put(LongType, "BIGINT");
@@ -155,6 +160,7 @@ public class AttributeTypes
 						new AttributeMetaInfo(attrName, minValue, maxValue, dataType);
 				
 				attributeMap.put(attrInfo.getAttrName(), attrInfo);
+				attributeInOrderList.add(attrName);
 			}
 		}
 		reader.close();
@@ -613,126 +619,3 @@ public class AttributeTypes
 		}
 	}
 }
-
-
-/**
- * compared attValue if it satisfies the given processing component
- * @param pqc
- * @param attrValueJSON
- * @return
- */
-/*public static boolean checkForComponent(ProcessingQueryComponent pqc, JSONObject attrValueJSON)
-{
-	String attrName = pqc.getAttributeName();
-	
-	String dataType = attributeMap.get(attrName).getDataType();
-	String valueToCheck;
-	try 
-	{
-		valueToCheck = attrValueJSON.getString(attrName);
-	} catch (JSONException e)
-	{
-		e.printStackTrace();
-		return false;
-	}
-	boolean retValue = false;
-	switch(dataType)
-	{
-		case AttributeTypes.DoubleType:
-		{
-			double lowerBoundD = Double.parseDouble(pqc.getLowerBound());
-			double upperBoundD = Double.parseDouble(pqc.getUpperBound());
-			
-			double valueD = Double.parseDouble(valueToCheck);
-			
-			if(lowerBoundD != upperBoundD)
-			{
-				if( (valueD >= lowerBoundD) && (valueD < upperBoundD) )
-				{
-					retValue = true;
-				}
-			}
-			else
-			{
-				if(valueD == lowerBoundD)
-				{
-					retValue = true;
-				}
-			}
-			break;
-		}
-		case AttributeTypes.IntType:
-		{
-			int lowerBoundI = Integer.parseInt(pqc.getLowerBound());
-			int upperBoundI = Integer.parseInt(pqc.getUpperBound());
-			
-			int valueI = Integer.parseInt(valueToCheck);
-			
-			if(lowerBoundI != upperBoundI)
-			{
-				if( (valueI >= lowerBoundI) && (valueI < upperBoundI) )
-				{
-					retValue = true;
-				}
-			}
-			else
-			{
-				if(valueI == lowerBoundI)
-				{
-					retValue = true;
-				}
-			}
-			
-			break;
-		}
-		case AttributeTypes.LongType:
-		{
-			long lowerBoundL = Long.parseLong(pqc.getLowerBound());
-			long upperBoundL = Long.parseLong(pqc.getUpperBound());
-			
-			long valueL = Long.parseLong(valueToCheck);
-			
-			if(lowerBoundL != upperBoundL)
-			{
-				if( (valueL >= lowerBoundL) && (valueL < upperBoundL) )
-				{
-					retValue = true;
-				}
-			}
-			else
-			{
-				if(valueL == lowerBoundL)
-				{
-					retValue = true;
-				}
-			}
-			break;
-		}
-		case AttributeTypes.StringType:
-		{
-			String lowerBoundS = pqc.getLowerBound();
-			String upperBoundS = pqc.getUpperBound();
-			
-			String valueS = valueToCheck;
-			
-			if(!lowerBoundS.equals(upperBoundS))
-			{
-				if( (valueS.compareTo(lowerBoundS) >=0 ) && (valueS.compareTo(upperBoundS) < 0) )
-				{
-					retValue = true;
-				}
-			}
-			else
-			{
-				if(valueS.equals(lowerBoundS))
-				{
-					retValue = true;
-				}
-			}
-			break;
-		}
-		default:
-			assert(false);
-	}
-	return retValue;
-}*/

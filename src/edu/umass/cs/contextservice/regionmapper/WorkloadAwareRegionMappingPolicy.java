@@ -647,6 +647,7 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 		int NUM_NODES = Integer.parseInt(args[1]);
 		
 		HashMap<String, AttributeMetaInfo> givenMap = new HashMap<String, AttributeMetaInfo>();
+		List<String> attrList = new LinkedList<String>();
 		
 		for(int i=0; i < NUM_ATTRS; i++)
 		{
@@ -655,6 +656,7 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 					new AttributeMetaInfo(attrName, 1+"", 1500+"", AttributeTypes.DoubleType);
 			
 			givenMap.put(attrInfo.getAttrName(), attrInfo);	
+			attrList.add(attrName);
 		}
 		
 		CSNodeConfig csNodeConfig = new CSNodeConfig();
@@ -671,7 +673,8 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 			}
 		}
 		
-		AttributeTypes.initializeGivenMap(givenMap);
+		AttributeTypes.initializeGivenMapAndList(givenMap, attrList);
+		
 		WorkloadAwareRegionMappingPolicy obj 
 				= new WorkloadAwareRegionMappingPolicy(givenMap, csNodeConfig);
 		

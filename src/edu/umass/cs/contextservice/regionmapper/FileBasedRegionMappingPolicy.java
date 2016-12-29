@@ -205,17 +205,17 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 		int NUM_ATTRS = Integer.parseInt(args[0]);
 		int NUM_NODES = Integer.parseInt(args[1]);
 		
-		HashMap<String, AttributeMetaInfo> givenMap 
-						= new HashMap<String, AttributeMetaInfo>();
+		HashMap<String, AttributeMetaInfo> givenMap = new HashMap<String, AttributeMetaInfo>();
+		List<String> attrList = new LinkedList<String>();
 		
 		for(int i=0; i < NUM_ATTRS; i++)
 		{
 			String attrName = "attr"+i;
 			AttributeMetaInfo attrInfo =
-					new AttributeMetaInfo(attrName, 1+"", 1500+"", 
-							AttributeTypes.DoubleType);
+					new AttributeMetaInfo(attrName, 1+"", 1500+"", AttributeTypes.DoubleType);
 			
 			givenMap.put(attrInfo.getAttrName(), attrInfo);	
+			attrList.add(attrName);
 		}
 		
 		CSNodeConfig csNodeConfig = new CSNodeConfig();
@@ -232,7 +232,7 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 				e.printStackTrace();
 			}
 		}
-		AttributeTypes.initializeGivenMap(givenMap);
+		AttributeTypes.initializeGivenMapAndList(givenMap, attrList);
 		
 		AbstractRegionMappingPolicy regionMapping 
 				= new FileBasedRegionMappingPolicy(givenMap, 

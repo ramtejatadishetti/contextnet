@@ -3,6 +3,8 @@ package edu.umass.cs.contextservice.queryparsing;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
@@ -140,6 +142,7 @@ public class QueryParser
 		int NUM_ATTRS = 20;
 		// query parsing test
 		HashMap<String, AttributeMetaInfo> givenMap = new HashMap<String, AttributeMetaInfo>();
+		List<String> attrList = new LinkedList<String>();
 		
 		for(int i=0; i < NUM_ATTRS; i++)
 		{
@@ -148,8 +151,9 @@ public class QueryParser
 					new AttributeMetaInfo(attrName, 1+"", 1500+"", AttributeTypes.DoubleType);
 			
 			givenMap.put(attrInfo.getAttrName(), attrInfo);	
+			attrList.add(attrName);
 		}
-		AttributeTypes.initializeGivenMap(givenMap);
+		AttributeTypes.initializeGivenMapAndList(givenMap, attrList);
 		
 		String query = "attr0 >= 100 AND attr5 <= 140";
 		ValueSpaceInfo queryValSpace = QueryParser.parseQuery(query);

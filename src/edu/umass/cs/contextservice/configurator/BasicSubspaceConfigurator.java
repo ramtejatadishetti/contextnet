@@ -3,6 +3,7 @@ package edu.umass.cs.contextservice.configurator;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
 
@@ -116,8 +117,13 @@ public class BasicSubspaceConfigurator
 	private int assignNodesUniformlyToSubspaces
 			(double numberNodesForSubspace, int numSubspaces)
 	{
-		Vector<AttributeMetaInfo> attrVector = new Vector<AttributeMetaInfo>();
-		attrVector.addAll(AttributeTypes.attributeMap.values());
+		List<AttributeMetaInfo> attrMetaList = new LinkedList<AttributeMetaInfo>();
+		
+		for(int i=0; i<AttributeTypes.attributeInOrderList.size(); i++)
+		{
+			String attrName = AttributeTypes.attributeInOrderList.get(i);
+			attrMetaList.add(AttributeTypes.attributeMap.get(attrName));	
+		}
 		
 		//double numberNodesForSubspace = Math.floor(numNodes/numSubspaces);
 		
@@ -143,9 +149,9 @@ public class BasicSubspaceConfigurator
 			
 			int numCurrAttr = 0;
 			
-			while( (numCurrAttr < numAttrsPerSubspace) && (attrIndexCounter < attrVector.size()) )
+			while( (numCurrAttr < numAttrsPerSubspace) && (attrIndexCounter < attrMetaList.size()) )
 			{
-				AttributeMetaInfo currAttrMetaInfo = attrVector.get(attrIndexCounter);
+				AttributeMetaInfo currAttrMetaInfo = attrMetaList.get(attrIndexCounter);
 				String attrName = currAttrMetaInfo.getAttrName();
 				AttributePartitionInfo attrPartInfo = new AttributePartitionInfo
 						( currAttrMetaInfo );
@@ -165,7 +171,7 @@ public class BasicSubspaceConfigurator
 			subspaceInfoMap.put(distinctSubspaceId, replicatedSubspacesVector);
 		}
 		//all attributes should be assigned to some subspace by end of this function.
-		assert(attrIndexCounter == attrVector.size() );
+		assert(attrIndexCounter == attrMetaList.size() );
 		return nodesIdCounter;
 	}
 	

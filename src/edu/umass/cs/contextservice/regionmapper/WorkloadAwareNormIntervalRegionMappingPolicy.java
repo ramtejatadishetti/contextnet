@@ -559,8 +559,8 @@ public class WorkloadAwareNormIntervalRegionMappingPolicy extends AbstractRegion
 		int NUM_ATTRS = 20;
 		int NUM_NODES = 100;
 		
-		HashMap<String, AttributeMetaInfo> givenMap 
-						= new HashMap<String, AttributeMetaInfo>();
+		HashMap<String, AttributeMetaInfo> givenMap = new HashMap<String, AttributeMetaInfo>();
+		List<String> attrList = new LinkedList<String>();
 		
 		for(int i=0; i < NUM_ATTRS; i++)
 		{
@@ -569,6 +569,7 @@ public class WorkloadAwareNormIntervalRegionMappingPolicy extends AbstractRegion
 					new AttributeMetaInfo(attrName, 1+"", 1500+"", AttributeTypes.DoubleType);
 			
 			givenMap.put(attrInfo.getAttrName(), attrInfo);	
+			attrList.add(attrName);
 		}
 		
 		
@@ -586,7 +587,7 @@ public class WorkloadAwareNormIntervalRegionMappingPolicy extends AbstractRegion
 			}
 		}
 		
-		AttributeTypes.initializeGivenMap(givenMap);
+		AttributeTypes.initializeGivenMapAndList(givenMap, attrList);
 		
 		WorkloadAwareNormIntervalRegionMappingPolicy obj 
 				= new WorkloadAwareNormIntervalRegionMappingPolicy(givenMap, csNodeConfig);
