@@ -81,6 +81,19 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 //					= subspaceConfigurator.getSubspaceInfoMap();
 		
 		subspaceConfigurator.generateAndStoreSubspaceRegions();	
+		
+		// printing subsapces.
+		HashMap<Integer, List<SubspaceInfo>> subspaceMap = subspaceConfigurator.getSubspaceInfoMap();
+		
+		Iterator<Integer> idIter = subspaceMap.keySet().iterator();
+		
+		while(idIter.hasNext())
+		{
+			int subspaceId = idIter.next();
+			SubspaceInfo subsInfo = subspaceMap.get(subspaceId).get(0);
+			
+			System.out.println(subsInfo.toString());
+		}
 	}
 	
 	
@@ -325,19 +338,6 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 		
 		
 		obj.computeRegionMapping();
-		
-		// printing subsapces.
-		HashMap<Integer, List<SubspaceInfo>> subspaceMap = obj.subspaceConfigurator.getSubspaceInfoMap();
-		
-		Iterator<Integer> idIter = subspaceMap.keySet().iterator();
-		
-		while(idIter.hasNext())
-		{
-			int subspaceId = idIter.next();
-			SubspaceInfo subsInfo = subspaceMap.get(subspaceId).get(0);
-			
-			System.out.println(subsInfo.toString());
-		}
 		
 		
 		String searchQuery = "attr13 >= 321 AND attr13 <= 671 AND  "

@@ -43,6 +43,7 @@ import edu.umass.cs.contextservice.profilers.ProfilerStatClass;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
 import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy;
 import edu.umass.cs.contextservice.regionmapper.FileBasedRegionMappingPolicy;
+import edu.umass.cs.contextservice.regionmapper.HyperdexBasedRegionMappingPolicy;
 import edu.umass.cs.contextservice.regionmapper.UniformGreedyRegionMappingPolicy;
 import edu.umass.cs.contextservice.schemes.components.AbstractGUIDAttrValueProcessing;
 import edu.umass.cs.contextservice.schemes.components.GUIDAttrValueProcessing;
@@ -91,8 +92,12 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		
 		guidUpdateInfoMap = new HashMap<String, GUIDUpdateInfo>();
 		
-		regionMappingPolicy = new FileBasedRegionMappingPolicy(
-					AttributeTypes.attributeMap, nc);
+//		regionMappingPolicy = new FileBasedRegionMappingPolicy(
+//					AttributeTypes.attributeMap, nc);
+		
+		
+		regionMappingPolicy = new HyperdexBasedRegionMappingPolicy(
+				AttributeTypes.attributeMap, nc, (int)ContextServiceConfig.optimalH);
 		
 //		regionMappingPolicy = new UniformGreedyRegionMappingPolicy(
 //				AttributeTypes.attributeMap, nc);
