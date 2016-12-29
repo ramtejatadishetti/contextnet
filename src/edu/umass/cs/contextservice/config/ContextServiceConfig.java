@@ -86,10 +86,10 @@ public class ContextServiceConfig
 	//control if full guids are sent in the search query
 	// reply, if false only sends the number of guids, not
 	// the actual guids
-	public static  boolean sendFullRepliesWithinCS					= true;
+	public static  boolean sendFullRepliesWithinCS					= false;
 	
 	// to check which one is bottleneck the client or CS in full replies. 
-	public static  boolean sendFullRepliesToClient					= true;
+	public static  boolean sendFullRepliesToClient					= false;
 	
 	// if this is set to true, then mysql table selects
 	// return results row by row. If set to false then
@@ -109,7 +109,7 @@ public class ContextServiceConfig
 	//public static final boolean sendUpdateReplies					= true;
 	
 	// if true group update trigger is enabled, not enabled if false
-	public static boolean TRIGGER_ENABLED							= true;
+	public static boolean TRIGGER_ENABLED							= false;
 	
 	
 	// if set to true then there is a primary node for each groupGUID
@@ -161,7 +161,7 @@ public class ContextServiceConfig
 	public static final int MAXIMUM_NUM_ATTRS_IN_SUBSPACE			= 10;
 	
 	
-	public static boolean PRIVACY_ENABLED							= true;
+	public static boolean PRIVACY_ENABLED							= false;
 	
 	
 	
@@ -184,7 +184,7 @@ public class ContextServiceConfig
 	public static final int SIZE_OF_ANONYMIZED_ID					= 20;
 	
 	
-	public static PrivacySchemes privacyScheme						= PrivacySchemes.PRIVACY;
+	public static PrivacySchemes privacyScheme						= PrivacySchemes.NO_PRIVACY;
 	
 	
 	public static final String AssymmetricEncAlgorithm				= "RSA";
