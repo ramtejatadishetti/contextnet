@@ -3,6 +3,7 @@ package edu.umass.cs.contextservice.configurator;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Vector;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
@@ -33,7 +34,7 @@ public class ReplicatedSubspaceConfigurator extends AbstractSubspaceConfigurator
 	public ReplicatedSubspaceConfigurator(NodeConfig<Integer> nodeConfig, 
 			int optimalH, AbstractDataSource dataSource)
 	{
-		super(nodeConfig, dataSource);
+		super(nodeConfig);
 		this.optimalH = optimalH;
 	}
 	
@@ -104,7 +105,7 @@ public class ReplicatedSubspaceConfigurator extends AbstractSubspaceConfigurator
 					if( subspaceKeyIter.hasNext() )
 					{
 						subspaceKey = subspaceKeyIter.next();
-						Vector<SubspaceInfo> currSubVect
+						List<SubspaceInfo> currSubVect
 											= subspaceInfoMap.get(subspaceKey);
 						assert( currSubVect.size() > 0 );
 						currSubVect.get(0).getNodesOfSubspace().add( (Integer)(Integer)nodesIdCounter );
@@ -134,7 +135,7 @@ public class ReplicatedSubspaceConfigurator extends AbstractSubspaceConfigurator
 					while( subspaceKeyIter.hasNext() )
 					{
 						subspaceKey = subspaceKeyIter.next();
-						Vector<SubspaceInfo> currSubVect
+						List<SubspaceInfo> currSubVect
 											= subspaceInfoMap.get(subspaceKey);
 						assert( currSubVect.size() > 0 );
 						currSubVect.get(0).getNodesOfSubspace().add( (Integer)(Integer)nodesIdCounter );
@@ -313,7 +314,7 @@ public class ReplicatedSubspaceConfigurator extends AbstractSubspaceConfigurator
 			if( mapIter.hasNext() )
 			{
 				int distinctSubspaceId = mapIter.next();
-				Vector<SubspaceInfo> subspaceReplicaVect 
+				List<SubspaceInfo> subspaceReplicaVect 
 						= subspaceInfoMap.get(distinctSubspaceId);
 				int actualVectIndex = replicaNum%subspaceReplicaVect.size();
 				subspaceReplicaVect.get(actualVectIndex).

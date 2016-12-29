@@ -54,31 +54,8 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 			RegionInfo currRegion = regionList.get(i);
 			ValueSpaceInfo regionValSpace = currRegion.getValueSpaceInfo();
 			
-			boolean overlap = true;
-			
-			Iterator<String> inputAttrIter = valueSpace.getValueSpaceBoundary().keySet().iterator();
-			
-			while( inputAttrIter.hasNext() )
-			{
-				String attrName = inputAttrIter.next();
-				
-				AttributeMetaInfo attrMetaInfo = attributeMap.get(attrName);
-				
-				AttributeValueRange inputAttrValRange  
-									= valueSpace.getValueSpaceBoundary().get(attrName);
-				
-				AttributeValueRange regionAttrValRange 
-								= regionValSpace.getValueSpaceBoundary().get(attrName);
-				
-				
-				overlap = overlap && AttributeTypes.checkOverlapOfTwoIntervals(inputAttrValRange, 
-												regionAttrValRange, attrMetaInfo.getDataType());
-				
-				if(!overlap)
-				{
-					break;
-				}
-			}
+			boolean overlap = ValueSpaceInfo.checkOverlapOfTwoValueSpaces
+											(attributeMap, regionValSpace, valueSpace);
 			
 			if( overlap )
 			{

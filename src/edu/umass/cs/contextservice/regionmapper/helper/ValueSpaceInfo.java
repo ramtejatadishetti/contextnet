@@ -3,6 +3,9 @@ package edu.umass.cs.contextservice.regionmapper.helper;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
+import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
+
 /**
  * This class stores a value space and methods to edit that value space.
  * Like in space partitioning, this class initially contains whole value space 
@@ -44,7 +47,6 @@ public class ValueSpaceInfo
 		return str;
 	}
 	
-	
 	public static ValueSpaceInfo fromString(String str)
 	{
 		ValueSpaceInfo newValSpace 	= new ValueSpaceInfo();
@@ -70,8 +72,51 @@ public class ValueSpaceInfo
 			
 			AttributeValueRange attrValRange = new AttributeValueRange(lowerBound, upperBound);
 			valSpaceBoundary.put(attrName, attrValRange);
+		}	
+		return newValSpace;
+	}
+	
+	
+	public static boolean checkOverlapOfTwoValueSpaces( HashMap<String, AttributeMetaInfo> attributeMap, 
+			ValueSpaceInfo valSpace1, ValueSpaceInfo valSpace2 )
+	{
+		assert(valSpace1.getValueSpaceBoundary().size() 
+						<= attributeMap.size() );
+		
+		assert(valSpace2.getValueSpaceBoundary().size() 
+				<= attributeMap.size() );
+		
+		assert(valSpace1.getValueSpaceBoundary().size() 
+						== valSpace2.getValueSpaceBoundary().size());
+		
+		
+		boolean overlap = true;
+		
+		Iterator<String> attrIter = valSpace1.getValueSpaceBoundary().keySet().iterator();
+		
+		while( attrIter.hasNext() )
+		{
+			String attrName = attrIter.next();
+			
+			AttributeMetaInfo attrMetaInfo = attributeMap.get(attrName);
+			
+			AttributeValueRange attrValRange1  
+								= valSpace1.getValueSpaceBoundary().get(attrName);
+			
+			AttributeValueRange attrValRange2 
+								= valSpace2.getValueSpaceBoundary().get(attrName);
+			
+			assert(attrValRange2 != null);
+			
+			overlap = overlap && AttributeTypes.checkOverlapOfTwoIntervals(attrValRange1, 
+					attrValRange2, attrMetaInfo.getDataType());
+			
+			if(!overlap)
+			{
+				break;
+			}
 		}
 		
-		return newValSpace;
+		return overlap;
 	}
 }

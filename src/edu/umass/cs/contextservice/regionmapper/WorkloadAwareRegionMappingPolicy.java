@@ -14,9 +14,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
@@ -565,28 +562,8 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 	{
 		ValueSpaceInfo queryValspace = QueryParser.parseQuery(searchQuery);
 		
-		HashMap<String, AttributeValueRange> regionBoundary 
-							= regionInfo.getValueSpaceInfo().getValueSpaceBoundary();
-		
-		Iterator<String> attrIter = regionBoundary.keySet().iterator();
-		
-		boolean overlap = true;
-		
-		while( attrIter.hasNext() )
-		{
-			String attrName = attrIter.next();
-			
-			AttributeValueRange queryAttrRange = queryValspace.getValueSpaceBoundary().get(attrName);
-			
-			AttributeValueRange regionAttrRange = regionBoundary.get(attrName);
-			
-			overlap = overlap && AttributeTypes.checkOverlapOfTwoIntervals
-					( regionAttrRange, queryAttrRange, attributeMap.get(attrName).getDataType() );
-			
-			if(!overlap)
-				break;		
-		}
-		return overlap;
+		return ValueSpaceInfo.checkOverlapOfTwoValueSpaces(attributeMap, 
+					queryValspace, regionInfo.getValueSpaceInfo());
 	}
 	
 	
@@ -603,7 +580,7 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 		String uAttrVal = parsed[2];
 		
 		// get JSON with old values.
-		JSONObject oldValJson = new JSONObject();
+		ValueSpaceInfo oldValSpace = new ValueSpaceInfo();
 		
 		int currPos = 3;
 		while(currPos < parsed.length)
@@ -613,73 +590,24 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 			String currVal = parsed[currPos];
 			currPos++;
 			
-			try 
-			{
-				oldValJson.put(currAttr, currVal);
-			} catch (JSONException e) 
-			{
-				e.printStackTrace();
-			}
+			oldValSpace.getValueSpaceBoundary().put(currAttr, 
+						new AttributeValueRange(currVal, currVal));
 		}
 		
 		// first check if old value overlaps with this region for deletion of GUID
 		
-		boolean oldValJsonOverlap = checkAttrValJSONRegionOverlap( regionInfo, 
-															oldValJson, attributeMap );
+		boolean oldValSpaceOverlap = ValueSpaceInfo.checkOverlapOfTwoValueSpaces
+						(attributeMap, regionInfo.getValueSpaceInfo(), oldValSpace);
 		
 		// make old json to new json 
-		try
-		{
-			oldValJson.put(uAttrName, uAttrVal);
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
+		oldValSpace.getValueSpaceBoundary().put
+				(uAttrName, new AttributeValueRange(uAttrVal, uAttrVal));
 		
-		boolean newValJsonOverlap = checkAttrValJSONRegionOverlap( regionInfo, 
-				oldValJson, attributeMap );
 		
-		return oldValJsonOverlap || newValJsonOverlap;
-	}
-	
-	
-	private boolean checkAttrValJSONRegionOverlap( RegionInfo regionInfo, JSONObject attrValJSON, 
-			HashMap<String, AttributeMetaInfo> attributeMap )
-	{
-		boolean overlap = true;
+		boolean newValSpaceOverlap = ValueSpaceInfo.checkOverlapOfTwoValueSpaces
+				(attributeMap, regionInfo.getValueSpaceInfo(), oldValSpace);
 		
-		HashMap<String, AttributeValueRange>  valSpaceBoundary = 
-				regionInfo.getValueSpaceInfo().getValueSpaceBoundary();
-		
-		// JSON iterator warning suppressed
-		@SuppressWarnings("unchecked")
-		Iterator<String> attrIter = attrValJSON.keys();
-		while(attrIter.hasNext())
-		{
-			String attrName = attrIter.next();
-			AttributeMetaInfo attrMetaInfo = attributeMap.get(attrName);
-			
-			try
-			{
-				String attrVal = attrValJSON.getString(attrName);
-				AttributeValueRange interval1 = new AttributeValueRange(attrVal, attrVal);
-				AttributeValueRange interval2 = valSpaceBoundary.get(attrName);	
-				
-				overlap = overlap && AttributeTypes.checkOverlapOfTwoIntervals(interval1, interval2, 
-																			attrMetaInfo.getDataType());
-				
-				if(!overlap)
-				{
-					break;
-				}	
-			} 
-			catch (JSONException e) 
-			{
-				e.printStackTrace();
-			}
-		}
-		
-		return overlap;	
+		return oldValSpaceOverlap || newValSpaceOverlap;
 	}
 	
 	

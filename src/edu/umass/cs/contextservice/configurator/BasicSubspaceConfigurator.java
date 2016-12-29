@@ -3,13 +3,13 @@ package edu.umass.cs.contextservice.configurator;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Vector;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
@@ -23,13 +23,12 @@ import edu.umass.cs.nio.interfaces.NodeConfig;
 public class BasicSubspaceConfigurator
 					extends AbstractSubspaceConfigurator
 {
-	private final double optimalH;
+	private final double numAttrsPerSubspace;
 	
-	public BasicSubspaceConfigurator( NodeConfig<Integer> nodeConfig, int optimalH,
-			AbstractDataSource dataSource )
+	public BasicSubspaceConfigurator( NodeConfig<Integer> nodeConfig, int numAttrsPerSubspace)
 	{
-		super(nodeConfig, dataSource);
-		this.optimalH = optimalH;
+		super(nodeConfig);
+		this.numAttrsPerSubspace = numAttrsPerSubspace;
 	}
 	
 	@Override
@@ -38,23 +37,11 @@ public class BasicSubspaceConfigurator
 		double numNodes = nodeConfig.getNodeIDs().size();
 		double numAttrs = AttributeTypes.attributeMap.size();
 		
-		ContextServiceLogger.getLogger().fine("double divide "+numAttrs/optimalH+
-				" numAttrs "+numAttrs+" optimalH "+optimalH);
+		ContextServiceLogger.getLogger().fine("double divide "+numAttrs/numAttrsPerSubspace+
+				" numAttrs "+numAttrs+" numAttrsPerSubspace "+numAttrsPerSubspace);
 		
-		double numSubspaces = Math.ceil(numAttrs/optimalH);
+		double numSubspaces = Math.ceil(numAttrs/numAttrsPerSubspace);
 		
-		//Vector<AttributeMetaInfo> attrVector 
-		//		= new Vector<AttributeMetaInfo>();
-
-		//attrVector.addAll(AttributeTypes.attributeMap.values());
-		
-		// handling the case if somehow numSubspaces 
-		// becomes greater than numNodes, specially in 1 node case
-//		if(numSubspaces > numNodes)
-//		{
-//			numSubspaces = numNodes;
-//			optimalH = Math.ceil(numAttrs/numSubspaces);
-//		}
 
 		double numberNodesForSubspace = Math.floor(numNodes/numSubspaces);
 		
@@ -76,7 +63,7 @@ public class BasicSubspaceConfigurator
 				if( subspaceKeyIter.hasNext() )
 				{
 					subspaceKey = subspaceKeyIter.next();
-					Vector<SubspaceInfo> currSubVect
+					List<SubspaceInfo> currSubVect
 										= subspaceInfoMap.get(subspaceKey);
 					assert( currSubVect.size() > 0 );
 					currSubVect.get(0).getNodesOfSubspace().add( (Integer)(Integer)nodesIdCounter );
@@ -106,7 +93,7 @@ public class BasicSubspaceConfigurator
 				while( subspaceKeyIter.hasNext() )
 				{
 					subspaceKey = subspaceKeyIter.next();
-					Vector<SubspaceInfo> currSubVect
+					List<SubspaceInfo> currSubVect
 										= subspaceInfoMap.get(subspaceKey);
 					assert( currSubVect.size() > 0 );
 					currSubVect.get(0).getNodesOfSubspace().add( (Integer)(Integer)nodesIdCounter );
@@ -156,7 +143,7 @@ public class BasicSubspaceConfigurator
 			
 			int numCurrAttr = 0;
 			
-			while( (numCurrAttr < optimalH) && (attrIndexCounter < attrVector.size()) )
+			while( (numCurrAttr < numAttrsPerSubspace) && (attrIndexCounter < attrVector.size()) )
 			{
 				AttributeMetaInfo currAttrMetaInfo = attrVector.get(attrIndexCounter);
 				String attrName = currAttrMetaInfo.getAttrName();
@@ -200,7 +187,7 @@ public class BasicSubspaceConfigurator
 		}
 		
 		AbstractSubspaceConfigurator basicSubspaceConfigurator 
-								= new BasicSubspaceConfigurator(testNodeConfig, 2, null);
+								= new BasicSubspaceConfigurator(testNodeConfig, 2);
 		
 		basicSubspaceConfigurator.configureSubspaceInfo();
 		basicSubspaceConfigurator.printSubspaceInfo();

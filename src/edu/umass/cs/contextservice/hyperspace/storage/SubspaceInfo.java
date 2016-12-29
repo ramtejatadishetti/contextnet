@@ -2,7 +2,10 @@ package edu.umass.cs.contextservice.hyperspace.storage;
 
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Vector;
+import java.util.LinkedList;
+import java.util.List;
+
+import edu.umass.cs.contextservice.regionmapper.helper.RegionInfo;
 
 /**
  * Stores attributes that define a subspace
@@ -10,7 +13,7 @@ import java.util.Vector;
  */
 public class SubspaceInfo
 {
-	// this is the distict subspace id for a subspace
+	// this is the distinct subspace id for a subspace
 	// replicated subspaces will have this as same.
 	private final int subspaceId;
 	
@@ -18,19 +21,23 @@ public class SubspaceInfo
 	private final int replicaNum;
 	
 	private final HashMap<String, AttributePartitionInfo> attributesOfSubspace;
-	private final Vector<Integer> nodesOfSubspace;
+	private final List<Integer> nodesOfSubspace;
+	
+	private final List<RegionInfo> subspaceRegionList;
+	
 	// right now num of paritions is same for each attribute 
 	// in the subspace
-	private int numPartitions;
+	private  int numPartitions;
 	
-	public SubspaceInfo(int subspaceId, int replicaNum, HashMap<String, AttributePartitionInfo> attributesOfSubspace, 
-			Vector<Integer> nodesOfSubspace)
+	public SubspaceInfo(int subspaceId, int replicaNum, 
+			HashMap<String, AttributePartitionInfo> attributesOfSubspace, 
+			List<Integer> nodesOfSubspace)
 	{
 		this.subspaceId 			= subspaceId;
 		this.replicaNum 			= replicaNum;
 		this.attributesOfSubspace 	= attributesOfSubspace;
 		this.nodesOfSubspace 		= nodesOfSubspace;
-		//this.numPartitions 		= numPartitions;
+		subspaceRegionList          = new LinkedList<RegionInfo>();
 	}
 	
 	public HashMap<String, AttributePartitionInfo> getAttributesOfSubspace()
@@ -48,20 +55,20 @@ public class SubspaceInfo
 		return this.replicaNum;
 	}
 	
-	public int getNumPartitions()
+	public void addRegionToList(RegionInfo region)
 	{
-		return this.numPartitions;
+		this.subspaceRegionList.add(region);
 	}
 	
-	public void setNumPartitions( int numPartitions )
+	public List<RegionInfo> getSubspaceRegionsList()
 	{
-		this.numPartitions = numPartitions;
+		return subspaceRegionList;
 	}
 	
 	public String toString()
 	{
 		String str = "subspace id "+this.subspaceId+" replica num "+this.replicaNum+
-				" num partitions "+ numPartitions +" attributes ";
+				" attributes ";
 		
 		Iterator<String> attrIter = this.attributesOfSubspace.keySet().iterator();
 		
@@ -77,9 +84,19 @@ public class SubspaceInfo
 		return str;
 	}
 	
-	public Vector<Integer> getNodesOfSubspace()
+	public List<Integer> getNodesOfSubspace()
 	{
 		return this.nodesOfSubspace;
+	}
+	
+	public void setNumPartitions(int numPartitions)
+	{
+		this.numPartitions = numPartitions;
+	}
+	
+	public int getNumPartitions()
+	{
+		return numPartitions;
 	}
 	
 	/**

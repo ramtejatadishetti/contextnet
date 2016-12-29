@@ -5,6 +5,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 
@@ -349,12 +351,12 @@ public class AttributeTypes
 		return null;
 	}
 	
-	public static Vector<DomainPartitionInfo> partitionDomain( int numPartitions, 
+	public static List<RangePartitionInfo> partitionDomain( int numPartitions, 
 			String minValue, String maxValue, String dataType )
 	{
 		ContextServiceLogger.getLogger().fine("partitionDomain numPartitions "+numPartitions );
 		
-		Vector<DomainPartitionInfo> domainParitionInfo = new Vector<DomainPartitionInfo>();
+		List<RangePartitionInfo> domainParitionInfo = new LinkedList<RangePartitionInfo>();
 		
 		switch(dataType)
 		{
@@ -375,8 +377,9 @@ public class AttributeTypes
 					if( currUpper > maxValD )
 						currUpper = maxValD;
 					
-					DomainPartitionInfo partitionInfo 
-							= new DomainPartitionInfo(j, currLower+"", currUpper+"");
+					RangePartitionInfo partitionInfo 
+							= new RangePartitionInfo(j, 
+										new AttributeValueRange(currLower+"", currUpper+""));
 					domainParitionInfo.add(partitionInfo);
 				}
 				break;
@@ -399,8 +402,9 @@ public class AttributeTypes
 					if( currUpper > maxValI )
 						currUpper = maxValI;
 					
-					DomainPartitionInfo partitionInfo 
-								= new DomainPartitionInfo(j, currLower+"", currUpper+"");
+					RangePartitionInfo partitionInfo 
+								= new RangePartitionInfo(j, 
+										new AttributeValueRange(currLower+"", currUpper+""));
 					domainParitionInfo.add(partitionInfo);
 				}
 				break;
@@ -422,8 +426,9 @@ public class AttributeTypes
 					if( currUpper > maxValL )
 						currUpper = maxValL;
 					
-					DomainPartitionInfo partitionInfo 
-								= new DomainPartitionInfo(j, currLower+"", currUpper+"");
+					RangePartitionInfo partitionInfo 
+								= new RangePartitionInfo(j, 
+										new AttributeValueRange(currLower+"", currUpper+""));
 					domainParitionInfo.add(partitionInfo);
 				}
 				break;
@@ -466,7 +471,8 @@ public class AttributeTypes
 					currLower = currUpper;
 					currUpper =  partitionStrings[j];
 					
-					DomainPartitionInfo partitionInfo = new DomainPartitionInfo(j, currLower+"", currUpper+"");
+					RangePartitionInfo partitionInfo = new RangePartitionInfo(j, 
+							new AttributeValueRange(currLower+"", currUpper+""));
 					domainParitionInfo.add(partitionInfo);
 				}
 				
@@ -475,7 +481,8 @@ public class AttributeTypes
 					currLower = partitionStrings[numPartitions-2];
 					currUpper =  maxValue;
 					
-					DomainPartitionInfo partitionInfo = new DomainPartitionInfo(numPartitions-1, currLower+"", currUpper+"");
+					RangePartitionInfo partitionInfo = new RangePartitionInfo(numPartitions-1, 
+							new AttributeValueRange(currLower+"", currUpper+""));
 					domainParitionInfo.add(partitionInfo);
 				}
 				
@@ -562,139 +569,15 @@ public class AttributeTypes
 	}
 	
 	
-	/**
-	 * compared attValue if it satisfies the given processing component
-	 * @param pqc
-	 * @param attrValueJSON
-	 * @return
-	 */
-	/*public static boolean checkForComponent(ProcessingQueryComponent pqc, JSONObject attrValueJSON)
-	{
-		String attrName = pqc.getAttributeName();
-		
-		String dataType = attributeMap.get(attrName).getDataType();
-		String valueToCheck;
-		try 
-		{
-			valueToCheck = attrValueJSON.getString(attrName);
-		} catch (JSONException e)
-		{
-			e.printStackTrace();
-			return false;
-		}
-		boolean retValue = false;
-		switch(dataType)
-		{
-			case AttributeTypes.DoubleType:
-			{
-				double lowerBoundD = Double.parseDouble(pqc.getLowerBound());
-				double upperBoundD = Double.parseDouble(pqc.getUpperBound());
-				
-				double valueD = Double.parseDouble(valueToCheck);
-				
-				if(lowerBoundD != upperBoundD)
-				{
-					if( (valueD >= lowerBoundD) && (valueD < upperBoundD) )
-					{
-						retValue = true;
-					}
-				}
-				else
-				{
-					if(valueD == lowerBoundD)
-					{
-						retValue = true;
-					}
-				}
-				break;
-			}
-			case AttributeTypes.IntType:
-			{
-				int lowerBoundI = Integer.parseInt(pqc.getLowerBound());
-				int upperBoundI = Integer.parseInt(pqc.getUpperBound());
-				
-				int valueI = Integer.parseInt(valueToCheck);
-				
-				if(lowerBoundI != upperBoundI)
-				{
-					if( (valueI >= lowerBoundI) && (valueI < upperBoundI) )
-					{
-						retValue = true;
-					}
-				}
-				else
-				{
-					if(valueI == lowerBoundI)
-					{
-						retValue = true;
-					}
-				}
-				
-				break;
-			}
-			case AttributeTypes.LongType:
-			{
-				long lowerBoundL = Long.parseLong(pqc.getLowerBound());
-				long upperBoundL = Long.parseLong(pqc.getUpperBound());
-				
-				long valueL = Long.parseLong(valueToCheck);
-				
-				if(lowerBoundL != upperBoundL)
-				{
-					if( (valueL >= lowerBoundL) && (valueL < upperBoundL) )
-					{
-						retValue = true;
-					}
-				}
-				else
-				{
-					if(valueL == lowerBoundL)
-					{
-						retValue = true;
-					}
-				}
-				break;
-			}
-			case AttributeTypes.StringType:
-			{
-				String lowerBoundS = pqc.getLowerBound();
-				String upperBoundS = pqc.getUpperBound();
-				
-				String valueS = valueToCheck;
-				
-				if(!lowerBoundS.equals(upperBoundS))
-				{
-					if( (valueS.compareTo(lowerBoundS) >=0 ) && (valueS.compareTo(upperBoundS) < 0) )
-					{
-						retValue = true;
-					}
-				}
-				else
-				{
-					if(valueS.equals(lowerBoundS))
-					{
-						retValue = true;
-					}
-				}
-				break;
-			}
-			default:
-				assert(false);
-		}
-		return retValue;
-	}*/
-	
-	public static class DomainPartitionInfo
+	public static class RangePartitionInfo
 	{
 		public final int partitionNum;
-		public final String lowerbound;
-		public final String upperbound;
+		public final AttributeValueRange attrValRange;
 		
-		public DomainPartitionInfo( int partitionNum, String lowerbound, String upperbound )
+		public RangePartitionInfo( int partitionNum, AttributeValueRange attrValRange )
 		{
 			this.partitionNum = partitionNum;
-			this.lowerbound = lowerbound;
-			this.upperbound = upperbound;
+			this.attrValRange = attrValRange;
 		}
 	}
 	
@@ -722,11 +605,134 @@ public class AttributeTypes
 		
 		//test the string partition domain function
 		
-		Vector<DomainPartitionInfo> vect = partitionDomain(2, 0+"", 5+"", "String");
+		List<RangePartitionInfo> vect = partitionDomain(2, 0+"", 5+"", "String");
 		for(int i=0;i<vect.size();i++)
 		{
-			System.out.println(" "+vect.get(i).partitionNum+" "+vect.get(i).lowerbound
-					+" "+vect.get(i).upperbound);
+			System.out.println(" "+vect.get(i).partitionNum+" "+vect.get(i).attrValRange.getLowerBound()
+					+" "+vect.get(i).attrValRange.getUpperBound());
 		}
 	}
 }
+
+
+/**
+ * compared attValue if it satisfies the given processing component
+ * @param pqc
+ * @param attrValueJSON
+ * @return
+ */
+/*public static boolean checkForComponent(ProcessingQueryComponent pqc, JSONObject attrValueJSON)
+{
+	String attrName = pqc.getAttributeName();
+	
+	String dataType = attributeMap.get(attrName).getDataType();
+	String valueToCheck;
+	try 
+	{
+		valueToCheck = attrValueJSON.getString(attrName);
+	} catch (JSONException e)
+	{
+		e.printStackTrace();
+		return false;
+	}
+	boolean retValue = false;
+	switch(dataType)
+	{
+		case AttributeTypes.DoubleType:
+		{
+			double lowerBoundD = Double.parseDouble(pqc.getLowerBound());
+			double upperBoundD = Double.parseDouble(pqc.getUpperBound());
+			
+			double valueD = Double.parseDouble(valueToCheck);
+			
+			if(lowerBoundD != upperBoundD)
+			{
+				if( (valueD >= lowerBoundD) && (valueD < upperBoundD) )
+				{
+					retValue = true;
+				}
+			}
+			else
+			{
+				if(valueD == lowerBoundD)
+				{
+					retValue = true;
+				}
+			}
+			break;
+		}
+		case AttributeTypes.IntType:
+		{
+			int lowerBoundI = Integer.parseInt(pqc.getLowerBound());
+			int upperBoundI = Integer.parseInt(pqc.getUpperBound());
+			
+			int valueI = Integer.parseInt(valueToCheck);
+			
+			if(lowerBoundI != upperBoundI)
+			{
+				if( (valueI >= lowerBoundI) && (valueI < upperBoundI) )
+				{
+					retValue = true;
+				}
+			}
+			else
+			{
+				if(valueI == lowerBoundI)
+				{
+					retValue = true;
+				}
+			}
+			
+			break;
+		}
+		case AttributeTypes.LongType:
+		{
+			long lowerBoundL = Long.parseLong(pqc.getLowerBound());
+			long upperBoundL = Long.parseLong(pqc.getUpperBound());
+			
+			long valueL = Long.parseLong(valueToCheck);
+			
+			if(lowerBoundL != upperBoundL)
+			{
+				if( (valueL >= lowerBoundL) && (valueL < upperBoundL) )
+				{
+					retValue = true;
+				}
+			}
+			else
+			{
+				if(valueL == lowerBoundL)
+				{
+					retValue = true;
+				}
+			}
+			break;
+		}
+		case AttributeTypes.StringType:
+		{
+			String lowerBoundS = pqc.getLowerBound();
+			String upperBoundS = pqc.getUpperBound();
+			
+			String valueS = valueToCheck;
+			
+			if(!lowerBoundS.equals(upperBoundS))
+			{
+				if( (valueS.compareTo(lowerBoundS) >=0 ) && (valueS.compareTo(upperBoundS) < 0) )
+				{
+					retValue = true;
+				}
+			}
+			else
+			{
+				if(valueS.equals(lowerBoundS))
+				{
+					retValue = true;
+				}
+			}
+			break;
+		}
+		default:
+			assert(false);
+	}
+	return retValue;
+}*/

@@ -1,49 +1,41 @@
 package edu.umass.cs.contextservice.regionmapper;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Vector;
-import java.util.concurrent.ExecutorService;
+import java.util.Random;
+
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
-import edu.umass.cs.contextservice.config.ContextServiceConfig;
-import edu.umass.cs.contextservice.config.ContextServiceConfig.SQL_DB_TYPE;
 import edu.umass.cs.contextservice.configurator.AbstractSubspaceConfigurator;
 import edu.umass.cs.contextservice.configurator.BasicSubspaceConfigurator;
-import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
-import edu.umass.cs.contextservice.database.datasource.AbstractDataSource.DB_REQUEST_TYPE;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
+import edu.umass.cs.contextservice.queryparsing.QueryParser;
+import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
+import edu.umass.cs.contextservice.regionmapper.helper.RegionInfo;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 
 
 
 public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 {
-	private final ExecutorService nodeES;
-	private final AbstractDataSource dataSource;
-	private final int numberAttrsPerSubspace;
 	private final AbstractSubspaceConfigurator subspaceConfigurator;
 	
 	
 	public HyperdexBasedRegionMappingPolicy( HashMap<String, AttributeMetaInfo> attributeMap, 
-			CSNodeConfig csNodeConfig, AbstractDataSource dataSource, 
-			int numberAttrsPerSubspace, ExecutorService nodeES )
+			CSNodeConfig csNodeConfig, int numberAttrsPerSubspace )
 	{
 		super(attributeMap, csNodeConfig);
 		
-		this.dataSource = dataSource;
-		this.numberAttrsPerSubspace = numberAttrsPerSubspace;
-		this.nodeES = nodeES;
-		
 		subspaceConfigurator 
-			= new BasicSubspaceConfigurator(csNodeConfig, numberAttrsPerSubspace, dataSource);
+			= new BasicSubspaceConfigurator(csNodeConfig, numberAttrsPerSubspace);
 	}
 	
 	
@@ -51,119 +43,188 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 	public List<Integer> getNodeIDsForAValueSpace(ValueSpaceInfo valueSpace, 
 			REQUEST_TYPE requestType) 
 	{
+		HashMap<Integer, Boolean> nodeMap = null;
+		switch(requestType)
+		{
+			case SEARCH:
+			{
+				nodeMap =  processSearchRequest(valueSpace);
+				break;
+			}
+			case UPDATE:
+			{
+				nodeMap = processUpdateRequest(valueSpace);
+				break;
+			}
+		}
+		
+		if(nodeMap != null)
+		{
+			List<Integer> nodeList = new LinkedList<Integer>();
+			Iterator<Integer> nodeIdIter = nodeMap.keySet().iterator();
+			while(nodeIdIter.hasNext())
+			{
+				nodeList.add(nodeIdIter.next());
+			}
+			
+			return nodeList;
+		}
 		return null;
 	}
+	
 
 	@Override
 	public void computeRegionMapping() 
 	{
 		subspaceConfigurator.configureSubspaceInfo();
-		HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap 
-					= subspaceConfigurator.getSubspaceInfoMap();
+//		HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap 
+//					= subspaceConfigurator.getSubspaceInfoMap();
 		
-		createDBTables(subspaceInfoMap);
-		
-		subspaceConfigurator.generateAndStoreSubspacePartitionsInDB
-													(nodeES);	
+		subspaceConfigurator.generateAndStoreSubspaceRegions();	
 	}
 	
 	
-	private void createDBTables(HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap)
+	private HashMap<Integer, Boolean> processUpdateRequest(ValueSpaceInfo valueSpace)
 	{
-		Connection myConn  = null;
-		Statement  stmt    = null;	
-		try
+		HashMap<Integer, Boolean> nodeMap = new HashMap<Integer, Boolean>();
+		
+		
+		HashMap<Integer, List<SubspaceInfo>> subspaceMap = 
+						subspaceConfigurator.getSubspaceInfoMap();
+		
+		Iterator<Integer> subspaceIdIter = subspaceMap.keySet().iterator();
+		
+		while( subspaceIdIter.hasNext() )
 		{
-			myConn = dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
-			stmt   = myConn.createStatement();
-			Iterator<Integer> subspaceIter = subspaceInfoMap.keySet().iterator();
+			int subspaceId = subspaceIdIter.next();
 			
-			while( subspaceIter.hasNext() )
+			SubspaceInfo subInfo = subspaceMap.get(subspaceId).get(0);		
+			
+			ValueSpaceInfo updateSubspaceValSpace 	= new ValueSpaceInfo();
+			
+			HashMap<String, AttributePartitionInfo> subspaceAttrMap 
+													= subInfo.getAttributesOfSubspace();
+			
+			Iterator<String> attrIter = subspaceAttrMap.keySet().iterator();
+			
+			while( attrIter.hasNext() )
 			{
-				int subspaceId = subspaceIter.next();
-				Vector<SubspaceInfo> replicasOfSubspace 
-										= subspaceInfoMap.get(subspaceId);
+				String attrName = attrIter.next();
+				updateSubspaceValSpace.getValueSpaceBoundary().put(attrName, 
+										valueSpace.getValueSpaceBoundary().get(attrName));
+			}
+			
+			
+			List<RegionInfo> subsapceRegionsList = subInfo.getSubspaceRegionsList();
+			
+			
+			for(int i=0; i<subsapceRegionsList.size(); i++)
+			{
+				RegionInfo currRegion = subsapceRegionsList.get(i);
 				
-				for(int i = 0; i<replicasOfSubspace.size(); i++)
+				boolean overlap = ValueSpaceInfo.checkOverlapOfTwoValueSpaces
+								(attributeMap, currRegion.getValueSpaceInfo(), updateSubspaceValSpace);
+				
+				if(overlap)
 				{
-					SubspaceInfo subInfo = replicasOfSubspace.get(i);
-					
-					int replicaNum = subInfo.getReplicaNum();
-					
-					HashMap<String, AttributePartitionInfo> subspaceAttributes 
-															= subInfo.getAttributesOfSubspace();
-					
-					// partition info storage info
-					String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"PartitionInfo";
-					
-					String newTableCommand = "create table "+tableName+" ( hashCode INTEGER PRIMARY KEY , "
-						      + "   respNodeID INTEGER ";
-					
-					//	      + ", upperRange DOUBLE NOT NULL, nodeID INT NOT NULL, "
-					//	      + "   partitionNum INT AUTO_INCREMENT, INDEX USING BTREE (lowerRange, upperRange) )";
-					//TODO: which indexing scheme is better, indexing two attribute once or creating a index over all 
-					// attributes
-					Iterator<String> attrIter = subspaceAttributes.keySet().iterator();
-					while( attrIter.hasNext() )
-					{
-						String attrName = attrIter.next();
-						String attrDataType  = subspaceAttributes.get(attrName).getAttrMetaInfo().getDataType();
-						String mySQLDataType = AttributeTypes.mySQLDataType.get(attrDataType);
-						// lower range of this attribute in this subspace
-						String lowerAttrName = "lower"+attrName;
-						String upperAttrName = "upper"+attrName;
-						
-						newTableCommand = newTableCommand + " , "+lowerAttrName+" "+mySQLDataType+" , "
-											+upperAttrName+" "+mySQLDataType;
-						
-						if( ContextServiceConfig.sqlDBType == SQL_DB_TYPE.MYSQL )
-						{
-							newTableCommand = newTableCommand 
-									+" , "+ "INDEX USING BTREE("+lowerAttrName+" , "+upperAttrName+")";
-						}
-					}
-					
-					newTableCommand = newTableCommand +" )";
-					stmt.executeUpdate(newTableCommand);
-					
+					nodeMap.put(currRegion.getNodeList().get(0), true);
+					break;
 				}
-			}
-			
+			}		
 		}
-		catch( SQLException mysqlEx )
-		{
-			mysqlEx.printStackTrace();
-		}
-		finally
-		{
-			try
-			{
-				if( stmt != null )
-					stmt.close();
-				if( myConn != null )
-					myConn.close();
-			}
-			catch( SQLException sqex )
-			{
-				sqex.printStackTrace();
-			}
-		}
+		
+		return nodeMap;
 	}
+	
+	
+	private HashMap<Integer, Boolean> processSearchRequest(ValueSpaceInfo valueSpace)
+	{
+		List<String> queryAttrList = getNotFullRangeAttrsInSearchQuery(valueSpace);
+		
+		SubspaceInfo subInfo = getMaxOverlapSubspace(queryAttrList );
+		
+		//System.out.println("Max sub info "+subInfo.toString());
+		// Query value space consisting only subspace attrs.
+		
+		ValueSpaceInfo searchSubspaceValSpace 	= new ValueSpaceInfo();
+		
+		HashMap<String, AttributePartitionInfo> subspaceAttrMap 
+												= subInfo.getAttributesOfSubspace();
+		
+		Iterator<String> attrIter = subspaceAttrMap.keySet().iterator();
+		
+		while( attrIter.hasNext() )
+		{
+			String attrName = attrIter.next();
+			searchSubspaceValSpace.getValueSpaceBoundary().put(attrName, 
+									valueSpace.getValueSpaceBoundary().get(attrName));
+		}
+		
+		//System.out.println("searchSubspaceValSpace "+searchSubspaceValSpace.toString());
+		
+		
+		HashMap<Integer, Boolean> nodeMap = new HashMap<Integer, Boolean>();
+		
+		List<RegionInfo> subsapceRegionsList = subInfo.getSubspaceRegionsList();
+		
+		
+		for(int i=0; i<subsapceRegionsList.size(); i++)
+		{
+			RegionInfo currRegion = subsapceRegionsList.get(i);
+			
+			boolean overlap = ValueSpaceInfo.checkOverlapOfTwoValueSpaces
+							(attributeMap, currRegion.getValueSpaceInfo(), searchSubspaceValSpace);
+			
+			if(overlap)
+			{
+				nodeMap.put(currRegion.getNodeList().get(0), true);
+			}
+		}
+		return nodeMap;
+	}
+	
+	
+	private List<String> getNotFullRangeAttrsInSearchQuery(ValueSpaceInfo valueSpace)
+	{
+		HashMap<String, AttributeValueRange> valSpaceBoundary = valueSpace.getValueSpaceBoundary();
+		
+		Iterator<String> attrIter = valSpaceBoundary.keySet().iterator();
+		List<String> queryAttrList = new LinkedList<String>();
+		
+		while(attrIter.hasNext())
+		{
+			String attrName = attrIter.next();
+			AttributeValueRange attrValRange = valSpaceBoundary.get(attrName);
+			
+			AttributeMetaInfo attrMetaInfo = attributeMap.get(attrName);
+			
+			if( attrValRange.getLowerBound().equals(attrMetaInfo.getMinValue()) 
+					&& attrValRange.getUpperBound().equals(attrMetaInfo.getMaxValue()) )
+			{
+				// non interesting attr.
+			}
+			else
+			{
+				queryAttrList.add(attrName);
+			}
+		}
+		return queryAttrList;
+	}
+	
 	
 	/**
 	 * Returns subspace number of the maximum overlapping
 	 * subspace. Used in processing search query.
 	 * @return
 	 */
-	/*protected int getMaxOverlapSubspace( HashMap<String, ProcessingQueryComponent> pqueryComponents, 
-			HashMap<String, ProcessingQueryComponent> matchingAttributes )
+	private SubspaceInfo getMaxOverlapSubspace( List<String> queryAttrList)
 	{
 		// first the maximum matching subspace is found and then any of its replica it chosen
 		Iterator<Integer> keyIter   	= subspaceConfigurator.getSubspaceInfoMap().keySet().iterator();
 		int maxMatchingAttrs 			= 0;
 		
-		HashMap<Integer, Vector<MaxAttrMatchingStorageClass>> matchingSubspaceHashMap = 
-				new HashMap<Integer, Vector<MaxAttrMatchingStorageClass>>();
+		HashMap<Integer, List<MaxAttrMatchingStorageClass>> matchingSubspaceHashMap = 
+				new HashMap<Integer, List<MaxAttrMatchingStorageClass>>();
 		
 		while( keyIter.hasNext() )
 		{
@@ -172,27 +233,23 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo = currSubInfo.getAttributesOfSubspace();
 			
 			int currMaxMatch = 0;
-			HashMap<String, ProcessingQueryComponent> currMatchingComponents 
-						= new HashMap<String, ProcessingQueryComponent>();
+			List<String> currMatchingAttrList = new LinkedList<String>();
 			
-			Iterator<String> attrIter = pqueryComponents.keySet().iterator();
-			
-			while( attrIter.hasNext() )
+			for(int i=0; i<queryAttrList.size(); i++)
 			{
-				String attrName = attrIter.next();
-				ProcessingQueryComponent pqc = pqueryComponents.get(attrName);
-				if( attrsSubspaceInfo.containsKey(pqc.getAttributeName()) )
+				if( attrsSubspaceInfo.containsKey(queryAttrList.get(i)) )
 				{
 					currMaxMatch = currMaxMatch + 1;
-					currMatchingComponents.put(pqc.getAttributeName(), pqc);
+					currMatchingAttrList.add(queryAttrList.get(i));
 				}
 			}
+			
 			
 			if(currMaxMatch >= maxMatchingAttrs)
 			{
 				maxMatchingAttrs = currMaxMatch;
 				MaxAttrMatchingStorageClass maxAttrMatchObj = new MaxAttrMatchingStorageClass();
-				maxAttrMatchObj.currMatchingComponents = currMatchingComponents;
+				maxAttrMatchObj.matchingAttrList = currMatchingAttrList;
 				maxAttrMatchObj.subspaceId = subspaceId;
 				
 				if(matchingSubspaceHashMap.containsKey(currMaxMatch))
@@ -201,43 +258,111 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 				}
 				else
 				{
-					Vector<MaxAttrMatchingStorageClass> currMatchingSubspaceNumVector 
-													= new Vector<MaxAttrMatchingStorageClass>();
+					List<MaxAttrMatchingStorageClass> currMatchingSubspaceNumVector 
+													= new LinkedList<MaxAttrMatchingStorageClass>();
 					currMatchingSubspaceNumVector.add(maxAttrMatchObj);
 					matchingSubspaceHashMap.put(currMaxMatch, currMatchingSubspaceNumVector);
 				}
 			}
 		}
 		
-		Vector<MaxAttrMatchingStorageClass> maxMatchingSubspaceNumVector 
+		List<MaxAttrMatchingStorageClass> maxMatchingSubspaceNumVector 
 			= matchingSubspaceHashMap.get(maxMatchingAttrs);
 		
 		int returnIndex = new Random().nextInt( maxMatchingSubspaceNumVector.size() );
-		matchingAttributes.clear();
+		//matchingAttributes.clear();
 		
-		Iterator<String> attrIter 
-				= maxMatchingSubspaceNumVector.get(returnIndex).currMatchingComponents.keySet().iterator();
-		while(attrIter.hasNext())
-		{
-			String attrName = attrIter.next();
-			matchingAttributes.put( attrName, 
-			maxMatchingSubspaceNumVector.get(returnIndex).currMatchingComponents.get(attrName) );
-		}
+
+		MaxAttrMatchingStorageClass chosenList = maxMatchingSubspaceNumVector.get(returnIndex);
 		
-		
-		String print = "size "+maxMatchingSubspaceNumVector.size()+" ";
-		for(int i=0;i<maxMatchingSubspaceNumVector.size();i++)
-		{
-			print = print + maxMatchingSubspaceNumVector.get(i).subspaceId+" ";
-		}
-		print = print + " chosen "+maxMatchingSubspaceNumVector.get(returnIndex).subspaceId;
-		
-		return maxMatchingSubspaceNumVector.get(returnIndex).subspaceId;
+		return subspaceConfigurator.getSubspaceInfoMap().get(chosenList.subspaceId).get(0);
 	}
+	
 	
 	protected class MaxAttrMatchingStorageClass
 	{
 		public int subspaceId;
-		public HashMap<String, ProcessingQueryComponent> currMatchingComponents;
-	}*/
+		public List<String> matchingAttrList;
+	}
+	
+	
+	public static void main(String[] args)
+	{
+		int NUM_ATTRS 			= Integer.parseInt(args[0]);
+		int NUM_NODES 			= Integer.parseInt(args[1]);
+		int ATTRs_PER_SUBSPACE 	= Integer.parseInt(args[2]);
+		
+		
+		
+		HashMap<String, AttributeMetaInfo> givenMap = new HashMap<String, AttributeMetaInfo>();
+		
+		for(int i=0; i < NUM_ATTRS; i++)
+		{
+			String attrName = "attr"+i;
+			AttributeMetaInfo attrInfo =
+					new AttributeMetaInfo(attrName, 1+"", 1500+"", AttributeTypes.DoubleType);
+			
+			givenMap.put(attrInfo.getAttrName(), attrInfo);	
+		}
+		
+		CSNodeConfig csNodeConfig = new CSNodeConfig();
+		for(int i=0; i< NUM_NODES; i++)
+		{
+			try 
+			{
+				csNodeConfig.add(i, 
+						new InetSocketAddress(InetAddress.getByName("localhost"), 3000+i));
+			}
+			catch (UnknownHostException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		
+		AttributeTypes.initializeGivenMap(givenMap);
+		HyperdexBasedRegionMappingPolicy obj 
+				= new HyperdexBasedRegionMappingPolicy(givenMap, csNodeConfig, ATTRs_PER_SUBSPACE);
+		
+		
+		obj.computeRegionMapping();
+		
+		// printing subsapces.
+		HashMap<Integer, List<SubspaceInfo>> subspaceMap = obj.subspaceConfigurator.getSubspaceInfoMap();
+		
+		Iterator<Integer> idIter = subspaceMap.keySet().iterator();
+		
+		while(idIter.hasNext())
+		{
+			int subspaceId = idIter.next();
+			SubspaceInfo subsInfo = subspaceMap.get(subspaceId).get(0);
+			
+			System.out.println(subsInfo.toString());
+		}
+		
+		
+		String searchQuery = "attr13 >= 321 AND attr13 <= 671 AND  "
+				+ "attr2 >= 286 AND attr2 <= 736 AND  attr4 >= 983 AND attr4 <= 1133 AND  "
+				+ "attr10 >= 491 AND attr10 <= 641";
+		
+		ValueSpaceInfo queryValSpace = QueryParser.parseQuery(searchQuery);
+		
+		List<Integer> nodeList = obj.getNodeIDsForAValueSpace(queryValSpace, REQUEST_TYPE.SEARCH);
+		
+		System.out.println("Search node list "+nodeList);
+		
+		ValueSpaceInfo valSpace = new ValueSpaceInfo();
+		
+		Random rand = new Random();
+		for(int i=0; i<NUM_ATTRS; i++)
+		{
+			int value = 1+rand.nextInt(1500);
+			valSpace.getValueSpaceBoundary().put("attr"+i, 
+						new AttributeValueRange(value+"", value+""));
+		}
+		
+		nodeList = obj.getNodeIDsForAValueSpace(valSpace, REQUEST_TYPE.UPDATE);
+		
+		System.out.println("Update node list "+nodeList);
+		
+	}
 }
