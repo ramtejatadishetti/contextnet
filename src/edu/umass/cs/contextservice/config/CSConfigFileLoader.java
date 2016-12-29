@@ -110,8 +110,6 @@ public class CSConfigFileLoader
 	    		properties.getProperty(ContextServiceConfig.threadPoolSizeString, 
 	    				10+"") )  ;
 	  
-	  ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE = ContextServiceConfig.MYSQL_MAX_CONNECTIONS;
-	  
 	  
 	  System.out.println("read props ContextServiceConfig.modelRho "+ContextServiceConfig.modelRho
     		+" ContextServiceConfig.modelCsByC "+ContextServiceConfig.modelCsByC
