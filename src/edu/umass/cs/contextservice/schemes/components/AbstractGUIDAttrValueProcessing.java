@@ -24,7 +24,6 @@ import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionMessage;
 import edu.umass.cs.contextservice.profilers.ProfilerStatClass;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
 import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy;
-import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy.REQUEST_TYPE;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 import edu.umass.cs.contextservice.schemes.RegionMappingBasedScheme;
@@ -142,7 +141,8 @@ public abstract class AbstractGUIDAttrValueProcessing
 		}
 		
 		List<Integer> oldValSpaceList 
-					= regionMappingPolicy.getNodeIDsForAValueSpace(oldValSpace, REQUEST_TYPE.UPDATE);
+					= regionMappingPolicy.getNodeIDsForAValueSpaceForUpdate
+									(GUID, oldValSpace);
 		
 		
 		// for new value
@@ -169,7 +169,8 @@ public abstract class AbstractGUIDAttrValueProcessing
 		}
 		
 		List<Integer> newValSpaceList 
-					= regionMappingPolicy.getNodeIDsForAValueSpace(newValSpace, REQUEST_TYPE.UPDATE);
+					= regionMappingPolicy.getNodeIDsForAValueSpaceForUpdate
+										(GUID, newValSpace);
 		
 		HashMap<Integer, Integer> removeNodesMap = new HashMap<Integer, Integer>();
 		HashMap<Integer, Integer> addNodesMap = new HashMap<Integer, Integer>();
@@ -387,7 +388,8 @@ public abstract class AbstractGUIDAttrValueProcessing
 			newValSpace.getValueSpaceBoundary().put(attrName, attrValRange);
 		}
 		
-		List<Integer> newNodeList = regionMappingPolicy.getNodeIDsForAValueSpace(newValSpace, REQUEST_TYPE.UPDATE);
+		List<Integer> newNodeList = regionMappingPolicy.getNodeIDsForAValueSpaceForUpdate
+						(GUID, newValSpace);
 		
 		updateReq.setNumberOfExpectedReplies(newNodeList.size());
 		

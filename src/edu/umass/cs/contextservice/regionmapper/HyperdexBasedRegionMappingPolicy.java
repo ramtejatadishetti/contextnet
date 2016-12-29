@@ -38,40 +38,6 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 			= new BasicSubspaceConfigurator(csNodeConfig, numberAttrsPerSubspace);
 	}
 	
-	
-	@Override
-	public List<Integer> getNodeIDsForAValueSpace(ValueSpaceInfo valueSpace, 
-			REQUEST_TYPE requestType) 
-	{
-		HashMap<Integer, Boolean> nodeMap = null;
-		switch(requestType)
-		{
-			case SEARCH:
-			{
-				nodeMap =  processSearchRequest(valueSpace);
-				break;
-			}
-			case UPDATE:
-			{
-				nodeMap = processUpdateRequest(valueSpace);
-				break;
-			}
-		}
-		
-		if(nodeMap != null)
-		{
-			List<Integer> nodeList = new LinkedList<Integer>();
-			Iterator<Integer> nodeIdIter = nodeMap.keySet().iterator();
-			while(nodeIdIter.hasNext())
-			{
-				nodeList.add(nodeIdIter.next());
-			}
-			
-			return nodeList;
-		}
-		return null;
-	}
-	
 
 	@Override
 	public void computeRegionMapping() 
@@ -97,7 +63,8 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 	}
 	
 	
-	private HashMap<Integer, Boolean> processUpdateRequest(ValueSpaceInfo valueSpace)
+	public List<Integer> getNodeIDsForAValueSpaceForUpdate
+			(String GUID, ValueSpaceInfo valueSpace)
 	{
 		HashMap<Integer, Boolean> nodeMap = new HashMap<Integer, Boolean>();
 		
@@ -146,11 +113,17 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 			}		
 		}
 		
-		return nodeMap;
+		List<Integer> nodeList = new LinkedList<Integer>();
+		Iterator<Integer> nodeIdIter = nodeMap.keySet().iterator();
+		while(nodeIdIter.hasNext())
+		{
+			nodeList.add(nodeIdIter.next());
+		}
+		return nodeList;
 	}
 	
-	
-	private HashMap<Integer, Boolean> processSearchRequest(ValueSpaceInfo valueSpace)
+	public List<Integer> getNodeIDsForAValueSpaceForSearch
+									(ValueSpaceInfo valueSpace)
 	{
 		List<String> queryAttrList = getNotFullRangeAttrsInSearchQuery(valueSpace);
 		
@@ -193,7 +166,15 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 				nodeMap.put(currRegion.getNodeList().get(0), true);
 			}
 		}
-		return nodeMap;
+		
+		
+		List<Integer> nodeList = new LinkedList<Integer>();
+		Iterator<Integer> nodeIdIter = nodeMap.keySet().iterator();
+		while(nodeIdIter.hasNext())
+		{
+			nodeList.add(nodeIdIter.next());
+		}
+		return nodeList;
 	}
 	
 	
@@ -346,7 +327,8 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 		
 		ValueSpaceInfo queryValSpace = QueryParser.parseQuery(searchQuery);
 		
-		List<Integer> nodeList = obj.getNodeIDsForAValueSpace(queryValSpace, REQUEST_TYPE.SEARCH);
+		List<Integer> nodeList = obj.getNodeIDsForAValueSpaceForSearch
+															(queryValSpace);
 		
 		System.out.println("Search node list "+nodeList);
 		
@@ -360,7 +342,7 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 						new AttributeValueRange(value+"", value+""));
 		}
 		
-		nodeList = obj.getNodeIDsForAValueSpace(valSpace, REQUEST_TYPE.UPDATE);
+		nodeList = obj.getNodeIDsForAValueSpaceForUpdate("", valSpace);
 		
 		System.out.println("Update node list "+nodeList);
 		

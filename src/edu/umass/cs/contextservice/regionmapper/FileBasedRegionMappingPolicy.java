@@ -43,8 +43,7 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 	
 	
 	@Override
-	public List<Integer> getNodeIDsForAValueSpace(ValueSpaceInfo valueSpace, 
-					REQUEST_TYPE requestType)
+	public List<Integer> getNodeIDsForAValueSpaceForSearch(ValueSpaceInfo valueSpace)
 	{
 		// map so that we remove duplicates.
 		HashMap<Integer, Integer> overlapNodeIdsMap = new HashMap<Integer, Integer>();
@@ -59,24 +58,53 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 			
 			if( overlap )
 			{
-				if(requestType == REQUEST_TYPE.UPDATE)
-				{
-					// Current region's value space overlaps with the value space in 
-					// the input
-					List<Integer> regionNodeList = currRegion.getNodeList();
+				// Current region's value space overlaps with the value space in 
+				// the input
+				List<Integer> regionNodeList = currRegion.getNodeList();
+				int randNodeId 
+					= regionNodeList.get(randGen.nextInt(regionNodeList.size()));
+				overlapNodeIdsMap.put(randNodeId, randNodeId );
+			}
+		}
+		
+		List<Integer> overlapNodeIds = new LinkedList<Integer>();
+		Iterator<Integer> nodeIdIter = overlapNodeIdsMap.keySet().iterator();
+		
+		while( nodeIdIter.hasNext() )
+		{
+			overlapNodeIds.add(nodeIdIter.next());
+		}
+		
+		assert(overlapNodeIds.size() >= 1);
+		return overlapNodeIds;
+	}
+	
+	
+	@Override
+	public List<Integer> getNodeIDsForAValueSpaceForUpdate(
+			String GUID, ValueSpaceInfo valueSpace)
+	{
+		// map so that we remove duplicates.
+		HashMap<Integer, Integer> overlapNodeIdsMap = new HashMap<Integer, Integer>();
+		
+		for( int i=0; i<regionList.size(); i++ )
+		{
+			RegionInfo currRegion = regionList.get(i);
+			ValueSpaceInfo regionValSpace = currRegion.getValueSpaceInfo();
+			
+			boolean overlap = ValueSpaceInfo.checkOverlapOfTwoValueSpaces
+											(attributeMap, regionValSpace, valueSpace);
+			
+			if( overlap )
+			{
+				// Current region's value space overlaps with the value space in 
+				// the input
+				List<Integer> regionNodeList = currRegion.getNodeList();
 					
-					for( int j=0; j<regionNodeList.size(); j++ )
-					{
-						overlapNodeIdsMap.put(regionNodeList.get(j), regionNodeList.get(j) );
-					}
-				}
-				else if(requestType == REQUEST_TYPE.SEARCH)
+				for( int j=0; j<regionNodeList.size(); j++ )
 				{
-					// Current region's value space overlaps with the value space in 
-					// the input
-					List<Integer> regionNodeList = currRegion.getNodeList();
-					int randNodeId = regionNodeList.get(randGen.nextInt(regionNodeList.size()));
-					overlapNodeIdsMap.put(randNodeId, randNodeId );
+					overlapNodeIdsMap.put(regionNodeList.get(j), 
+								regionNodeList.get(j) );
 				}
 			}
 		}
@@ -92,6 +120,7 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 		assert(overlapNodeIds.size() >= 1);
 		return overlapNodeIds;
 	}
+	
 	
 	
 	@Override
@@ -176,13 +205,15 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 		int NUM_ATTRS = Integer.parseInt(args[0]);
 		int NUM_NODES = Integer.parseInt(args[1]);
 		
-		HashMap<String, AttributeMetaInfo> givenMap = new HashMap<String, AttributeMetaInfo>();
+		HashMap<String, AttributeMetaInfo> givenMap 
+						= new HashMap<String, AttributeMetaInfo>();
 		
 		for(int i=0; i < NUM_ATTRS; i++)
 		{
 			String attrName = "attr"+i;
 			AttributeMetaInfo attrInfo =
-					new AttributeMetaInfo(attrName, 1+"", 1500+"", AttributeTypes.DoubleType);
+					new AttributeMetaInfo(attrName, 1+"", 1500+"", 
+							AttributeTypes.DoubleType);
 			
 			givenMap.put(attrInfo.getAttrName(), attrInfo);	
 		}
@@ -193,7 +224,8 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 			try 
 			{
 				csNodeConfig.add(i, 
-						new InetSocketAddress(InetAddress.getByName("localhost"), 3000+i));
+						new InetSocketAddress(InetAddress.getByName
+								("localhost"), 3000+i));
 			}
 			catch (UnknownHostException e)
 			{
@@ -211,10 +243,11 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 		
 		// example value space
 		ValueSpaceInfo vspaceInfo = new ValueSpaceInfo();
-		vspaceInfo.getValueSpaceBoundary().put("attr10", new AttributeValueRange(1+"", 1500+""));
+		vspaceInfo.getValueSpaceBoundary().put("attr10", 
+						new AttributeValueRange(1+"", 1500+""));
 		
-		List<Integer> nodeList = regionMapping.getNodeIDsForAValueSpace(vspaceInfo, 
-				REQUEST_TYPE.SEARCH);
+		List<Integer> nodeList = regionMapping.getNodeIDsForAValueSpaceForSearch
+						(vspaceInfo);
 		
 		System.out.println("Node list size "+nodeList.size()+" expected "+NUM_NODES);
 		

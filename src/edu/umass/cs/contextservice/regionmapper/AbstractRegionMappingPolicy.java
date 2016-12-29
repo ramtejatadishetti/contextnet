@@ -15,9 +15,7 @@ import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
  * @param <Integer>
  */
 public abstract class AbstractRegionMappingPolicy
-{
-	public static enum REQUEST_TYPE {SEARCH, UPDATE};
-	
+{	
 	protected final HashMap<String, AttributeMetaInfo> attributeMap;
 	protected final CSNodeConfig nodeConfig;
 	
@@ -43,8 +41,12 @@ public abstract class AbstractRegionMappingPolicy
 	 * @param valueSpaceDef
 	 * @return
 	 */
-	public abstract List<Integer> getNodeIDsForAValueSpace(
-				ValueSpaceInfo valueSpace,  REQUEST_TYPE requestType);
+	public abstract List<Integer> getNodeIDsForAValueSpaceForSearch
+							(ValueSpaceInfo valueSpace);
+	
+	
+	public abstract List<Integer> getNodeIDsForAValueSpaceForUpdate
+					(String GUID, ValueSpaceInfo valueSpace);
 	
 	/**
 	 * This function computes the region mapping. This function can use 

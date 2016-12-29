@@ -23,7 +23,6 @@ import edu.umass.cs.contextservice.profilers.ProfilerStatClass;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
 import edu.umass.cs.contextservice.queryparsing.QueryParser;
 import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy;
-import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy.REQUEST_TYPE;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 import edu.umass.cs.contextservice.schemes.helperclasses.SearchReplyInfo;
 import edu.umass.cs.contextservice.updates.UpdateInfo;
@@ -74,8 +73,8 @@ public class GUIDAttrValueProcessing
 		
 		
 		List<Integer> nodeList 
-				= regionMappingPolicy.getNodeIDsForAValueSpace
-						(queryInfo.getSearchQueryValSpace(), REQUEST_TYPE.SEARCH);
+				= regionMappingPolicy.getNodeIDsForAValueSpaceForSearch
+						(queryInfo.getSearchQueryValSpace());
 		
 		if(ContextServiceConfig.PROFILER_THREAD)
 		{

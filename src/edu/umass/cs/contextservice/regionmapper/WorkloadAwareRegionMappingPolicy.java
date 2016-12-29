@@ -48,8 +48,15 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 	
 	
 	@Override
-	public List<Integer> getNodeIDsForAValueSpace(
-			ValueSpaceInfo valueSpace, REQUEST_TYPE requestType ) 
+	public List<Integer> getNodeIDsForAValueSpaceForUpdate(
+			String GUID, ValueSpaceInfo valueSpace ) 
+	{
+		return null;
+	}
+	
+	@Override
+	public List<Integer> getNodeIDsForAValueSpaceForSearch(
+			ValueSpaceInfo valueSpace) 
 	{
 		return null;
 	}

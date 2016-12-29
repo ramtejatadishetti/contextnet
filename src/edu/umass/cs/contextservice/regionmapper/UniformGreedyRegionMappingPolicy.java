@@ -39,8 +39,8 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 	}
 	
 	@Override
-	public List<Integer> getNodeIDsForAValueSpace
-				(ValueSpaceInfo valueSpace, REQUEST_TYPE requestType) 
+	public List<Integer> getNodeIDsForAValueSpaceForUpdate
+								(String GUID, ValueSpaceInfo valueSpace) 
 	{
 		// map so that we remove duplicates.
 		//FIXME: this code is copied in many policies need to find a way to not copy code.
@@ -79,25 +79,76 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 			
 			if( overlap )
 			{
-				if(requestType == REQUEST_TYPE.UPDATE)
-				{
-					// Current region's value space overlaps with the value space in 
-					// the input
-					List<Integer> regionNodeList = currRegion.getNodeList();
+				// Current region's value space overlaps with the value space in 
+				// the input
+				List<Integer> regionNodeList = currRegion.getNodeList();
 					
-					for( int j=0; j<regionNodeList.size(); j++ )
-					{
-						overlapNodeIdsMap.put(regionNodeList.get(j), regionNodeList.get(j) );
-					}
-				}
-				else if(requestType == REQUEST_TYPE.SEARCH)
+				for( int j=0; j<regionNodeList.size(); j++ )
 				{
-					// Current region's value space overlaps with the value space in 
-					// the input
-					List<Integer> regionNodeList = currRegion.getNodeList();
-					int randNodeId = regionNodeList.get(randGen.nextInt(regionNodeList.size()));
-					overlapNodeIdsMap.put(randNodeId, randNodeId );
+					overlapNodeIdsMap.put(regionNodeList.get(j), regionNodeList.get(j) );
 				}
+			}
+		}
+		
+		List<Integer> overlapNodeIds = new LinkedList<Integer>();
+		Iterator<Integer> nodeIdIter = overlapNodeIdsMap.keySet().iterator();
+		
+		while( nodeIdIter.hasNext() )
+		{
+			overlapNodeIds.add(nodeIdIter.next());
+		}
+		
+		return overlapNodeIds;
+	}
+	
+	
+	@Override
+	public List<Integer> getNodeIDsForAValueSpaceForSearch
+				(ValueSpaceInfo valueSpace) 
+	{
+		// map so that we remove duplicates.
+		//FIXME: this code is copied in many policies need to find a way to not copy code.
+		HashMap<Integer, Integer> overlapNodeIdsMap = new HashMap<Integer, Integer>();
+		
+		for( int i=0; i<regionList.size(); i++ )
+		{
+			RegionInfo currRegion = regionList.get(i);
+			ValueSpaceInfo regionValSpace = currRegion.getValueSpaceInfo();
+			
+			boolean overlap = true;
+			
+			Iterator<String> inputAttrIter = valueSpace.getValueSpaceBoundary().keySet().iterator();
+			
+			while( inputAttrIter.hasNext() )
+			{
+				String attrName = inputAttrIter.next();
+				
+				AttributeMetaInfo attrMetaInfo = attributeMap.get(attrName);
+				
+				AttributeValueRange inputAttrValRange  
+									= valueSpace.getValueSpaceBoundary().get(attrName);
+				
+				AttributeValueRange regionAttrValRange 
+								= regionValSpace.getValueSpaceBoundary().get(attrName);
+				
+				
+				overlap = overlap && AttributeTypes.checkOverlapOfTwoIntervals(inputAttrValRange, 
+												regionAttrValRange, attrMetaInfo.getDataType());
+				
+				if(!overlap)
+				{
+					break;
+				}
+			}
+			
+			if( overlap )
+			{
+				// Current region's value space overlaps with the value space in 
+				// the input
+				List<Integer> regionNodeList = currRegion.getNodeList();
+				int randNodeId = regionNodeList.get
+								(randGen.nextInt(regionNodeList.size()));
+				overlapNodeIdsMap.put(randNodeId, randNodeId );
 			}
 		}
 		
