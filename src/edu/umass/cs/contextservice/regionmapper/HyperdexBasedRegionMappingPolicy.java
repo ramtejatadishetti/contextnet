@@ -1,5 +1,8 @@
 package edu.umass.cs.contextservice.regionmapper;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -287,7 +290,6 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 		int ATTRs_PER_SUBSPACE 	= Integer.parseInt(args[2]);
 		
 		
-		
 		HashMap<String, AttributeMetaInfo> givenMap = new HashMap<String, AttributeMetaInfo>();
 		List<String> attrList = new LinkedList<String>();
 		
@@ -347,6 +349,62 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 		nodeList = obj.getNodeIDsForAValueSpaceForUpdate("", valSpace);
 		
 		System.out.println("Update node list "+nodeList);
+	
+
+		
+		// for searches
+		BufferedReader br = null;
+		FileReader fr = null;
+		
+		HashMap<Integer, Integer> subspaceQMap = new HashMap<Integer, Integer>();
+		try
+		{
+			fr = new FileReader("traces/guassianTrace/searchFile.txt");
+			br = new BufferedReader(fr);
+			
+			
+			while( (searchQuery = br.readLine()) != null )
+			{
+				ValueSpaceInfo qValSpace = QueryParser.parseQuery(searchQuery);
+				
+				List<String> queryAttrList = obj.getNotFullRangeAttrsInSearchQuery(qValSpace);
+				
+				SubspaceInfo subInfo = obj.getMaxOverlapSubspace(queryAttrList );
+				
+				if(subspaceQMap.containsKey(subInfo.getSubspaceId()))
+				{
+					int total = subspaceQMap.get(subInfo.getSubspaceId());
+					total++;
+					subspaceQMap.put(subInfo.getSubspaceId(), total);
+				}
+				else
+				{
+					subspaceQMap.put(subInfo.getSubspaceId(), 1);
+				}
+			}
+		}
+		catch (IOException e) 
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if (br != null)
+					br.close();
+				
+				if (fr != null)
+					fr.close();	
+			}
+			catch (IOException ex)
+			{
+				ex.printStackTrace();
+			}
+		}
+		
+		
+		System.out.println("subspaceQMap "+subspaceQMap.toString());
 		
 	}
 }

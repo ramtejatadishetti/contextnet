@@ -25,7 +25,6 @@ import edu.umass.cs.contextservice.queryparsing.QueryParser;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.utils.DelayProfiler;
 
 
 public class QueryAllDB
@@ -151,9 +150,7 @@ public class QueryAllDB
 	
 	public int processSearchQueryInSubspaceRegion( String query, 
 			JSONArray resultArray)
-	{
-		long t0 = System.currentTimeMillis();
-		
+	{	
 		String mysqlQuery = getMySQLQueryForProcessSearchQueryInSubspaceRegion
 				(query);
 		
@@ -288,10 +285,6 @@ public class QueryAllDB
 			}
 		}
 		
-		if(ContextServiceConfig.DELAY_PROFILER_ON)
-		{
-			DelayProfiler.updateDelay("processSearchQueryInSubspaceRegion", t0);
-		}
 		return resultSize;
 	}
 	
@@ -427,7 +420,6 @@ public class QueryAllDB
 	
 	public JSONObject getGUIDStoredInPrimarySubspace( String guid )
 	{
-		long t0 = System.currentTimeMillis();
 		Connection myConn 		= null;
 		Statement stmt 			= null;
 		
@@ -488,11 +480,6 @@ public class QueryAllDB
 			{
 				e.printStackTrace();
 			}
-		}
-		
-		if(ContextServiceConfig.DELAY_PROFILER_ON)
-		{
-			DelayProfiler.updateDelay("getGUIDStoredInPrimarySubspace", t0);
 		}
 		return oldValueJSON;
 	}

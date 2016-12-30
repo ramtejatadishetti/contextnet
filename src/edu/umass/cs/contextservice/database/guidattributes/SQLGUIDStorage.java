@@ -23,7 +23,6 @@ import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresenta
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.utils.DelayProfiler;
 
 /**
  * This class implements GUIDAttributeStorageInterface.
@@ -143,9 +142,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 	
 	public int processSearchQueryUsingAttrIndex
 			(ValueSpaceInfo queryValueSpace, JSONArray resultArray)
-	{
-		long t0 = System.currentTimeMillis();
-		
+	{	
 		String mysqlQuery = getMySQLQueryForProcessingSearchQuery(queryValueSpace);
 		
 		assert(mysqlQuery != null);
@@ -260,17 +257,12 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 			}
 		}
 		
-		if(ContextServiceConfig.DELAY_PROFILER_ON)
-		{
-			DelayProfiler.updateDelay("processSearchQueryInSubspaceRegion", t0);
-		}
 		return resultSize;
 	}
 	
 	
 	public JSONObject getGUIDStoredUsingHashIndex( String guid )
 	{
-		long t0 = System.currentTimeMillis();
 		Connection myConn 		= null;
 		Statement stmt 			= null;
 		
@@ -363,10 +355,6 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 			}
 		}
 		
-		if(ContextServiceConfig.DELAY_PROFILER_ON)
-		{
-			DelayProfiler.updateDelay("getGUIDStoredInPrimarySubspace", t0);
-		}
 		return oldValueJSON;
 	}
 	
@@ -443,7 +431,6 @@ public class SQLGUIDStorage implements GUIDStorageInterface
     
     public void deleteGUIDFromTable(String tableName, String nodeGUID)
 	{
-		long t0 = System.currentTimeMillis();
 		String deleteCommand = "DELETE FROM "+tableName+" WHERE nodeGUID= X'"+nodeGUID+"'";
 		Connection myConn 	= null;
 		Statement stmt 		= null;
@@ -481,10 +468,6 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 			{
 				sqex.printStackTrace();
 			}
-		}
-		if(ContextServiceConfig.DELAY_PROFILER_ON)
-		{
-			DelayProfiler.updateDelay("deleteGUIDFromSubspaceRegion", t0);
 		}
 	}
     

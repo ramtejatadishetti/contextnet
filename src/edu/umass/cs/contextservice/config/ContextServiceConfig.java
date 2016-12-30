@@ -8,33 +8,25 @@ package edu.umass.cs.contextservice.config;
 public class ContextServiceConfig
 {
 	// properties name, these are read from properties file
-	public static final String modelRhoString 						= "modelRho";
-	public static final String modelCsByCString 					= "modelCsByC";
-	public static final String modelCuByCString 					= "modelCuByC";
-	public static final String modelAavgString  					= "modelAavg";
 	public static final String triggerEnableString					= "triggerEnable";
-	public static final String modelCtByCString						= "modelCtByC";
-	public static final String modelCiByCString						= "modelCiByC";
-	public static final String modelCminByCString					= "modelCminByC";
 	
-	public static final String modelSearchResString					= "modelSearchRes";
-	
-	public static final String disableOptimizerString				= "disableOptimizer";
-	public static final String basicConfigString					= "basicConfig";
-	public static final String optimalHString						= "optimalH";
+	public static final String regionMappingPolicyString			= "regionMappingPolicy";
+	public static final String numAttrsPerSubspaceString			= "numAttrsPerSubspace";
 	public static final String privacyEnabledString					= "privacyEnabled";
 	public static final String queryAllEnabledString				= "queryAllEnabled";
 	public static final String threadPoolSizeString					= "threadPoolSize";
 	
+	// region Mapping policies
+	public static final String DEMAND_AWARE							= "DEMAND_AWARE";
+	public static final String HYPERDEX								= "HYPERDEX";
+	public static final String SQRT_N_HASH							= "SQRT_N_HASH";
+	public static final String UNIFORM								= "UNIFORM";
+	
 	// path where all config files are stored, like node setup, attribute info, subspace info
 	public static String configFileDirectory;
 	
-	public static enum SchemeTypes {HYPERSPACE_HASHING};
-	
 	// NO_PRIVACY 0 ordinal, HYPERSPACE_PRIVACY 1 ordinal, SUBSPACE_PRIVACY 2 ordinal
 	public static enum PrivacySchemes {NO_PRIVACY, PRIVACY};
-	
-	public static SchemeTypes SCHEME_TYPE							= SchemeTypes.HYPERSPACE_HASHING;
 	
 	// prints experiment print statements
 	public static boolean EXP_PRINT_ON								= false;
@@ -56,21 +48,15 @@ public class ContextServiceConfig
 	public static final boolean USE_GNS								= false;
 	
 	// used in table names in database 
-	public static final String MetadataTableSuffix 					= "MetadataTable";
+//	public static final String MetadataTableSuffix 					= "MetadataTable";
+//	
+//	public static final String ValueTableSuffix    					= "ValueInfoTable";
+//	
+//	public static final String FullObjectTable    					= "fullObjectTable";
+//	
+//	public static final String groupGUIDTable						= "groupGUIDTable";
 	
-	public static final String ValueTableSuffix    					= "ValueInfoTable";
-	
-	public static final String FullObjectTable    					= "fullObjectTable";
-	
-	public static final String groupGUIDTable						= "groupGUIDTable";
-	
-	public static final boolean USESQL								= true;
-	
-	public static boolean DELAY_MEASURE_PRINTS						= false;
-	
-	public static boolean DELAY_PROFILER_ON							= false;
-	
-	public static boolean DATABASE_SIZE_PRINT						= false;
+//	public static final boolean USESQL								= true;
 	
 	public static final boolean PROFILER_THREAD						= true;
 	
@@ -116,10 +102,6 @@ public class ContextServiceConfig
 	// and search always gores through that and doesn't update trigger info if its is repeated.
 	public static boolean UniqueGroupGUIDEnabled					= true;
 	
-	// disables most of the mysql db operations, apart from the reading of 
-	// subspace info. Just for throuhgput testing.
-	public static boolean disableMySQLDB							= false;
-	
 	
 	// circular query triggers makes the select queries 
 	// very complicated, so there is an option to enable disable it.
@@ -141,7 +123,7 @@ public class ContextServiceConfig
 	public static  int MYSQL_MAX_CONNECTIONS						= 10;
 	
 	// it is also important to set this at least the size of the database connection pool.
-	public static int HYPERSPACE_THREAD_POOL_SIZE					= 10;
+	public static int THREAD_POOL_SIZE								= 10;
 	
 	//public static final int PRIVACY_THREAD_POOL_SIZE				= 214;
 	
@@ -163,6 +145,8 @@ public class ContextServiceConfig
 	
 	
 	public static boolean QUERY_ALL_ENABLED							= false;
+	
+	public static String regionMappingPolicy						= UNIFORM;
 	
 	
 	// if this is set to true then the context service client will do decryptions 
@@ -192,35 +176,8 @@ public class ContextServiceConfig
 	public static final boolean DEBUG_MODE							= false;
 	
 	
-	//  model parameters
-	// search/(search+update) ratio
-	public static double modelRho									= 0.5;
-	// single node search throughput inverse
-	public static double modelCsByC            						= 0.005319149;
-	// single node udpate throughput inverse
-	public static double modelCuByC            						= 0.001388889;
-	
-	public static double modelAavg             						= 4.0;
-	
-	public static double modelCtByC             					= 0.000009028;
-	
-	public static double modelCiByC             					= 0.004127837;
-	
-	public static double modelCminByC								= 0.00063231;
-	
-	// search query automiatically expires after this time
-	public static long modelSearchRes								= 30000;
-	
-	// if set to true then optimizer is disabled
-	public static boolean disableOptimizer							= false;
-	
-	// basic config is used if set to true.
-	// only used if optimizer is disabled, otherwise the optimizer given config will be used.
-	public static boolean basicConfig								= true;
-	
-	// can be set from config files, if the optimizer is disabled. Otherwise will come from
-	// optimizer. If false replicated config will be used and optimizer disabled
-	public static double optimalH									= 2.0;
+	// numAttrsPerSubspace used in HyperDex
+	public static double numAttrsPerSubspace						= 2.0;
 	
 	// security things
 	public static final int KEY_LENGTH_SIZE							= 1024;
@@ -233,20 +190,12 @@ public class ContextServiceConfig
 	// maximum length of an attribute name, used in varchar mysql table
 	public static final int MAXIMUM_ATTRNAME_LENGTH					= 100;
 	
-	// just for debugging different components separately.
-	//public static final boolean DISABLE_SECONDARY_SUBSPACES_UPDATES			= false;
-	//public static final boolean DISABLE_PRIMARY_SUBSPACE_UPDATES				= false;
+	
+	
 	
 	// SQL database types
-	
 	public static enum SQL_DB_TYPE	{MYSQL, SQLITE};
 	
 	
 	public static SQL_DB_TYPE sqlDBType								= SQL_DB_TYPE.SQLITE;
-	
-	
-	// jains fairness index based number of partitions calculation.
-	
-	public static int NUM_PARTITITON_LOOK_AHEAD						= 10;
-	public static int MAX_REGION_LOOK_AHEAD							= 2048;
 }

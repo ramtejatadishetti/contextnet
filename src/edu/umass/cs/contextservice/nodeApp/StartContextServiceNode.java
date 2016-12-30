@@ -84,8 +84,6 @@ public class StartContextServiceNode extends ContextServiceNode
 			
 			Integer myID = Integer.parseInt(nodeId);
 			
-			ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERSPACE_HASHING;
-			
 			new CSConfigFileLoader(
 					ContextServiceConfig.configFileDirectory+"/"+ContextServiceConfig.CS_CONFIG_FILENAME);
 			
@@ -119,9 +117,11 @@ public class StartContextServiceNode extends ContextServiceNode
 	private static CommandLine initializeOptions(String[] args) throws ParseException 
 	{
 		Option help = new Option("help", "Prints Usage");
+		@SuppressWarnings("static-access")
 		Option nodeid = OptionBuilder.withArgName("node id").hasArg()
 	         .withDescription("node id")
 	         .create("id");
+		@SuppressWarnings("static-access")
 		Option csConfDir = OptionBuilder.withArgName("cs Conf directory").hasArg()
 	         .withDescription("conf directory path relative to top level dir")
 	         .create("csConfDir");

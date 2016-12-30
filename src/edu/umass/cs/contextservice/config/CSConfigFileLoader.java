@@ -59,43 +59,13 @@ public class CSConfigFileLoader
 	  InputStream input = new FileInputStream(filename);
 	  properties.load(input);
     
-	  ContextServiceConfig.modelRho = Double.parseDouble(
-    		properties.getProperty(ContextServiceConfig.modelRhoString, ContextServiceConfig.modelRho+"") );
-    
-	  ContextServiceConfig.modelCsByC = Double.parseDouble(
-    		properties.getProperty(ContextServiceConfig.modelCsByCString, ContextServiceConfig.modelCsByC+"") );
-    
-	  ContextServiceConfig.modelCuByC = Double.parseDouble(
-    		properties.getProperty(ContextServiceConfig.modelCuByCString, ContextServiceConfig.modelCuByC+"") );
-    
-	  ContextServiceConfig.modelAavg = Double.parseDouble(
-    		properties.getProperty(ContextServiceConfig.modelAavgString, ContextServiceConfig.modelAavg+"") );
-    
 	  ContextServiceConfig.TRIGGER_ENABLED = Boolean.parseBoolean(
-    		properties.getProperty(ContextServiceConfig.triggerEnableString, ContextServiceConfig.TRIGGER_ENABLED+"") );
+    		properties.getProperty(ContextServiceConfig.triggerEnableString, 
+    				ContextServiceConfig.TRIGGER_ENABLED+"") );
 	  
-    
-	  ContextServiceConfig.modelCtByC = Double.parseDouble(
-    		properties.getProperty(ContextServiceConfig.modelCtByCString, ContextServiceConfig.modelCtByC+"") );
-    
-	  ContextServiceConfig.modelCiByC = Double.parseDouble(
-    		properties.getProperty(ContextServiceConfig.modelCiByCString, ContextServiceConfig.modelCiByC+"") );
-	  
-	  ContextServiceConfig.modelCminByC = Double.parseDouble(
-	    		properties.getProperty(ContextServiceConfig.modelCminByCString, ContextServiceConfig.modelCminByC+"") );
-	  
-	  ContextServiceConfig.modelSearchRes = Long.parseLong(
-	    		properties.getProperty(ContextServiceConfig.modelSearchResString, 
-	    				ContextServiceConfig.modelSearchRes+"") );
-	  
-	  ContextServiceConfig.disableOptimizer = Boolean.parseBoolean(
-		properties.getProperty(ContextServiceConfig.disableOptimizerString, ContextServiceConfig.disableOptimizer+"") );
-	  
-	  ContextServiceConfig.basicConfig = Boolean.parseBoolean(
-				properties.getProperty(ContextServiceConfig.basicConfigString, ContextServiceConfig.basicConfig+"") );
-	  
-	  ContextServiceConfig.optimalH = Double.parseDouble(
-			  properties.getProperty(ContextServiceConfig.optimalHString, ContextServiceConfig.optimalH+"") );
+	  ContextServiceConfig.numAttrsPerSubspace = Double.parseDouble(
+			  properties.getProperty(ContextServiceConfig.numAttrsPerSubspaceString, 
+					  ContextServiceConfig.numAttrsPerSubspace+"") );
 	  
 	  
 	  ContextServiceConfig.PRIVACY_ENABLED = Boolean.parseBoolean(
@@ -110,22 +80,16 @@ public class CSConfigFileLoader
 	    		properties.getProperty(ContextServiceConfig.threadPoolSizeString, 
 	    				10+"") )  ;
 	  
+	  ContextServiceConfig.regionMappingPolicy = properties.getProperty
+			  	(ContextServiceConfig.regionMappingPolicyString, 
+			  			ContextServiceConfig.regionMappingPolicy);
 	  
-	  System.out.println("read props ContextServiceConfig.modelRho "+ContextServiceConfig.modelRho
-    		+" ContextServiceConfig.modelCsByC "+ContextServiceConfig.modelCsByC
-    		+" ContextServiceConfig.modelCuByC "+ContextServiceConfig.modelCuByC
-    		+" ContextServiceConfig.modelAavg "+ContextServiceConfig.modelAavg
-    		+" ContextServiceConfig.TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED
-    		+" ContextServiceConfig.modelCtByC "+ContextServiceConfig.modelCtByC 
-    		+" ContextServiceConfig.modelCiByC "+ContextServiceConfig.modelCiByC 
-    		+" ContextServiceConfig.modelCminByC "+ContextServiceConfig.modelCminByC
-    		+" ContextServiceConfig.modelSearchRes "+ContextServiceConfig.modelSearchRes
-    		+" ContextServiceConfig.disableOptimizer "+ ContextServiceConfig.disableOptimizer 
-    		+" ContextServiceConfig.basicConfig "+ContextServiceConfig.basicConfig
-    		+" ContextServiceConfig.optimalH "+ContextServiceConfig.optimalH 
+	  
+	  System.out.println(" ContextServiceConfig.TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED
+    		+" ContextServiceConfig.numAttrsPerSubspace "+ContextServiceConfig.numAttrsPerSubspace 
     		+" ContextServiceConfig.PRIVACY_ENABLED "+ContextServiceConfig.PRIVACY_ENABLED
     		+" ContextServiceConfig.MYSQL_MAX_CONNECTIONS "+ContextServiceConfig.MYSQL_MAX_CONNECTIONS 
-    		+" ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE "+ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
+    		+" ContextServiceConfig.regionMappingPolicy "+ContextServiceConfig.regionMappingPolicy);
   }
   
   /**
@@ -133,9 +97,7 @@ public class CSConfigFileLoader
    * 
    * @param args
    */
-  public static void main(String[] args) {
-    //String filename = GNS.WESTY_GNS_DIR_PATH + "/conf/ec2_small/installer_config";
-    //InstallConfig config = new InstallConfig(filename);
-    //System.out.println(config.toString());
+  public static void main(String[] args) 
+  {
   }
 }

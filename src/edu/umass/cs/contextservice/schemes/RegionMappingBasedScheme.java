@@ -88,19 +88,40 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		}
 		
 		nodeES = Executors.newFixedThreadPool(
-				ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
+				ContextServiceConfig.THREAD_POOL_SIZE);
 		
 		guidUpdateInfoMap = new HashMap<String, GUIDUpdateInfo>();
 		
-//		regionMappingPolicy = new FileBasedRegionMappingPolicy(
-//					AttributeTypes.attributeMap, nc);
-		
-		
-		regionMappingPolicy = new HyperdexBasedRegionMappingPolicy(
-				AttributeTypes.attributeMap, nc, (int)ContextServiceConfig.optimalH);
-		
-//		regionMappingPolicy = new UniformGreedyRegionMappingPolicy(
-//				AttributeTypes.attributeMap, nc);
+		switch(ContextServiceConfig.regionMappingPolicy)
+		{
+			case ContextServiceConfig.UNIFORM:
+			{
+				regionMappingPolicy = new UniformGreedyRegionMappingPolicy(
+								AttributeTypes.attributeMap, nc);
+				break;
+			}
+			case ContextServiceConfig.DEMAND_AWARE:
+			{
+				regionMappingPolicy = new FileBasedRegionMappingPolicy(
+						AttributeTypes.attributeMap, nc);
+				break;
+			}
+			case ContextServiceConfig.HYPERDEX:
+			{
+				regionMappingPolicy = new HyperdexBasedRegionMappingPolicy(
+						AttributeTypes.attributeMap, nc, (int)ContextServiceConfig.numAttrsPerSubspace);
+				break;
+			}
+			case ContextServiceConfig.SQRT_N_HASH:
+			{
+				regionMappingPolicy = null;
+				break;
+			}
+			default:
+				regionMappingPolicy = null;
+				assert(false);
+		}
+
 		
 		
 		regionMappingPolicy.computeRegionMapping();

@@ -3,17 +3,11 @@ package edu.umass.cs.contextservice.database;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Random;
-
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
-import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.guidattributes.SQLGUIDStorage;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
@@ -65,19 +59,19 @@ public class RegionMappingDataStorageDB extends AbstractDataStorageDB
 	private final GUIDStorageInterface guidAttributesStorage;
 	private  TriggerInformationStorageInterface triggerInformationStorage;
 	
-	private final Random randomGen;
+	//private final Random randomGen;
 	
 	public RegionMappingDataStorageDB( Integer myNodeID )
 			throws Exception
 	{
-		if(ContextServiceConfig.disableMySQLDB)
-		{
-			randomGen = new Random((Integer)myNodeID);
-		}
-		else
-		{
-			randomGen = null;
-		}
+//		if(ContextServiceConfig.disableMySQLDB)
+//		{
+//			randomGen = new Random((Integer)myNodeID);
+//		}
+//		else
+//		{
+//			randomGen = null;
+//		}
 		
 		if(ContextServiceConfig.sqlDBType == ContextServiceConfig.SQL_DB_TYPE.MYSQL)
 		{
@@ -151,61 +145,27 @@ public class RegionMappingDataStorageDB extends AbstractDataStorageDB
 	public int processSearchQueryUsingAttrIndex( ValueSpaceInfo queryValueSpace, 
 			JSONArray resultArray )
 	{
-		if(ContextServiceConfig.disableMySQLDB)
+		long start = System.currentTimeMillis();
+		int resultSize 
+			= this.guidAttributesStorage.processSearchQueryUsingAttrIndex
+												(queryValueSpace, resultArray);
+		
+		long end = System.currentTimeMillis();
+		
+		if( ContextServiceConfig.DEBUG_MODE )
 		{
-			return 1;
+			System.out.println("TIME_DEBUG: processSearchQueryInSubspaceRegion "
+					+ " without privacy time "
+					+ (end-start));
 		}
-		else
-		{
-			long start = System.currentTimeMillis();
-			int resultSize 
-				= this.guidAttributesStorage.processSearchQueryUsingAttrIndex
-													(queryValueSpace, resultArray);
-			
-			long end = System.currentTimeMillis();
-			
-			if( ContextServiceConfig.DEBUG_MODE )
-			{
-				System.out.println("TIME_DEBUG: processSearchQueryInSubspaceRegion "
-						+ " without privacy time "
-						+ (end-start));
-			}
-			return resultSize;
-		}
+		return resultSize;	
 	}
-	
-//	/**
-//	 * Inserts a subspace region denoted by subspace vector, 
-//	 * integer denotes partition num in partition info 
-//	 * @param subspaceNum
-//	 * @param subspaceVector
-//	 */
-//	public void insertIntoSubspacePartitionInfo(int subspaceId, int replicaNum,
-//			List<Integer> subspaceVector, Integer respNodeId)
-//	{
-//		this.guidAttributesStorage.insertIntoSubspacePartitionInfo
-//						(subspaceId, replicaNum, subspaceVector, respNodeId);
-//	}
-//	public void bulkInsertIntoSubspacePartitionInfo( int subspaceId, int replicaNum,
-//			List<List<Integer>> subspaceVectorList, List<Integer> respNodeIdList )
-//	{
-//		this.guidAttributesStorage.bulkInsertIntoSubspacePartitionInfo
-//				(subspaceId, replicaNum, subspaceVectorList, respNodeIdList);
-//	}
 	
 	public JSONObject getGUIDStoredUsingHashIndex( String guid )
 	{
-		if(ContextServiceConfig.disableMySQLDB)
-		{
-			assert(!ContextServiceConfig.PRIVACY_ENABLED);
-			return getARandomJSON();
-		}
-		else
-		{
-			JSONObject valueJSON 
+		JSONObject valueJSON 
 						= this.guidAttributesStorage.getGUIDStoredUsingHashIndex(guid);
-			return valueJSON;
-		}
+		return valueJSON;
 	}
 	
 	/**
@@ -251,10 +211,7 @@ public class RegionMappingDataStorageDB extends AbstractDataStorageDB
 	
 	public void storeGUIDUsingHashIndex( String nodeGUID, 
     		JSONObject jsonToWrite, int updateOrInsert ) throws JSONException
-	{
-		if(ContextServiceConfig.disableMySQLDB)
-			return; 
-		
+	{	
 		long start = System.currentTimeMillis();
 		this.guidAttributesStorage.storeGUIDUsingHashIndex
 			( nodeGUID, jsonToWrite, updateOrInsert);
@@ -281,10 +238,7 @@ public class RegionMappingDataStorageDB extends AbstractDataStorageDB
      */
     public void storeGUIDUsingAttrIndex( String tableName, String nodeGUID, 
     		JSONObject jsonToWrite, int updateOrInsert) throws JSONException
-    {
-    	if(ContextServiceConfig.disableMySQLDB)
-			return; 
-    	
+    {	
 		// no need to add realIDEntryption Info in primary subspaces.
 		long start = System.currentTimeMillis();
 		this.guidAttributesStorage.storeGUIDUsingAttrIndex
@@ -299,10 +253,7 @@ public class RegionMappingDataStorageDB extends AbstractDataStorageDB
     }
 	
 	public void deleteGUIDFromTable(String tableName, String nodeGUID)
-	{
-		if(ContextServiceConfig.disableMySQLDB)
-			return; 
-		
+	{	
 		long start = System.currentTimeMillis();
 		this.guidAttributesStorage.deleteGUIDFromTable(tableName, nodeGUID);
 		long end = System.currentTimeMillis();
@@ -319,30 +270,5 @@ public class RegionMappingDataStorageDB extends AbstractDataStorageDB
 	{
 		return triggerInformationStorage.checkAndInsertSearchQueryRecordFromPrimaryTriggerSubspace
 				(groupGUID, userIP, userPort);
-	}
-	
-	
-	private JSONObject getARandomJSON()
-	{
-		Map<String, AttributeMetaInfo> attributeMap = AttributeTypes.attributeMap;
-		Iterator<String> attrIter = attributeMap.keySet().iterator();
-		JSONObject jsonObj = new JSONObject();
-		
-		while( attrIter.hasNext() )
-		{
-			String attrName = attrIter.next();
-			AttributeMetaInfo attrMeta = attributeMap.get(attrName);
-			String randVal = attrMeta.getARandomValue(this.randomGen);
-			
-			try
-			{
-				jsonObj.put(attrName, randVal);
-			} 
-			catch (JSONException e) 
-			{
-				e.printStackTrace();
-			}
-		}	
-		return jsonObj;
 	}
 }

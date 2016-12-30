@@ -37,34 +37,17 @@ public abstract class ContextServiceNode
 		JSONMessenger<Integer> messenger = 
 			new JSONMessenger<Integer>(jio);
 		
-		ContextServiceLogger.getLogger().fine("Switch case started");
 		
-		switch( ContextServiceConfig.SCHEME_TYPE )
+		if(ContextServiceConfig.QUERY_ALL_ENABLED)
 		{
-			case HYPERSPACE_HASHING:
-			{
-				ContextServiceLogger.getLogger().fine("HYPERSPACE_HASHING started");
-				if(ContextServiceConfig.QUERY_ALL_ENABLED)
-				{
-					this.contextservice = new QueryAllScheme(nc, messenger);
-				}
-				else
-				{
-					this.contextservice = new RegionMappingBasedScheme(nc, messenger);
-				}
-				//
-				
-				ContextServiceLogger.getLogger().fine("HYPERSPACE_HASHING completed");
-				break;
-			}
-			
-			default:
-			{
-				ContextServiceLogger.getLogger().fine("null started");
-				this.contextservice = null;
-				break;
-			}
+			this.contextservice = new QueryAllScheme(nc, messenger);
 		}
+		else
+		{
+			this.contextservice = new RegionMappingBasedScheme(nc, messenger);
+		}
+			
+		
 		
 		Iterator<PacketType> packTypeIter = this.contextservice.getPacketTypes().iterator();
 		

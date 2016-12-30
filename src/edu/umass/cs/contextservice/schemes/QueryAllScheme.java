@@ -67,7 +67,7 @@ public class QueryAllScheme extends AbstractScheme
 	{
 		super(nc, m);
 		
-		nodeES = Executors.newFixedThreadPool(ContextServiceConfig.HYPERSPACE_THREAD_POOL_SIZE);
+		nodeES = Executors.newFixedThreadPool(ContextServiceConfig.THREAD_POOL_SIZE);
 		
 		guidUpdateInfoMap = new HashMap<String, GUIDUpdateInfo>();
 		

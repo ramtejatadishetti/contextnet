@@ -48,9 +48,7 @@ public class FourNodeCSSetupStringAttrs extends ContextServiceNode
 	}
 	
 	public static void main(String[] args) throws NumberFormatException, UnknownHostException, IOException
-	{
-		ContextServiceConfig.SCHEME_TYPE = ContextServiceConfig.SchemeTypes.HYPERSPACE_HASHING;
-		
+	{	
 		readNodeInfo();
 		
 		System.out.println("Number of nodes in the system "+csNodeConfig.getNodeIDs().size());

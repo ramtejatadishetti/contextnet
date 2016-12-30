@@ -25,7 +25,6 @@ import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 import edu.umass.cs.contextservice.schemes.RegionMappingBasedScheme;
 import edu.umass.cs.contextservice.utils.Utils;
-import edu.umass.cs.utils.DelayProfiler;
 
 /**
  * 
@@ -128,7 +127,6 @@ public class TriggerInformationStorage implements
 			String groupGUID, String userIP, int userPort, 
 			long expiryTimeFromNow )
 	{
-		long t0 			= System.currentTimeMillis();
 		Connection myConn   = null;
 		Statement stmt      = null;
 		
@@ -209,11 +207,6 @@ public class TriggerInformationStorage implements
 				sqex.printStackTrace();
 			}
 		}
-		
-		if( ContextServiceConfig.DELAY_PROFILER_ON )
-		{
-			DelayProfiler.updateDelay("insertIntoSubspaceTriggerInfo", t0);
-		}
 	}
 	
 	
@@ -236,7 +229,6 @@ public class TriggerInformationStorage implements
 		// oldValJSON should contain all attribtues.
 		// newUpdateVal contains only updated attr:val pairs
 		//assert(oldValJSON.length() == AttributeTypes.attributeMap.size());
-		long t0 = System.currentTimeMillis();
 		
 		
 		if( requestType == ValueUpdateToSubspaceRegionMessage.REMOVE_ENTRY )
@@ -316,11 +308,6 @@ public class TriggerInformationStorage implements
 				}
 				
 			}
-		}
-		
-		if( ContextServiceConfig.DELAY_PROFILER_ON )
-		{
-			DelayProfiler.updateDelay("getTriggerInfo", t0);
 		}
 	}
 	
@@ -745,11 +732,6 @@ public class TriggerInformationStorage implements
 			}
 		}
 		
-		if(ContextServiceConfig.DELAY_PROFILER_ON)
-		{
-			DelayProfiler.updateDelay("deleteExpiredSearchQueries ", currTime);
-		}
-		
 		return rumRowsDeleted;
 	}
 	
@@ -846,9 +828,7 @@ public class TriggerInformationStorage implements
 	public boolean checkAndInsertSearchQueryRecordFromPrimaryTriggerSubspace(String groupGUID, 
 			String userIP, int userPort) 
 					throws UnknownHostException
-	{
-		long t0 = System.currentTimeMillis();
-		
+	{	
 		String tableName 			= RegionMappingDataStorageDB.HASH_INDEX_TRIGGER_TABLE_NAME;
 		
 		Connection myConn 			= null;
@@ -903,11 +883,6 @@ public class TriggerInformationStorage implements
 			{
 				e.printStackTrace();
 			}
-		}
-		
-		if(ContextServiceConfig.DELAY_PROFILER_ON)
-		{
-			DelayProfiler.updateDelay("getSearchQueryRecordFromPrimaryTriggerSubspace", t0);
 		}
 		return found;
 	}
