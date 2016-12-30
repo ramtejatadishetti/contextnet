@@ -2,10 +2,7 @@ package edu.umass.cs.contextservice.hyperspace.storage;
 
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-
-import edu.umass.cs.contextservice.regionmapper.helper.RegionInfo;
 
 /**
  * Stores attributes that define a subspace
@@ -23,7 +20,7 @@ public class SubspaceInfo
 	private final HashMap<String, AttributePartitionInfo> attributesOfSubspace;
 	private final List<Integer> nodesOfSubspace;
 	
-	private final List<RegionInfo> subspaceRegionList;
+	//private final List<RegionInfo> subspaceRegionList;
 	
 	// right now num of paritions is same for each attribute 
 	// in the subspace
@@ -37,7 +34,7 @@ public class SubspaceInfo
 		this.replicaNum 			= replicaNum;
 		this.attributesOfSubspace 	= attributesOfSubspace;
 		this.nodesOfSubspace 		= nodesOfSubspace;
-		subspaceRegionList          = new LinkedList<RegionInfo>();
+		//subspaceRegionList          = new LinkedList<RegionInfo>();
 	}
 	
 	public HashMap<String, AttributePartitionInfo> getAttributesOfSubspace()
@@ -55,15 +52,15 @@ public class SubspaceInfo
 		return this.replicaNum;
 	}
 	
-	public void addRegionToList(RegionInfo region)
-	{
-		this.subspaceRegionList.add(region);
-	}
+//	public void addRegionToList(RegionInfo region)
+//	{
+//		this.subspaceRegionList.add(region);
+//	}
 	
-	public List<RegionInfo> getSubspaceRegionsList()
-	{
-		return subspaceRegionList;
-	}
+//	public List<RegionInfo> getSubspaceRegionsList()
+//	{
+//		return subspaceRegionList;
+//	}
 	
 	public String toString()
 	{

@@ -24,6 +24,9 @@ import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.AbstractDataStorageDB;
 import edu.umass.cs.contextservice.database.RegionMappingDataStorageDB;
+import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
+import edu.umass.cs.contextservice.database.datasource.MySQLDataSource;
+import edu.umass.cs.contextservice.database.datasource.SQLiteDataSource;
 import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
 import edu.umass.cs.contextservice.gns.GNSCalls;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
@@ -73,6 +76,8 @@ public class RegionMappingBasedScheme extends AbstractScheme
 	
 	private ProfilerStatClass profStats;
 	
+	private AbstractDataSource dataSource;
+	
 	private HashMap<String, Boolean> groupGUIDSyncMap;
 	public static final Logger log 											= ContextServiceLogger.getLogger();
 	
@@ -86,6 +91,15 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		{
 			profStats = new ProfilerStatClass();
 			new Thread(profStats).start();
+		}
+
+		if(ContextServiceConfig.sqlDBType == ContextServiceConfig.SQL_DB_TYPE.MYSQL)
+		{
+			dataSource = new MySQLDataSource(this.getMyID());
+		}
+		else if(ContextServiceConfig.sqlDBType == ContextServiceConfig.SQL_DB_TYPE.SQLITE)
+		{
+			dataSource = new SQLiteDataSource(this.getMyID());
 		}
 		
 		nodeES = Executors.newFixedThreadPool(
@@ -110,7 +124,8 @@ public class RegionMappingBasedScheme extends AbstractScheme
 			case ContextServiceConfig.HYPERDEX:
 			{
 				regionMappingPolicy = new HyperdexBasedRegionMappingPolicy(
-						AttributeTypes.attributeMap, nc, (int)ContextServiceConfig.numAttrsPerSubspace);
+						AttributeTypes.attributeMap, nc, (int)ContextServiceConfig.numAttrsPerSubspace, 
+						dataSource);
 				break;
 			}
 			case ContextServiceConfig.SQRT_N_HASH:
@@ -165,7 +180,7 @@ public class RegionMappingBasedScheme extends AbstractScheme
 //		subspaceConfigurator.configureSubspaceInfo();
 //		ContextServiceLogger.getLogger().fine("configure subspace completed");
 		
-		hyperspaceDB = new RegionMappingDataStorageDB(this.getMyID());
+		hyperspaceDB = new RegionMappingDataStorageDB(this.getMyID(), dataSource);
 		
 //		ContextServiceLogger.getLogger().fine("HyperspaceMySQLDB completed");
 //		

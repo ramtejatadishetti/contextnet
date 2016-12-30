@@ -1,6 +1,5 @@
 package edu.umass.cs.contextservice.regionmapper;
 
-import java.beans.PropertyVetoException;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -13,46 +12,32 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-import org.paukov.combinatorics.Factory;
-import org.paukov.combinatorics.Generator;
-import org.paukov.combinatorics.ICombinatoricsVector;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
-import edu.umass.cs.contextservice.attributeInfo.AttributeTypes.RangePartitionInfo;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.configurator.AbstractSubspaceConfigurator;
 import edu.umass.cs.contextservice.configurator.BasicSubspaceConfigurator;
-import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
-import edu.umass.cs.contextservice.database.datasource.SQLiteDataSource;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
-import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.queryparsing.QueryParser;
-import edu.umass.cs.contextservice.regionmapper.database.AbstractRegionMappingStorage;
-import edu.umass.cs.contextservice.regionmapper.database.HyperdexSQLRegionMappingStorage;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.regionmapper.helper.RegionInfo;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 
 
-
-public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
+public class HyperdexBasedRegionMappingPolicyWithDB extends AbstractRegionMappingPolicy
 {
 	private final AbstractSubspaceConfigurator subspaceConfigurator;
-	private final AbstractRegionMappingStorage regionMappingStorage;
 	
 	
-	public HyperdexBasedRegionMappingPolicy( HashMap<String, AttributeMetaInfo> attributeMap, 
-			CSNodeConfig csNodeConfig, int numberAttrsPerSubspace, AbstractDataSource dataSource )
+	public HyperdexBasedRegionMappingPolicyWithDB( HashMap<String, AttributeMetaInfo> attributeMap, 
+			CSNodeConfig csNodeConfig, int numberAttrsPerSubspace )
 	{
 		super(attributeMap, csNodeConfig);
 		
 		subspaceConfigurator 
 			= new BasicSubspaceConfigurator(csNodeConfig, numberAttrsPerSubspace);
-		
-		regionMappingStorage = new HyperdexSQLRegionMappingStorage(dataSource, 
-				subspaceConfigurator.getSubspaceInfoMap() );
 	}
 	
 
@@ -62,8 +47,8 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 		subspaceConfigurator.configureSubspaceInfo();
 //		HashMap<Integer, Vector<SubspaceInfo>> subspaceInfoMap 
 //					= subspaceConfigurator.getSubspaceInfoMap();
-		regionMappingStorage.createTables();
-		generateAndStoreSubspaceRegions();	
+		
+		//subspaceConfigurator.generateAndStoreSubspaceRegions();	
 		
 		// printing subsapces.
 		HashMap<Integer, List<SubspaceInfo>> subspaceMap = subspaceConfigurator.getSubspaceInfoMap();
@@ -97,8 +82,6 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 			
 			SubspaceInfo subInfo = subspaceMap.get(subspaceId).get(0);		
 			
-			String tableName = "subspaceId"+subspaceId+"RepNum0PartitionInfo";
-			
 			ValueSpaceInfo updateSubspaceValSpace 	= new ValueSpaceInfo();
 			
 			HashMap<String, AttributePartitionInfo> subspaceAttrMap 
@@ -113,14 +96,23 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 										valueSpace.getValueSpaceBoundary().get(attrName));
 			}
 			
-			List<Integer> list = 
-				regionMappingStorage.getNodeIdsForValueSpace(tableName, updateSubspaceValSpace).get(0);
+			
+			List<RegionInfo> subsapceRegionsList = null;
 			
 			
-			for(int i=0; i<list.size(); i++)
+			for(int i=0; i<subsapceRegionsList.size(); i++)
 			{
-				nodeMap.put(list.get(i), true);
-			}
+				RegionInfo currRegion = subsapceRegionsList.get(i);
+				
+				boolean overlap = ValueSpaceInfo.checkOverlapOfTwoValueSpaces
+								(attributeMap, currRegion.getValueSpaceInfo(), updateSubspaceValSpace);
+				
+				if(overlap)
+				{
+					nodeMap.put(currRegion.getNodeList().get(0), true);
+					break;
+				}
+			}		
 		}
 		
 		List<Integer> nodeList = new LinkedList<Integer>();
@@ -161,14 +153,20 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 		
 		HashMap<Integer, Boolean> nodeMap = new HashMap<Integer, Boolean>();
 		
-		String tableName = "subspaceId"+subInfo.getSubspaceId()+"RepNum0PartitionInfo";
+		List<RegionInfo> subsapceRegionsList = null;
 		
-		List<Integer> list = 
-				regionMappingStorage.getNodeIdsForValueSpace(tableName, searchSubspaceValSpace).get(0);
 		
-		for(int i=0; i<list.size(); i++)
+		for(int i=0; i<subsapceRegionsList.size(); i++)
 		{
-			nodeMap.put(list.get(i), true);
+			RegionInfo currRegion = subsapceRegionsList.get(i);
+			
+			boolean overlap = ValueSpaceInfo.checkOverlapOfTwoValueSpaces
+							(attributeMap, currRegion.getValueSpaceInfo(), searchSubspaceValSpace);
+			
+			if(overlap)
+			{
+				nodeMap.put(currRegion.getNodeList().get(0), true);
+			}
 		}
 		
 		
@@ -284,111 +282,7 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 	}
 	
 	
-	
-	/**
-	 * recursive function to generate all the
-	 * subspace regions/partitions.
-	 */
-	public void generateAndStoreSubspaceRegions()
-	{
-		ContextServiceLogger.getLogger().fine
-								(" generateSubspacePartitions() entering " );
-		
-		Iterator<Integer> subspaceIter = subspaceConfigurator.getSubspaceInfoMap().keySet().iterator();
-		
-		while( subspaceIter.hasNext() )
-		{
-			int subspaceId = subspaceIter.next();
-			List<SubspaceInfo> replicaVect 
-								= subspaceConfigurator.getSubspaceInfoMap().get(subspaceId);
-			
-			for( int i=0; i<replicaVect.size(); i++ )
-			{
-				SubspaceInfo subspaceInfo = replicaVect.get(i);
-				String tableName = "subspaceId"+subspaceId+"RepNum"+subspaceInfo.getReplicaNum()+"PartitionInfo";
-						
-				HashMap<String, AttributePartitionInfo> attrsOfSubspace 
-										= subspaceInfo.getAttributesOfSubspace();
-				
-				List<Integer> nodesOfSubspace = subspaceInfo.getNodesOfSubspace();
-				
-				double numAttr  = attrsOfSubspace.size();
-				ContextServiceLogger.getLogger().fine(" NumPartitions "
-												+subspaceInfo.getNumPartitions() );
-				
-				Integer[] partitionNumArray = new Integer[subspaceInfo.getNumPartitions()];
-				
-				for(int j = 0; j<partitionNumArray.length; j++)
-				{
-					partitionNumArray[j] = new Integer(j);
-				}
-				
-				// Create the initial vector of 2 elements (apple, orange)
-				ICombinatoricsVector<Integer> originalVector 
-											= Factory.createVector(partitionNumArray);
-
-				// Create the generator by calling the appropriate method in the Factory class. 
-				// Set the second parameter as 3, since we will generate 3-elemets permutations
-				Generator<Integer> gen 
-					= Factory.createPermutationWithRepetitionGenerator(originalVector, (int)numAttr);
-				
-				// Print the result
-				int nodeIdCounter = 0;
-				int sizeOfNumNodes = nodesOfSubspace.size();
-				
-				for( ICombinatoricsVector<Integer> perm : gen )
-				{
-					Integer respNodeId = nodesOfSubspace.get(nodeIdCounter%sizeOfNumNodes);
-					
-					List<Integer> subspacePartitionVector = perm.getVector();
-					
-					ValueSpaceInfo regionValSpace = convertSubspacePartitionVectorIntoValueSpace
-					(subspaceInfo, subspacePartitionVector);
-					
-					RegionInfo region = new RegionInfo();
-					
-					region.setValueSpaceInfo(regionValSpace);
-					List<Integer> list = new LinkedList<Integer>();
-					list.add(respNodeId);
-					region.setNodeList(list);
-
-					regionMappingStorage.insertRegionInfoIntoTable(tableName, region);
-					nodeIdCounter++;
-				}
-			}
-		}
-		ContextServiceLogger.getLogger().fine
-							(" generateSubspacePartitions() completed " );
-	}
-	
-	private ValueSpaceInfo convertSubspacePartitionVectorIntoValueSpace
-			(SubspaceInfo subspaceInfo, List<Integer> subspacePartitionVector)
-	{
-		assert(subspaceInfo.getAttributesOfSubspace().size() == subspacePartitionVector.size());
-		
-		ValueSpaceInfo valSpace = new ValueSpaceInfo();
-
-		HashMap<String, AttributePartitionInfo>  attrSubspaceInfo = subspaceInfo.getAttributesOfSubspace();
-
-		Iterator<String> attrIter = attrSubspaceInfo.keySet().iterator();
-		int counter =0;
-		while(attrIter.hasNext())
-		{
-			String attrName = attrIter.next();
-			AttributePartitionInfo attrPartInfo = attrSubspaceInfo.get(attrName);
-			int partitionNum = subspacePartitionVector.get(counter);
-			RangePartitionInfo rangePartInfo 
-					= attrPartInfo.getSubspaceDomainPartitionInfo().get(partitionNum);
-			// if it is a String then single quotes needs to be added
-
-			valSpace.getValueSpaceBoundary().put(attrName, rangePartInfo.attrValRange);
-			counter++;
-		}
-		return valSpace;
-	}
-	
-	
-	public static void main(String[] args) throws PropertyVetoException
+	public static void main(String[] args)
 	{
 		int NUM_ATTRS 			= Integer.parseInt(args[0]);
 		int NUM_NODES 			= Integer.parseInt(args[1]);
@@ -423,9 +317,8 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 		}
 		
 		AttributeTypes.initializeGivenMapAndList(givenMap, attrList);
-		HyperdexBasedRegionMappingPolicy obj 
-				= new HyperdexBasedRegionMappingPolicy(givenMap, csNodeConfig, 
-						ATTRs_PER_SUBSPACE, new SQLiteDataSource(0));
+		HyperdexBasedRegionMappingPolicyWithDB obj 
+				= new HyperdexBasedRegionMappingPolicyWithDB(givenMap, csNodeConfig, ATTRs_PER_SUBSPACE);
 		
 		
 		obj.computeRegionMapping();

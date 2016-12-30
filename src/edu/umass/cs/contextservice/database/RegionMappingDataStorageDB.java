@@ -11,8 +11,6 @@ import org.json.JSONObject;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.database.guidattributes.SQLGUIDStorage;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
-import edu.umass.cs.contextservice.database.datasource.MySQLDataSource;
-import edu.umass.cs.contextservice.database.datasource.SQLiteDataSource;
 import edu.umass.cs.contextservice.database.guidattributes.GUIDStorageInterface;
 import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
 import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorage;
@@ -54,34 +52,16 @@ public class RegionMappingDataStorageDB extends AbstractDataStorageDB
 	// it should be changed to bitmap to save space and stringification overhead.
 	public static final int varcharSizeForunsetAttrsCol				= 1000;
 	
-	private AbstractDataSource abstractDataSource;
+	
 	
 	private final GUIDStorageInterface guidAttributesStorage;
 	private  TriggerInformationStorageInterface triggerInformationStorage;
 	
 	//private final Random randomGen;
 	
-	public RegionMappingDataStorageDB( Integer myNodeID )
+	public RegionMappingDataStorageDB( Integer myNodeID, AbstractDataSource abstractDataSource )
 			throws Exception
-	{
-//		if(ContextServiceConfig.disableMySQLDB)
-//		{
-//			randomGen = new Random((Integer)myNodeID);
-//		}
-//		else
-//		{
-//			randomGen = null;
-//		}
-		
-		if(ContextServiceConfig.sqlDBType == ContextServiceConfig.SQL_DB_TYPE.MYSQL)
-		{
-			this.abstractDataSource = new MySQLDataSource(myNodeID);
-		}
-		else if(ContextServiceConfig.sqlDBType == ContextServiceConfig.SQL_DB_TYPE.SQLITE)
-		{
-			this.abstractDataSource = new SQLiteDataSource(myNodeID);
-		}
-		
+	{	
 		guidAttributesStorage = new SQLGUIDStorage
 							(myNodeID, abstractDataSource);
 		
