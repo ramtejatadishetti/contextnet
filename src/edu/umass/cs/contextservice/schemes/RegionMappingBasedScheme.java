@@ -121,7 +121,6 @@ public class RegionMappingBasedScheme extends AbstractScheme
 				regionMappingPolicy = null;
 				assert(false);
 		}
-
 		
 		
 		regionMappingPolicy.computeRegionMapping();
