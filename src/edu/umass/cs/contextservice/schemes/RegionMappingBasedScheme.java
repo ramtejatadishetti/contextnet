@@ -44,6 +44,7 @@ import edu.umass.cs.contextservice.queryparsing.QueryInfo;
 import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy;
 import edu.umass.cs.contextservice.regionmapper.FileBasedRegionMappingPolicy;
 import edu.umass.cs.contextservice.regionmapper.HyperdexBasedRegionMappingPolicy;
+import edu.umass.cs.contextservice.regionmapper.SqrtNConsistentHashingPolicy;
 import edu.umass.cs.contextservice.regionmapper.UniformGreedyRegionMappingPolicy;
 import edu.umass.cs.contextservice.schemes.components.AbstractGUIDAttrValueProcessing;
 import edu.umass.cs.contextservice.schemes.components.GUIDAttrValueProcessing;
@@ -114,7 +115,7 @@ public class RegionMappingBasedScheme extends AbstractScheme
 			}
 			case ContextServiceConfig.SQRT_N_HASH:
 			{
-				regionMappingPolicy = null;
+				regionMappingPolicy = new SqrtNConsistentHashingPolicy(AttributeTypes.attributeMap, nc);
 				break;
 			}
 			default:
