@@ -10,6 +10,8 @@ import java.util.List;
  */
 public class RegionInfo
 {	
+	// regionKey is needed database storage.
+	private int regionKey;
 	private ValueSpaceInfo valSpaceInfo;
 	
 	private List<Integer> nodeList;
@@ -18,6 +20,16 @@ public class RegionInfo
 	
 	public RegionInfo()
 	{
+	}
+	
+	public void setRegionKey(int regionKey)
+	{
+		this.regionKey = regionKey;
+	}
+	
+	public int getRegionKey()
+	{
+		return this.regionKey;
 	}
 	
 	public ValueSpaceInfo getValueSpaceInfo()

@@ -195,4 +195,6 @@ public class ContextServiceConfig
 	
 	
 	public static SQL_DB_TYPE sqlDBType								= SQL_DB_TYPE.SQLITE;
+	
+	public static final String REGION_INFO_TABLE_NAME 				= "regionInfoStorageTable";
 }

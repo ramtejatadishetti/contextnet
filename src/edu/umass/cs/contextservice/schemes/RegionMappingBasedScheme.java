@@ -48,7 +48,7 @@ import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy;
 import edu.umass.cs.contextservice.regionmapper.FileBasedRegionMappingPolicy;
 import edu.umass.cs.contextservice.regionmapper.HyperdexBasedRegionMappingPolicy;
 import edu.umass.cs.contextservice.regionmapper.SqrtNConsistentHashingPolicy;
-import edu.umass.cs.contextservice.regionmapper.UniformGreedyRegionMappingPolicy;
+import edu.umass.cs.contextservice.regionmapper.UniformGreedyRegionMappingPolicyWithDB;
 import edu.umass.cs.contextservice.schemes.components.AbstractGUIDAttrValueProcessing;
 import edu.umass.cs.contextservice.schemes.components.GUIDAttrValueProcessing;
 import edu.umass.cs.contextservice.schemes.components.TriggerProcessing;
@@ -111,8 +111,8 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		{
 			case ContextServiceConfig.UNIFORM:
 			{
-				regionMappingPolicy = new UniformGreedyRegionMappingPolicy(
-								AttributeTypes.attributeMap, nc);
+				regionMappingPolicy = new UniformGreedyRegionMappingPolicyWithDB(
+						dataSource, AttributeTypes.attributeMap, nc);
 				break;
 			}
 			case ContextServiceConfig.DEMAND_AWARE:
