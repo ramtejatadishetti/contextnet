@@ -75,10 +75,7 @@ public class ParallelSearchReplyASymmetricKeyDecryption
 								= csSearchRepMessage.getSearchGUIDObj();
 			
 			if(searchReplyJSON.getAnonymizedIDToGuidMapping() != null)
-			{
-				System.out.println("\n\n list size "
-						+searchReplyJSON.getAnonymizedIDToGuidMapping().length());
-				
+			{	
 				SearchReplyDecryptionThread searchRepThread = new SearchReplyDecryptionThread
 						( myGuid, csSearchRepMessage.getSearchGUIDObj() );
 				
@@ -156,7 +153,6 @@ public class ParallelSearchReplyASymmetricKeyDecryption
 			
 			if( plainTextBytes != null )
 			{
-				System.out.println("Successfull decryption");
 				synchronized(lock)
 				{
 					numFinished++;
@@ -211,8 +207,8 @@ public class ParallelSearchReplyASymmetricKeyDecryption
 			
 			if( anonymizedIDToGuidMapping != null )
 			{
-				System.out.println("ID "+seachReply.getID()+" realIDMappingInfo JSONArray "
-						+ anonymizedIDToGuidMapping.length() + " "+anonymizedIDToGuidMapping);
+//				System.out.println("ID "+seachReply.getID()+" realIDMappingInfo JSONArray "
+//						+ anonymizedIDToGuidMapping.length() + " "+anonymizedIDToGuidMapping);
 				
 				String myGuidString = myGUIDInfo.getGuid();
 				

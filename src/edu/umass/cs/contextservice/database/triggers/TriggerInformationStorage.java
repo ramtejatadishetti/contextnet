@@ -15,6 +15,7 @@ import org.json.JSONObject;
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
+import edu.umass.cs.contextservice.config.ContextServiceConfig.SQL_DB_TYPE;
 import edu.umass.cs.contextservice.database.RegionMappingDataStorageDB;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource.DB_REQUEST_TYPE;
@@ -64,19 +65,27 @@ public class TriggerInformationStorage implements
 					+ "userIP Binary(4) NOT NULL ,  userPort INTEGER NOT NULL , expiryTime BIGINT NOT NULL ";
 			newTableCommand = getPartitionInfoStorageString(newTableCommand);
 			
-			if( ContextServiceConfig.disableUniqueQueryStorage )
+			
+			// SQLIte doesn't support any INDEXING BTREE AND HASH BOTH .
+			if(ContextServiceConfig.sqlDBType == SQL_DB_TYPE.SQLITE)
 			{
-				newTableCommand = newTableCommand +" , INDEX USING BTREE(expiryTime), "
-						+ "INDEX USING HASH(groupGUID) )";
 			}
 			else
 			{
-				newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort), INDEX USING BTREE(expiryTime), "
-						+ "INDEX USING HASH(groupGUID) )";
+				newTableCommand = newTableCommand +" , INDEX USING BTREE(expiryTime), "
+						+ "INDEX USING HASH(groupGUID) ";
+			}
+			
+			if( ContextServiceConfig.disableUniqueQueryStorage )
+			{
+				newTableCommand = newTableCommand +" )";
+			}
+			else
+			{
+				newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort) )";
 			}
 			
 			stmt.executeUpdate(newTableCommand);
-			
 			
 			
 			if( ContextServiceConfig.TRIGGER_ENABLED 
@@ -938,15 +947,28 @@ public class TriggerInformationStorage implements
 				assert(false);
 			}
 				
-			// changed it to min max for lower and upper value instead of default 
+			// 1. changed it to min max for lower and upper value instead of default 
 			// because we want a query to match for attributes that are not specified 
 			// in the query, as those basically are don't care.
-			newTableCommand = newTableCommand + " , "+lowerAttrName+" "+mySQLDataType
-					+ " DEFAULT "
-					+ AttributeTypes.convertStringToDataTypeForMySQL(queryMinDefault, dataType)
-					+ " , "+upperAttrName+" "+mySQLDataType+" DEFAULT "
-					+ AttributeTypes.convertStringToDataTypeForMySQL(queryMaxDefault, dataType)
-					+ " , INDEX USING BTREE("+lowerAttrName+" , "+upperAttrName+")";
+			// 2. SQLite doesn't support BTREE indexing.
+			if(ContextServiceConfig.sqlDBType == SQL_DB_TYPE.SQLITE)
+			{
+				newTableCommand = newTableCommand + " , "+lowerAttrName+" "+mySQLDataType
+						+ " DEFAULT "
+						+ AttributeTypes.convertStringToDataTypeForMySQL(queryMinDefault, dataType)
+						+ " , "+upperAttrName+" "+mySQLDataType+" DEFAULT "
+						+ AttributeTypes.convertStringToDataTypeForMySQL(queryMaxDefault, dataType);
+						//+ " , INDEX USING BTREE("+lowerAttrName+" , "+upperAttrName+")";
+			}
+			else
+			{
+				newTableCommand = newTableCommand + " , "+lowerAttrName+" "+mySQLDataType
+						+ " DEFAULT "
+						+ AttributeTypes.convertStringToDataTypeForMySQL(queryMinDefault, dataType)
+						+ " , "+upperAttrName+" "+mySQLDataType+" DEFAULT "
+						+ AttributeTypes.convertStringToDataTypeForMySQL(queryMaxDefault, dataType)
+						+ " , INDEX USING BTREE("+lowerAttrName+" , "+upperAttrName+")";
+			}
 		}
 		return newTableCommand;
 	}

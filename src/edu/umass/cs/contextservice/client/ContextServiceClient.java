@@ -195,7 +195,7 @@ public class ContextServiceClient extends AbstractContextServiceClient
 				+" json "+gnsAttrValuePairs);
 		
 		try
-		{	
+		{
 			if(gnsClient != null)
 			{
 				sendUpdateToGNS(myGuidEntry, gnsAttrValuePairs);
