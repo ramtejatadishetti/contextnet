@@ -434,7 +434,12 @@ public class WorkloadAwareNormIntervalRegionMappingPolicy extends AbstractRegion
 	private boolean checkIfQueryAndRegionOverlap(String searchQuery, 
 			RegionInfo regionInfo, HashMap<String, AttributeMetaInfo> attributeMap )
 	{
-		ValueSpaceInfo queryValSpace = QueryParser.parseQuery(searchQuery);
+		HashMap<String, AttributeValueRange> queryAttrValRange 
+										= QueryParser.parseQuery(searchQuery);
+			
+		ValueSpaceInfo queryValSpace = ValueSpaceInfo.getAllAttrsValueSpaceInfo
+						(queryAttrValRange, attributeMap);
+		
 		
 		HashMap<String, AttributeValueRange> regionBoundary 
 							= regionInfo.getValueSpaceInfo().getValueSpaceBoundary();

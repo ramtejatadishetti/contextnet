@@ -156,6 +156,7 @@ public class ParallelSearchReplyASymmetricKeyDecryption
 			
 			if( plainTextBytes != null )
 			{
+				System.out.println("Successfull decryption");
 				synchronized(lock)
 				{
 					numFinished++;
@@ -190,6 +191,7 @@ public class ParallelSearchReplyASymmetricKeyDecryption
 			}
 		}
 		
+		
 		/**
 		 * Decrypts the real ID from search reply using realID mapping info.
 		 * Returns null if it cannot be decrypted.
@@ -203,13 +205,15 @@ public class ParallelSearchReplyASymmetricKeyDecryption
 		{
 			byte[] privateKey = myGUIDInfo.getPrivateKey().getEncoded();
 			byte[] plainText = null;
+			
 			JSONArray anonymizedIDToGuidMapping 
 								= seachReply.getAnonymizedIDToGuidMapping();
 			
 			if( anonymizedIDToGuidMapping != null )
 			{
-				ContextServiceLogger.getLogger().fine("realIDMappingInfo JSONArray "
-						+ anonymizedIDToGuidMapping.length() );
+				System.out.println("ID "+seachReply.getID()+" realIDMappingInfo JSONArray "
+						+ anonymizedIDToGuidMapping.length() + " "+anonymizedIDToGuidMapping);
+				
 				String myGuidString = myGUIDInfo.getGuid();
 				
 				int indexToCheck = Utils.consistentHashAString(myGuidString, 

@@ -21,7 +21,6 @@ import edu.umass.cs.contextservice.database.datasource.AbstractDataSource.DB_REQ
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
-import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 import edu.umass.cs.contextservice.utils.Utils;
 
 /**
@@ -68,7 +67,16 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 				// row format dynamic because we want TEXT columns to be stored completely off the row, 
 				// only pointer should be stored in the row, otherwise default is storing 700 bytes for 
 				// each TEXT in row.
-				newTableCommand = newTableCommand +" ) ROW_FORMAT=DYNAMIC";
+				
+				// sqlite doesn't support dynamic rows as it is an in-memory db.
+				if( ContextServiceConfig.sqlDBType == SQL_DB_TYPE.SQLITE )
+				{
+					newTableCommand = newTableCommand +" )";
+				}
+				else
+				{
+					newTableCommand = newTableCommand +" ) ROW_FORMAT=DYNAMIC";
+				}
 			}
 			else
 			{
@@ -78,7 +86,6 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 			stmt.executeUpdate(newTableCommand);
 			
 			
-			
 			tableName = RegionMappingDataStorageDB.GUID_HASH_TABLE_NAME;
 			newTableCommand = "create table "+tableName+" ( "
 				      + " nodeGUID Binary(20) PRIMARY KEY";
@@ -86,16 +93,25 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 			newTableCommand = getDataStorageString(newTableCommand);
 			
 			newTableCommand = newTableCommand + " , "+RegionMappingDataStorageDB.unsetAttrsColName
-								+" VARCHAR("+RegionMappingDataStorageDB.varcharSizeForunsetAttrsCol+") ";
+						+" VARCHAR("+RegionMappingDataStorageDB.varcharSizeForunsetAttrsCol+") ";
 			
 			//FIXME: need to fix this for MySQL and SQLite cases.
 			if( ContextServiceConfig.PRIVACY_ENABLED )
 			{
 				newTableCommand = getPrivacyStorageString(newTableCommand);
 				//newTableCommand	= getPrivacyStorageString(newTableCommand);
-				// row format dynamic because we want TEXT columns to be stored completely off the row, 
-				// only pointer should be stored in the row, otherwise default is storing 700 bytes for each TEXT in row.
-				newTableCommand = newTableCommand +" ) ROW_FORMAT=DYNAMIC ";
+				// row format dynamic because we want TEXT columns to be stored 
+				// completely off the row, only pointer should be stored in the row, 
+				// otherwise default is storing 700 bytes for each TEXT in row.
+				
+				if( ContextServiceConfig.sqlDBType == SQL_DB_TYPE.SQLITE )
+				{
+					newTableCommand = newTableCommand +" )";
+				}
+				else
+				{
+					newTableCommand = newTableCommand +" ) ROW_FORMAT=DYNAMIC";
+				}
 			}
 			else
 			{
@@ -141,9 +157,10 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 //	}
 	
 	public int processSearchQueryUsingAttrIndex
-			(ValueSpaceInfo queryValueSpace, JSONArray resultArray)
+			(HashMap<String, AttributeValueRange> queryAttrValRange, 
+					JSONArray resultArray)
 	{	
-		String mysqlQuery = getMySQLQueryForProcessingSearchQuery(queryValueSpace);
+		String mysqlQuery = getMySQLQueryForProcessingSearchQuery(queryAttrValRange);
 		
 		assert(mysqlQuery != null);
 		
@@ -482,7 +499,8 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 	 * @param resultArray
 	 * @return
 	 */
-	private String getMySQLQueryForProcessingSearchQuery( ValueSpaceInfo queryValueSpace )
+	private String getMySQLQueryForProcessingSearchQuery( HashMap<String, AttributeValueRange> 
+			queryAttrValSpace )
 	{		
 		String tableName = RegionMappingDataStorageDB.ATTR_INDEX_TABLE_NAME;
 		String mysqlQuery = "";	
@@ -506,11 +524,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 			}
 		}
 		
-		
-		HashMap<String, AttributeValueRange> qValSpaceBoundary 
-										= queryValueSpace.getValueSpaceBoundary();
-		
-		Iterator<String> attrIter = qValSpaceBoundary.keySet().iterator();
+		Iterator<String> attrIter = queryAttrValSpace.keySet().iterator();
 		
 		int counter = 0;
 		try
@@ -519,7 +533,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 			{
 				String attrName = attrIter.next();
 				//ProcessingQueryComponent pqc = queryComponents.get(attrName);
-				AttributeValueRange attrValRange = qValSpaceBoundary.get(attrName);
+				AttributeValueRange attrValRange = queryAttrValSpace.get(attrName);
 				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
 				
 				assert(attrMetaInfo != null);
@@ -537,7 +551,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 						= AttributeTypes.convertStringToDataTypeForMySQL
 											(attrValRange.getUpperBound(), dataType)+"";
 					
-					if( counter == (qValSpaceBoundary.size()-1) )
+					if( counter == (queryAttrValSpace.size()-1) )
 					{
 						// it is assumed that the strings in query(pqc.getLowerBound() or pqc.getUpperBound()) 
 						// will have single or double quotes in them so we don't need to them separately in mysql query
@@ -552,7 +566,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 				}
 				else
 				{
-					if(counter == (qValSpaceBoundary.size()-1) )
+					if(counter == (queryAttrValSpace.size()-1) )
 					{
 						String queryMin  
 							= AttributeTypes.convertStringToDataTypeForMySQL

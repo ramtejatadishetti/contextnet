@@ -55,7 +55,6 @@ public class ContextServiceConfig
 //	public static final String FullObjectTable    					= "fullObjectTable";
 //	
 //	public static final String groupGUIDTable						= "groupGUIDTable";
-	
 //	public static final boolean USESQL								= true;
 	
 	public static final boolean PROFILER_THREAD						= true;
@@ -189,8 +188,6 @@ public class ContextServiceConfig
 	
 	// maximum length of an attribute name, used in varchar mysql table
 	public static final int MAXIMUM_ATTRNAME_LENGTH					= 100;
-	
-	
 	
 	
 	// SQL database types

@@ -22,7 +22,6 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.ValueUpdateToSubspaceRegionMessage;
 import edu.umass.cs.contextservice.queryparsing.QueryParser;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
-import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 import edu.umass.cs.contextservice.schemes.RegionMappingBasedScheme;
 import edu.umass.cs.contextservice.utils.Utils;
 
@@ -132,8 +131,7 @@ public class TriggerInformationStorage implements
 		
 		String tableName = RegionMappingDataStorageDB.ATTR_INDEX_TRIGGER_TABLE_NAME;
 		
-		ValueSpaceInfo queryValSpace = QueryParser.parseQuery(userQuery);
-		HashMap<String, AttributeValueRange> valSpaceBoundary = queryValSpace.getValueSpaceBoundary();
+		HashMap<String, AttributeValueRange> valSpaceBoundary = QueryParser.parseQuery(userQuery);
 		
 		String hexIP;
 		try

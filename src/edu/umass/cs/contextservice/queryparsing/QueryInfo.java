@@ -5,7 +5,7 @@ import java.util.List;
 
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.messages.QueryMesgToSubspaceRegionReply;
-import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
+import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.schemes.helperclasses.SearchReplyInfo;
 
 /**
@@ -32,7 +32,7 @@ public class QueryInfo
 	private boolean requestCompl;
 	
 	// only includes attributes that are specified in the query.
-	private ValueSpaceInfo serachQueryValSpace;
+	private HashMap<String, AttributeValueRange> searchQueryAttrValRange;
 	
 	// for hyperspace privacy and no privacy case.
 	// to store replies of each region of subspace
@@ -65,13 +65,13 @@ public class QueryInfo
 		requestCompl = false;
 		
 		// query parsing
-		serachQueryValSpace = QueryParser.parseQuery(query);
+		searchQueryAttrValRange = QueryParser.parseQuery(query);
 	}
 	
 	
-	public ValueSpaceInfo getSearchQueryValSpace()
+	public HashMap<String, AttributeValueRange> getSearchQueryAttrValMap()
 	{
-		return serachQueryValSpace;
+		return searchQueryAttrValRange;
 	}
 	
 	public String getQuery()

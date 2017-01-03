@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
 import java.util.Iterator;
 
 
@@ -23,9 +24,7 @@ import edu.umass.cs.contextservice.logging.ContextServiceLogger;
 import edu.umass.cs.contextservice.messages.dataformat.SearchReplyGUIDRepresentationJSON;
 import edu.umass.cs.contextservice.queryparsing.QueryParser;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
-import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 import edu.umass.cs.contextservice.utils.Utils;
-
 
 public class QueryAllDB
 {
@@ -300,7 +299,7 @@ public class QueryAllDB
 	public String getMySQLQueryForProcessSearchQueryInSubspaceRegion
 										( String query)
 	{
-		ValueSpaceInfo qValSpace = QueryParser.parseQuery(query);
+		HashMap<String, AttributeValueRange> qAttrValRange = QueryParser.parseQuery(query);
 		
 		String tableName = RegionMappingDataStorageDB.GUID_HASH_TABLE_NAME;
 		String mysqlQuery = "";
@@ -327,14 +326,14 @@ public class QueryAllDB
 		}
 		
 		
-		Iterator<String> attrIter = qValSpace.getValueSpaceBoundary().keySet().iterator();
+		Iterator<String> attrIter = qAttrValRange.keySet().iterator();
 		int counter = 0;
 		try
 		{
 			while(attrIter.hasNext())
 			{
 				String attrName = attrIter.next();
-				AttributeValueRange pqc = qValSpace.getValueSpaceBoundary().get(attrName);
+				AttributeValueRange pqc = qAttrValRange.get(attrName);
 				 
 				AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
 				
@@ -351,7 +350,7 @@ public class QueryAllDB
 					String queryMax  = AttributeTypes.convertStringToDataTypeForMySQL
 									(pqc.getUpperBound(), dataType)+"";
 					
-					if( counter == (qValSpace.getValueSpaceBoundary().size()-1) )
+					if( counter == (qAttrValRange.size()-1) )
 					{
 						// it is assumed that the strings in query(pqc.getLowerBound() or pqc.getUpperBound()) 
 						// will have single or double quotes in them so we don't need to them separately in mysql query
@@ -366,7 +365,7 @@ public class QueryAllDB
 				}
 				else
 				{
-					if(counter == (qValSpace.getValueSpaceBoundary().size()-1) )
+					if(counter == (qAttrValRange.size()-1) )
 					{
 						String queryMin  = AttributeTypes.convertStringToDataTypeForMySQL
 										(attrMetaInfo.getMinValue(), dataType)+"";

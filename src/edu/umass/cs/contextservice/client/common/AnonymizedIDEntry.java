@@ -17,7 +17,7 @@ import edu.umass.cs.contextservice.utils.Utils;
  * @author adipc
  */
 public class AnonymizedIDEntry 
-{	
+{
 	private final String anonymizedIDString;
 	private final HashMap<String, Boolean> attributeMap;
 	
@@ -67,8 +67,7 @@ public class AnonymizedIDEntry
 		else 
 		{
 			assert( anonymizedIDToGUIDMapping.length() == 1 );
-		}
-		  
+		}	  
 		
 		this.anonymizedIDString = anonymizedIDString;
 		this.attributeMap = attributeMap;
@@ -140,6 +139,9 @@ public class AnonymizedIDEntry
 				e.printStackTrace();
 			}
 		}
+		
+		str=str +" anonymizedIDToGUIDMapping "+anonymizedIDToGUIDMapping;
+		
 		return str;
 	}
 }

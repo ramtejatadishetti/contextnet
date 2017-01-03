@@ -1,11 +1,5 @@
 package edu.umass.cs.contextservice.regionmapper;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -14,24 +8,22 @@ import java.util.Random;
 
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
-import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.configurator.AbstractSubspaceConfigurator;
 import edu.umass.cs.contextservice.configurator.BasicSubspaceConfigurator;
 import edu.umass.cs.contextservice.hyperspace.storage.AttributePartitionInfo;
 import edu.umass.cs.contextservice.hyperspace.storage.SubspaceInfo;
-import edu.umass.cs.contextservice.queryparsing.QueryParser;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.regionmapper.helper.RegionInfo;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 
 
-public class HyperdexBasedRegionMappingPolicyWithDB extends AbstractRegionMappingPolicy
+public class HyperdexBasedRegionMappingPolicyOldNotUsed extends AbstractRegionMappingPolicy
 {
 	private final AbstractSubspaceConfigurator subspaceConfigurator;
 	
 	
-	public HyperdexBasedRegionMappingPolicyWithDB( HashMap<String, AttributeMetaInfo> attributeMap, 
+	public HyperdexBasedRegionMappingPolicyOldNotUsed( HashMap<String, AttributeMetaInfo> attributeMap, 
 			CSNodeConfig csNodeConfig, int numberAttrsPerSubspace )
 	{
 		super(attributeMap, csNodeConfig);
@@ -282,7 +274,7 @@ public class HyperdexBasedRegionMappingPolicyWithDB extends AbstractRegionMappin
 	}
 	
 	
-	public static void main(String[] args)
+	/*public static void main(String[] args)
 	{
 		int NUM_ATTRS 			= Integer.parseInt(args[0]);
 		int NUM_NODES 			= Integer.parseInt(args[1]);
@@ -317,8 +309,8 @@ public class HyperdexBasedRegionMappingPolicyWithDB extends AbstractRegionMappin
 		}
 		
 		AttributeTypes.initializeGivenMapAndList(givenMap, attrList);
-		HyperdexBasedRegionMappingPolicyWithDB obj 
-				= new HyperdexBasedRegionMappingPolicyWithDB(givenMap, csNodeConfig, ATTRs_PER_SUBSPACE);
+		HyperdexBasedRegionMappingPolicyOldNotUsed obj 
+				= new HyperdexBasedRegionMappingPolicyOldNotUsed(givenMap, csNodeConfig, ATTRs_PER_SUBSPACE);
 		
 		
 		obj.computeRegionMapping();
@@ -405,5 +397,5 @@ public class HyperdexBasedRegionMappingPolicyWithDB extends AbstractRegionMappin
 		
 		System.out.println("subspaceQMap "+subspaceQMap.toString());
 		
-	}
+	}*/
 }

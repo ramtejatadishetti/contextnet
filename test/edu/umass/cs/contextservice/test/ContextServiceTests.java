@@ -97,7 +97,7 @@ public class ContextServiceTests
 		// these tests require full search replies to be sent.
 		assert( ContextServiceConfig.sendFullRepliesToClient );
 		assert( ContextServiceConfig.sendFullRepliesWithinCS );
-		
+			
 		for(int i=0; i<100; i++)
 		{
 			String realAlias = memberAliasPrefix+i;
@@ -194,19 +194,18 @@ public class ContextServiceTests
 		
 		for(int i=0; i< anonymizedIDsList.size(); i++)
 		{
-			System.out.println("anonymizedIDsList "+i+" "+anonymizedIDsList.get(i));
+			System.out.println("anonymized IDsList "+i+" "+anonymizedIDsList.get(i));
 		}
-		
 		System.out.println("Number of anonymized IDs created "
 											+anonymizedIDsList.size());
-		assert(anonymizedIDsList!=null);
+		
+		assert(anonymizedIDsList != null);
 		assert(anonymizedIDsList.size() > 0);
 		
 		// number of anonymized IDs cannot be greater then total
 		// distinct ACL GUIDs.
 		assert((aclMemberGuids.size()+1) >= anonymizedIDsList.size());
 		//assertEquals(101, numRep);
-		
 		
 		// do a secure update
 		JSONObject attrValJSON = getARandomAttrValSet();
@@ -353,7 +352,6 @@ public class ContextServiceTests
 		ContextServiceClient csClient 
 				= new ContextServiceClient(csNodeIp, csPort, true,
 						privacyScheme);
-		
 		
 		GNSClient gnsClient = csClient.getGNSClient();
 		assert(gnsClient != null);
@@ -763,7 +761,7 @@ public class ContextServiceTests
 		
 		for( int j=0; j<replyArray.length(); j++ )
 		{
-			try 
+			try
 			{
 				if( guidToCheck.compareToIgnoreCase
 						(replyArray.getString(j)) == 0 )
@@ -771,7 +769,7 @@ public class ContextServiceTests
 					found = true;
 					break;
 				}
-			} catch (JSONException e) 
+			} catch (JSONException e)
 			{
 				e.printStackTrace();
 			}

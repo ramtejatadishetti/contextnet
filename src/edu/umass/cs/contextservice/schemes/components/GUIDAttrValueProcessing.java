@@ -11,6 +11,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
 import edu.umass.cs.contextservice.database.AbstractDataStorageDB;
@@ -23,6 +24,7 @@ import edu.umass.cs.contextservice.profilers.ProfilerStatClass;
 import edu.umass.cs.contextservice.queryparsing.QueryInfo;
 import edu.umass.cs.contextservice.queryparsing.QueryParser;
 import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy;
+import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 import edu.umass.cs.contextservice.schemes.helperclasses.SearchReplyInfo;
 import edu.umass.cs.contextservice.updates.UpdateInfo;
@@ -71,10 +73,12 @@ public class GUIDAttrValueProcessing
 		}
 		pendingQueryRequests.put(queryInfo.getRequestId(), queryInfo);
 		
+		ValueSpaceInfo searchQValSpace = ValueSpaceInfo.getAllAttrsValueSpaceInfo
+										(queryInfo.getSearchQueryAttrValMap(), 
+												AttributeTypes.attributeMap);
 		
 		List<Integer> nodeList 
-				= regionMappingPolicy.getNodeIDsForAValueSpaceForSearch
-						(queryInfo.getSearchQueryValSpace());
+				= regionMappingPolicy.getNodeIDsForAValueSpaceForSearch(searchQValSpace);
 		
 		if(ContextServiceConfig.PROFILER_THREAD)
 		{
@@ -115,11 +119,15 @@ public class GUIDAttrValueProcessing
 													JSONArray resultGUIDs)
 	{
 		String query 				 		= queryMesgToSubspaceRegion.getQuery();
-		ValueSpaceInfo searchQValSpace	 	= QueryParser.parseQuery(query);
+		// we don't evaluate the query over full value space on all attributes here.
+		// because in privacy some attributes may not be specified.
+		// so a query should only be evaluated on attributes that are specified 
+		// in the query. Attributes that are not spcfied are stored with Double.MIN
+		// value, which is outside the Min max value corresponding to an attribute.
+		HashMap<String, AttributeValueRange> searchAttrValRange	 = QueryParser.parseQuery(query);
 		
 		int resultSize = this.hyperspaceDB.processSearchQueryUsingAttrIndex
-				(searchQValSpace, resultGUIDs);
-		
+				(searchAttrValRange, resultGUIDs);
 		
 		return resultSize;
 	}

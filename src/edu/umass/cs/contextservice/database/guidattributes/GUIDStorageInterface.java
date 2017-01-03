@@ -1,11 +1,12 @@
 package edu.umass.cs.contextservice.database.guidattributes;
 
+import java.util.HashMap;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-
-import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
+import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 
 
 /**
@@ -20,15 +21,10 @@ public interface GUIDStorageInterface
 	public void createDataStorageTables();
 	
 	public int processSearchQueryUsingAttrIndex
-						( ValueSpaceInfo queryValueSpace, JSONArray resultArray);
+						( HashMap<String, AttributeValueRange> queryAttrValMap, 
+								JSONArray resultArray);
 	
 	public JSONObject getGUIDStoredUsingHashIndex( String guid );
-	
-//	public void insertIntoSubspacePartitionInfo(int subspaceId, int replicaNum,
-//			List<Integer> subspaceVector, Integer respNodeId);
-	
-//	public void bulkInsertIntoSubspacePartitionInfo( int subspaceId, int replicaNum,
-//			List<List<Integer>> subspaceVectorList, List<Integer> respNodeIdList );
 	
 	public void storeGUIDUsingHashIndex(String nodeGUID, JSONObject jsonToWrite, 
     		int updateOrInsert ) throws JSONException;
@@ -38,12 +34,4 @@ public interface GUIDStorageInterface
     					throws JSONException;
 	
 	public void deleteGUIDFromTable(String tableName, String nodeGUID);
-	
-//	public HashMap<Integer, RegionInfoClass> 
-//		getOverlappingRegionsInSubspace(int subspaceId, int replicaNum, 
-//			HashMap<String, ProcessingQueryComponent> matchingQueryComponents);
-	
-	//FIXME: not clear where this is used.
-//	public String getMySQLQueryForProcessSearchQueryInSubspaceRegion
-//								(int subspaceId, HashMap<String, ProcessingQueryComponent> queryComponents);
 }

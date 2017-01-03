@@ -1,7 +1,3 @@
-modelRho=0.5
-modelCsByC=0.003594347
-modelCuByC=0.001626119
-modelAavg=2.0
-disableOptimizer=true
-basicConfig=true
-optimalH=3.0
+numAttrsPerSubspace=3
+threadPoolSize=1
+regionMappingPolicy=UNIFORM

@@ -91,7 +91,7 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 		
 		// set region load.
 		double regionLoad = computeLoadOnARegionBasedOnTrace( totalValSpaceRegion, 
-										attributeMap, nodeConfig.getNodeIDs().size() );
+										attributeMap, nodeConfig.getNodeIDs().size() );	
 		
 		
 		totalValSpaceRegion.setTraceLoad(regionLoad);
@@ -164,7 +164,6 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 				ex.printStackTrace();
 			}
 		}
-		
 	}
 	
 	/**
@@ -555,7 +554,8 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 		updateRequestProb = overlapUpdateRequests/totalUpdateRequests;
 		
 		// search/search+update ration.
-		double rho = totalSearchQueries/(totalSearchQueries + totalUpdateRequests);
+		//double rho = totalSearchQueries/(totalSearchQueries + totalUpdateRequests);
+		double rho = 1.0;
 		
 		
 		loadOnRegion = rho*searchQueryProb + (1-rho) * Math.sqrt(totalNodes)* updateRequestProb;
@@ -567,8 +567,12 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 	private boolean checkIfQueryAndRegionOverlap(String searchQuery, 
 			RegionInfo regionInfo, HashMap<String, AttributeMetaInfo> attributeMap )
 	{
-		ValueSpaceInfo queryValspace = QueryParser.parseQuery(searchQuery);
+		HashMap<String, AttributeValueRange> queryAttrValMap = QueryParser.parseQuery(searchQuery);
 		
+		ValueSpaceInfo queryValspace = 
+					ValueSpaceInfo.getAllAttrsValueSpaceInfo(queryAttrValMap, attributeMap);
+		
+
 		return ValueSpaceInfo.checkOverlapOfTwoValueSpaces(attributeMap, 
 					queryValspace, regionInfo.getValueSpaceInfo());
 	}

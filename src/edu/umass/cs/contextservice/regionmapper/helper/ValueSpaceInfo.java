@@ -28,6 +28,11 @@ public class ValueSpaceInfo
 		return this.valueSpaceBoundary;
 	}
 	
+//	public void setValueSpaceBoundary(HashMap<String, AttributeValueRange> valSpaceBoundary)
+//	{
+//		this.valueSpaceBoundary = valSpaceBoundary;
+//	}
+	
 	public String toString()
 	{
 		String str = "";
@@ -76,6 +81,36 @@ public class ValueSpaceInfo
 		return newValSpace;
 	}
 	
+	public static ValueSpaceInfo getAllAttrsValueSpaceInfo(
+			HashMap<String, AttributeValueRange> partialAttrValRange, 
+			HashMap<String, AttributeMetaInfo> attributeMap)
+	{
+		ValueSpaceInfo valSpaceInfo = new ValueSpaceInfo();
+		
+		Iterator<String> attrIter = attributeMap.keySet().iterator();
+		
+		while( attrIter.hasNext() )
+		{
+			String attrName = attrIter.next();
+			AttributeMetaInfo attrInfo = attributeMap.get(attrName);
+			
+			if( partialAttrValRange.containsKey(attrName) )
+			{
+				valSpaceInfo.getValueSpaceBoundary().put(attrName, 
+							partialAttrValRange.get(attrName));
+			}
+			else
+			{
+				valSpaceInfo.getValueSpaceBoundary().put
+					(attrName, new AttributeValueRange(attrInfo.getMinValue(), 
+						attrInfo.getMaxValue()));
+			}
+		}
+		
+		assert(valSpaceInfo.getValueSpaceBoundary().size() == attributeMap.size());
+		return valSpaceInfo;
+	}
+	
 	
 	public static boolean checkOverlapOfTwoValueSpaces( HashMap<String, AttributeMetaInfo> attributeMap, 
 			ValueSpaceInfo valSpace1, ValueSpaceInfo valSpace2 )
@@ -111,12 +146,11 @@ public class ValueSpaceInfo
 			overlap = overlap && AttributeTypes.checkOverlapOfTwoIntervals(attrValRange1, 
 					attrValRange2, attrMetaInfo.getDataType());
 			
-			if(!overlap)
+			if( !overlap )
 			{
 				break;
 			}
 		}
-		
 		return overlap;
 	}
 }

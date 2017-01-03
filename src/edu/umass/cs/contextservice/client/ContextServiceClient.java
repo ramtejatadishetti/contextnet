@@ -720,9 +720,10 @@ public class ContextServiceClient extends AbstractContextServiceClient
 						if( ContextServiceConfig.DECRYPTIONS_ON_SEARCH_REPLY_ENABLED )
 						{
 							SearchReplyGUIDRepresentationJSON searchRepObj 
-							= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
+								= SearchReplyGUIDRepresentationJSON.fromJSONObject(searchRepJSON);
 							CSSearchReplyTransformedMessage csSearchRepTransform 
-											= new CSSearchReplyTransformedMessage(searchRepObj);
+								= new CSSearchReplyTransformedMessage(searchRepObj);
+							
 							searchRepTransformList.add(csSearchRepTransform);
 						}
 						else

@@ -26,7 +26,7 @@ import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
  * @author ayadav
  */
 public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolicy
-{	
+{
 	private final List<RegionInfo> regionList;
 	private final Random randGen;
 	

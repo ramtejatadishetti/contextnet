@@ -16,7 +16,7 @@ import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
 import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorage;
 import edu.umass.cs.contextservice.database.triggers.TriggerInformationStorageInterface;
 import edu.umass.cs.contextservice.logging.ContextServiceLogger;
-import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
+import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 
 
 public class RegionMappingDataStorageDB extends AbstractDataStorageDB
@@ -122,13 +122,13 @@ public class RegionMappingDataStorageDB extends AbstractDataStorageDB
 	 * @param resultArray
 	 * @return
 	 */
-	public int processSearchQueryUsingAttrIndex( ValueSpaceInfo queryValueSpace, 
-			JSONArray resultArray )
+	public int processSearchQueryUsingAttrIndex( HashMap<String, AttributeValueRange> 
+			queryAttrValRange, JSONArray resultArray )
 	{
 		long start = System.currentTimeMillis();
 		int resultSize 
 			= this.guidAttributesStorage.processSearchQueryUsingAttrIndex
-												(queryValueSpace, resultArray);
+												(queryAttrValRange, resultArray);
 		
 		long end = System.currentTimeMillis();
 		

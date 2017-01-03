@@ -2,21 +2,19 @@ package edu.umass.cs.contextservice.queryparsing;
 
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
-import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 
 /**
  * Implements query parser
  * @author ayadav
  */
 public class QueryParser
-{	
+{
 	// equal, less equal, greater equal, less, great, not
     // order is important, equality should come in last.
     // helps in parsing
@@ -24,43 +22,30 @@ public class QueryParser
 	
 	public static String [] booleanOperators									= {"AND"};
 	
-	
 	/**
-	 * Parses the search query and returns the value space. 
+	 * Parses the search query and returns a hashmap of
+	 * attribute and corresponding range pair. 
+	 * Only attributes specfied in the query are returned.
 	 * @param userQuery
 	 * @return
 	 */
-	public static ValueSpaceInfo parseQuery(String userQuery)
+	public static HashMap<String, AttributeValueRange> parseQuery(String userQuery)
 	{
-		//String queryPrefix = "SELECT GUID_TABLE.guid FROM GUID_TABLE ";
 		// removing multiple spaces into one
 		String Query = userQuery.trim().replaceAll(" +", " ");
-		//String[] spaceParsed = after.split(" ");
-		
 		return  parseWhereQuery(Query);
 	}
+	
 	
 	/**
 	 * returns a vector of predicates(QueryComponent)
 	 * @param spaceParsed
 	 * @return
 	 */
-	private static ValueSpaceInfo parseWhereQuery( String searchQuery )
+	private static HashMap<String, AttributeValueRange> parseWhereQuery( String searchQuery )
 	{
-		ValueSpaceInfo queryValSpace = new ValueSpaceInfo();
-		
-		HashMap<String, AttributeValueRange> valSpaceBoundary = queryValSpace.getValueSpaceBoundary();
-		
-		Iterator<String> attrIter = AttributeTypes.attributeMap.keySet().iterator();
-		
-		while(attrIter.hasNext())
-		{
-			String attrName = attrIter.next();
-			AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-			valSpaceBoundary.put(attrName, 
-					new AttributeValueRange(attrMetaInfo.getMinValue(), attrMetaInfo.getMaxValue()));
-		}
-		
+		HashMap<String, AttributeValueRange> searchQAttrValRange 
+								= new HashMap<String, AttributeValueRange>();
 		
 		String[] ANDParsed = searchQuery.split(booleanOperators[0]);
 		
@@ -69,14 +54,16 @@ public class QueryParser
 		while( startInd < ANDParsed.length )
 		{
 			String curr = ANDParsed[startInd].trim();
-			parsePredicate(curr, queryValSpace);
+			parsePredicate(curr, searchQAttrValRange);
 			startInd = startInd + 1;
 		}
-		return queryValSpace;
+		return searchQAttrValRange;
 	}
 	
-	private static void parsePredicate(String predicateString, ValueSpaceInfo queryValSpace)
-	{	
+	
+	private static void parsePredicate( String predicateString, 
+					HashMap<String, AttributeValueRange> searchQAttrValRange )
+	{
 		// order is imp. first we check for >=, then <= and then =
 		for(int i=0;i<attributeOperators.length;i++)
 		{
@@ -104,22 +91,24 @@ public class QueryParser
 				}
 				
 				addPredicateToValueSpace(attrName, operator, 
-						value, queryValSpace);
+						value, searchQAttrValRange);
 				break;
 			}
 		}
 	}
 	
+	
 	private static void addPredicateToValueSpace(String attrName, String operator, 
-					String value, ValueSpaceInfo queryValSpace)
+				String value, HashMap<String, AttributeValueRange> searchQAttrValRange)
 	{
-		AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
-		AttributeValueRange attrValRange = queryValSpace.getValueSpaceBoundary().get(attrName);
+		AttributeMetaInfo attrMetaInfo   = AttributeTypes.attributeMap.get(attrName);
+		AttributeValueRange attrValRange = searchQAttrValRange.get(attrName);
+		
 		if(attrValRange == null)
 		{
 			attrValRange = new AttributeValueRange
 					(attrMetaInfo.getMinValue(), attrMetaInfo.getMaxValue());
-			queryValSpace.getValueSpaceBoundary().put(attrName, attrValRange);
+			searchQAttrValRange.put(attrName, attrValRange);
 		}
 		
 		if( operator.equals("<=") )
@@ -156,8 +145,10 @@ public class QueryParser
 		AttributeTypes.initializeGivenMapAndList(givenMap, attrList);
 		
 		String query = "attr0 >= 100 AND attr5 <= 140";
-		ValueSpaceInfo queryValSpace = QueryParser.parseQuery(query);
+		HashMap<String, AttributeValueRange> searchQAttrValRange 
+											= QueryParser.parseQuery(query);
 		
-		System.out.println("Query value space "+queryValSpace.toString());
+		System.out.println("Query value space "
+										+searchQAttrValRange.toString());
 	}
 }

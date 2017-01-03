@@ -132,12 +132,14 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 		return nodeList;
 	}
 	
+	
 	public List<Integer> getNodeIDsForAValueSpaceForSearch
 									(ValueSpaceInfo valueSpace)
 	{
-		List<String> queryAttrList = getNotFullRangeAttrsInSearchQuery(valueSpace);
+		HashMap<String, AttributeValueRange> queryAttrMap 
+								= getNotFullRangeAttrsInSearchQuery(valueSpace);
 		
-		SubspaceInfo subInfo = getMaxOverlapSubspace(queryAttrList );
+		SubspaceInfo subInfo 	= getMaxOverlapSubspace(queryAttrMap );
 		
 		//System.out.println("Max sub info "+subInfo.toString());
 		// Query value space consisting only subspace attrs.
@@ -155,8 +157,6 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 			searchSubspaceValSpace.getValueSpaceBoundary().put(attrName, 
 									valueSpace.getValueSpaceBoundary().get(attrName));
 		}
-		
-		//System.out.println("searchSubspaceValSpace "+searchSubspaceValSpace.toString());
 		
 		
 		HashMap<Integer, Boolean> nodeMap = new HashMap<Integer, Boolean>();
@@ -181,13 +181,16 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 		return nodeList;
 	}
 	
-	
-	private List<String> getNotFullRangeAttrsInSearchQuery(ValueSpaceInfo valueSpace)
+	private HashMap<String, AttributeValueRange> 
+					getNotFullRangeAttrsInSearchQuery(ValueSpaceInfo valueSpace)
 	{
-		HashMap<String, AttributeValueRange> valSpaceBoundary = valueSpace.getValueSpaceBoundary();
+		HashMap<String, AttributeValueRange> valSpaceBoundary 
+												= valueSpace.getValueSpaceBoundary();
 		
-		Iterator<String> attrIter = valSpaceBoundary.keySet().iterator();
-		List<String> queryAttrList = new LinkedList<String>();
+		Iterator<String> attrIter 				= valSpaceBoundary.keySet().iterator();
+		
+		HashMap<String, AttributeValueRange> queryAttrMap 
+												= new HashMap<String, AttributeValueRange>();
 		
 		while(attrIter.hasNext())
 		{
@@ -203,10 +206,10 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 			}
 			else
 			{
-				queryAttrList.add(attrName);
+				queryAttrMap.put(attrName, attrValRange);
 			}
 		}
-		return queryAttrList;
+		return queryAttrMap;
 	}
 	
 	
@@ -215,7 +218,8 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 	 * subspace. Used in processing search query.
 	 * @return
 	 */
-	private SubspaceInfo getMaxOverlapSubspace( List<String> queryAttrList)
+	private SubspaceInfo getMaxOverlapSubspace( HashMap<String, AttributeValueRange> 
+												searchAttrRange)
 	{
 		// first the maximum matching subspace is found and then any of its replica it chosen
 		Iterator<Integer> keyIter   	= subspaceConfigurator.getSubspaceInfoMap().keySet().iterator();
@@ -227,18 +231,24 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 		while( keyIter.hasNext() )
 		{
 			int subspaceId = keyIter.next();
-			SubspaceInfo currSubInfo = subspaceConfigurator.getSubspaceInfoMap().get(subspaceId).get(0);
-			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo = currSubInfo.getAttributesOfSubspace();
+			SubspaceInfo currSubInfo 
+						= subspaceConfigurator.getSubspaceInfoMap().get(subspaceId).get(0);
+			HashMap<String, AttributePartitionInfo> attrsSubspaceInfo 
+						= currSubInfo.getAttributesOfSubspace();
 			
 			int currMaxMatch = 0;
 			List<String> currMatchingAttrList = new LinkedList<String>();
 			
-			for(int i=0; i<queryAttrList.size(); i++)
+			
+			Iterator<String> attrIter = searchAttrRange.keySet().iterator();
+			
+			while(attrIter.hasNext())
 			{
-				if( attrsSubspaceInfo.containsKey(queryAttrList.get(i)) )
+				String attrName = attrIter.next();
+				if( attrsSubspaceInfo.containsKey(attrName) )
 				{
 					currMaxMatch = currMaxMatch + 1;
-					currMatchingAttrList.add(queryAttrList.get(i));
+					currMatchingAttrList.add(attrName);
 				}
 			}
 			
@@ -269,7 +279,6 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 		
 		int returnIndex = new Random().nextInt( maxMatchingSubspaceNumVector.size() );
 		//matchingAttributes.clear();
-		
 
 		MaxAttrMatchingStorageClass chosenList = maxMatchingSubspaceNumVector.get(returnIndex);
 		
@@ -282,7 +291,6 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 		public int subspaceId;
 		public List<String> matchingAttrList;
 	}
-	
 	
 	
 	/**
@@ -435,7 +443,13 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 				+ "attr2 >= 286 AND attr2 <= 736 AND  attr4 >= 983 AND attr4 <= 1133 AND  "
 				+ "attr10 >= 491 AND attr10 <= 641";
 		
-		ValueSpaceInfo queryValSpace = QueryParser.parseQuery(searchQuery);
+		HashMap<String, AttributeValueRange> searchAttrValRange  
+										= QueryParser.parseQuery(searchQuery);
+		
+		
+		
+		ValueSpaceInfo queryValSpace = ValueSpaceInfo.getAllAttrsValueSpaceInfo
+						(searchAttrValRange, givenMap);
 		
 		List<Integer> nodeList = obj.getNodeIDsForAValueSpaceForSearch
 															(queryValSpace);
@@ -471,11 +485,16 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 			
 			while( (searchQuery = br.readLine()) != null )
 			{
-				ValueSpaceInfo qValSpace = QueryParser.parseQuery(searchQuery);
+				searchAttrValRange = QueryParser.parseQuery(searchQuery);
 				
-				List<String> queryAttrList = obj.getNotFullRangeAttrsInSearchQuery(qValSpace);
+				queryValSpace = ValueSpaceInfo.getAllAttrsValueSpaceInfo
+											(searchAttrValRange, givenMap);
 				
-				SubspaceInfo subInfo = obj.getMaxOverlapSubspace(queryAttrList );
+				
+				HashMap<String, AttributeValueRange> queryAttrMap 
+									 = obj.getNotFullRangeAttrsInSearchQuery(queryValSpace);
+				
+				SubspaceInfo subInfo = obj.getMaxOverlapSubspace(queryAttrMap );
 				
 				if(subspaceQMap.containsKey(subInfo.getSubspaceId()))
 				{
@@ -509,8 +528,6 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 			}
 		}
 		
-		
 		System.out.println("subspaceQMap "+subspaceQMap.toString());
-		
 	}
 }

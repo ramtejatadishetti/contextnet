@@ -8,22 +8,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import edu.umass.cs.contextservice.database.triggers.GroupGUIDInfoClass;
-import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
+import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 
 public abstract class AbstractDataStorageDB
-{
-//	public abstract HashMap<Integer, RegionInfoClass> 
-//			getOverlappingRegionsInSubspace(int subspaceId, int replicaNum, 
-//				HashMap<String, ProcessingQueryComponent> matchingQueryComponents);
-	
-	public abstract int processSearchQueryUsingAttrIndex(ValueSpaceInfo queryValueSpace, 
-			JSONArray resultArray);
-	
-//	public abstract void insertIntoSubspacePartitionInfo(int subspaceId, int replicaNum,
-//			List<Integer> subspaceVector, Integer respNodeId);
-	
-//	public abstract void bulkInsertIntoSubspacePartitionInfo( int subspaceId, int replicaNum,
-//			List<List<Integer>> subspaceVectorList, List<Integer> respNodeIdList );
+{	
+	public abstract int processSearchQueryUsingAttrIndex(HashMap<String, AttributeValueRange> 
+			queryAttrValRange, JSONArray resultArray);
 	
 	public abstract JSONObject getGUIDStoredUsingHashIndex( String guid );
 	
