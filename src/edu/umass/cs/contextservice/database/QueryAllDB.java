@@ -69,7 +69,7 @@ public class QueryAllDB
 			myConn = dataSource.getConnection(DB_REQUEST_TYPE.UPDATE);
 			stmt   = myConn.createStatement();
 			
-			String tableName = "primarySubspaceDataStorage";
+			String tableName = RegionMappingDataStorageDB.GUID_HASH_TABLE_NAME;
 			String newTableCommand = "create table "+tableName+" ( "
 				      + " nodeGUID Binary(20) PRIMARY KEY";
 			
@@ -423,7 +423,7 @@ public class QueryAllDB
 		Statement stmt 			= null;
 		
 		String selectQuery 		= "SELECT * ";
-		String tableName 		= "primarySubspaceDataStorage";
+		String tableName 		= RegionMappingDataStorageDB.GUID_HASH_TABLE_NAME;
 		
 		JSONObject oldValueJSON = new JSONObject();
 		

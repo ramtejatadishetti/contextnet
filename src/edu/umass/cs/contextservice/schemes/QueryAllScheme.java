@@ -13,9 +13,6 @@ import java.util.logging.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.paukov.combinatorics.Factory;
-import org.paukov.combinatorics.Generator;
-import org.paukov.combinatorics.ICombinatoricsVector;
 
 import com.google.common.hash.Hashing;
 
@@ -62,7 +59,7 @@ public class QueryAllScheme extends AbstractScheme
 	private long queryIdCounter														= 0;
 	public static final Logger log 													= ContextServiceLogger.getLogger();
 	
-	public QueryAllScheme(NodeConfig<Integer> nc,
+	public QueryAllScheme(NodeConfig<Integer> nc, 
 			JSONMessenger<Integer> m) throws Exception
 	{
 		super(nc, m);
@@ -218,7 +215,6 @@ public class QueryAllScheme extends AbstractScheme
 				(QueryMsgFromUser queryMsgFromUser)
 	{
 		String query;
-		
 		
 		query   = queryMsgFromUser.getQuery();
 		
@@ -391,7 +387,7 @@ public class QueryAllScheme extends AbstractScheme
 		
 		
 		// get the old value and process the update in primary subspace and other subspaces.
-		String tableName = "primarySubspaceDataStorage";
+		String tableName = RegionMappingDataStorageDB.GUID_HASH_TABLE_NAME;
 		
 		try
 		{
@@ -817,34 +813,5 @@ public class QueryAllScheme extends AbstractScheme
 	
 	public static void main(String[] args)
 	{
-		double numPartitions = Math.ceil(Math.pow(16, 1.0/4));
-		ContextServiceLogger.getLogger().fine("numPartitions "+numPartitions);
-		
-		double numAttr  = 5;
-		//double numNodes = nodesOfSubspace.size();
-		
-		Integer[] partitionNumArray = new Integer[2];
-		for( int j = 0; j<2; j++ )
-		{
-			partitionNumArray[j] = j;
-			ContextServiceLogger.getLogger().fine("partitionNumArray[j] "+j+" "+partitionNumArray[j]);
-		}
-		
-		// Create the initial vector of 2 elements (apple, orange)
-		ICombinatoricsVector<Integer> originalVector = Factory.createVector(partitionNumArray);
-		
-	    //ICombinatoricsVector<Integer> originalVector = Factory.createVector(new String[] { "apple", "orange" });
-
-		// Create the generator by calling the appropriate method in the Factory class. 
-		// Set the second parameter as 3, since we will generate 3-elemets permutations
-		Generator<Integer> gen = Factory.createPermutationWithRepetitionGenerator(originalVector, (int)numAttr);
-		
-		// Print the result
-		for( ICombinatoricsVector<Integer> perm : gen )
-		{
-			ContextServiceLogger.getLogger().fine("perm.getVector() "+perm.getVector());
-			ContextServiceLogger.getLogger().fine("hyperspaceDB."
-					+ "insertIntoSubspacePartitionInfo complete");
-		}
 	}
 }
