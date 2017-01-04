@@ -14,6 +14,7 @@ public class ContextServiceConfig
 	public static final String numAttrsPerSubspaceString			= "numAttrsPerSubspace";
 	public static final String privacyEnabledString					= "privacyEnabled";
 	public static final String queryAllEnabledString				= "queryAllEnabled";
+	public static final String sqlPoolSizeString					= "sqlPoolSize";
 	public static final String threadPoolSizeString					= "threadPoolSize";
 	
 	// region Mapping policies
@@ -122,10 +123,9 @@ public class ContextServiceConfig
 	public static  int MYSQL_MAX_CONNECTIONS						= 10;
 	
 	// it is also important to set this at least the size of the database connection pool.
-	public static int THREAD_POOL_SIZE								= 10;
+	public static int THREAD_POOL_SIZE								= 100;
 	
 	//public static final int PRIVACY_THREAD_POOL_SIZE				= 214;
-	
 	//public static final int HYPERSPACEDB_THREAD_POOL_SIZE			= 214;
 	
 	// mysql result cursor fetches 1 guid at once and stores in memory

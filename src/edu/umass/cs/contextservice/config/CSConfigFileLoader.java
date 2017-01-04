@@ -77,6 +77,10 @@ public class CSConfigFileLoader
 	    				ContextServiceConfig.QUERY_ALL_ENABLED+"") );
 	  
 	  ContextServiceConfig.MYSQL_MAX_CONNECTIONS = Integer.parseInt(
+	    		properties.getProperty(ContextServiceConfig.sqlPoolSizeString, 
+	    				10+"") )  ;
+	  
+	  ContextServiceConfig.THREAD_POOL_SIZE = Integer.parseInt(
 	    		properties.getProperty(ContextServiceConfig.threadPoolSizeString, 
 	    				10+"") )  ;
 	  
@@ -84,11 +88,11 @@ public class CSConfigFileLoader
 			  	(ContextServiceConfig.regionMappingPolicyString, 
 			  			ContextServiceConfig.regionMappingPolicy);
 	  
-	  
 	  System.out.println(" ContextServiceConfig.TRIGGER_ENABLED "+ContextServiceConfig.TRIGGER_ENABLED
     		+" ContextServiceConfig.numAttrsPerSubspace "+ContextServiceConfig.numAttrsPerSubspace 
     		+" ContextServiceConfig.PRIVACY_ENABLED "+ContextServiceConfig.PRIVACY_ENABLED
     		+" ContextServiceConfig.MYSQL_MAX_CONNECTIONS "+ContextServiceConfig.MYSQL_MAX_CONNECTIONS 
+    		+" ContextServiceConfig.THREAD_POOL_SIZE "+ContextServiceConfig.THREAD_POOL_SIZE
     		+" ContextServiceConfig.regionMappingPolicy "+ContextServiceConfig.regionMappingPolicy);
   }
   
