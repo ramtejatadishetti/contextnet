@@ -53,13 +53,14 @@ public class FileBasedRegionMappingPolicyWithDB extends AbstractRegionMappingPol
 	
 	
 	@Override
-	public List<Integer> getNodeIDsForAValueSpaceForSearch(ValueSpaceInfo valueSpace)
+	public List<Integer> getNodeIDsForSearch(HashMap<String, AttributeValueRange> 
+										attrValRangeMap)
 	{
 		// map so that we remove duplicates.
 		HashMap<Integer, Integer> overlapNodeIdsMap = new HashMap<Integer, Integer>();
 				
-		List<Integer> regionKeyList = regionMappingStorage.getNodeIdsForValueSpace
-								(ContextServiceConfig.REGION_INFO_TABLE_NAME, valueSpace).get(0);
+		List<Integer> regionKeyList = regionMappingStorage.getNodeIdsForSearch
+								(ContextServiceConfig.REGION_INFO_TABLE_NAME, attrValRangeMap);
 		
 		for(int i=0; i<regionKeyList.size(); i++)
 		{
@@ -86,14 +87,14 @@ public class FileBasedRegionMappingPolicyWithDB extends AbstractRegionMappingPol
 	
 	
 	@Override
-	public List<Integer> getNodeIDsForAValueSpaceForUpdate(
-			String GUID, ValueSpaceInfo valueSpace)
-	{	
+	public List<Integer> getNodeIDsForUpdate(
+			String GUID, HashMap<String, AttributeValueRange> attrValRangeMap)
+	{
 		// map so that we remove duplicates.
 		HashMap<Integer, Integer> overlapNodeIdsMap = new HashMap<Integer, Integer>();
 		
-		List<Integer> regionKeyList = regionMappingStorage.getNodeIdsForValueSpace
-				(ContextServiceConfig.REGION_INFO_TABLE_NAME, valueSpace).get(0);
+		List<Integer> regionKeyList = regionMappingStorage.getNodeIdsForUpdate
+				(ContextServiceConfig.REGION_INFO_TABLE_NAME, attrValRangeMap);
 		
 		for(int i=0; i<regionKeyList.size(); i++)
 		{
@@ -256,8 +257,8 @@ public class FileBasedRegionMappingPolicyWithDB extends AbstractRegionMappingPol
 		vspaceInfo.getValueSpaceBoundary().put("attr10", 
 						new AttributeValueRange(1+"", 1500+""));
 		
-		List<Integer> nodeList = regionMapping.getNodeIDsForAValueSpaceForSearch
-						(vspaceInfo);
+		List<Integer> nodeList = regionMapping.getNodeIDsForSearch
+						(vspaceInfo.getValueSpaceBoundary());
 		
 		System.out.println("Node list size "+nodeList.size()+" expected "+NUM_NODES);
 		

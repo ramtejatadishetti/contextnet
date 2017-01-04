@@ -12,7 +12,7 @@ import java.util.Random;
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
-import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
+import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.utils.Utils;
 
 public class SqrtNConsistentHashingPolicy extends AbstractRegionMappingPolicy
@@ -32,7 +32,7 @@ public class SqrtNConsistentHashingPolicy extends AbstractRegionMappingPolicy
 	}
 
 	@Override
-	public List<Integer> getNodeIDsForAValueSpaceForSearch(ValueSpaceInfo valueSpace) 
+	public List<Integer> getNodeIDsForSearch(HashMap<String, AttributeValueRange> attrValRangeMap) 
 	{
 		int parNum = rand.nextInt(numPartitions);
 		// assuming caller won't tamper with the list.
@@ -40,8 +40,8 @@ public class SqrtNConsistentHashingPolicy extends AbstractRegionMappingPolicy
 	}
 
 	@Override
-	public List<Integer> getNodeIDsForAValueSpaceForUpdate(String GUID, 
-					ValueSpaceInfo valueSpace) 
+	public List<Integer> getNodeIDsForUpdate(String GUID, 
+			HashMap<String, AttributeValueRange> attrValRangeMap) 
 	{
 		List<Integer> nodeList = new LinkedList<Integer>();
 		
@@ -125,15 +125,15 @@ public class SqrtNConsistentHashingPolicy extends AbstractRegionMappingPolicy
 		obj.computeRegionMapping();
 		
 		
-		List<Integer> searchList = obj.getNodeIDsForAValueSpaceForSearch(null);
+		List<Integer> searchList = obj.getNodeIDsForSearch(null);
 		System.out.println("searchList "+searchList);
 		
 		
-		List<Integer> updateList = obj.getNodeIDsForAValueSpaceForUpdate("123", null);
+		List<Integer> updateList = obj.getNodeIDsForUpdate("123", null);
 		System.out.println("updateList "+updateList);
 
 		
-		updateList = obj.getNodeIDsForAValueSpaceForUpdate("456", null);
+		updateList = obj.getNodeIDsForUpdate("456", null);
 		System.out.println("updateList "+updateList);
 		
 	}

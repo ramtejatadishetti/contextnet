@@ -141,8 +141,8 @@ public abstract class AbstractGUIDAttrValueProcessing
 		}
 		
 		List<Integer> oldValSpaceList 
-					= regionMappingPolicy.getNodeIDsForAValueSpaceForUpdate
-									(GUID, oldValSpace);
+					= regionMappingPolicy.getNodeIDsForUpdate
+									(GUID, oldValSpace.getValueSpaceBoundary());
 		
 		
 		// for new value
@@ -169,8 +169,8 @@ public abstract class AbstractGUIDAttrValueProcessing
 		}
 		
 		List<Integer> newValSpaceList 
-					= regionMappingPolicy.getNodeIDsForAValueSpaceForUpdate
-										(GUID, newValSpace);
+					= regionMappingPolicy.getNodeIDsForUpdate
+										(GUID, newValSpace.getValueSpaceBoundary());
 		
 		HashMap<Integer, Integer> removeNodesMap = new HashMap<Integer, Integer>();
 		HashMap<Integer, Integer> addNodesMap = new HashMap<Integer, Integer>();
@@ -388,8 +388,9 @@ public abstract class AbstractGUIDAttrValueProcessing
 			newValSpace.getValueSpaceBoundary().put(attrName, attrValRange);
 		}
 		
-		List<Integer> newNodeList = regionMappingPolicy.getNodeIDsForAValueSpaceForUpdate
-						(GUID, newValSpace);
+		List<Integer> newNodeList 
+					= regionMappingPolicy.getNodeIDsForUpdate
+						(GUID, newValSpace.getValueSpaceBoundary());
 		
 		updateReq.setNumberOfExpectedReplies(newNodeList.size());
 		

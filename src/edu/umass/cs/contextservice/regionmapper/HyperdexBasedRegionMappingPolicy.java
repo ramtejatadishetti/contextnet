@@ -80,8 +80,8 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 	}
 	
 	
-	public List<Integer> getNodeIDsForAValueSpaceForUpdate
-			(String GUID, ValueSpaceInfo valueSpace)
+	public List<Integer> getNodeIDsForUpdate
+			(String GUID, HashMap<String, AttributeValueRange> attrValRangeMap)
 	{
 		HashMap<Integer, Boolean> nodeMap = new HashMap<Integer, Boolean>();
 		
@@ -110,12 +110,12 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 			{
 				String attrName = attrIter.next();
 				updateSubspaceValSpace.getValueSpaceBoundary().put(attrName, 
-										valueSpace.getValueSpaceBoundary().get(attrName));
+														attrValRangeMap.get(attrName));
 			}
 			
 			List<Integer> list = 
-				regionMappingStorage.getNodeIdsForValueSpace(tableName, updateSubspaceValSpace).get(0);
-			
+				regionMappingStorage.getNodeIdsForUpdate(
+							tableName, updateSubspaceValSpace.getValueSpaceBoundary());
 			
 			for(int i=0; i<list.size(); i++)
 			{
@@ -133,13 +133,10 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 	}
 	
 	
-	public List<Integer> getNodeIDsForAValueSpaceForSearch
-									(ValueSpaceInfo valueSpace)
-	{
-		HashMap<String, AttributeValueRange> queryAttrMap 
-								= getNotFullRangeAttrsInSearchQuery(valueSpace);
-		
-		SubspaceInfo subInfo 	= getMaxOverlapSubspace(queryAttrMap );
+	public List<Integer> getNodeIDsForSearch
+							(HashMap<String, AttributeValueRange> attrValRangeMap)
+	{	
+		SubspaceInfo subInfo 	= getMaxOverlapSubspace(attrValRangeMap );
 		
 		//System.out.println("Max sub info "+subInfo.toString());
 		// Query value space consisting only subspace attrs.
@@ -149,22 +146,23 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 		HashMap<String, AttributePartitionInfo> subspaceAttrMap 
 												= subInfo.getAttributesOfSubspace();
 		
-		Iterator<String> attrIter = subspaceAttrMap.keySet().iterator();
+		Iterator<String> attrIter = attrValRangeMap.keySet().iterator();
 		
 		while( attrIter.hasNext() )
 		{
 			String attrName = attrIter.next();
-			searchSubspaceValSpace.getValueSpaceBoundary().put(attrName, 
-									valueSpace.getValueSpaceBoundary().get(attrName));
+			if(subspaceAttrMap.containsKey(attrName))
+				searchSubspaceValSpace.getValueSpaceBoundary().put(attrName, 
+						attrValRangeMap.get(attrName));
 		}
-		
 		
 		HashMap<Integer, Boolean> nodeMap = new HashMap<Integer, Boolean>();
 		
 		String tableName = "subspaceId"+subInfo.getSubspaceId()+"RepNum0PartitionInfo";
 		
 		List<Integer> list = 
-				regionMappingStorage.getNodeIdsForValueSpace(tableName, searchSubspaceValSpace).get(0);
+				regionMappingStorage.getNodeIdsForSearch(tableName, 
+							searchSubspaceValSpace.getValueSpaceBoundary());
 		
 		for(int i=0; i<list.size(); i++)
 		{
@@ -181,7 +179,7 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 		return nodeList;
 	}
 	
-	private HashMap<String, AttributeValueRange> 
+	/*private HashMap<String, AttributeValueRange> 
 					getNotFullRangeAttrsInSearchQuery(ValueSpaceInfo valueSpace)
 	{
 		HashMap<String, AttributeValueRange> valSpaceBoundary 
@@ -210,7 +208,7 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 			}
 		}
 		return queryAttrMap;
-	}
+	}*/
 	
 	
 	/**
@@ -448,11 +446,10 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 		
 		
 		
-		ValueSpaceInfo queryValSpace = ValueSpaceInfo.getAllAttrsValueSpaceInfo
-						(searchAttrValRange, givenMap);
+//		ValueSpaceInfo queryValSpace = ValueSpaceInfo.getAllAttrsValueSpaceInfo
+//						(searchAttrValRange, givenMap);
 		
-		List<Integer> nodeList = obj.getNodeIDsForAValueSpaceForSearch
-															(queryValSpace);
+		List<Integer> nodeList = obj.getNodeIDsForSearch(searchAttrValRange);
 		
 		System.out.println("Search node list "+nodeList);
 		
@@ -466,7 +463,7 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 						new AttributeValueRange(value+"", value+""));
 		}
 		
-		nodeList = obj.getNodeIDsForAValueSpaceForUpdate("", valSpace);
+		nodeList = obj.getNodeIDsForUpdate("", valSpace.getValueSpaceBoundary());
 		
 		System.out.println("Update node list "+nodeList);
 	
@@ -487,14 +484,13 @@ public class HyperdexBasedRegionMappingPolicy extends AbstractRegionMappingPolic
 			{
 				searchAttrValRange = QueryParser.parseQuery(searchQuery);
 				
-				queryValSpace = ValueSpaceInfo.getAllAttrsValueSpaceInfo
-											(searchAttrValRange, givenMap);
+//				queryValSpace = ValueSpaceInfo.getAllAttrsValueSpaceInfo
+//											(searchAttrValRange, givenMap);			
+//				
+//				HashMap<String, AttributeValueRange> queryAttrMap 
+//									 = obj.getNotFullRangeAttrsInSearchQuery(queryValSpace);
 				
-				
-				HashMap<String, AttributeValueRange> queryAttrMap 
-									 = obj.getNotFullRangeAttrsInSearchQuery(queryValSpace);
-				
-				SubspaceInfo subInfo = obj.getMaxOverlapSubspace(queryAttrMap );
+				SubspaceInfo subInfo = obj.getMaxOverlapSubspace(searchAttrValRange );
 				
 				if(subspaceQMap.containsKey(subInfo.getSubspaceId()))
 				{

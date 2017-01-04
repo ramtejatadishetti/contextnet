@@ -17,7 +17,6 @@ import edu.umass.cs.contextservice.database.datasource.AbstractDataSource;
 import edu.umass.cs.contextservice.database.datasource.AbstractDataSource.DB_REQUEST_TYPE;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.regionmapper.helper.RegionInfo;
-import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 
 public class SQLRegionMappingStorage extends AbstractRegionMappingStorage
 {	
@@ -104,18 +103,17 @@ public class SQLRegionMappingStorage extends AbstractRegionMappingStorage
 	
 	
 	@Override
-	public List<List<Integer>> getNodeIdsForValueSpace(String tableName, ValueSpaceInfo valSpaceInfo) 
-	{	
+	public List<Integer> getNodeIdsForSearch(String tableName, 
+						HashMap<String, AttributeValueRange> attrValRangeMap)
+	{
 		String selectTableSQL = "SELECT regionKey from "+tableName+" WHERE ";
-		HashMap<String, AttributeValueRange> valSpaceBoundary 
-										= valSpaceInfo.getValueSpaceBoundary();
 		
-		Iterator<String> attrIter = valSpaceBoundary.keySet().iterator();
+		Iterator<String> attrIter = attrValRangeMap.keySet().iterator();
 		int count = 0;
 		while(attrIter.hasNext())
 		{
 			String attrName = attrIter.next();
-			AttributeValueRange attrValRange = valSpaceBoundary.get(attrName);
+			AttributeValueRange attrValRange = attrValRangeMap.get(attrName);
 			
 			String lowerAttr = "lower"+attrName;
 			String upperAttr = "upper"+attrName;
@@ -177,18 +175,16 @@ public class SQLRegionMappingStorage extends AbstractRegionMappingStorage
 						+ "( "+lowerAttr+" >= "+queryMin +" AND "+upperAttr+" <= "+queryMax+" ) "+" )  )";
 			}
 			
-			if( count != (valSpaceBoundary.size()-1) )
+			if( count != (attrValRangeMap.size()-1) )
 			{
 				selectTableSQL = selectTableSQL + " AND ";
 			}
 			count++;
 		}
 		
-		Statement stmt 		= null;
-		Connection myConn 	= null;
-		List<List<Integer>> nodeList = new LinkedList<List<Integer>>();
-		List<Integer> subNodeList =  new LinkedList<Integer>();
-		nodeList.add(subNodeList);
+		Statement stmt 			= null;
+		Connection myConn 		= null;
+		List<Integer> nodeList 	= new LinkedList<Integer>();
 		
 		try
 		{
@@ -201,7 +197,85 @@ public class SQLRegionMappingStorage extends AbstractRegionMappingStorage
 		    {
 		    	//Retrieve by column name
 		    	int regionKey  	 = rs.getInt("regionKey");
-		    	subNodeList.add(regionKey);
+		    	nodeList.add(regionKey);
+		    }
+		    rs.close();
+		} catch( SQLException sqlex )
+		{
+			sqlex.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if( stmt != null )
+					stmt.close();
+				
+				if( myConn != null )
+					myConn.close();
+			}
+			catch(SQLException sqlex)
+			{
+				sqlex.printStackTrace();
+			}
+		}
+		return nodeList;
+	}
+	
+	
+	@Override
+	public List<Integer> getNodeIdsForUpdate(String tableName, 
+						HashMap<String, AttributeValueRange> attrValRangeMap)
+	{
+		String selectTableSQL = "SELECT regionKey from "+tableName+" WHERE ";
+		
+		Iterator<String> attrIter = attrValRangeMap.keySet().iterator();
+		int count = 0;
+		while(attrIter.hasNext())
+		{
+			String attrName = attrIter.next();
+			AttributeValueRange attrValRange = attrValRangeMap.get(attrName);
+			
+			String lowerAttr = "lower"+attrName;
+			String upperAttr = "upper"+attrName;
+			
+			
+			AttributeMetaInfo attrMetaInfo = AttributeTypes.attributeMap.get(attrName);
+			String dataType = attrMetaInfo.getDataType();
+			
+			assert(AttributeTypes.compareTwoValues(attrValRange.getLowerBound(),
+					attrValRange.getUpperBound(), dataType));
+			{
+				String attrVal  =  AttributeTypes.convertStringToDataTypeForMySQL
+							(attrValRange.getLowerBound(), dataType) + "";
+				
+				selectTableSQL = selectTableSQL 
+						+ "( "+lowerAttr+" <= "+attrVal +" AND "+upperAttr+" > "+attrVal+" ) ";
+			}
+			
+			if( count != (attrValRangeMap.size()-1) )
+			{
+				selectTableSQL = selectTableSQL + " AND ";
+			}
+			count++;
+		}
+		
+		Statement stmt 		= null;
+		Connection myConn 	= null;
+		List<Integer> nodeList = new LinkedList<Integer>();
+		
+		try
+		{
+			myConn = this.dataSource.getConnection(DB_REQUEST_TYPE.SELECT);
+			stmt = myConn.createStatement();
+			
+			ResultSet rs = stmt.executeQuery(selectTableSQL);
+			
+		    while( rs.next() )
+		    {
+		    	//Retrieve by column name
+		    	int regionKey  	 = rs.getInt("regionKey");
+		    	nodeList.add(regionKey);
 		    }
 		    rs.close();
 		} catch( SQLException sqlex )

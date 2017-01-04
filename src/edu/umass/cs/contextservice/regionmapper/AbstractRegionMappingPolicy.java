@@ -5,7 +5,7 @@ import java.util.List;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.common.CSNodeConfig;
-import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
+import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 
 /**
  * 
@@ -41,12 +41,12 @@ public abstract class AbstractRegionMappingPolicy
 	 * @param valueSpaceDef
 	 * @return
 	 */
-	public abstract List<Integer> getNodeIDsForAValueSpaceForSearch
-							(ValueSpaceInfo valueSpace);
+	public abstract List<Integer> getNodeIDsForSearch
+							(HashMap<String, AttributeValueRange> attrValRangeMap);
 	
 	
-	public abstract List<Integer> getNodeIDsForAValueSpaceForUpdate
-					(String GUID, ValueSpaceInfo valueSpace);
+	public abstract List<Integer> getNodeIDsForUpdate
+					(String GUID, HashMap<String, AttributeValueRange> attrValRangeMap);
 	
 	/**
 	 * This function computes the region mapping. This function can use 

@@ -193,7 +193,6 @@ public class ContextServiceConfig
 	// SQL database types
 	public static enum SQL_DB_TYPE	{MYSQL, SQLITE};
 	
-	
 	public static SQL_DB_TYPE sqlDBType								= SQL_DB_TYPE.SQLITE;
 	
 	public static final String REGION_INFO_TABLE_NAME 				= "regionInfoStorageTable";

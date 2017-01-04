@@ -11,7 +11,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
 import edu.umass.cs.contextservice.config.ContextServiceConfig;
 import edu.umass.cs.contextservice.config.ContextServiceConfig.PrivacySchemes;
 import edu.umass.cs.contextservice.database.AbstractDataStorageDB;
@@ -25,7 +24,6 @@ import edu.umass.cs.contextservice.queryparsing.QueryInfo;
 import edu.umass.cs.contextservice.queryparsing.QueryParser;
 import edu.umass.cs.contextservice.regionmapper.AbstractRegionMappingPolicy;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
-import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 import edu.umass.cs.contextservice.schemes.helperclasses.SearchReplyInfo;
 import edu.umass.cs.contextservice.updates.UpdateInfo;
 import edu.umass.cs.nio.JSONMessenger;
@@ -73,12 +71,13 @@ public class GUIDAttrValueProcessing
 		}
 		pendingQueryRequests.put(queryInfo.getRequestId(), queryInfo);
 		
-		ValueSpaceInfo searchQValSpace = ValueSpaceInfo.getAllAttrsValueSpaceInfo
-										(queryInfo.getSearchQueryAttrValMap(), 
-												AttributeTypes.attributeMap);
+//		ValueSpaceInfo searchQValSpace = ValueSpaceInfo.getAllAttrsValueSpaceInfo
+//										(queryInfo.getSearchQueryAttrValMap(), 
+//												AttributeTypes.attributeMap);
 		
 		List<Integer> nodeList 
-				= regionMappingPolicy.getNodeIDsForAValueSpaceForSearch(searchQValSpace);
+				= regionMappingPolicy.getNodeIDsForSearch
+					(queryInfo.getSearchQueryAttrValMap());
 		
 		if(ContextServiceConfig.PROFILER_THREAD)
 		{

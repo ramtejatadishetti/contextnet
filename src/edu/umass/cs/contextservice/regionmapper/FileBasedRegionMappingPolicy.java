@@ -43,10 +43,12 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 	
 	
 	@Override
-	public List<Integer> getNodeIDsForAValueSpaceForSearch(ValueSpaceInfo valueSpace)
+	public List<Integer> getNodeIDsForSearch(HashMap<String, AttributeValueRange> attrValRangeMap)
 	{
 		// map so that we remove duplicates.
 		HashMap<Integer, Integer> overlapNodeIdsMap = new HashMap<Integer, Integer>();
+		ValueSpaceInfo fullAttrValSpace = ValueSpaceInfo.getAllAttrsValueSpaceInfo
+						(attrValRangeMap, attributeMap);
 		
 		for( int i=0; i<regionList.size(); i++ )
 		{
@@ -54,7 +56,7 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 			ValueSpaceInfo regionValSpace = currRegion.getValueSpaceInfo();
 			
 			boolean overlap = ValueSpaceInfo.checkOverlapOfTwoValueSpaces
-											(attributeMap, regionValSpace, valueSpace);
+											(attributeMap, regionValSpace, fullAttrValSpace);
 			
 			if( overlap )
 			{
@@ -81,11 +83,14 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 	
 	
 	@Override
-	public List<Integer> getNodeIDsForAValueSpaceForUpdate(
-			String GUID, ValueSpaceInfo valueSpace)
+	public List<Integer> getNodeIDsForUpdate(
+			String GUID, HashMap<String, AttributeValueRange> attrValRangeMap)
 	{
 		// map so that we remove duplicates.
 		HashMap<Integer, Integer> overlapNodeIdsMap = new HashMap<Integer, Integer>();
+		
+		ValueSpaceInfo fullAttrValSpace = ValueSpaceInfo.getAllAttrsValueSpaceInfo
+							(attrValRangeMap, attributeMap);
 		
 		for( int i=0; i<regionList.size(); i++ )
 		{
@@ -93,7 +98,7 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 			ValueSpaceInfo regionValSpace = currRegion.getValueSpaceInfo();
 			
 			boolean overlap = ValueSpaceInfo.checkOverlapOfTwoValueSpaces
-											(attributeMap, regionValSpace, valueSpace);
+											(attributeMap, regionValSpace, fullAttrValSpace);
 			
 			if( overlap )
 			{
@@ -246,8 +251,8 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 		vspaceInfo.getValueSpaceBoundary().put("attr10", 
 						new AttributeValueRange(1+"", 1500+""));
 		
-		List<Integer> nodeList = regionMapping.getNodeIDsForAValueSpaceForSearch
-						(vspaceInfo);
+		List<Integer> nodeList = regionMapping.getNodeIDsForSearch
+						(vspaceInfo.getValueSpaceBoundary());
 		
 		System.out.println("Node list size "+nodeList.size()+" expected "+NUM_NODES);
 		

@@ -50,14 +50,14 @@ public class UniformGreedyRegionMappingPolicyWithDB extends AbstractRegionMappin
 	}
 	
 	@Override
-	public List<Integer> getNodeIDsForAValueSpaceForUpdate(
-			String GUID, ValueSpaceInfo valueSpace)
+	public List<Integer> getNodeIDsForUpdate(
+			String GUID, HashMap<String, AttributeValueRange> attrValRangeMap)
 	{	
 		// map so that we remove duplicates.
 		HashMap<Integer, Integer> overlapNodeIdsMap = new HashMap<Integer, Integer>();
 		
-		List<Integer> regionKeyList = regionMappingStorage.getNodeIdsForValueSpace
-				(ContextServiceConfig.REGION_INFO_TABLE_NAME, valueSpace).get(0);
+		List<Integer> regionKeyList = regionMappingStorage.getNodeIdsForUpdate
+				(ContextServiceConfig.REGION_INFO_TABLE_NAME, attrValRangeMap);
 		
 		for(int i=0; i<regionKeyList.size(); i++)
 		{
@@ -83,15 +83,15 @@ public class UniformGreedyRegionMappingPolicyWithDB extends AbstractRegionMappin
 		return overlapNodeIds;
 	}
 	
-	
 	@Override
-	public List<Integer> getNodeIDsForAValueSpaceForSearch(ValueSpaceInfo valueSpace)
+	public List<Integer> getNodeIDsForSearch
+					(HashMap<String, AttributeValueRange> attrValRangeMap)
 	{
 		// map so that we remove duplicates.
 		HashMap<Integer, Integer> overlapNodeIdsMap = new HashMap<Integer, Integer>();
 				
-		List<Integer> regionKeyList = regionMappingStorage.getNodeIdsForValueSpace
-								(ContextServiceConfig.REGION_INFO_TABLE_NAME, valueSpace).get(0);
+		List<Integer> regionKeyList = regionMappingStorage.getNodeIdsForSearch
+					(ContextServiceConfig.REGION_INFO_TABLE_NAME, attrValRangeMap);
 		
 		for(int i=0; i<regionKeyList.size(); i++)
 		{

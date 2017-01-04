@@ -39,8 +39,8 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 	}
 	
 	@Override
-	public List<Integer> getNodeIDsForAValueSpaceForUpdate
-								(String GUID, ValueSpaceInfo valueSpace) 
+	public List<Integer> getNodeIDsForUpdate
+					(String GUID, HashMap<String, AttributeValueRange> attrValRangeMap) 
 	{
 		// map so that we remove duplicates.
 		//FIXME: this code is copied in many policies need to find a way to not copy code.
@@ -53,7 +53,7 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 			
 			boolean overlap = true;
 			
-			Iterator<String> inputAttrIter = valueSpace.getValueSpaceBoundary().keySet().iterator();
+			Iterator<String> inputAttrIter = attrValRangeMap.keySet().iterator();
 			
 			while( inputAttrIter.hasNext() )
 			{
@@ -62,7 +62,7 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 				AttributeMetaInfo attrMetaInfo = attributeMap.get(attrName);
 				
 				AttributeValueRange inputAttrValRange  
-									= valueSpace.getValueSpaceBoundary().get(attrName);
+									= attrValRangeMap.get(attrName);
 				
 				AttributeValueRange regionAttrValRange 
 								= regionValSpace.getValueSpaceBoundary().get(attrName);
@@ -103,8 +103,8 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 	
 	
 	@Override
-	public List<Integer> getNodeIDsForAValueSpaceForSearch
-				(ValueSpaceInfo valueSpace) 
+	public List<Integer> getNodeIDsForSearch
+					(HashMap<String, AttributeValueRange> attrValRangeMap) 
 	{
 		// map so that we remove duplicates.
 		//FIXME: this code is copied in many policies need to find a way to not copy code.
@@ -117,7 +117,7 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 			
 			boolean overlap = true;
 			
-			Iterator<String> inputAttrIter = valueSpace.getValueSpaceBoundary().keySet().iterator();
+			Iterator<String> inputAttrIter = attrValRangeMap.keySet().iterator();
 			
 			while( inputAttrIter.hasNext() )
 			{
@@ -126,7 +126,7 @@ public class UniformGreedyRegionMappingPolicy extends AbstractRegionMappingPolic
 				AttributeMetaInfo attrMetaInfo = attributeMap.get(attrName);
 				
 				AttributeValueRange inputAttrValRange  
-									= valueSpace.getValueSpaceBoundary().get(attrName);
+									= attrValRangeMap.get(attrName);
 				
 				AttributeValueRange regionAttrValRange 
 								= regionValSpace.getValueSpaceBoundary().get(attrName);
