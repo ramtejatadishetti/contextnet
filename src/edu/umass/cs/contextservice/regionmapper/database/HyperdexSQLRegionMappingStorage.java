@@ -64,8 +64,7 @@ public class HyperdexSQLRegionMappingStorage extends AbstractRegionMappingStorag
 					// partition info storage info
 					String tableName = "subspaceId"+subspaceId+"RepNum"+replicaNum+"PartitionInfo";
 					
-					String newTableCommand = "create table "+tableName+" ( hashCode INTEGER PRIMARY KEY , "
-						      + "   respNodeID INTEGER ";
+					String newTableCommand = "create table "+tableName+" ( respNodeID INTEGER ";
 					
 					//	      + ", upperRange DOUBLE NOT NULL, nodeID INT NOT NULL, "
 					//	      + "   partitionNum INT AUTO_INCREMENT, INDEX USING BTREE (lowerRange, upperRange) )";
