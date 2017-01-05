@@ -61,6 +61,7 @@ public class ContextServiceTests
 		ContextServiceConfig.TRIGGER_ENABLED 			= true;
 		ContextServiceConfig.UniqueGroupGUIDEnabled     = true;
 		ContextServiceConfig.PRIVACY_ENABLED			= true;
+		ContextServiceConfig.IN_MEMORY_MYSQL			= false;
 		// false because in experiment mode full triggers are
 		// not returned to client so they client doesn't become bottleneck.
 		ContextServiceClient.EXPERIMENT_MODE            = false;

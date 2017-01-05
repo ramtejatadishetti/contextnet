@@ -91,8 +91,14 @@ public class HyperdexSQLRegionMappingStorage extends AbstractRegionMappingStorag
 						}
 					}
 					
-					
 					newTableCommand = newTableCommand +" )";
+					
+					if( (ContextServiceConfig.sqlDBType == SQL_DB_TYPE.MYSQL) 
+							&& (ContextServiceConfig.IN_MEMORY_MYSQL) )
+					{
+						newTableCommand = newTableCommand +" ENGINE = MEMORY";
+					}
+					
 					stmt.executeUpdate(newTableCommand);
 					
 //					if( ContextServiceConfig.sqlDBType == SQL_DB_TYPE.SQLITE )
@@ -121,6 +127,8 @@ public class HyperdexSQLRegionMappingStorage extends AbstractRegionMappingStorag
 			}
 		}
 	}
+	
+	
 	
 	@Override
 	public List<Integer> getNodeIdsForSearch(String tableName, 

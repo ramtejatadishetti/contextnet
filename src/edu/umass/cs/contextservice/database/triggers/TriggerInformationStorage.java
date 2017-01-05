@@ -85,6 +85,12 @@ public class TriggerInformationStorage implements
 				newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort) )";
 			}
 			
+			if( (ContextServiceConfig.sqlDBType == SQL_DB_TYPE.MYSQL) 
+					&& (ContextServiceConfig.IN_MEMORY_MYSQL) )
+			{
+				newTableCommand = newTableCommand +" ENGINE = MEMORY";
+			}
+			
 			stmt.executeUpdate(newTableCommand);
 			
 			
@@ -105,6 +111,13 @@ public class TriggerInformationStorage implements
 						+ "userIP Binary(4) NOT NULL ,  userPort INTEGER NOT NULL ";
 				
 				newTableCommand = newTableCommand +" , PRIMARY KEY(groupGUID, userIP, userPort) )";
+				
+				if( (ContextServiceConfig.sqlDBType == SQL_DB_TYPE.MYSQL) 
+						&& (ContextServiceConfig.IN_MEMORY_MYSQL) )
+				{
+					newTableCommand = newTableCommand +" ENGINE = MEMORY";
+				}
+				
 				stmt.executeUpdate(newTableCommand);
 			}
 		} catch( SQLException mysqlEx )

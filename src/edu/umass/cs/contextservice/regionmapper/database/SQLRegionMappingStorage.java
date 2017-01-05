@@ -73,6 +73,13 @@ public class SQLRegionMappingStorage extends AbstractRegionMappingStorage
 			}
 			
 			newTableCommand = newTableCommand +" )";
+			
+			if( (ContextServiceConfig.sqlDBType == SQL_DB_TYPE.MYSQL) 
+					&& (ContextServiceConfig.IN_MEMORY_MYSQL) )
+			{
+				newTableCommand = newTableCommand +" ENGINE = MEMORY";
+			}
+			
 			stmt.executeUpdate(newTableCommand);
 			
 	//				if( ContextServiceConfig.sqlDBType == SQL_DB_TYPE.SQLITE )

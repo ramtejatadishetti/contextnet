@@ -41,7 +41,6 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 		this.dataSource = dataSource;
 	}
 	
-	
 	@Override
 	public void createDataStorageTables() 
 	{
@@ -75,7 +74,14 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 				}
 				else
 				{
-					newTableCommand = newTableCommand +" ) ROW_FORMAT=DYNAMIC";
+					if(!ContextServiceConfig.IN_MEMORY_MYSQL)
+					{
+						newTableCommand = newTableCommand +" ) ROW_FORMAT=DYNAMIC";
+					}
+					else
+					{
+						newTableCommand = newTableCommand +" )";
+					}
 				}
 			}
 			else
@@ -83,6 +89,13 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 				newTableCommand = newTableCommand +" ) ";
 			}
 			
+			if( (ContextServiceConfig.sqlDBType == SQL_DB_TYPE.MYSQL) 
+									&& (ContextServiceConfig.IN_MEMORY_MYSQL) )
+			{
+				newTableCommand = newTableCommand +" ENGINE = MEMORY";
+				
+			}
+			System.out.println("newTableCommand "+newTableCommand);
 			stmt.executeUpdate(newTableCommand);
 			
 			
@@ -110,12 +123,25 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 				}
 				else
 				{
-					newTableCommand = newTableCommand +" ) ROW_FORMAT=DYNAMIC";
+					if(!ContextServiceConfig.IN_MEMORY_MYSQL)
+					{
+						newTableCommand = newTableCommand +" ) ROW_FORMAT=DYNAMIC";
+					}
+					else
+					{
+						newTableCommand = newTableCommand +" )";
+					}
 				}
 			}
 			else
 			{
 				newTableCommand = newTableCommand +" )";
+			}
+			
+			if( (ContextServiceConfig.sqlDBType == SQL_DB_TYPE.MYSQL) 
+					&& (ContextServiceConfig.IN_MEMORY_MYSQL) )
+			{
+				newTableCommand = newTableCommand +" ENGINE = MEMORY";
 			}
 			
 			stmt.executeUpdate(newTableCommand);

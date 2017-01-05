@@ -190,10 +190,14 @@ public class ContextServiceConfig
 	public static final int MAXIMUM_ATTRNAME_LENGTH					= 100;
 	
 	
+	// if set to true then all mysql tables are created in in-memory.
+	// used when virtualized nodes are used.
+	public static boolean IN_MEMORY_MYSQL							= true;
+	
 	// SQL database types
 	public static enum SQL_DB_TYPE	{MYSQL, SQLITE};
 	
-	public static SQL_DB_TYPE sqlDBType								= SQL_DB_TYPE.SQLITE;
+	public static SQL_DB_TYPE sqlDBType								= SQL_DB_TYPE.MYSQL;
 	
 	public static final String REGION_INFO_TABLE_NAME 				= "regionInfoStorageTable";
 }
