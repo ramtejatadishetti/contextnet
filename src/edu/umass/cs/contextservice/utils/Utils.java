@@ -14,6 +14,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Vector;
@@ -436,11 +438,40 @@ public class Utils
 		return jfi;
 	}
 	
+	
 	//FIXME: test time taken by each method here
 	public static void main( String[] args ) throws JSONException, NoSuchAlgorithmException, InvalidKeyException, 
 											InvalidKeySpecException, NoSuchPaddingException, 
 											IllegalBlockSizeException, BadPaddingException
 	{
+		HashMap<Integer, Double> regionAssignMap 
+											= new HashMap<Integer, Double>();
+		
+		List<Double> regionList = new LinkedList<Double>();
+		
+		int NumNodes = 10;
+		for(int i=0; i<32; i++)
+		{
+			int index = i%NumNodes;
+			if(regionAssignMap.containsKey(index))
+			{
+				double curr = regionAssignMap.get(index);
+				curr++;
+				regionAssignMap.put(index, curr);
+			}
+			else
+			{
+				regionAssignMap.put(index, 1.0);
+			}
+		}
+		
+		for(int i=0; i<NumNodes; i++)
+		{
+			regionList.add(regionAssignMap.get(i));
+		}
+		
+		System.out.println("HyperDex JFI "+Utils.computeJainsFairnessIndex(regionList));
+		
 		//String str = "abcdefghijklmnopqrstuvwxyz"; 
 		long start = System.currentTimeMillis();
 		//byte[] newByte = new byte[20];
