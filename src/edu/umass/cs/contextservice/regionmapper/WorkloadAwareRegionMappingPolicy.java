@@ -26,7 +26,7 @@ import edu.umass.cs.contextservice.utils.Utils;
 
 public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolicy
 {
-	public static final double rho									= 0.0;
+	public static final double rho									= 0.5;
 	// hyperplane moves with 10% of the total interval.
 	private static final double PLANE_MOVING_PERCENTAGE				= 0.1;
 	
@@ -638,8 +638,8 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 	{
 		
 		int NUM_ATTRS = 20;
-		//int[] nodeList = {1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121};
-		int[] nodeList = {121};
+		int[] nodeList = {1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121};
+		//int[] nodeList = {121};
 		
 		for(int n=0; n<nodeList.length; n++)
 		{
