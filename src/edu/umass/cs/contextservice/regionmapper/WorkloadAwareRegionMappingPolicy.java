@@ -26,11 +26,12 @@ import edu.umass.cs.contextservice.utils.Utils;
 
 public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolicy
 {
+	public static final double rho									= 0.5;
 	// hyperplane moves with 10% of the total interval.
-	private static final double PLANE_MOVING_PERCENTAGE			= 0.1;
+	private static final double PLANE_MOVING_PERCENTAGE				= 0.1;
 	
-	private static final String SEARCH_TRACE_FILE				= "traces/guassianTrace/searchFile.txt";
-	private static final String UPDATE_TRACE_FILE				= "traces/guassianTrace/updateFile.txt";
+	private static final String SEARCH_TRACE_FILE					= "traces/guassianTrace/searchFile.txt";
+	private static final String UPDATE_TRACE_FILE					= "traces/guassianTrace/updateFile.txt";
 	
 	// this field is only for testing and will be removed later.
 	//private static final double NUM_SEARCH_QUERIES				= 1000.0;
@@ -90,11 +91,16 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 		totalValSpaceRegion.setValueSpaceInfo(totalValSpace);
 		
 		// set region load.
-		double regionLoad = computeLoadOnARegionBasedOnTrace( totalValSpaceRegion, 
+		double searchLoad = computeSearchLoadOnARegionBasedOnTrace( totalValSpaceRegion, 
 										attributeMap, nodeConfig.getNodeIDs().size() );	
 		
+		double updateLoad = computeUpdateLoadOnARegionBasedOnTrace( totalValSpaceRegion, 
+				attributeMap, nodeConfig.getNodeIDs().size() );	
 		
-		totalValSpaceRegion.setTraceLoad(regionLoad);
+		
+		totalValSpaceRegion.setSearchLoad(searchLoad);
+		totalValSpaceRegion.setUpdateLoad(updateLoad);
+		
 		
 		regionList.add(totalValSpaceRegion);
 		
@@ -107,7 +113,8 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 		}
 		
 		// print regions.
-		List<Double> loadList = new LinkedList<Double>();
+		List<Double> sLoadList = new LinkedList<Double>();
+		List<Double> uLoadList = new LinkedList<Double>();
 		
 		for(int i=0; i<regionList.size(); i++)
 		{
@@ -116,14 +123,18 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 			double volume = computeLogVolume(currRegion.getValueSpaceInfo().getValueSpaceBoundary(), 
 														attributeMap );
 			
-			System.out.println( "Region num "+i+" log volume "+volume+" "+" optimalLoad "
-					+currRegion.getTraceLoad()+" "+currRegion.toString() );
+			System.out.println( "Region num "+i+" log volume "+volume+" "
+					+" optimalSearchLoad "+currRegion.getSearchLoad()
+					+" optimalUpdateLoad "+currRegion.getUpdateLoad()
+					+" "+currRegion.toString() );
 			
-			loadList.add(currRegion.getTraceLoad());
+			sLoadList.add(currRegion.getSearchLoad());
+			uLoadList.add(currRegion.getUpdateLoad());
 		}
 		
-		double jfi = Utils.computeJainsFairnessIndex(loadList);
-		System.out.println("JFI on load "+jfi);
+		double sjfi = Utils.computeJainsFairnessIndex(sLoadList);
+		double ujfi = Utils.computeJainsFairnessIndex(uLoadList);
+		System.out.println("Search JFI "+sjfi+" update JFI "+ujfi);
 		
 		writeRegionsToFile(nodeConfig.getNodeIDs().size());
 	}
@@ -239,34 +250,59 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 					
 					
 					
-					double currLoad1 = computeLoadOnARegionBasedOnTrace( splitRegion1, 
-																attributeMap, totalNodes );
-					splitRegion1.setTraceLoad(currLoad1);
+//					double currLoad1 = computeLoadOnARegionBasedOnTrace( splitRegion1, 
+//																attributeMap, totalNodes );
+//					splitRegion1.setTraceLoad(currLoad1);
+					
+					double searchLoad1 = computeSearchLoadOnARegionBasedOnTrace( splitRegion1, 
+							attributeMap, nodeConfig.getNodeIDs().size() );	
+
+					double updateLoad1 = computeUpdateLoadOnARegionBasedOnTrace( splitRegion1, 
+							attributeMap, nodeConfig.getNodeIDs().size() );	
+
+
+					splitRegion1.setSearchLoad(searchLoad1);
+					splitRegion1.setUpdateLoad(updateLoad1);
+
 					
 					
-					double currLoad2 = computeLoadOnARegionBasedOnTrace( splitRegion2, 
-													attributeMap, totalNodes );
-					splitRegion2.setTraceLoad(currLoad2);
+//					double currLoad2 = computeLoadOnARegionBasedOnTrace( splitRegion2, 
+//													attributeMap, totalNodes );
+//					splitRegion2.setTraceLoad(currLoad2);
 				
 					
-					// check JFI for all regions including the splitRegion1 and splitRegion2 
-					// and store if the current one is giving more JFI.
+					double searchLoad2 = computeSearchLoadOnARegionBasedOnTrace( splitRegion2, 
+							attributeMap, nodeConfig.getNodeIDs().size() );	
+
+					double updateLoad2 = computeUpdateLoadOnARegionBasedOnTrace( splitRegion2, 
+							attributeMap, nodeConfig.getNodeIDs().size() );	
+
+
+					splitRegion2.setSearchLoad(searchLoad2);
+					splitRegion2.setUpdateLoad(updateLoad2);
 					
-					List<Double> loadList = new LinkedList<Double>(); 
+					
+					List<Double> sLoadList = new LinkedList<Double>(); 
+					List<Double> uLoadList = new LinkedList<Double>(); 
 					for(int j=0; j<regionList.size(); j++)
 					{
 						// not taking the load of region we are splitting now,
 						if(i != j)
 						{
-							loadList.add(regionList.get(j).getTraceLoad());
+							sLoadList.add(regionList.get(j).getSearchLoad());
+							uLoadList.add(regionList.get(j).getUpdateLoad());
 						}
 					}
-					loadList.add(currLoad1);
-					loadList.add(currLoad2);
+					sLoadList.add(searchLoad1);
+					sLoadList.add(searchLoad2);
 					
+					uLoadList.add(updateLoad1);
+					uLoadList.add(updateLoad2);
 					
-					double jfi = Utils.computeJainsFairnessIndex(loadList);
+					double sjfi = Utils.computeJainsFairnessIndex(sLoadList);
+					double ujfi = Utils.computeJainsFairnessIndex(uLoadList);
 					
+					double jfi = rho * sjfi + (1-rho) * ujfi;
 					
 					if( optimalJFI == -1 )
 					{
@@ -312,10 +348,14 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 		regionOne.getValueSpaceInfo().getValueSpaceBoundary().put
 			(optimalHyperplane.hyperplaneAttrName, regionOneAttrVal);
 
-		double regionLoad = computeLoadOnARegionBasedOnTrace(regionOne, attributeMap, 
+		double sLoad = computeSearchLoadOnARegionBasedOnTrace(regionOne, attributeMap, 
 									totalNodes );
+		
+		double uLoad = computeUpdateLoadOnARegionBasedOnTrace(regionOne, attributeMap, 
+				totalNodes );
 
-		regionOne.setTraceLoad(regionLoad);
+		regionOne.setSearchLoad(sLoad);
+		regionOne.setUpdateLoad(uLoad);
 
 
 		RegionInfo regionTwo = copyValueSpaceToRegion(splitRegion.getValueSpaceInfo());
@@ -327,10 +367,15 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 		regionTwo.getValueSpaceInfo().getValueSpaceBoundary().put
 			(optimalHyperplane.hyperplaneAttrName, regionTwoAttrVal);
 		
-		regionLoad = computeLoadOnARegionBasedOnTrace(regionTwo, attributeMap, 
+		
+		sLoad = computeSearchLoadOnARegionBasedOnTrace(regionTwo, attributeMap, 
+				totalNodes );
+		
+		uLoad = computeUpdateLoadOnARegionBasedOnTrace(regionTwo, attributeMap, 
 				totalNodes );
 
-		regionTwo.setTraceLoad(regionLoad);		
+		regionTwo.setSearchLoad(sLoad);
+		regionTwo.setUpdateLoad(uLoad);
 		
 		
 		regionList.add(regionOne);
@@ -398,11 +443,9 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 	}
 	
 	
-	private double computeLoadOnARegionBasedOnTrace( RegionInfo regionInfo, 
+	private double computeSearchLoadOnARegionBasedOnTrace( RegionInfo regionInfo, 
 			HashMap<String, AttributeMetaInfo> attributeMap, int totalNodes )
-	{
-		double loadOnRegion = 0.0;
-		
+	{	
 		// for searches
 		BufferedReader br = null;
 		FileReader fr = null;
@@ -450,6 +493,16 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 		}
 		searchQueryProb = overlapSearchQueries/totalSearchQueries;
 		
+		return searchQueryProb;
+	}
+	
+	
+	private double computeUpdateLoadOnARegionBasedOnTrace( RegionInfo regionInfo, 
+			HashMap<String, AttributeMetaInfo> attributeMap, int totalNodes )
+	{
+		BufferedReader br = null;
+		FileReader fr = null;
+		
 		// calculating update probability
 		double overlapUpdateRequests = 0.0;
 		
@@ -494,13 +547,7 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 		
 		updateRequestProb = overlapUpdateRequests/totalUpdateRequests;
 		
-		// search/search+update ration.
-		double rho = totalSearchQueries/(totalSearchQueries + totalUpdateRequests);
-		
-		
-		loadOnRegion = rho*searchQueryProb + (1-rho) * Math.sqrt(totalNodes)* updateRequestProb;
-		
-		return loadOnRegion;
+		return updateRequestProb;
 	}
 	
 	
@@ -591,7 +638,8 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 	{
 		
 		int NUM_ATTRS = 20;
-		int[] nodeList = {1, 4, 9, 16, 25, 36, 49, 64, 81};
+		//int[] nodeList = {1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121};
+		int[] nodeList = {121};
 		
 		for(int n=0; n<nodeList.length; n++)
 		{

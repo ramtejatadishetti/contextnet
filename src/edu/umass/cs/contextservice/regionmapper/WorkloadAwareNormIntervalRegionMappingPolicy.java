@@ -22,7 +22,6 @@ import edu.umass.cs.contextservice.common.CSNodeConfig;
 import edu.umass.cs.contextservice.queryparsing.QueryParser;
 import edu.umass.cs.contextservice.regionmapper.helper.AttributeValueRange;
 import edu.umass.cs.contextservice.regionmapper.helper.RegionInfo;
-import edu.umass.cs.contextservice.regionmapper.helper.RegionLoadComparator;
 import edu.umass.cs.contextservice.regionmapper.helper.ValueSpaceInfo;
 import edu.umass.cs.contextservice.utils.Utils;
 
@@ -43,7 +42,7 @@ public class WorkloadAwareNormIntervalRegionMappingPolicy extends AbstractRegion
 			CSNodeConfig nodeConfig )
 	{
 		super(attributeMap, nodeConfig);
-		priorityQueue = new PriorityQueue<RegionInfo>(10, new RegionLoadComparator());
+		priorityQueue =null;
 	}
 	
 	
@@ -92,8 +91,8 @@ public class WorkloadAwareNormIntervalRegionMappingPolicy extends AbstractRegion
 		double regionLoad = computeLoadOnARegionBasedOnTrace( totalValSpaceRegion, 
 										attributeMap, nodeConfig.getNodeIDs().size() );
 		
-		
-		totalValSpaceRegion.setTraceLoad(regionLoad);
+		//FIXME
+		//totalValSpaceRegion.setTraceLoad(regionLoad);
 		
 		priorityQueue.offer(totalValSpaceRegion);
 		
@@ -103,8 +102,8 @@ public class WorkloadAwareNormIntervalRegionMappingPolicy extends AbstractRegion
 		{	
 			RegionInfo poppedRegion = priorityQueue.poll();
 			
-			System.out.println("Popped region load "+poppedRegion.getTraceLoad()
-						+poppedRegion.getValueSpaceInfo().toString());
+//			System.out.println("Popped region load "+poppedRegion.getTraceLoad()
+//						+poppedRegion.getValueSpaceInfo().toString());
 			
 			assert(poppedRegion != null);
 			
@@ -127,8 +126,8 @@ public class WorkloadAwareNormIntervalRegionMappingPolicy extends AbstractRegion
 			// compute trace load and set it in the region.
 			regionLoad = computeLoadOnARegionBasedOnTrace(remRegionInfo, attributeMap, 
 														nodeConfig.getNodeIDs().size() );
-			
-			remRegionInfo.setTraceLoad(regionLoad);
+			//FIXME
+			//remRegionInfo.setTraceLoad(regionLoad);
 			
 			priorityQueue.offer(remRegionInfo);
 		}
@@ -147,10 +146,11 @@ public class WorkloadAwareNormIntervalRegionMappingPolicy extends AbstractRegion
 			double volume = computeLogVolume(currRegion.getValueSpaceInfo().getValueSpaceBoundary(), 
 														attributeMap );
 			
-			System.out.println( "Region num "+regionNum+" log volume "+volume+" "+" optimalLoad "
-					+currRegion.getTraceLoad()+" "+currRegion.toString() );
+//			System.out.println( "Region num "+regionNum+" log volume "+volume+" "+" optimalLoad "
+//					+currRegion.getTraceLoad()+" "+currRegion.toString() );
 			
-			loadList.add(currRegion.getTraceLoad());
+			//FIXME
+			//loadList.add(currRegion.getTraceLoad());
 		}
 		
 		double jfi = Utils.computeJainsFairnessIndex(loadList);
@@ -312,7 +312,8 @@ public class WorkloadAwareNormIntervalRegionMappingPolicy extends AbstractRegion
 		AttributeValueRange regionAttrValRange = new AttributeValueRange(
 				hyperAttrValRange.getLowerBound(), optimalHyperplane+"");
 		regionValueSpace.getValueSpaceBoundary().put(hyperplaneAttrName, regionAttrValRange);
-		regionInfo.setTraceLoad(optimalLoad);
+		//FIXME
+		//regionInfo.setTraceLoad(optimalLoad);
 		
 		
 		AttributeValueRange valSpaceAttrValRange = new AttributeValueRange

@@ -16,7 +16,11 @@ public class RegionInfo
 	
 	private List<Integer> nodeList;
 	
-	private double traceLoad;
+	//private double traceLoad;
+	
+	private double searchLoad;
+	private double updateLoad;
+	
 	
 	public RegionInfo()
 	{
@@ -52,15 +56,24 @@ public class RegionInfo
 		this.nodeList = nodeList;
 	}
 	
-	
-	public void setTraceLoad(double traceLoad)
+	public void setSearchLoad(double searchLoad)
 	{
-		this.traceLoad = traceLoad;
+		this.searchLoad = searchLoad;
 	}
 	
-	public double getTraceLoad()
+	public double getSearchLoad()
 	{
-		return traceLoad;
+		return searchLoad;
+	}
+	
+	public void setUpdateLoad(double updateLoad)
+	{
+		this.updateLoad = updateLoad;
+	}
+	
+	public double getUpdateLoad()
+	{
+		return updateLoad;
 	}
 	
 	public String toString()
