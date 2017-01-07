@@ -197,72 +197,106 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 			{
 				String hyperplaneAttrName = attrIter.next();
 				
-				RegionInfo newRegion = partitionValueSpaceWithAttr(currRegionVS, 
-							attributeMap,  totalNodes, hyperplaneAttrName);
+				
+				AttributeMetaInfo attrMetaInfo = attributeMap.get(hyperplaneAttrName);
+				
+				assert( !attrMetaInfo.getDataType().equals(AttributeTypes.StringType) );
+				
+				//RegionInfo newRegion = copyValueSpaceToRegion(currRegionVS);
 				
 				
-				// check JFI for all regions including the old and new regions and store if the current
-				// one is giving more JFI.
-				List<Double> loadList = new LinkedList<Double>(); 
-				for(int j=0; j<regionList.size(); j++)
+				AttributeValueRange hyperAttrValRange = currRegionVSBound.get(hyperplaneAttrName);
+				
+				assert(!attrMetaInfo.getDataType().equals(AttributeTypes.StringType));
+				
+				
+				double lowerBound = Double.parseDouble(hyperAttrValRange.getLowerBound());
+				double upperBound = Double.parseDouble(hyperAttrValRange.getUpperBound());
+				
+				double range = upperBound - lowerBound;
+				
+				
+				double currPlane = lowerBound + PLANE_MOVING_PERCENTAGE*range;
+				
+				while( currPlane < upperBound )
 				{
-					// not taking the load of region we are splitting now,
-					if(i != j)
-					{
-						loadList.add(regionList.get(j).getTraceLoad());
-					}
-				}
-				
-				// now we take the load of the two sub regions of the region we are splitting.
-				loadList.add(newRegion.getTraceLoad());
-				
-				RegionInfo remRegionInfo = copyValueSpaceToRegion(currRegionVS);
-				
-				AttributeValueRange originalAttrVal 
-						= currRegionVS.getValueSpaceBoundary().get(hyperplaneAttrName);
-				
-				AttributeValueRange newRegionAttrVal = newRegion.getValueSpaceInfo().getValueSpaceBoundary().get(hyperplaneAttrName);
-				
-				/// newRegionAttrVal.getUpperBound() is the hyperplane val.
-				AttributeValueRange remRegionAttrVal = new AttributeValueRange(
-							newRegionAttrVal.getUpperBound(), originalAttrVal.getUpperBound());
-				
-				remRegionInfo.getValueSpaceInfo().getValueSpaceBoundary().put
-							(hyperplaneAttrName, remRegionAttrVal);
-				
-				double regionLoad = computeLoadOnARegionBasedOnTrace(remRegionInfo, attributeMap, 
-						totalNodes );
-
-				remRegionInfo.setTraceLoad(regionLoad);
-				
-				loadList.add(remRegionInfo.getTraceLoad());
-				
-				
-				double jfi = Utils.computeJainsFairnessIndex(loadList);
-				
-				
-				if( optimalJFI == -1 )
-				{
-					optimalIndexNum = i;
-					optimalHyperplane = new HyperplaneInfo(hyperplaneAttrName, 
-							newRegion.getValueSpaceInfo().getValueSpaceBoundary().get(hyperplaneAttrName).getUpperBound());
+					AttributeValueRange attrValRange1 
+								= new AttributeValueRange(lowerBound+"", currPlane+"");
 					
-					optimalJFI =jfi;
-				}
-				else
-				{	
-					if(jfi > optimalJFI)
+					AttributeValueRange attrValRange2 
+								= new AttributeValueRange(currPlane+"", upperBound+"");
+					
+					
+					RegionInfo splitRegion1 = copyValueSpaceToRegion(currRegionVS);
+					RegionInfo splitRegion2 = copyValueSpaceToRegion(currRegionVS);
+					
+					
+					splitRegion1.getValueSpaceInfo().getValueSpaceBoundary().put
+																(hyperplaneAttrName, attrValRange1);
+					
+					splitRegion2.getValueSpaceInfo().getValueSpaceBoundary().put
+																(hyperplaneAttrName, attrValRange2);
+					
+					
+					
+					double currLoad1 = computeLoadOnARegionBasedOnTrace( splitRegion1, 
+																attributeMap, totalNodes );
+					splitRegion1.setTraceLoad(currLoad1);
+					
+					
+					double currLoad2 = computeLoadOnARegionBasedOnTrace( splitRegion2, 
+													attributeMap, totalNodes );
+					splitRegion2.setTraceLoad(currLoad2);
+				
+					
+					// check JFI for all regions including the splitRegion1 and splitRegion2 
+					// and store if the current one is giving more JFI.
+					
+					List<Double> loadList = new LinkedList<Double>(); 
+					for(int j=0; j<regionList.size(); j++)
+					{
+						// not taking the load of region we are splitting now,
+						if(i != j)
+						{
+							loadList.add(regionList.get(j).getTraceLoad());
+						}
+					}
+					loadList.add(currLoad1);
+					loadList.add(currLoad2);
+					
+					
+					double jfi = Utils.computeJainsFairnessIndex(loadList);
+					
+					
+					if( optimalJFI == -1 )
 					{
 						optimalIndexNum = i;
 						optimalHyperplane = new HyperplaneInfo(hyperplaneAttrName, 
-								newRegion.getValueSpaceInfo().getValueSpaceBoundary().get(hyperplaneAttrName).getUpperBound());
+								splitRegion1.getValueSpaceInfo().getValueSpaceBoundary().get
+										(hyperplaneAttrName).getUpperBound());
 						
 						optimalJFI =jfi;
 					}
+					else
+					{	
+						if(jfi > optimalJFI)
+						{
+							optimalIndexNum = i;
+							optimalHyperplane = new HyperplaneInfo(hyperplaneAttrName, 
+									splitRegion1.getValueSpaceInfo().getValueSpaceBoundary().get
+											(hyperplaneAttrName).getUpperBound());
+							
+							optimalJFI =jfi;
+						}
+					}
+					
+					currPlane = currPlane + PLANE_MOVING_PERCENTAGE*range;
 				}
 				
 			}
 		}
+		
+		// we should have greedily optimal hyperplane and region to split by now.
 		
 		RegionInfo splitRegion = regionList.remove(optimalIndexNum);
 		
@@ -363,99 +397,6 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 		return logSum;
 	}
 	
-	/**
-	 * Partitions the given ValueSpace with the given attribute
-	 * and returns the newly created Region. But the original value 
-	 * space is not changed. The load on the region is also 
-	 * returned in the RegionInfo object returned.
-	 * 
-	 * @return
-	 */
-	private RegionInfo partitionValueSpaceWithAttr(ValueSpaceInfo valueSpace, 
-			HashMap<String, AttributeMetaInfo> attributeMap, int totalNodes, String hyperplaneAttrName)
-	{
-		double optimalHyperplane = -1;
-		double optimalLoad = -1;
-		
-		AttributeMetaInfo attrMetaInfo = attributeMap.get(hyperplaneAttrName);
-		
-		assert( !attrMetaInfo.getDataType().equals(AttributeTypes.StringType) );
-		
-		HashMap<String, AttributeValueRange> valSpaceBoundary = valueSpace.getValueSpaceBoundary();
-		
-		ValueSpaceInfo regionValueSpace = new ValueSpaceInfo();
-		
-		Iterator<String> attrIter = valSpaceBoundary.keySet().iterator();
-		
-		while( attrIter.hasNext() )
-		{
-			String attrName = attrIter.next();
-			AttributeValueRange valspaceAttrValRange = valSpaceBoundary.get(attrName);
-			
-			AttributeValueRange regionAttrValRange = new AttributeValueRange
-								( valspaceAttrValRange.getLowerBound(), 
-										valspaceAttrValRange.getUpperBound() );
-			
-			regionValueSpace.getValueSpaceBoundary().put(attrName, regionAttrValRange);
-		}
-		
-		RegionInfo regionInfo = new RegionInfo();
-		regionInfo.setValueSpaceInfo(regionValueSpace);
-		
-		
-		AttributeValueRange hyperAttrValRange = valSpaceBoundary.get(hyperplaneAttrName);
-		
-		assert(!attrMetaInfo.getDataType().equals(AttributeTypes.StringType));
-		
-		
-		double lowerBound = Double.parseDouble(hyperAttrValRange.getLowerBound());
-		double upperBound = Double.parseDouble(hyperAttrValRange.getUpperBound());
-		
-		double range = upperBound - lowerBound;
-		
-		
-		double currPlane = lowerBound + PLANE_MOVING_PERCENTAGE*range;
-		
-		while( currPlane < upperBound )
-		{
-			AttributeValueRange attrValRange 
-						= new AttributeValueRange(lowerBound+"", currPlane+"");
-			
-			regionValueSpace.getValueSpaceBoundary().put(hyperplaneAttrName, attrValRange);
-			
-			
-			double currLoad = computeLoadOnARegionBasedOnTrace( regionInfo, 
-														attributeMap, totalNodes );
-			
-			if( optimalLoad == -1 )
-			{
-				optimalLoad = currLoad;
-				optimalHyperplane = currPlane;
-			}
-			else
-			{
-				// see the explanation for 1.0 in the heuristic scheme draft.
-				// the load that is returned should be close to 1.0
-				// close to 1.0 means that a single node is near to its capacity.
-				// it is not lightly loaded < 1 case and more loaded > 1 case.
-				if( Math.abs(currLoad-1.0) < Math.abs(optimalLoad-1.0) )
-				{
-					optimalLoad = currLoad;
-					optimalHyperplane = currPlane;
-				}
-			}
-			currPlane = currPlane + PLANE_MOVING_PERCENTAGE*range;
-		}
-		
-		// setting region with optimal hyperplane
-		AttributeValueRange regionAttrValRange = new AttributeValueRange(
-				hyperAttrValRange.getLowerBound(), optimalHyperplane+"");
-		regionValueSpace.getValueSpaceBoundary().put(hyperplaneAttrName, regionAttrValRange);
-		regionInfo.setTraceLoad(optimalLoad);
-		
-		return regionInfo;
-	}
-	
 	
 	private double computeLoadOnARegionBasedOnTrace( RegionInfo regionInfo, 
 			HashMap<String, AttributeMetaInfo> attributeMap, int totalNodes )
@@ -554,8 +495,7 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 		updateRequestProb = overlapUpdateRequests/totalUpdateRequests;
 		
 		// search/search+update ration.
-		//double rho = totalSearchQueries/(totalSearchQueries + totalUpdateRequests);
-		double rho = 1.0;
+		double rho = totalSearchQueries/(totalSearchQueries + totalUpdateRequests);
 		
 		
 		loadOnRegion = rho*searchQueryProb + (1-rho) * Math.sqrt(totalNodes)* updateRequestProb;
@@ -622,6 +562,8 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 	}
 	
 	
+	
+	
 	private class HyperplaneInfo
 	{
 		private final String hyperplaneAttrName;
@@ -647,41 +589,143 @@ public class WorkloadAwareRegionMappingPolicy extends AbstractRegionMappingPolic
 	
 	public static void main(String[] args)
 	{
-		int NUM_ATTRS = Integer.parseInt(args[0]);
-		int NUM_NODES = Integer.parseInt(args[1]);
 		
-		HashMap<String, AttributeMetaInfo> givenMap = new HashMap<String, AttributeMetaInfo>();
-		List<String> attrList = new LinkedList<String>();
+		int NUM_ATTRS = 20;
+		int[] nodeList = {1, 4, 9, 16, 25, 36, 49, 64, 81};
 		
-		for(int i=0; i < NUM_ATTRS; i++)
+		for(int n=0; n<nodeList.length; n++)
 		{
-			String attrName = "attr"+i;
-			AttributeMetaInfo attrInfo =
-					new AttributeMetaInfo(attrName, 1+"", 1500+"", AttributeTypes.DoubleType);
+			int NUM_NODES = nodeList[n];
 			
-			givenMap.put(attrInfo.getAttrName(), attrInfo);	
-			attrList.add(attrName);
-		}
-		
-		CSNodeConfig csNodeConfig = new CSNodeConfig();
-		for(int i=0; i< NUM_NODES; i++)
-		{
-			try 
+			HashMap<String, AttributeMetaInfo> givenMap = new HashMap<String, AttributeMetaInfo>();
+			List<String> attrList = new LinkedList<String>();
+			
+			for(int i=0; i < NUM_ATTRS; i++)
 			{
-				csNodeConfig.add(i, 
-						new InetSocketAddress(InetAddress.getByName("localhost"), 3000+i));
+				String attrName = "attr"+i;
+				AttributeMetaInfo attrInfo =
+						new AttributeMetaInfo(attrName, 1+"", 1500+"", AttributeTypes.DoubleType);
+				
+				givenMap.put(attrInfo.getAttrName(), attrInfo);	
+				attrList.add(attrName);
 			}
-			catch (UnknownHostException e)
+			
+			CSNodeConfig csNodeConfig = new CSNodeConfig();
+			for(int i=0; i< NUM_NODES; i++)
 			{
-				e.printStackTrace();
+				try 
+				{
+					csNodeConfig.add(i, 
+							new InetSocketAddress(InetAddress.getByName("localhost"), 3000+i));
+				}
+				catch (UnknownHostException e)
+				{
+					e.printStackTrace();
+				}
 			}
+			
+			AttributeTypes.initializeGivenMapAndList(givenMap, attrList);
+			
+			WorkloadAwareRegionMappingPolicy obj 
+					= new WorkloadAwareRegionMappingPolicy(givenMap, csNodeConfig);
+			
+			obj.computeRegionMapping();
 		}
-		
-		AttributeTypes.initializeGivenMapAndList(givenMap, attrList);
-		
-		WorkloadAwareRegionMappingPolicy obj 
-				= new WorkloadAwareRegionMappingPolicy(givenMap, csNodeConfig);
-		
-		obj.computeRegionMapping();
 	}
+	
 }
+
+
+/**
+ * Partitions the given ValueSpace with the given attribute
+ * and returns the newly created Region. But the original value 
+ * space is not changed. The load on the region is also 
+ * returned in the RegionInfo object returned.
+ * 
+ * @return
+ */
+/*private RegionInfo partitionValueSpaceWithAttr(ValueSpaceInfo valueSpace, 
+		HashMap<String, AttributeMetaInfo> attributeMap, 
+		int totalNodes, String hyperplaneAttrName)
+{
+	double optimalHyperplane = -1;
+	double optimalLoad = -1;
+	
+	AttributeMetaInfo attrMetaInfo = attributeMap.get(hyperplaneAttrName);
+	
+	assert( !attrMetaInfo.getDataType().equals(AttributeTypes.StringType) );
+	
+	HashMap<String, AttributeValueRange> valSpaceBoundary = valueSpace.getValueSpaceBoundary();
+	
+	ValueSpaceInfo regionValueSpace = new ValueSpaceInfo();
+	
+	Iterator<String> attrIter = valSpaceBoundary.keySet().iterator();
+	
+	while( attrIter.hasNext() )
+	{
+		String attrName = attrIter.next();
+		AttributeValueRange valspaceAttrValRange = valSpaceBoundary.get(attrName);
+		
+		AttributeValueRange regionAttrValRange = new AttributeValueRange
+							( valspaceAttrValRange.getLowerBound(), 
+									valspaceAttrValRange.getUpperBound() );
+		
+		regionValueSpace.getValueSpaceBoundary().put(attrName, regionAttrValRange);
+	}
+	
+	RegionInfo regionInfo = new RegionInfo();
+	regionInfo.setValueSpaceInfo(regionValueSpace);
+	
+	
+	AttributeValueRange hyperAttrValRange = valSpaceBoundary.get(hyperplaneAttrName);
+	
+	assert(!attrMetaInfo.getDataType().equals(AttributeTypes.StringType));
+	
+	
+	double lowerBound = Double.parseDouble(hyperAttrValRange.getLowerBound());
+	double upperBound = Double.parseDouble(hyperAttrValRange.getUpperBound());
+	
+	double range = upperBound - lowerBound;
+	
+	
+	double currPlane = lowerBound + PLANE_MOVING_PERCENTAGE*range;
+	
+	while( currPlane < upperBound )
+	{
+		AttributeValueRange attrValRange 
+					= new AttributeValueRange(lowerBound+"", currPlane+"");
+		
+		regionValueSpace.getValueSpaceBoundary().put(hyperplaneAttrName, attrValRange);
+		
+		
+		double currLoad = computeLoadOnARegionBasedOnTrace( regionInfo, 
+													attributeMap, totalNodes );
+		
+		if( optimalLoad == -1 )
+		{
+			optimalLoad = currLoad;
+			optimalHyperplane = currPlane;
+		}
+		else
+		{
+			// see the explanation for 1.0 in the heuristic scheme draft.
+			// the load that is returned should be close to 1.0
+			// close to 1.0 means that a single node is near to its capacity.
+			// it is not lightly loaded < 1 case and more loaded > 1 case.
+			if( Math.abs(currLoad-1.0) < Math.abs(optimalLoad-1.0) )
+			{
+				optimalLoad = currLoad;
+				optimalHyperplane = currPlane;
+			}
+		}
+		currPlane = currPlane + PLANE_MOVING_PERCENTAGE*range;
+	}
+	
+	// setting region with optimal hyperplane
+	AttributeValueRange regionAttrValRange = new AttributeValueRange(
+			hyperAttrValRange.getLowerBound(), optimalHyperplane+"");
+	regionValueSpace.getValueSpaceBoundary().put(hyperplaneAttrName, regionAttrValRange);
+	regionInfo.setTraceLoad(optimalLoad);
+	
+	return regionInfo;
+}*/
