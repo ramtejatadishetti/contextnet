@@ -36,13 +36,17 @@ public class UniformGreedyRegionMappingPolicyWithDB extends AbstractRegionMappin
 	private final HashMap<Integer, RegionInfo> regionMap;
 	private final Random randGen;
 	
+	// attributes are partitioned in this order
+	private final List<String> orderedAttrList;
+	
 	private final AbstractRegionMappingStorage regionMappingStorage;
 	
 	public UniformGreedyRegionMappingPolicyWithDB( AbstractDataSource dataSource,
-			HashMap<String, AttributeMetaInfo> attributeMap, 
+			HashMap<String, AttributeMetaInfo> attributeMap, List<String> orderedAttrList,
 			CSNodeConfig nodeConfig )
 	{
 		super(attributeMap, nodeConfig);
+		this.orderedAttrList = orderedAttrList;
 		regionMap = new HashMap<Integer, RegionInfo>();
 		randGen = new Random();
 		regionMappingStorage = new SQLRegionMappingStorage(dataSource, attributeMap);
@@ -123,7 +127,6 @@ public class UniformGreedyRegionMappingPolicyWithDB extends AbstractRegionMappin
 		//FIXME: need to check if we need ceil of floor here.
 		double numRegions = Math.ceil( Math.sqrt(nodeConfig.getNodeIDs().size()) );
 		ValueSpaceInfo valSpaceInfo = new ValueSpaceInfo();
-		Vector<String> attrList = new Vector<String>();
 		
 		// construct the value space.
 		Iterator<String> attrIter = attributeMap.keySet().iterator();
@@ -131,7 +134,6 @@ public class UniformGreedyRegionMappingPolicyWithDB extends AbstractRegionMappin
 		while( attrIter.hasNext() )
 		{
 			String attrName = attrIter.next();
-			attrList.add(attrName);
 			AttributeMetaInfo attrMeta = attributeMap.get(attrName);
 			AttributeValueRange attrValRange = new AttributeValueRange
 									(attrMeta.getMinValue(), attrMeta.getMaxValue());
@@ -150,7 +152,7 @@ public class UniformGreedyRegionMappingPolicyWithDB extends AbstractRegionMappin
 		// numRegions th region.
 		while(curr < (numRegions -1) )
 		{
-			String hyperplaneAttr = attrList.get(curr%attrList.size());
+			String hyperplaneAttr = this.orderedAttrList.get(curr%this.orderedAttrList.size());
 			RegionInfo regionInfo = partitionValueSpaceUsingHyperplane
 					(valSpaceInfo, hyperplaneAttr, desiredVolumeOfEachRegion, attributeMap);
 			regionInfo.setRegionKey(curr);
@@ -389,7 +391,8 @@ public class UniformGreedyRegionMappingPolicyWithDB extends AbstractRegionMappin
 		}
 		
 		UniformGreedyRegionMappingPolicyWithDB obj = new UniformGreedyRegionMappingPolicyWithDB
-														(new SQLiteDataSource(0), givenMap, csNodeConfig);
+														(new SQLiteDataSource(0), givenMap, 
+																		attrList, csNodeConfig);
 		obj.computeRegionMapping();
 	}
 }

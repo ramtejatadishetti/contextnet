@@ -112,7 +112,7 @@ public class RegionMappingBasedScheme extends AbstractScheme
 			case ContextServiceConfig.UNIFORM:
 			{
 				regionMappingPolicy = new UniformGreedyRegionMappingPolicyWithDB(
-						dataSource, AttributeTypes.attributeMap, nc);
+						dataSource, AttributeTypes.attributeMap, AttributeTypes.attributeInOrderList, nc);
 				break;
 			}
 			case ContextServiceConfig.DEMAND_AWARE:
