@@ -1095,6 +1095,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 	            	
 	            	byte[] fullBArray = this.serializeAnonymizedIDJSONArrayToByteArray(anonymizedIDToGuidList);
 	            	
+	            	System.out.println("fullBArray "+fullBArray.length);
 	            	colValue = "X'"+Utils.byteArrayToHex(fullBArray)+"'";
 	            }
 	            else if( colName.equals(RegionMappingDataStorageDB.unsetAttrsColName) )
