@@ -183,7 +183,13 @@ public class ContextServiceConfig
 	
 	
 	// current encryption generated 128 bytes, if that changes then this has to change.
-	public static final int REAL_ID_ENCRYPTION_SIZE					= 128;
+	//public static final int REAL_ID_ENCRYPTION_SIZE				= 128;
+	// symmetric key of encryption of GUID gives 24 bytes of encrypted data.
+	// FIXME: TEXT and BLOB is not supported in in-memory Mysql.
+	// So, for Sigcomm deadline experiments just creating a harcoded 
+	// column in mysql table of 24 bytes to store anonymizedIDToGUID mapping information.
+	// will figure out later on a better way.
+	public static final int GUID_SYMM_KEY_ENC_LENGTH				= 24;
 	
 	
 	// maximum length of an attribute name, used in varchar mysql table

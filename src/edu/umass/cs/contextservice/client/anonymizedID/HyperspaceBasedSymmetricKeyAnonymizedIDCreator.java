@@ -422,7 +422,8 @@ public class HyperspaceBasedSymmetricKeyAnonymizedIDCreator
 			byte[] encryptedUserGuid = Utils.doSymmetricEncryption(symmKey.getEncoded(), 
 					userGuidBytes);
 			
-			//System.out.println("computeAnonymizedIDToGUIDMapping encryption size "+encryptedUserGuid.length);
+			//System.out.println
+			//("computeAnonymizedIDToGUIDMapping encryption size "+encryptedUserGuid.length);
 			anonymizedIDToGuidMapping.put(Utils.byteArrayToHex(encryptedUserGuid));
 			
 		} 

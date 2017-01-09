@@ -1175,9 +1175,19 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 	
 	private String getPrivacyStorageString( String newTableCommand )
 	{
-		newTableCommand 
-			= newTableCommand + " , "+RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName
-				+" TEXT";
+		if(!ContextServiceConfig.IN_MEMORY_MYSQL)
+		{
+			newTableCommand 
+				= newTableCommand + " , "+RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName
+					+" TEXT";
+		}
+		else
+		{
+			// in memory case
+			newTableCommand 
+				= newTableCommand + " , "+RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName
+					+" Binary("+ContextServiceConfig.GUID_SYMM_KEY_ENC_LENGTH+")";
+		}
 		
 		return newTableCommand;
 	}
