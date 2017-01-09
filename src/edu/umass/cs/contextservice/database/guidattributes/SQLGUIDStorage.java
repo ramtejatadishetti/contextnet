@@ -352,7 +352,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 								{
 									JSONArray jsonArr 
 										= this.deserializeByteArrayToAnonymizedIDJSONArray(colValBA);
-									oldValueJSON.put(colName, new JSONArray(jsonArr));
+									oldValueJSON.put(colName, jsonArr);
 								} catch (JSONException e) 
 								{
 									e.printStackTrace();
