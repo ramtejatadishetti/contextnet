@@ -190,7 +190,7 @@ public class ContextServiceConfig
 	// column in mysql table of 24 bytes to store anonymizedIDToGUID mapping information.
 	// will figure out later on a better way.
 	// 24 + JSON array things.
-	public static final int GUID_SYMM_KEY_ENC_LENGTH				= 40;
+	public static final int GUID_SYMM_KEY_ENC_LENGTH				= 24;
 	
 	
 	// maximum length of an attribute name, used in varchar mysql table

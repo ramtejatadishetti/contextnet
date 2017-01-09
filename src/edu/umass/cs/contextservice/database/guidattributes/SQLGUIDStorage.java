@@ -1,5 +1,6 @@
 package edu.umass.cs.contextservice.database.guidattributes;
 
+import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -7,6 +8,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -229,19 +233,20 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 					
 					String nodeGUID = Utils.byteArrayToHex(nodeGUIDBytes);
 					
-					String anonymizedIDToGUIDMapping = null;
+					//String anonymizedIDToGUIDMapping = null;
 					JSONArray anonymizedIDToGuidArray = null;
 					if( ContextServiceConfig.PRIVACY_ENABLED )
 					{
-						anonymizedIDToGUIDMapping 
-							= rs.getString(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName);
+						byte[] anonymizedIDToGUIDMappingBA 
+							= rs.getBytes(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName);
 						
-						if(anonymizedIDToGUIDMapping != null)
+						if(anonymizedIDToGUIDMappingBA != null)
 						{
-							if(anonymizedIDToGUIDMapping.length() > 0)
+							if(anonymizedIDToGUIDMappingBA.length > 0)
 							{
 								anonymizedIDToGuidArray 
-									= new JSONArray(anonymizedIDToGUIDMapping);
+									= this.deserializeByteArrayToAnonymizedIDJSONArray
+										(anonymizedIDToGUIDMappingBA);
 							}
 						}
 					}
@@ -333,18 +338,21 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 				for (int i = 1; i <= columnCount; i++ ) 
 				{
 					String colName = rsmd.getColumnName(i);
-					String colVal = rs.getString(colName);
 					
 					// doing translation here saves multiple strng to JSON translations later in code.
 					if(colName.equals(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName))
 					{
-						if(colVal != null)
+						byte[] colValBA = rs.getBytes(colName);
+						
+						if(colValBA != null)
 						{
-							if(colVal.length() > 0)
+							if(colValBA.length > 0)
 							{
 								try
 								{
-									oldValueJSON.put(colName, new JSONArray(colVal));
+									JSONArray jsonArr 
+										= this.deserializeByteArrayToAnonymizedIDJSONArray(colValBA);
+									oldValueJSON.put(colName, new JSONArray(jsonArr));
 								} catch (JSONException e) 
 								{
 									e.printStackTrace();
@@ -353,6 +361,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 						}
 					} else if(colName.equals(RegionMappingDataStorageDB.unsetAttrsColName))
 					{
+						String colVal = rs.getString(colName);
 						try
 						{
 							oldValueJSON.put(colName, new JSONObject(colVal));
@@ -363,6 +372,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 					}
 					else
 					{
+						String colVal = rs.getString(colName);
 						try
 						{
 							oldValueJSON.put(colName, colVal);
@@ -685,8 +695,14 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 	            
 	            if( colName.equals(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName) )
 	            {
-	            	colValue = toWriteJSON.getString(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName);
-	            	colValue = "'"+colValue+"'";
+	            	JSONArray jsonArr  = toWriteJSON.getJSONArray
+	            					(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName);
+	            	
+	            	assert( jsonArr.length() > 0 );
+	            	
+	            	byte[] fullBArray = this.serializeAnonymizedIDJSONArrayToByteArray(jsonArr);
+	            	
+	            	colValue = "X'"+Utils.byteArrayToHex(fullBArray)+"'";
 	            }
 	            else
 	            {
@@ -812,9 +828,14 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 				
 				if(colName.equals(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName))
 				{
-					String jsonArrString = toWriteJSON.getString(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName);
-					assert(jsonArrString != null);
-					colValue = "'"+jsonArrString+"'";
+					JSONArray jsonArr = toWriteJSON.getJSONArray
+										(RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName);
+					assert(jsonArr != null);
+					assert( jsonArr.length() > 0 );
+	            	
+	            	byte[] fullBArray = this.serializeAnonymizedIDJSONArrayToByteArray(jsonArr);
+	            	
+	            	colValue = "X'"+Utils.byteArrayToHex(fullBArray)+"'";
 				}
 				else
 				{
@@ -929,8 +950,12 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 	            	// if it is null in no privacy case, then it should be even inserted 
 	            	// in towritejson.
 	            	assert( anonymizedIDToGuidList != null );
+	            	assert( anonymizedIDToGuidList.length() > 0 );
 	            	
-	            	colValue = "'"+anonymizedIDToGuidList.toString()+"'";
+	            	byte[] fullBArray = this.serializeAnonymizedIDJSONArrayToByteArray
+	            				(anonymizedIDToGuidList);
+	            	
+	            	colValue = "X'"+Utils.byteArrayToHex(fullBArray)+"'";
 	            }
 	            else if( colName.equals(RegionMappingDataStorageDB.unsetAttrsColName) )
 	            {
@@ -1066,8 +1091,11 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 	            	// if it is null in no privacy case, then it should be even inserted 
 	            	// in towritejson.
 	            	assert( anonymizedIDToGuidList != null );
+	            	assert( anonymizedIDToGuidList.length() > 0 );
 	            	
-	            	colValue = "'"+anonymizedIDToGuidList.toString()+"'";
+	            	byte[] fullBArray = this.serializeAnonymizedIDJSONArrayToByteArray(anonymizedIDToGuidList);
+	            	
+	            	colValue = "X'"+Utils.byteArrayToHex(fullBArray)+"'";
 	            }
 	            else if( colName.equals(RegionMappingDataStorageDB.unsetAttrsColName) )
 	            {
@@ -1179,17 +1207,69 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 		{
 			newTableCommand 
 				= newTableCommand + " , "+RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName
-					+" TEXT";
+					+" BLOB";
 		}
 		else
 		{
 			// in memory case
 			newTableCommand 
 				= newTableCommand + " , "+RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName
-					+" VARCHAR("+ContextServiceConfig.GUID_SYMM_KEY_ENC_LENGTH+")";
+					+" Binary("+ContextServiceConfig.GUID_SYMM_KEY_ENC_LENGTH+")";
 		}
 		
 		return newTableCommand;
+	}
+	
+	private byte[] serializeAnonymizedIDJSONArrayToByteArray(JSONArray jsonArray)
+	{
+		assert(jsonArray.length() > 0);
+		int bArrayLen = -1;
+		List<byte[]> byteList = new LinkedList<byte[]>();
+		for(int i=0; i<jsonArray.length(); i++)
+		{
+			try 
+			{
+				byte[] bArray = Utils.hexStringToByteArray(jsonArray.getString(i));
+				if(bArrayLen == -1)
+				{
+					bArrayLen = bArray.length;
+				}
+				else
+				{
+					assert(bArrayLen == bArray.length);
+				}
+				byteList.add(bArray);
+			} catch (JSONException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		assert(bArrayLen != -1);
+		ByteBuffer buf = ByteBuffer.allocate(Integer.SIZE/8 + bArrayLen*byteList.size());
+		buf.putInt(bArrayLen);
+		for(int i=0; i<byteList.size(); i++)
+		{
+			byte[] bArray = byteList.get(i);
+			buf.put(bArray);
+		}
+		buf.flip();
+		return buf.array();
+	}
+	
+	
+	private JSONArray deserializeByteArrayToAnonymizedIDJSONArray(byte[] fullByteArray)
+	{
+		JSONArray jsonArr = new JSONArray();
+		ByteBuffer buf = ByteBuffer.wrap(fullByteArray);
+		int byteArrayLen = buf.getInt();
+		int numberElements = (fullByteArray.length-(Integer.SIZE/8))/byteArrayLen;
+		for(int i=0; i<numberElements; i++)
+		{
+			byte[] bArray = new byte[byteArrayLen];
+			buf.get(bArray);
+			jsonArr.put(Utils.byteArrayToHex(bArray));
+		}
+		return jsonArr;
 	}
 	
 	/**
