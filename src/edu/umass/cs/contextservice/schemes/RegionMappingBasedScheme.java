@@ -542,7 +542,7 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		catch(JSONException jso)
 		{
 			jso.printStackTrace();
-		}		
+		}
 		
 		guidAttrValProcessing.processUpdateFromGNS(updateReq);
 	}

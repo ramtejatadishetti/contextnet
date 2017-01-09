@@ -1186,7 +1186,7 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 			// in memory case
 			newTableCommand 
 				= newTableCommand + " , "+RegionMappingDataStorageDB.anonymizedIDToGUIDMappingColName
-					+" Binary("+ContextServiceConfig.GUID_SYMM_KEY_ENC_LENGTH+")";
+					+" VARCHAR("+ContextServiceConfig.GUID_SYMM_KEY_ENC_LENGTH+")";
 		}
 		
 		return newTableCommand;

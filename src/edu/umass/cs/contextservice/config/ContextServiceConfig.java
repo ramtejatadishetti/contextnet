@@ -189,7 +189,8 @@ public class ContextServiceConfig
 	// So, for Sigcomm deadline experiments just creating a harcoded 
 	// column in mysql table of 24 bytes to store anonymizedIDToGUID mapping information.
 	// will figure out later on a better way.
-	public static final int GUID_SYMM_KEY_ENC_LENGTH				= 24;
+	// 24 + JSON array things.
+	public static final int GUID_SYMM_KEY_ENC_LENGTH				= 30;
 	
 	
 	// maximum length of an attribute name, used in varchar mysql table
