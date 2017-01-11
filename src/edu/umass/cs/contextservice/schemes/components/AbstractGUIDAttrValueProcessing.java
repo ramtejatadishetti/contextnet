@@ -274,20 +274,25 @@ public abstract class AbstractGUIDAttrValueProcessing
 				if(updatedAttrValJSON.has(attrName))
 				{
 					attrVal = updatedAttrValJSON.getString(attrName);
+					jsonToWrite.put(attrName, attrVal);
 				}
 				else
 				{
 					if(unsetAttrsJSON.has(attrName))
 					{
-						attrVal = AttributeTypes.attributeMap.get(attrName).getDefaultValue();
+						if(!ContextServiceConfig.NULL_DEFAULT_ENABLED)
+						{
+							attrVal = AttributeTypes.attributeMap.get(attrName).getDefaultValue();
+							jsonToWrite.put(attrName, attrVal);
+						}
 					}
 					else
 					{
 						assert(oldValueJSON.has(attrName));
 						attrVal = oldValueJSON.getString(attrName);
+						jsonToWrite.put(attrName, attrVal);
 					}
 				}
-				jsonToWrite.put(attrName, attrVal);
 			}
 						
 			// anonymizedIDToGUID mapping
@@ -418,14 +423,17 @@ public abstract class AbstractGUIDAttrValueProcessing
 			String attrVal = "";
 			if(unsetAttrsJSON.has(attrName))
 			{
-				attrVal = AttributeTypes.attributeMap.get(attrName).getDefaultValue();
+				if(!ContextServiceConfig.NULL_DEFAULT_ENABLED)
+				{
+					attrVal = AttributeTypes.attributeMap.get(attrName).getDefaultValue();
+					jsonToWrite.put(attrName, attrVal);
+				}
 			}
 			else
 			{
 				attrVal = primarySubspaceJSON.getString(attrName);
+				jsonToWrite.put(attrName, attrVal);
 			}
-			
-			jsonToWrite.put(attrName, attrVal);
 		}
 		
 		// add the anonymizedIDToGUID mapping if it is there

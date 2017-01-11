@@ -201,6 +201,11 @@ public class ContextServiceConfig
 	// used when virtualized nodes are used.
 	public static boolean IN_MEMORY_MYSQL							= true;
 	
+	
+	// if true then mysql NULL is stored for unspecifed
+	// attributes to save space.
+	public static boolean NULL_DEFAULT_ENABLED						= true;
+	
 	// SQL database types
 	public static enum SQL_DB_TYPE	{MYSQL, SQLITE};
 	

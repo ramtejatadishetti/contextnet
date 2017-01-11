@@ -1188,9 +1188,19 @@ public class SQLGUIDStorage implements GUIDStorageInterface
 			String defaultVal 				= attrMetaInfo.getDefaultValue();
 			String mySQLDataType 			= AttributeTypes.mySQLDataType.get(dataType);
 			
+
+			if(ContextServiceConfig.NULL_DEFAULT_ENABLED)
+			{
+				newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType
+						+" DEFAULT NULL";
+						//+ AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType);
+			}
+			else
+			{
+				newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType
+						+" DEFAULT "+ AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType);
+			}
 			
-			newTableCommand = newTableCommand + ", "+attrName+" "+mySQLDataType
-					+" DEFAULT "+ AttributeTypes.convertStringToDataTypeForMySQL(defaultVal, dataType);
 				
 			if( ContextServiceConfig.sqlDBType == SQL_DB_TYPE.MYSQL )
 			{
