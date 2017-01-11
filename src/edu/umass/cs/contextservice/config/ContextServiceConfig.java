@@ -199,7 +199,7 @@ public class ContextServiceConfig
 	
 	// if set to true then all mysql tables are created in in-memory.
 	// used when virtualized nodes are used.
-	public static boolean IN_MEMORY_MYSQL							= false;
+	public static boolean IN_MEMORY_MYSQL							= true;
 	
 	// SQL database types
 	public static enum SQL_DB_TYPE	{MYSQL, SQLITE};
