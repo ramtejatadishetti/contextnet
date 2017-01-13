@@ -29,34 +29,11 @@ public class ContextServiceConfig
 	// NO_PRIVACY 0 ordinal, HYPERSPACE_PRIVACY 1 ordinal, SUBSPACE_PRIVACY 2 ordinal
 	public static enum PrivacySchemes {NO_PRIVACY, PRIVACY};
 	
-	// prints experiment print statements
-	public static boolean EXP_PRINT_ON								= false;
-	
-	// if true, groupGUID is stored, if false it is not stores.
-	// false only for experiments, as experiments compare with equation/
-	// otherwise should be true.
-	public static final boolean  GROUP_INFO_COMPONENT				= false;
-	
-	// if it is true then the group trigger mechanism works, that
-	// on each update the GUID is stored and removed from the 
-	// affected groups. If false that doesn't happen.
-	// false only for experiment comparison with Mercury, Hyperdex,
-	// Replicate-All etc.
-	//public static final boolean GROUP_UPDATE_TRIGGER				= false;
 	
 	//this flag indicates whether GNS is used or not.
 	// In GNSCalls class, it bypasses GNS calls if set to false.
 	public static final boolean USE_GNS								= false;
 	
-	// used in table names in database 
-//	public static final String MetadataTableSuffix 					= "MetadataTable";
-//	
-//	public static final String ValueTableSuffix    					= "ValueInfoTable";
-//	
-//	public static final String FullObjectTable    					= "fullObjectTable";
-//	
-//	public static final String groupGUIDTable						= "groupGUIDTable";
-//	public static final boolean USESQL								= true;
 	
 	public static final boolean PROFILER_THREAD						= true;
 	
@@ -123,7 +100,7 @@ public class ContextServiceConfig
 	public static  int MYSQL_MAX_CONNECTIONS						= 10;
 	
 	// it is also important to set this at least the size of the database connection pool.
-	public static int THREAD_POOL_SIZE								= 100;
+	public static int THREAD_POOL_SIZE								= 10;
 	
 	//public static final int PRIVACY_THREAD_POOL_SIZE				= 214;
 	//public static final int HYPERSPACEDB_THREAD_POOL_SIZE			= 214;
@@ -202,7 +179,7 @@ public class ContextServiceConfig
 	public static boolean IN_MEMORY_MYSQL							= true;
 	
 	
-	// if true then mysql NULL is stored for unspecifed
+	// if true then mysql NULL is stored for unspecified
 	// attributes to save space.
 	public static boolean NULL_DEFAULT_ENABLED						= true;
 	
