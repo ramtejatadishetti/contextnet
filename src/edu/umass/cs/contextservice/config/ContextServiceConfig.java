@@ -176,7 +176,7 @@ public class ContextServiceConfig
 	
 	// if set to true then all mysql tables are created in in-memory.
 	// used when virtualized nodes are used.
-	public static boolean IN_MEMORY_MYSQL							= true;
+	public static boolean IN_MEMORY_MYSQL							= false;
 	
 	
 	// if true then mysql NULL is stored for unspecified
