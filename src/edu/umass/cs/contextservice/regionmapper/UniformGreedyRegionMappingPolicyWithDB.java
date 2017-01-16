@@ -9,7 +9,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import java.util.Vector;
 
 import edu.umass.cs.contextservice.attributeInfo.AttributeMetaInfo;
 import edu.umass.cs.contextservice.attributeInfo.AttributeTypes;
@@ -240,7 +239,8 @@ public class UniformGreedyRegionMappingPolicyWithDB extends AbstractRegionMappin
 		
 		double remVol = desiredVolumeInLog - partialVol;
 		
-		assert(remVol > 0);
+		//Note: this assertion is not valid in log space. as log of something less than 1 can be negative.
+		//assert(remVol > 0);
 		
 		AttributeMetaInfo attrMetaInfo = attributeMap.get(hyperplaneAttrName);
 		
