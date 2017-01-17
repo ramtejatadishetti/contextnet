@@ -247,6 +247,11 @@ public class GUIDAttrValueProcessing
 			{
 				firstTimeInsert = false;
 				updateOrInsert = RegionMappingDataStorageDB.UPDATE_REC;
+				
+				if(ContextServiceConfig.SEARCH_UPDATE_TRACE_ENABLE)
+				{
+					
+				}
 			}
 			
 			JSONObject jsonToWrite = getJSONToWriteInPrimarySubspace( oldValueJSON, 

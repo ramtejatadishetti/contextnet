@@ -361,6 +361,11 @@ public class RegionMappingBasedScheme extends AbstractScheme
 		userPort   = queryMsgFromUser.getSourcePort();
 		expiryTime = queryMsgFromUser.getExpiryTime();
 		
+		if(ContextServiceConfig.SEARCH_UPDATE_TRACE_ENABLE)
+		{
+			System.out.println("SEARCHQUERY "+query);
+		}
+		
 		ContextServiceLogger.getLogger().fine("QUERY RECVD: QUERY_MSG recvd query recvd "+query);
 		
 		// create the empty group in GNS

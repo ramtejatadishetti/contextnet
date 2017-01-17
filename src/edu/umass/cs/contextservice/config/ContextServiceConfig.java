@@ -190,4 +190,9 @@ public class ContextServiceConfig
 	public static SQL_DB_TYPE sqlDBType								= SQL_DB_TYPE.MYSQL;
 	
 	public static final String REGION_INFO_TABLE_NAME 				= "regionInfoStorageTable";
+	
+	
+	// if true CNS writes search and update traces of requests it receives.
+	// we use traces in demand aware region creation.
+	public static final boolean SEARCH_UPDATE_TRACE_ENABLE			= false;
 }
