@@ -195,4 +195,10 @@ public class ContextServiceConfig
 	// if true CNS writes search and update traces of requests it receives.
 	// we use traces in demand aware region creation.
 	public static final boolean SEARCH_UPDATE_TRACE_ENABLE			= false;
+	
+	
+	// used in case study to not to make client as bootllneck
+	public static final boolean LIMITED_SEARCH_REPLY_ENABLE			= true;
+	public static final int LIMITED_SEARCH_REPLY_SIZE				= 10;
+	
 }

@@ -154,14 +154,52 @@ public class GUIDAttrValueProcessing
 			
 			if( ContextServiceConfig.sendFullRepliesToClient )
 			{	
-				Iterator<Integer> nodeIdIter = searchReplyMap.keySet().iterator();
-
-				while( nodeIdIter.hasNext() )
+				if(!ContextServiceConfig.LIMITED_SEARCH_REPLY_ENABLE)
 				{
-					int nodeid = nodeIdIter.next();
-					SearchReplyInfo replyInfo = searchReplyMap.get(nodeid);
-					concatResult.put(replyInfo.replyArray);
-					totalNumReplies = totalNumReplies + replyInfo.replyArray.length();
+					Iterator<Integer> nodeIdIter = searchReplyMap.keySet().iterator();
+	
+					while( nodeIdIter.hasNext() )
+					{
+						int nodeid = nodeIdIter.next();
+						SearchReplyInfo replyInfo = searchReplyMap.get(nodeid);
+						concatResult.put(replyInfo.replyArray);
+						totalNumReplies = totalNumReplies + replyInfo.replyArray.length();
+					}
+				}
+				else
+				{
+					JSONArray limitedArray = new JSONArray();
+					Iterator<Integer> nodeIdIter = searchReplyMap.keySet().iterator();
+					
+					while( nodeIdIter.hasNext() )
+					{
+						int nodeid = nodeIdIter.next();
+						SearchReplyInfo replyInfo = searchReplyMap.get(nodeid);
+					
+						for(int i=0; i<replyInfo.replyArray.length(); i++)
+						{
+							try {
+								limitedArray.put(replyInfo.replyArray.getJSONObject(i));
+							} catch (JSONException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+							
+							if(limitedArray.length() >= 
+										ContextServiceConfig.LIMITED_SEARCH_REPLY_SIZE)
+							{
+								break;
+							}
+						}
+						if(limitedArray.length() >= 
+								ContextServiceConfig.LIMITED_SEARCH_REPLY_SIZE)
+						{
+							break;
+						}
+					}
+					
+					concatResult.put(limitedArray);
+					totalNumReplies = totalNumReplies + limitedArray.length();
 				}
 			}
 			else
