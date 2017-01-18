@@ -94,7 +94,7 @@ public class ContextServiceClient extends AbstractContextServiceClient
 	public static boolean EXPERIMENT_MODE								= true;
 	
 	// enables the profiler 
-	private static final boolean PROFILER_ENABLE						= true;
+	private static final boolean PROFILER_ENABLE						= false;
 	
 	public static final String SYMMETRIC_KEY_EXCHANGE_FIELD_NAME		= "SYMMETRIC_KEY_EXCHANGE_FIELD";
 	
