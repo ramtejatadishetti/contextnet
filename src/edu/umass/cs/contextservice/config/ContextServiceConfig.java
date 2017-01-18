@@ -199,6 +199,6 @@ public class ContextServiceConfig
 	
 	// used in case study to not to make client as bootllneck
 	public static final boolean LIMITED_SEARCH_REPLY_ENABLE			= true;
-	public static final int LIMITED_SEARCH_REPLY_SIZE				= 10;
+	public static final int LIMITED_SEARCH_REPLY_SIZE				= 100;
 	
 }
