@@ -44,7 +44,6 @@ public class UberWorkloadAwareRegionMappingPolicy extends AbstractRegionMappingP
 		traceRho = this.computeRhoFromFile();
 	}
 	
-	
 	@Override
 	public List<Integer> getNodeIDsForUpdate(
 			String GUID, HashMap<String, AttributeValueRange> attrValRangeMap ) 
@@ -707,7 +706,7 @@ public class UberWorkloadAwareRegionMappingPolicy extends AbstractRegionMappingP
 		
 		
 		//int[] nodeList = {1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121};
-		int[] nodeList = {121};
+		int[] nodeList = {100};
 		for(int n=0; n<nodeList.length; n++)
 		{
 			int NUM_NODES = nodeList[n];	
