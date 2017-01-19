@@ -170,7 +170,6 @@ public class GUIDAttrValueProcessing
 				{
 					JSONArray limitedArray = new JSONArray();
 					Iterator<Integer> nodeIdIter = searchReplyMap.keySet().iterator();
-					
 					while( nodeIdIter.hasNext() )
 					{
 						int nodeid = nodeIdIter.next();

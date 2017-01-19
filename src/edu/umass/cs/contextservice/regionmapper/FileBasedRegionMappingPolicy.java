@@ -146,6 +146,8 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 			{
 				ValueSpaceInfo valSpace 
 								= ValueSpaceInfo.fromString(valSpaceString);
+				
+				addUnIndexedAttrsInValueSpace(valSpace);
 				RegionInfo regionInfo 
 								= new RegionInfo();
 				
@@ -176,6 +178,26 @@ public class FileBasedRegionMappingPolicy extends AbstractRegionMappingPolicy
 		assignNodesUniformly();
 	}
 	
+	
+	private void addUnIndexedAttrsInValueSpace(ValueSpaceInfo valSpace)
+	{
+		Iterator<String> attrIter = attributeMap.keySet().iterator();
+		
+		while(attrIter.hasNext())
+		{
+			String attrName = attrIter.next();
+			AttributeMetaInfo attrMetaInf = attributeMap.get(attrName);
+			
+			if(!valSpace.getValueSpaceBoundary().containsKey(attrName))
+			{
+				AttributeValueRange attrValRange = new AttributeValueRange
+							(attrMetaInf.getMinValue(), attrMetaInf.getMaxValue());
+				
+				valSpace.getValueSpaceBoundary().put(attrName, attrValRange);
+			}
+		}
+		assert(valSpace.getValueSpaceBoundary().size() == attributeMap.size());
+	}
 	
 	private void assignNodesUniformly()
 	{
