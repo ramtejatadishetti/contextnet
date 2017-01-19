@@ -1,2 +1,2 @@
-latitude,40,42,longitude,-76,-73,status,0,0.4
-latitude,40,42,longitude,-76,-73,status,0.4,1
+latitude,40,42,longitude,-76,-73.90000000000002
+latitude,40,42,longitude,-73.90000000000002,-73
