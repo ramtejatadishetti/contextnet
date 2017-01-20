@@ -1,6 +1,7 @@
-modelRho=0.5
-modelCsByC=0.003594347
-modelCuByC=0.001626119
-modelAavg=4.0
-modelCtByC=0.000000054
-modelAq=76000
+triggerEnable=false
+numAttrsPerSubspace=3
+privacyEnabled=false
+queryAllEnabled=false
+sqlPoolSize=10
+threadPoolSize=10
+regionMappingPolicy=DEMAND_AWARE
