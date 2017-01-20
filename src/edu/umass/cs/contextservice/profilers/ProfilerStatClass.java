@@ -16,6 +16,9 @@ public class ProfilerStatClass implements Runnable
 	
 	private long incomingSearchRate					= 0;
 	
+	private long numSearchInAttrIndex				= 0;
+	private long numUpdateInAttrIndex				= 0;
+	
 	
 	private final Object lock 						= new Object();
 	
@@ -45,6 +48,10 @@ public class ProfilerStatClass implements Runnable
 						+ (numNodesForUpdateReqs/numUpdateReqs)
 						+ " numUpdateReqs "+numUpdateReqs );
 			}
+			
+			System.out.println("numSearchInAttrIndex "+numSearchInAttrIndex
+					+" numUpdateInAttrIndex "+numUpdateInAttrIndex);
+			
 			
 			double OutsearchDataThrouhgput  = 0.0;
 			double OutsearchIndexThrouhgput = 0.0;
@@ -79,6 +86,22 @@ public class ProfilerStatClass implements Runnable
 		{
 			numNodesForSearchQuery = numNodesForSearchQuery + currNumNodes;
 			numSearchReqs++;
+		}
+	}
+	
+	public void incrementNumSearchesAttrIndex()
+	{
+		synchronized(lock)
+		{
+			this.numSearchInAttrIndex++;
+		}
+	}
+	
+	public void incrementNumUpdatesAttrIndex()
+	{
+		synchronized(lock)
+		{
+			this.numUpdateInAttrIndex++;
 		}
 	}
 	

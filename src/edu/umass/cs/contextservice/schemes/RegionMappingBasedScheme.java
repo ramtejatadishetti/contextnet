@@ -843,6 +843,11 @@ public class RegionMappingBasedScheme extends AbstractScheme
 	private void processQueryMesgToSubspaceRegion(QueryMesgToSubspaceRegion 
 														queryMesgToSubspaceRegion)
 	{
+		if(ContextServiceConfig.PROFILER_THREAD)
+		{
+			profStats.incrementNumSearchesAttrIndex();;
+		}
+		
 		String groupGUID 			 = queryMesgToSubspaceRegion.getGroupGUID();
 		boolean storeQueryForTrigger = queryMesgToSubspaceRegion.getStoreQueryForTrigger();
 		
@@ -889,6 +894,11 @@ public class RegionMappingBasedScheme extends AbstractScheme
 				ValueUpdateToSubspaceRegionMessage 
 				valueUpdateToSubspaceRegionMessage )
 	{
+		if(ContextServiceConfig.PROFILER_THREAD)
+		{
+			profStats.incrementNumUpdatesAttrIndex();
+		}
+		
 		this.guidAttrValProcessing.processValueUpdateToSubspaceRegionMessage
 					( valueUpdateToSubspaceRegionMessage);
 		
