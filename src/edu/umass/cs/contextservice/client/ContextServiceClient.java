@@ -1678,8 +1678,7 @@ public class ContextServiceClient extends AbstractContextServiceClient
 		
 		Thread.sleep(2000);
 		
-		String searchQuery = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE "
-				+ "attr1 >= 5 AND attr1 <= 15";
+		String searchQuery = "attr1 >= 5 AND attr1 <= 15";
 		
 		GuidEntry queryingGuid = guidsVector.get(3);
 		
@@ -1692,8 +1691,7 @@ public class ContextServiceClient extends AbstractContextServiceClient
 //				" Real GUID "+guid0+" reply Arr "+replyArray);
 
 		
-		searchQuery = "SELECT GUID_TABLE.guid FROM GUID_TABLE WHERE attr1 >= 5 AND attr1 <= 15"
-				+ " AND attr2 >= 10 AND attr2 <= 20";
+		searchQuery = "attr1 >= 5 AND attr1 <= 15" + " AND attr2 >= 10 AND attr2 <= 20";
 		
 		queryingGuid = guidsVector.get(1);
 		

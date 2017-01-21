@@ -49,10 +49,10 @@ public class ContextServiceConfig
 	//control if full guids are sent in the search query
 	// reply, if false only sends the number of guids, not
 	// the actual guids
-	public static  boolean sendFullRepliesWithinCS					= true;
+	public static  boolean sendFullRepliesWithinCS					= false;
 	
 	// to check which one is bottleneck the client or CS in full replies. 
-	public static  boolean sendFullRepliesToClient					= true;
+	public static  boolean sendFullRepliesToClient					= false;
 	
 	// if this is set to true, then mysql table selects
 	// return results row by row. If set to false then
@@ -177,7 +177,7 @@ public class ContextServiceConfig
 	
 	// if set to true then all mysql tables are created in in-memory.
 	// used when virtualized nodes are used.
-	public static boolean IN_MEMORY_MYSQL							= true;
+	public static boolean IN_MEMORY_MYSQL							= false;
 	
 	
 	// if true then mysql NULL is stored for unspecified
