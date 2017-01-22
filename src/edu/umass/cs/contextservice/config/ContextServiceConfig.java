@@ -77,10 +77,10 @@ public class ContextServiceConfig
 	
 	// if set to true then there is a primary node for each groupGUID
 	// and search always gores through that and doesn't update trigger info if its is repeated.
-	public static boolean UniqueGroupGUIDEnabled					= true;
+	public static boolean UniqueGroupGUIDEnabled					= false;
 	// GroupGUID, UserIP and UserPort are primaries keys if this option is set false.
 	// if set true then those are just hash index.
-	public static boolean disableUniqueQueryStorage					= false;
+	public static boolean disableUniqueQueryStorage					= true;
 	
 	
 	// circular query triggers makes the select queries 
