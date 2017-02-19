@@ -18,7 +18,7 @@ public class RegionInfo
 	
 	//private double traceLoad;
 	
-	private double searchLoad;
+	//private double searchLoad;
 	private double updateLoad;
 	
 	
@@ -56,15 +56,15 @@ public class RegionInfo
 		this.nodeList = nodeList;
 	}
 	
-	public void setSearchLoad(double searchLoad)
-	{
-		this.searchLoad = searchLoad;
-	}
-	
-	public double getSearchLoad()
-	{
-		return searchLoad;
-	}
+//	public void setSearchLoad(double searchLoad)
+//	{
+//		this.searchLoad = searchLoad;
+//	}
+//	
+//	public double getSearchLoad()
+//	{
+//		return searchLoad;
+//	}
 	
 	public void setUpdateLoad(double updateLoad)
 	{

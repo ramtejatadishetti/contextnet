@@ -1,12 +1,7 @@
 package edu.umass.cs.contextservice.test;
 
-import java.net.InetSocketAddress;
 import java.util.Properties;
 
-import edu.umass.cs.gnsclient.client.GNSClientCommands;
-import edu.umass.cs.gnsclient.client.GNSClientConfig;
-import edu.umass.cs.gnsclient.client.util.GuidEntry;
-import edu.umass.cs.gnsclient.client.util.GuidUtils;
 
 public class GNSClientTesting 
 {
@@ -25,13 +20,13 @@ public class GNSClientTesting
 		props.setProperty("javax.net.ssl.keyStorePassword", "qwerty");
 		props.setProperty("javax.net.ssl.keyStore", "conf/gnsClientConf/keyStore/node100.jks");	
 		
-		InetSocketAddress address 
-			= new InetSocketAddress("127.0.0.1", GNSClientConfig.LNS_PORT);
-		GNSClientCommands gnsClient = new GNSClientCommands();
-		
-		GuidEntry masterGuid = GuidUtils.lookupOrCreateAccountGuid(gnsClient,
-                "gnsumass@gmail.com", "password", true);
-		
-		System.out.println("masterGuid "+masterGuid.getGuid());
+//		InetSocketAddress address 
+//			= new InetSocketAddress("127.0.0.1", GNSClientConfig.LNS_PORT);
+//		GNSClientCommands gnsClient = new GNSClientCommands();
+//		
+//		GuidEntry masterGuid = GuidUtils.lookupOrCreateAccountGuid(gnsClient,
+//                "gnsumass@gmail.com", "password", true);
+//		
+//		System.out.println("masterGuid "+masterGuid.getGuid());
 	}
 }

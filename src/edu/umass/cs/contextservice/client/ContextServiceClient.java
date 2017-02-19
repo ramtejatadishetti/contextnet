@@ -75,6 +75,7 @@ import edu.umass.cs.gnsclient.client.GNSClientCommands;
 import edu.umass.cs.gnsclient.client.GNSCommand;
 import edu.umass.cs.gnsclient.client.util.GuidEntry;
 import edu.umass.cs.gnscommon.exceptions.client.ClientException;
+import edu.umass.cs.gnscommon.packets.CommandPacket;
 import edu.umass.cs.nio.nioutils.NIOHeader;
 
 /**
@@ -405,7 +406,7 @@ public class ContextServiceClient extends AbstractContextServiceClient
 		// fetch it form GNS
 		if(gnsClient != null)
 		{
-			GNSCommand commandRes = gnsClient.execute(GNSCommand.read(GUID, myGUIDInfo));
+			CommandPacket commandRes = gnsClient.execute(GNSCommand.read(GUID, myGUIDInfo));
 			JSONObject encryptedJSON = commandRes.getResultJSONObject();
 			GNSTransformedMessage gnsTransformedMesg 
 							= new GNSTransformedMessage(encryptedJSON);
@@ -906,10 +907,10 @@ public class ContextServiceClient extends AbstractContextServiceClient
 	{
 		HashMap<String, byte[]> anonymizedIDToSecretKeyMap 
 										= new HashMap<String, byte[]>();
-										
+		
 		try
 		{
-			GNSCommand commandRes = gnsClient.execute
+			CommandPacket commandRes = gnsClient.execute
 					( GNSCommand.fieldReadArray(guidEntry.getGuid(), 
 							SYMMETRIC_KEY_EXCHANGE_FIELD_NAME, guidEntry) );
 			
