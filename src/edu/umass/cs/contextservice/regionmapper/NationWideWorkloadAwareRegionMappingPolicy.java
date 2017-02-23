@@ -644,7 +644,7 @@ public class NationWideWorkloadAwareRegionMappingPolicy extends AbstractRegionMa
 		AttributeTypes.initializeGivenMapAndList(givenMap, attrList);
 		
 		//int[] nodeList = {1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121};
-		int[] nodeList = {1};
+		int[] nodeList = {36};
 		for(int n=0; n<nodeList.length; n++)
 		{
 			int NUM_NODES = nodeList[n];	
