@@ -64,7 +64,7 @@ elif(len(sys.argv) == 4):
     mysqlUser  = sys.argv[2]
     mysqlPassword = sys.argv[3]
     writeDBFile()
-        
+     
 startCSNodes()
 print "\n#############Context service started##############\n"
 #time.sleep(5)

@@ -51,8 +51,8 @@ public class ContextServiceTests
 	{
 		kpg = KeyPairGenerator.getInstance("RSA");
 		// context service config to use.
-		ContextServiceConfig.configFileDirectory 
-			= "conf/testConf/contextServiceConf";
+		//ContextServiceConfig.configFileDirectory 
+		//	= "conf/testConf/contextServiceConf";
 		
 		
 		// setting all config parameters for the test.
@@ -738,7 +738,7 @@ public class ContextServiceTests
 			args[0] = "-id";
 			args[1] = i+"";
 			args[2] = "-csConfDir";
-			args[3] = ContextServiceConfig.configFileDirectory;
+			args[3] = "conf/testConf/contextServiceConf";
 			
 			StartContextServiceNode.main(args);
 		}

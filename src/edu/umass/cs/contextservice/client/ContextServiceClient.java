@@ -92,7 +92,7 @@ public class ContextServiceClient extends AbstractContextServiceClient
 				ContextServiceClientInterfaceWithoutPrivacy
 {
 	// if experiment mode is true then triggers are not stored in a queue.
-	public static boolean EXPERIMENT_MODE								= true;
+	public static boolean EXPERIMENT_MODE								= false;
 	
 	// enables the profiler 
 	private static final boolean PROFILER_ENABLE						= false;
