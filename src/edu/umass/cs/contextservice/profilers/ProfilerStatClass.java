@@ -21,7 +21,6 @@ public class ProfilerStatClass implements Runnable
 	private long numSearchInAttrIndex				= 0;
 	private long numUpdateInAttrIndex				= 0;
 	
-	
 	private final Object lock 						= new Object();
 	
 	@Override
@@ -76,6 +75,7 @@ public class ProfilerStatClass implements Runnable
 				
 				incomingSRate = (incomingSearchRate*1.0)/5.0;
 				incomingSearchRate = 0;
+				incomingUpdateRate = 0;
 			}
 			
 			ContextServiceLogger.getLogger().fine("OutsearchDataThrouhgput "+OutsearchDataThrouhgput
