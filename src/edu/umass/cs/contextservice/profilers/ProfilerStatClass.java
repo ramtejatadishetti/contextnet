@@ -56,7 +56,7 @@ public class ProfilerStatClass implements Runnable
 			
 			double rate = (incomingUpdateRate*1.0)/10.0;
 			
-			System.out.println("Incoming update rate "+rate);
+			System.out.println("Incoming update rate "+rate+" requests/s");
 			
 			double OutsearchDataThrouhgput  = 0.0;
 			double OutsearchIndexThrouhgput = 0.0;

@@ -486,8 +486,6 @@ public class RegionMappingBasedScheme extends AbstractScheme
 //				System.out.println("ID greater than 128 mesg recvd"+respNodeId);
 //			}
 			
-			profStats.incrementIncomingUpdateRate();
-			
 			// this piece of code takes care of consistency. Updates to a 
 			// GUID are serialized here. For a GUID only one update is outstanding at
 			// time. But multiple GUIDs can be updated in parallel.

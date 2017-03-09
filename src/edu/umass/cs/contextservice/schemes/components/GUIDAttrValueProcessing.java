@@ -282,6 +282,7 @@ public class GUIDAttrValueProcessing
 			}
 			else
 			{
+				profStats.incrementIncomingUpdateRate();
 				firstTimeInsert = false;
 				updateOrInsert = RegionMappingDataStorageDB.UPDATE_REC;
 				
