@@ -647,12 +647,12 @@ public class CSInstaller
    * @throws IOException 
    * @throws UnknownHostException 
    * @throws NumberFormatException
-   * java -cp ./release/context-nodoc-GNS.jar edu.umass.cs.contextservice.installer.CSInstaller -update singleNodeConf -withGNS
+   * java -cp ./release/context-nodoc-GNS.jar edu.umass.cs.contextservice.installer.CSInstaller -update singleNodeConf 
    */
   public static void main(String[] args) throws NumberFormatException, UnknownHostException, IOException {
-    try {
-    	
-      CommandLine parser = initializeOptions(args);
+    try 
+    {
+    	CommandLine parser = initializeOptions(args);
       if (parser.hasOption("help") || args.length == 0) {
         printUsage();
         System.exit(1);

@@ -10,6 +10,8 @@ public class ProfilerStatClass implements Runnable
 	private long numNodesForUpdateReqs				= 0;
 	private long numUpdateReqs 						= 0;
 	
+	private long incomingUpdateRate					= 0;
+	
 	
 	private long incomingORate						= 0;
 	private long incomingDRate						= 0;
@@ -30,7 +32,8 @@ public class ProfilerStatClass implements Runnable
 			try
 			{
 				Thread.sleep(10000);
-			} catch (InterruptedException e)
+			}
+			catch (InterruptedException e)
 			{
 				e.printStackTrace();
 			}
@@ -49,9 +52,12 @@ public class ProfilerStatClass implements Runnable
 						+ " numUpdateReqs "+numUpdateReqs );
 			}
 			
-			System.out.println("numSearchInAttrIndex "+numSearchInAttrIndex
-					+" numUpdateInAttrIndex "+numUpdateInAttrIndex);
+//			System.out.println("numSearchInAttrIndex "+numSearchInAttrIndex
+//					+" numUpdateInAttrIndex "+numUpdateInAttrIndex);
 			
+			double rate = (incomingUpdateRate*1.0)/10.0;
+			
+			System.out.println("Incoming update rate "+rate);
 			
 			double OutsearchDataThrouhgput  = 0.0;
 			double OutsearchIndexThrouhgput = 0.0;
@@ -138,6 +144,15 @@ public class ProfilerStatClass implements Runnable
 		synchronized( lock )
 		{
 			incomingSearchRate++;
+		}
+	}
+	
+	
+	public void incrementIncomingUpdateRate()
+	{
+		synchronized( lock )
+		{
+			incomingUpdateRate++;
 		}
 	}
 }

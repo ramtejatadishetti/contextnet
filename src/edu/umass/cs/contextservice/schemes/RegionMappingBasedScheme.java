@@ -449,7 +449,6 @@ public class RegionMappingBasedScheme extends AbstractScheme
 										(currReq, storeQueryForTrigger);
 	}
 	
-	
 	private void processValueUpdateFromGNS( ValueUpdateFromGNS valueUpdateFromGNS )
 	{
 		String GUID 			  		= valueUpdateFromGNS.getGUID();
@@ -466,8 +465,9 @@ public class RegionMappingBasedScheme extends AbstractScheme
 //				System.out.println("ID greater than 128 "+respNodeId);
 //			}
 			ContextServiceLogger.getLogger().fine("not primary node case souceIp "
-													+valueUpdateFromGNS.getSourceIP()
-													+" sourcePort "+valueUpdateFromGNS.getSourcePort());
+													+ valueUpdateFromGNS.getSourceIP()
+													+ " sourcePort "
+													+ valueUpdateFromGNS.getSourcePort());
 			try
 			{
 				this.messenger.sendToID( respNodeId, valueUpdateFromGNS.toJSONObject() );
@@ -485,6 +485,8 @@ public class RegionMappingBasedScheme extends AbstractScheme
 //			{
 //				System.out.println("ID greater than 128 mesg recvd"+respNodeId);
 //			}
+			
+			profStats.incrementIncomingUpdateRate();
 			
 			// this piece of code takes care of consistency. Updates to a 
 			// GUID are serialized here. For a GUID only one update is outstanding at
@@ -1091,6 +1093,7 @@ public class RegionMappingBasedScheme extends AbstractScheme
 			}
 		}
 	}
+	
 	
 	public static void main(String[] args)
 	{
