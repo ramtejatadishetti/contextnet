@@ -624,14 +624,17 @@ public class NationWideWorkloadAwareRegionMappingPolicy extends AbstractRegionMa
 		
 		List<String> attrList = new LinkedList<String>();
 		
+		// seattle side lat long is 48, -125
+		// florida sise lat long is 22, -66
+		
 		AttributeMetaInfo attrInfo 
-			= new AttributeMetaInfo("latitude", 18.5+"", 71.5+"", AttributeTypes.DoubleType);
+			= new AttributeMetaInfo("latitude", 22+"", 48+"", AttributeTypes.DoubleType);
 		
 		givenMap.put(attrInfo.getAttrName(), attrInfo);	
 		attrList.add(attrInfo.getAttrName());
 		
 		attrInfo 
-			= new AttributeMetaInfo("longitude", -173.3+"", 173.6+"", AttributeTypes.DoubleType);
+			= new AttributeMetaInfo("longitude", -125+"", -66+"", AttributeTypes.DoubleType);
 		
 		givenMap.put(attrInfo.getAttrName(), attrInfo);	
 		attrList.add(attrInfo.getAttrName());
@@ -644,7 +647,7 @@ public class NationWideWorkloadAwareRegionMappingPolicy extends AbstractRegionMa
 		AttributeTypes.initializeGivenMapAndList(givenMap, attrList);
 		
 		//int[] nodeList = {1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121};
-		int[] nodeList = {36};
+		int[] nodeList = {1};
 		for(int n=0; n<nodeList.length; n++)
 		{
 			int NUM_NODES = nodeList[n];	
