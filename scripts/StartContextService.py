@@ -1,71 +1,76 @@
-import os, sys, time
+import os, sys, time, getpass
 
+CONF_DIR = 'conf/'
+CONTEXT_SERVICE_CONF_DIR = '/contextServiceConf/'
 
-configName = ''
-mysqlUser  = ''
-mysqlPassword = ''
-# right now scripts can only work from cns top level dir
-#scriptDir = 'scripts'
-confDir = 'conf'
+NODE_SETUP_FILE =  'contextServiceNodeSetup.txt'
+DB_NODE_SETUP_FILE = 'dbNodeSetup.txt'
+MYSQL_PORT = 3306
+MYSQL_DB_PREFIX = "contextDB"
 
-def writeDBFile():
-    nodeConfigFilePath = confDir+'/'+configName+'/contextServiceConf/contextServiceNodeSetup.txt'
+START_CNS_CMD_PREFIX = 'nohup java -ea -cp release/contextnetJar.jar edu.umass.cs.contextservice.nodeApp.StartContextServiceNode '+\
+                    '-id'
+
+def writeDBFile(confName, userName, password):
+    nodeConfigFilePath = CONF_DIR + confName + CONTEXT_SERVICE_CONF_DIR + NODE_SETUP_FILE
     lines = []
     with open(nodeConfigFilePath) as f:
         lines = f.readlines()
     f.close()
-    
-    dbFilePath = confDir+'/'+configName+'/contextServiceConf/dbNodeSetup.txt'
-    writef = open(dbFilePath, "w")
+
+    dbFilePath =  CONF_DIR + confName + CONTEXT_SERVICE_CONF_DIR + DB_NODE_SETUP_FILE
+    writef = open( dbFilePath, "w")
     curr = 0
     while(curr < len(lines)):
-        writeStr = str(curr)+' 3306 contextDB'+str(curr)+' '+mysqlUser+' '+mysqlPassword+"\n"
+        writeStr = str(curr)+ ' ' + str(MYSQL_PORT) + ' ' + MYSQL_DB_PREFIX + str(curr) + ' ' + userName + ' ' + password + "\n"
         writef.write(writeStr)
         curr = curr +1
     
     writef.close()
-    print "db file write with user given username and password complete\n"
+    print "DB file write with user given username and password complete\n"
         
         
-def startCSNodes():
+def startCSNodes(confName):
     cmd = 'pkill -9 -f contextnetJar.jar'
     os.system(cmd)
     time.sleep(2)
     print "Killed old context service"
     
-    nodeConfigFilePath = confDir+'/'+configName+'/contextServiceConf/contextServiceNodeSetup.txt'
-    cmdPrefix = 'nohup java -ea -cp release/contextnetJar.jar edu.umass.cs.contextservice.nodeApp.StartContextServiceNode '+\
-                    '-id'
+    nodeConfigFilePath = CONF_DIR + confName + CONTEXT_SERVICE_CONF_DIR + NODE_SETUP_FILE
+
     lines = []
     with open(nodeConfigFilePath) as f:
         lines = f.readlines()
     f.close()
     
-    configDirPath = confDir+'/'+configName+'/contextServiceConf'
     curr = 0
+    configDirPath = CONF_DIR + confName + CONTEXT_SERVICE_CONF_DIR 
     while(curr < len(lines)):
-        cmd = cmdPrefix+' '+str(curr)+' -csConfDir '+configDirPath +' &> csLog.log & '
-        print "starting context service "+cmd
+        cmd = START_CNS_CMD_PREFIX + '  ' + str(curr) + ' -csConfDir ' + configDirPath + ' &> csLog.log & '
+        print "Starting context service "+cmd
         os.system(cmd)
         curr = curr + 1
         
-#print "sys.argv[1] "+sys.argv[0]+" "+str(len(sys.argv))
+
 if(len(sys.argv) == 1):
-    configName = 'locationSingleNodeConf'
-    print "using locationSingleNodeConf configuration and mysql username as password specified in conf/locationSingleNodeConf/contextServiceConf/dbNodeSetup.txt"
+    print "Usage :"
+    print "$ python scripts/StartContextService.py <configuration> \n"
+    print "List of configurations available: "
+    conflist = os.listdir('conf')
+    for i in range(0, len(conflist)):
+        print conflist[i]
+    exit()
+
 elif(len(sys.argv) == 2):
     configName = sys.argv[1]
-    print "using default mysql username as password specified in conf/"+configName+"/contextServiceConf/dbNodeSetup.txt"
-elif(len(sys.argv) == 3):
-    print "Mysql username and password both are needed\n"
+    mysqlUser = raw_input("Enter mysql username: ")
+    mysqlPassword = getpass.getpass("Enter password for '" + mysqlUser + "' user :")
+    writeDBFile(configName, mysqlUser, mysqlPassword)
+    startCSNodes(configName)
+    print "\n#############Context service started##############\n"
 
-elif(len(sys.argv) == 4):
-    configName = sys.argv[1]
-    mysqlUser  = sys.argv[2]
-    mysqlPassword = sys.argv[3]
-    writeDBFile()
-     
-startCSNodes()
-print "\n#############Context service started##############\n"
-#time.sleep(5)
-#print "context service started"
+
+else:
+    print "Invalid arguments given"
+    exit()
+
